@@ -1,15 +1,54 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::near_bindgen;
+use near_sdk::AccountId;
 
 #[near_bindgen]
 #[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Contract {
+pub struct Controller {
     // SETUP CONTRACT STATE
 }
 
 #[near_bindgen]
-impl Contract {
-    // ADD CONTRACT METHODS HERE
+impl Controller {
+    pub fn add_market( _underlying_address : AccountId )
+    {
+
+    }
+
+    pub fn add_market_( _dtoken_address : AccountId )
+    {
+
+    }
+    
+    pub fn supply_allowed( _dtoken_address : AccountId, _user_address : AccountId, _amount : i8 ) -> bool
+    {
+        false
+    }
+
+    pub fn borrow_allowed( _dtoken_address : AccountId, _user_address : AccountId, _amount : i8 ) -> bool
+    {
+        false
+    }
+
+    pub fn set_interest_rate_model( _dtoken_address : AccountId, _interest_rate_model_address : AccountId )
+    {
+
+    }
+
+    pub fn get_interest_rate( _dtoken_address : AccountId ) -> i8
+    {
+        0
+    }
+
+    pub fn set_borrow_cap( _dtoken_address : AccountId, _decimal : i8 )
+    {
+
+    }
+
+    pub fn has_collaterall( _user_address : AccountId ) -> bool
+    {
+        false
+    }
 }
 
 /*
