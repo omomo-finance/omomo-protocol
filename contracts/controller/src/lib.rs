@@ -10,44 +10,44 @@ pub struct Controller {
 
 #[near_bindgen]
 impl Controller {
-    pub fn add_market( _underlying_address : AccountId )
+    pub fn add_market( underlying_address : AccountId )
     {
 
     }
 
-    pub fn add_market_( _dtoken_address : AccountId )
+    pub fn add_market_( dtoken_address : AccountId )
     {
 
     }
     
-    pub fn supply_allowed( _dtoken_address : AccountId, _user_address : AccountId, _amount : i8 ) -> bool
+    pub fn supply_allowed( dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
     {
-        false
+        true
     }
 
-    pub fn borrow_allowed( _dtoken_address : AccountId, _user_address : AccountId, _amount : i8 ) -> bool
+    pub fn borrow_allowed( dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
     {
-        false
+        true
     }
 
-    pub fn set_interest_rate_model( _dtoken_address : AccountId, _interest_rate_model_address : AccountId )
-    {
-
-    }
-
-    pub fn get_interest_rate( _dtoken_address : AccountId ) -> i8
-    {
-        0
-    }
-
-    pub fn set_borrow_cap( _dtoken_address : AccountId, _decimal : i8 )
+    pub fn set_interest_rate_model( dtoken_address : AccountId, interest_rate_model_address : AccountId )
     {
 
     }
 
-    pub fn has_collaterall( _user_address : AccountId ) -> bool
+    pub fn get_interest_rate( dtoken_address : AccountId ) -> u128
     {
-        false
+        1
+    }
+
+    pub fn set_borrow_cap( dtoken_address : AccountId, decimal : u128 )
+    {
+
+    }
+
+    pub fn has_collaterall( user_address : AccountId ) -> bool
+    {
+        true
     }
 }
 
