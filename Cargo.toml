@@ -12,5 +12,6 @@ overflow-checks = true
 members = [
     "contracts/controller",
     "contracts/dtoken",
-    "contracts/interest_rate_model"
+    "contracts/interest_rate_model",
+    "contracts/token_mock"
 ]

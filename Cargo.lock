@@ -179,8 +179,8 @@ dependencies = [
 name = "dtoken"
 version = "0.1.0"
 dependencies = [
- "near-sdk 4.0.0-pre.4",
  "bigdecimal",
+ "near-sdk 4.0.0-pre.4",
 ]
 
 [[package]]
@@ -652,6 +652,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "token_mock"
+version = "1.0.0"
+dependencies = [
+ "near-contract-standards",
+ "near-sdk 3.1.0",
 ]
 
 [[package]]
