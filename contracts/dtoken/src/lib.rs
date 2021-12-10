@@ -58,7 +58,7 @@ impl Dtoken {
         //TODO: add_reserve implementation
     }
 
-    pub fn get_exchange_rate() -> Balance {
+    pub fn get_exchange_rate() -> u128 {
         //TODO: get exchange rate by formula
         BigDecimal::from_str("1.0").unwrap().to_u128().unwrap()
     }
