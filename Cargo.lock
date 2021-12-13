@@ -179,8 +179,9 @@ dependencies = [
 name = "dtoken"
 version = "0.1.0"
 dependencies = [
- "near-sdk 4.0.0-pre.4",
  "bigdecimal",
+ "near-contract-standards",
+ "near-sdk 4.0.0-pre.4",
 ]
 
 [[package]]
