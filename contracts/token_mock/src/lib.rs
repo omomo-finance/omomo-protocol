@@ -15,27 +15,25 @@ near_sdk::setup_alloc!();
 pub struct Contract {
     token: FungibleToken,
     metadata: LazyOption<FungibleTokenMetadata>,
-    owner_id: ValidAccountId,
+    owner_id: AccountId,
 }
-
-const DATA_IMAGE_SVG_NEAR_ICON: &str = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 288 288'%3E%3Cg id='l' data-name='l'%3E%3Cpath d='M187.58,79.81l-30.1,44.69a3.2,3.2,0,0,0,4.75,4.2L191.86,103a1.2,1.2,0,0,1,2,.91v80.46a1.2,1.2,0,0,1-2.12.77L102.18,77.93A15.35,15.35,0,0,0,90.47,72.5H87.34A15.34,15.34,0,0,0,72,87.84V201.16A15.34,15.34,0,0,0,87.34,216.5h0a15.35,15.35,0,0,0,13.08-7.31l30.1-44.69a3.2,3.2,0,0,0-4.75-4.2L96.14,186a1.2,1.2,0,0,1-2-.91V104.61a1.2,1.2,0,0,1,2.12-.77l89.55,107.23a15.35,15.35,0,0,0,11.71,5.43h3.13A15.34,15.34,0,0,0,216,201.16V87.84A15.34,15.34,0,0,0,200.66,72.5h0A15.35,15.35,0,0,0,187.58,79.81Z'/%3E%3C/g%3E%3C/svg%3E";
 
 #[near_bindgen]
 impl Contract {
     #[init]
     pub fn new_default_meta(
-        owner_id: ValidAccountId,
+        symbol: std::string::String,
         ft_name: std::string::String,
         total_supply: U128,
     ) -> Self {
         Self::new(
-            owner_id,
+            env::current_account_id(),
             total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
                 name: ft_name,
-                symbol: "EXAMPLE".to_string(),
-                icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
+                symbol: symbol,
+                icon: None,
                 reference: None,
                 reference_hash: None,
                 decimals: 24,
@@ -44,7 +42,7 @@ impl Contract {
     }
 
     #[init]
-    fn new(owner_id: ValidAccountId, total_supply: U128, metadata: FungibleTokenMetadata) -> Self {
+    fn new(owner_id: AccountId, total_supply: U128, metadata: FungibleTokenMetadata) -> Self {
         assert!(!env::state_exists(), "Already initialized");
         metadata.assert_valid();
         let mut this = Self {
@@ -52,9 +50,8 @@ impl Contract {
             metadata: LazyOption::new(b"m".to_vec(), Some(&metadata)),
             owner_id: owner_id.clone(),
         };
-        this.token.internal_register_account(owner_id.as_ref());
-        this.token
-            .internal_deposit(owner_id.as_ref(), total_supply.into());
+        this.token.internal_register_account(&owner_id);
+        this.token.internal_deposit(&owner_id, total_supply.into());
         this
     }
 
@@ -63,12 +60,8 @@ impl Contract {
             self.token.internal_register_account(receiver_id.as_ref());
         }
 
-        self.token.internal_transfer(
-            self.owner_id.as_ref(),
-            receiver_id.as_ref(),
-            amount.into(),
-            None,
-        );
+        self.token
+            .internal_transfer(&self.owner_id, receiver_id.as_ref(), amount.into(), None);
 
         log!("Gived {:?} tokens to account @{}", amount, receiver_id);
         log!("Supply left {}", self.token.total_supply);
