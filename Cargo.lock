@@ -180,6 +180,7 @@ name = "dtoken"
 version = "0.1.0"
 dependencies = [
  "bigdecimal",
+ "near-contract-standards",
  "near-sdk 4.0.0-pre.4",
 ]
 
