@@ -2,13 +2,36 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{near_bindgen, Balance};
+use near_sdk::{
+    env, ext_contract, log, near_bindgen, serializer, AccountId, Balance, Gas, PanicOnDefault,
+    PromiseResult,
+};
+
 use std::str::FromStr;
 
 //near-sdk-3.1.0 AccountId => String used in FungibleToken
 //near-sdk-4.0.0-pre.4 AccountId => struct used in project
 //it line for version conflict fix
-pub type AccountId = String;
+//pub type AccountId = String;
+
+const NO_DEPOSIT: Balance = 0;
+const BASE_GAS: Gas = Gas(5_000_000_000_000);
+const CONTROLLER_ACCOUNT_ID: &str = "dev-1639068270320-45550015151191";
+
+#[ext_contract(ext_controller)]
+trait ControllerFunctions {
+    fn borrow_allowed(
+        &mut self,
+        dtoken_address: AccountId,
+        user_address: AccountId,
+        amount: u128,
+    ) -> bool;
+}
+
+#[ext_contract(ext_self)]
+trait SelfCalls {
+    fn controller_borrow_allowed_response();
+}
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -38,6 +61,27 @@ impl Default for Dtoken {
 
 #[near_bindgen]
 impl Dtoken {
+    pub fn controller_borrow_allowed_response() {
+        let value: bool = match env::promise_result(0) {
+            PromiseResult::NotReady => {
+                log!("PromiseResult::NotReady");
+                unreachable!()
+            }
+            PromiseResult::Failed => {
+                log!("PromiseResult::Failed");
+                env::panic(b"Unable to make comparison")
+            }
+            PromiseResult::Successful(result) => {
+                log!("PromiseResult::Successful");
+                near_sdk::serde_json::from_slice::<bool>(&result)
+                    .unwrap()
+                    .into()
+            }
+        };
+
+        log!("Result: {}", value);
+    }
+
     pub fn supply(amount: Balance) {
         //TODO: supply implementation
     }
@@ -47,7 +91,25 @@ impl Dtoken {
     }
 
     pub fn borrow(amount: Balance) {
-        //TODO: borrow implementation
+        let _sender_id = env::predecessor_account_id();
+        let moc_acc = AccountId::new_unchecked("dev-1639058434985-58389604632926".to_string());
+
+        let controller_account_id: AccountId =
+            AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
+
+        ext_controller::borrow_allowed(
+            moc_acc.clone(),
+            moc_acc.clone(),
+            amount,
+            controller_account_id.clone(),
+            NO_DEPOSIT,
+            BASE_GAS,
+        )
+        .then(ext_self::controller_borrow_allowed_response(
+            env::current_account_id(),
+            NO_DEPOSIT,
+            BASE_GAS,
+        ));
     }
 
     pub fn repay() {
@@ -76,15 +138,17 @@ impl Dtoken {
     }
 
     pub fn internal_unwrap_balance_of(&self, account_id: &AccountId) -> Balance {
-        self.token.internal_unwrap_balance_of(account_id)
+        self.token
+            .internal_unwrap_balance_of(&account_id.to_string())
     }
 
     pub fn internal_deposit(&mut self, account_id: &AccountId, amount: Balance) {
-        self.token.internal_deposit(account_id, amount);
+        self.token.internal_deposit(&account_id.to_string(), amount);
     }
 
     pub fn internal_withdraw(&mut self, account_id: &AccountId, amount: Balance) {
-        self.token.internal_withdraw(account_id, amount);
+        self.token
+            .internal_withdraw(&account_id.to_string(), amount);
     }
 
     pub fn internal_transfer(
@@ -94,12 +158,17 @@ impl Dtoken {
         amount: Balance,
         memo: Option<String>,
     ) {
-        self.token
-            .internal_transfer(sender_id, receiver_id, amount, memo);
+        self.token.internal_transfer(
+            &sender_id.to_string(),
+            &receiver_id.to_string(),
+            amount,
+            memo,
+        );
     }
 
     pub fn internal_register_account(&mut self, account_id: &AccountId) {
-        self.token.internal_register_account(account_id);
+        self.token
+            .internal_register_account(&account_id.to_string());
     }
 
     fn mint(&mut self, account_id: &AccountId, amount: Balance) {
