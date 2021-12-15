@@ -1,51 +1,77 @@
+use std::collections::{HashSet, HashMap};
+use near_sdk::BorshStorageKey;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::{LookupMap, LookupSet};
 use near_sdk::near_bindgen;
 use near_sdk::AccountId;
 
+
+#[derive(BorshStorageKey, BorshSerialize)]
+pub enum StorageKeys 
+{
+    supported_markets,
+    interest_rate_models,
+    borrow_caps
+}
+
 #[near_bindgen]
-#[derive(Default, BorshDeserialize, BorshSerialize)]
-pub struct Controller {
-    // SETUP CONTRACT STATE
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct Controller 
+{
+    supported_markets: LookupSet<AccountId>,
+    interest_rate_models: LookupMap<AccountId, AccountId>,
+    borrow_caps: LookupSet<AccountId>
+
+}
+
+impl Default for Controller
+{
+    fn default() -> Self 
+    {
+        Self{
+            supported_markets: LookupSet::new(StorageKeys::supported_markets),
+            interest_rate_models: LookupMap::new(StorageKeys::interest_rate_models),
+            borrow_caps: LookupSet::new(StorageKeys::borrow_caps),
+        }
+    }
 }
 
 #[near_bindgen]
 impl Controller {
-    pub fn add_market( underlying_address : AccountId )
+
+    pub fn add_market(&mut self,  dtoken_address : AccountId )
     {
-
-    }
-
-    pub fn add_market_( dtoken_address : AccountId )
-    {
-
+        self.supported_markets.insert(&dtoken_address);
     }
     
-    pub fn supply_allowed( dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
+    pub fn supply_allowed(&mut self, dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
     {
         true
     }
 
-    pub fn borrow_allowed( dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
+    pub fn borrow_allowed(&mut self, dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
     {
         true
     }
 
-    pub fn set_interest_rate_model( dtoken_address : AccountId, interest_rate_model_address : AccountId )
+    pub fn set_interest_rate_model(&mut self, dtoken_address : AccountId, interest_rate_model_address : AccountId )
     {
-
+        
     }
 
-    pub fn get_interest_rate( dtoken_address : AccountId ) -> u128
+    pub fn get_interest_rate(&mut self, dtoken_address : AccountId ) -> u128
     {
+        assert!(!self.interest_rate_models.contains_key(&dtoken_address));
+        //self.interest_rate_models.get(&dtoken_address).unwrap()
         1
     }
 
-    pub fn set_borrow_cap( dtoken_address : AccountId, decimal : u128 )
+    pub fn set_borrow_cap(&mut self, dtoken_address : AccountId, decimal : u128 )
     {
 
     }
 
-    pub fn has_collaterall( user_address : AccountId ) -> bool
+    pub fn has_collaterall(&mut self, user_address : AccountId ) -> bool
     {
         true
     }
