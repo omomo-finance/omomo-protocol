@@ -1,8 +1,6 @@
-use bigdecimal::{BigDecimal, ToPrimitive};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
-use near_sdk::{log, near_bindgen, Balance};
-use std::str::FromStr;
+use near_sdk::{near_bindgen, Balance};
 
 #[near_bindgen]
 #[derive(Default, BorshDeserialize, BorshSerialize)]
@@ -14,8 +12,8 @@ impl InterestRateModel {
         underlying_balance: Balance,
         total_borrows: Balance,
         total_reserve: Balance,
-    ) -> u128 {
-        BigDecimal::from_str("1.1").unwrap().to_u128().unwrap()
+    ) -> U128 {
+        55.into()
     }
 
     pub fn get_supply_rate(
@@ -23,8 +21,8 @@ impl InterestRateModel {
         total_borrows: Balance,
         total_reserve: Balance,
         reserve_factor: i32,
-    ) -> u128 {
-        BigDecimal::from_str("0.9").unwrap().to_u128().unwrap()
+    ) -> U128 {
+        66.into()
     }
 }
 
