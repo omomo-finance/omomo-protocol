@@ -20,18 +20,18 @@ pub struct Controller
 {
     supported_markets: LookupSet<AccountId>,
     interest_rate_models: LookupMap<AccountId, AccountId>,
-    borrow_caps: LookupSet<AccountId>
-
+    borrow_caps: LookupMap<AccountId, u128>
 }
 
 impl Default for Controller
 {
     fn default() -> Self 
     {
-        Self{
+        Self
+        {
             supported_markets: LookupSet::new(StorageKeys::supported_markets),
             interest_rate_models: LookupMap::new(StorageKeys::interest_rate_models),
-            borrow_caps: LookupSet::new(StorageKeys::borrow_caps),
+            borrow_caps: LookupMap::new(StorageKeys::borrow_caps),
         }
     }
 }
@@ -56,7 +56,7 @@ impl Controller {
 
     pub fn set_interest_rate_model(&mut self, dtoken_address : AccountId, interest_rate_model_address : AccountId )
     {
-        
+        self.interest_rate_models.insert(&dtoken_address, &interest_rate_model_address);
     }
 
     pub fn get_interest_rate(&mut self, dtoken_address : AccountId ) -> u128
@@ -68,11 +68,12 @@ impl Controller {
 
     pub fn set_borrow_cap(&mut self, dtoken_address : AccountId, decimal : u128 )
     {
-
+        self.borrow_caps.insert(&dtoken_address, &decimal);
     }
 
     pub fn has_collaterall(&mut self, user_address : AccountId ) -> bool
     {
+        // calling dToken contract
         true
     }
 }
