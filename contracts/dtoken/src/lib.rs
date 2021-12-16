@@ -83,20 +83,20 @@ impl Dtoken {
                 .into(),
         };
 
-        if is_allowed {
-            let weth_account_id: AccountId =
-                AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
+        assert!(is_allowed, "You are not allowed to borrow");
 
-            weth_token::internal_transfer_with_registration(
-                env::current_account_id(),
-                env::predecessor_account_id(),
-                amount,
-                None,
-                weth_account_id.clone(), // Attention here!
-                NO_DEPOSIT,
-                Gas(10_000_000_000_000),
-            );
-        }
+        let weth_account_id: AccountId =
+            AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
+
+        weth_token::internal_transfer_with_registration(
+            env::current_account_id(),
+            env::predecessor_account_id(),
+            amount,
+            None,
+            weth_account_id.clone(), // Attention here!
+            NO_DEPOSIT,
+            Gas(10_000_000_000_000),
+        );
     }
 
     pub fn supply(amount: Balance) {
@@ -108,7 +108,6 @@ impl Dtoken {
     }
 
     pub fn borrow(amount: Balance) {
-        let _sender_id = env::predecessor_account_id();
         let controller_account_id: AccountId =
             AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
 
