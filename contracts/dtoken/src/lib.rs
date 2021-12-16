@@ -2,7 +2,8 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, ext_contract, near_bindgen, serializer, AccountId, Balance, Gas};
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas};
+use std::convert::TryFrom;
 use std::str::FromStr;
 
 #[near_bindgen]
@@ -31,59 +32,101 @@ impl Default for Dtoken {
 
 #[ext_contract(weth_token)]
 trait WethTokenInterface {
-    fn internal_deposit(&mut self, account_id: AccountId, amount: Balance);
-    fn internal_withdraw(&mut self, account_id: AccountId, amount: Balance);
+    fn internal_deposit_with_registration(&mut self, account_id: AccountId, amount: Balance);
+    fn internal_withdraw_with_registration(&mut self, account_id: AccountId, amount: Balance);
 }
 
-const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639393437256-47963104973950";
+const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639664095868-76379577854961";
 const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = Gas(5_000_000_000_000);
+const BASE_GAS: Gas = 80_000_000_000_000;
 
 #[near_bindgen]
 impl Dtoken {
     pub fn supply(&mut self, amount: Balance) {
         let dtoken_account_id = env::current_account_id();
-        let signer_account_id = env::predecessor_account_id();
+        let predecessor_account_id = env::predecessor_account_id();
+
+        log!("dtoken_account_id: {}", dtoken_account_id);
+        log!("signer_account_id: {}", predecessor_account_id);
+
         let weth_token_account_id: AccountId =
-            AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
-        weth_token::internal_withdraw(
-            signer_account_id.clone(),
+            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
+
+        //mock, predecessor_account_id have weth_tokens
+        weth_token::internal_deposit_with_registration(
+            predecessor_account_id.clone(),
             amount,
-            weth_token_account_id.clone(),
+            &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
-        weth_token::internal_deposit(
+        //burn tokens
+        weth_token::internal_withdraw_with_registration(
+            predecessor_account_id.clone(),
+            amount,
+            &weth_token_account_id.clone(),
+            NO_DEPOSIT,
+            BASE_GAS,
+        );
+        //add current contract weth_tokens
+        weth_token::internal_deposit_with_registration(
             dtoken_account_id.clone(),
             amount,
-            weth_token_account_id.clone(),
+            &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
-        self.mint(&signer_account_id, amount);
+        self.mint(&predecessor_account_id, amount);
     }
 
     pub fn withdraw(&mut self, amount: Balance) {
         let dtoken_account_id = env::current_account_id();
-        let signer_account_id = env::predecessor_account_id();
+        let predecessor_account_id = env::predecessor_account_id();
+
+        log!("dtoken_account_id: {}", dtoken_account_id);
+        log!("signer_account_id: {}", predecessor_account_id);
+
         let weth_token_account_id: AccountId =
-            AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
-        weth_token::internal_withdraw(
+            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
+
+        //mock balance
+        weth_token::internal_deposit_with_registration(
             dtoken_account_id.clone(),
-            amount.clone(),
-            weth_token_account_id.clone(),
+            amount * 1000000,
+            &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
-        let ex_rate = self.get_exchange_rate();
-        weth_token::internal_deposit(
-            signer_account_id.clone(),
-            amount * ex_rate,
-            weth_token_account_id.clone(),
+        log!("dtoken_account_id deposited amount: {}", amount * 1000000);
+
+        //burn tokens in dtoken
+        weth_token::internal_withdraw_with_registration(
+            dtoken_account_id.clone(),
+            amount,
+            &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
-        self.burn(&signer_account_id, amount);
+        log!("dtoken_account_id burned amount: {}", amount);
+
+        //return amount with ext_rate
+        let ext_rate = self.get_exchange_rate();
+        weth_token::internal_deposit_with_registration(
+            predecessor_account_id.clone(),
+            amount * ext_rate,
+            &weth_token_account_id.clone(),
+            NO_DEPOSIT,
+            BASE_GAS,
+        );
+        log!(
+            "predecessor_account_id deposited amount*ext_rate: {}",
+            amount * ext_rate
+        );
+
+        //mock supply for predecessor_account_id
+        self.supply(amount * 1000);
+
+        self.burn(&predecessor_account_id, amount);
     }
 
     pub fn borrow(amount: Balance) {
@@ -150,10 +193,18 @@ impl Dtoken {
     }
 
     fn mint(&mut self, account_id: &AccountId, amount: Balance) {
+        if !self.token.accounts.contains_key(&account_id.to_string()) {
+            self.token
+                .internal_register_account(&account_id.to_string());
+        }
         self.internal_deposit(account_id, amount);
     }
 
     fn burn(&mut self, account_id: &AccountId, amount: Balance) {
+        if !self.token.accounts.contains_key(&account_id.to_string()) {
+            self.token
+                .internal_register_account(&account_id.to_string());
+        }
         self.internal_withdraw(account_id, amount);
     }
 }
