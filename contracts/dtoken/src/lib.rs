@@ -3,25 +3,27 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::json_types::U128;
+use near_sdk::require;
 use near_sdk::{
     env, ext_contract, log, near_bindgen, serializer, AccountId, Balance, Gas, PanicOnDefault,
     PromiseResult,
 };
 use std::str::FromStr;
 
-//near-sdk-3.1.0 AccountId => String used in FungibleToken
-//near-sdk-4.0.0-pre.4 AccountId => struct used in project
-//it line for version conflict fix
-//pub type AccountId = String;
-
 const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = Gas(80000000000000); // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
+const BASE_GAS: Gas = Gas(80_000_000_000_000); // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "dev-1639068270320-45550015151191";
-const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639495945378-79136831742212";
+const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639659058556-60126760016852";
 
 #[ext_contract(weth_token)]
 trait WethTokenInterface {
-    fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
+    fn internal_transfer_with_registration(
+        &mut self,
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        amount: Balance,
+        memo: Option<String>,
+    );
 }
 
 #[ext_contract(ext_controller)]
@@ -36,7 +38,7 @@ trait ControllerFunctions {
 
 #[ext_contract(ext_self)]
 trait SelfCalls {
-    fn controller_borrow_allowed_response(amount: Balance);
+    fn borrow_callback(amount: Balance);
 }
 
 #[near_bindgen]
@@ -67,7 +69,8 @@ impl Default for Dtoken {
 
 #[near_bindgen]
 impl Dtoken {
-    pub fn controller_borrow_allowed_response(amount: Balance) {
+    pub fn borrow_callback(amount: Balance) {
+        // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
                 log!("PromiseResult::NotReady");
@@ -89,16 +92,15 @@ impl Dtoken {
             let weth_account_id: AccountId =
                 AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
 
-            log!("Predecessor: {}", env::predecessor_account_id());
-            weth_token::ft_transfer(
+            weth_token::internal_transfer_with_registration(
+                weth_account_id.clone(),
                 env::predecessor_account_id(),
-                near_sdk::json_types::U128(amount),
+                amount,
                 None,
-                weth_account_id,
+                weth_account_id.clone(),
                 NO_DEPOSIT,
                 BASE_GAS,
             );
-            log!("Done.");
         }
     }
 
@@ -125,7 +127,7 @@ impl Dtoken {
             NO_DEPOSIT,
             BASE_GAS,
         )
-        .then(ext_self::controller_borrow_allowed_response(
+        .then(ext_self::borrow_callback(
             amount,
             env::current_account_id(),
             NO_DEPOSIT,

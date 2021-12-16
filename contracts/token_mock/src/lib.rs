@@ -95,6 +95,34 @@ impl Contract {
             .internal_transfer(sender_id, receiver_id, amount, memo);
     }
 
+    pub fn internal_transfer_with_registration(
+        &mut self,
+        sender_id: &AccountId,
+        receiver_id: &AccountId,
+        amount: Balance,
+        memo: Option<String>,
+    ) {
+        if !self.token.accounts.contains_key(receiver_id) {
+            self.token.internal_register_account(receiver_id);
+        }
+        self.token
+            .internal_transfer(sender_id, receiver_id, amount, memo);
+    }
+
+    pub fn internal_deposit_with_registration(&mut self, account_id: &AccountId, amount: Balance) {
+        if !self.token.accounts.contains_key(account_id) {
+            self.token.internal_register_account(account_id);
+        }
+        self.token.internal_deposit(account_id, amount);
+    }
+
+    pub fn internal_withdraw_with_registration(&mut self, account_id: &AccountId, amount: Balance) {
+        if !self.token.accounts.contains_key(account_id) {
+            self.token.internal_register_account(account_id);
+        }
+        self.token.internal_withdraw(account_id, amount)
+    }
+
     pub fn internal_register_account(&mut self, account_id: &AccountId) {
         self.token.internal_register_account(account_id);
     }
