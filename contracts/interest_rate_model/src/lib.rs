@@ -14,7 +14,7 @@ impl InterestRateModel {
         total_borrows: Balance,
         total_reserve: Balance,
     ) -> U128 {
-        55.into()
+        1.into()
     }
 
     pub fn get_supply_rate(
@@ -23,7 +23,7 @@ impl InterestRateModel {
         total_reserve: Balance,
         reserve_factor: i32,
     ) -> U128 {
-        66.into()
+        1.into()
     }
 }
 
