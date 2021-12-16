@@ -11,8 +11,8 @@ use near_sdk::{
 use std::str::FromStr;
 
 const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = Gas(80_000_000_000_000); // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
-const CONTROLLER_ACCOUNT_ID: &str = "dev-1639068270320-45550015151191";
+// Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
+const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
 const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639659058556-60126760016852";
 
 #[ext_contract(weth_token)]
@@ -88,9 +88,6 @@ impl Dtoken {
             }
         };
 
-        let prepaid_gas = env::prepaid_gas();
-        log!("Prepared GAS: {:?}", prepaid_gas);
-
         if is_allowed {
             let weth_account_id: AccountId =
                 AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
@@ -102,7 +99,7 @@ impl Dtoken {
                 None,
                 weth_account_id.clone(),
                 NO_DEPOSIT,
-                prepaid_gas,
+                Gas(10_000_000_000_000),
             );
         }
     }
@@ -122,22 +119,19 @@ impl Dtoken {
         let controller_account_id: AccountId =
             AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
 
-        let prepaid_gas = env::prepaid_gas();
-        log!("Prepared GAS: {:?}", prepaid_gas);
-
         ext_controller::borrow_allowed(
             moc_acc.clone(),
             moc_acc.clone(),
             amount,
             controller_account_id.clone(),
             NO_DEPOSIT,
-            prepaid_gas / 3,
+            Gas(10_000_000_000_000),
         )
         .then(ext_self::borrow_callback(
             amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            prepaid_gas / 3,
+            Gas(20_000_000_000_000),
         ));
     }
 
