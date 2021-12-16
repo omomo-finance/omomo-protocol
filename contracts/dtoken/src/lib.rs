@@ -14,9 +14,10 @@ const NO_DEPOSIT: Balance = 0;
 // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
 const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639659058556-60126760016852";
+const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 
 #[ext_contract(weth_token)]
-trait WethTokenInterface {
+trait Erc20Interface {
     fn internal_transfer_with_registration(
         &mut self,
         sender_id: AccountId,
@@ -27,7 +28,7 @@ trait WethTokenInterface {
 }
 
 #[ext_contract(ext_controller)]
-trait ControllerFunctions {
+trait ControllerInterface {
     fn borrow_allowed(
         &mut self,
         dtoken_address: AccountId,
@@ -37,7 +38,7 @@ trait ControllerFunctions {
 }
 
 #[ext_contract(ext_self)]
-trait SelfCalls {
+trait DtokenInterface {
     fn borrow_callback(amount: Balance);
 }
 
@@ -51,6 +52,7 @@ pub struct Dtoken {
     balance_of: UnorderedMap<AccountId, BigDecimal>,
     debt_of: UnorderedMap<AccountId, BigDecimal>,
     token: FungibleToken,
+    // TODO: Add underlying token address as field
 }
 
 impl Default for Dtoken {
@@ -90,7 +92,7 @@ impl Dtoken {
                 env::predecessor_account_id(),
                 amount,
                 None,
-                weth_account_id.clone(),
+                weth_account_id.clone(), // Attention here!
                 NO_DEPOSIT,
                 Gas(10_000_000_000_000),
             );
@@ -107,14 +109,12 @@ impl Dtoken {
 
     pub fn borrow(amount: Balance) {
         let _sender_id = env::predecessor_account_id();
-        let moc_acc = AccountId::new_unchecked("dev-1639058434985-58389604632926".to_string());
-
         let controller_account_id: AccountId =
             AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
 
         ext_controller::borrow_allowed(
-            moc_acc.clone(),
-            moc_acc.clone(),
+            env::current_account_id(),
+            env::predecessor_account_id(),
             amount,
             controller_account_id.clone(),
             NO_DEPOSIT,
