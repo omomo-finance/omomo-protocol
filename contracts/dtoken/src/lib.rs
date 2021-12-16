@@ -88,6 +88,9 @@ impl Dtoken {
             }
         };
 
+        let prepaid_gas = env::prepaid_gas();
+        log!("Prepared GAS: {:?}", prepaid_gas);
+
         if is_allowed {
             let weth_account_id: AccountId =
                 AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
@@ -99,7 +102,7 @@ impl Dtoken {
                 None,
                 weth_account_id.clone(),
                 NO_DEPOSIT,
-                BASE_GAS,
+                prepaid_gas,
             );
         }
     }
@@ -119,19 +122,22 @@ impl Dtoken {
         let controller_account_id: AccountId =
             AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
 
+        let prepaid_gas = env::prepaid_gas();
+        log!("Prepared GAS: {:?}", prepaid_gas);
+
         ext_controller::borrow_allowed(
             moc_acc.clone(),
             moc_acc.clone(),
             amount,
             controller_account_id.clone(),
             NO_DEPOSIT,
-            BASE_GAS,
+            prepaid_gas / 3,
         )
         .then(ext_self::borrow_callback(
             amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            BASE_GAS,
+            prepaid_gas / 3,
         ));
     }
 
