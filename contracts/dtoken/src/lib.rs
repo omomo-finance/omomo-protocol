@@ -34,6 +34,12 @@ impl Default for Dtoken {
 trait WethTokenInterface {
     fn internal_deposit_with_registration(&mut self, account_id: AccountId, amount: Balance);
     fn internal_withdraw_with_registration(&mut self, account_id: AccountId, amount: Balance);
+    fn internal_transfer_with_registration(
+        &mut self,
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        amount: Balance,
+    );
 }
 
 const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639664095868-76379577854961";
@@ -54,29 +60,30 @@ impl Dtoken {
 
         //mock, predecessor_account_id have weth_tokens
         weth_token::internal_deposit_with_registration(
+            AccountId::from("dev-1639674065073-95989536008192"),
+            100,
+            &weth_token_account_id.clone(),
+            NO_DEPOSIT,
+            BASE_GAS,
+        );
+        log!(
+            "after internal_deposit predecessor_account_id: {}",
+            predecessor_account_id.clone()
+        );
+        weth_token::internal_transfer_with_registration(
             predecessor_account_id.clone(),
+            dtoken_account_id,
             amount,
             &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
-        //burn tokens
-        weth_token::internal_withdraw_with_registration(
-            predecessor_account_id.clone(),
-            amount,
-            &weth_token_account_id.clone(),
-            NO_DEPOSIT,
-            BASE_GAS,
+        log!("before mint");
+        self.mint(&predecessor_account_id.clone(), amount);
+        log!(
+            "predecessor_account_id balance: {}",
+            self.internal_unwrap_balance_of(&predecessor_account_id)
         );
-        //add current contract weth_tokens
-        weth_token::internal_deposit_with_registration(
-            dtoken_account_id.clone(),
-            amount,
-            &weth_token_account_id.clone(),
-            NO_DEPOSIT,
-            BASE_GAS,
-        );
-        self.mint(&predecessor_account_id, amount);
     }
 
     pub fn withdraw(&mut self, amount: Balance) {
@@ -193,9 +200,13 @@ impl Dtoken {
     }
 
     fn mint(&mut self, account_id: &AccountId, amount: Balance) {
-        if !self.token.accounts.contains_key(&account_id.to_string()) {
+        if !self
+            .token
+            .accounts
+            .contains_key(&account_id.clone().to_string())
+        {
             self.token
-                .internal_register_account(&account_id.to_string());
+                .internal_register_account(&account_id.clone().to_string());
         }
         self.internal_deposit(account_id, amount);
     }
