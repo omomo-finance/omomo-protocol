@@ -56,30 +56,25 @@ impl Dtoken {
         let weth_token_account_id: AccountId =
             AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
 
-        //mock, predecessor_account_id have weth_tokens
-        weth_token::internal_deposit_with_registration(
-            AccountId::from("dev-1639674065073-95989536008192"),
-            100,
-            weth_token_account_id.as_ref(),
-            NO_DEPOSIT,
-            BASE_GAS,
-        );
-        log!(
-            "after internal_deposit predecessor_account_id: {}",
-            predecessor_account_id.clone()
-        );
         weth_token::internal_transfer_with_registration(
             predecessor_account_id.clone(),
-            dtoken_account_id,
+            dtoken_account_id.clone(),
             amount,
-            weth_token_account_id.as_ref(),
+            &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
-        log!("before mint");
+        log!(
+            "internal_transfer_with_registration from predecessor_account_id: {} \
+        to dtoken_account_id: {} with amount: {}",
+            predecessor_account_id.clone(),
+            dtoken_account_id.clone(),
+            amount
+        );
+
         self.mint(&predecessor_account_id.clone(), amount);
         log!(
-            "predecessor_account_id balance: {}",
+            "predecessor_account_id dtoken balance: {}",
             self.internal_unwrap_balance_of(&predecessor_account_id)
         );
     }
@@ -97,18 +92,25 @@ impl Dtoken {
         let ext_rate = self.get_exchange_rate();
         weth_token::internal_transfer_with_registration(
             dtoken_account_id.clone(),
-            predecessor_account_id,
-            amount * ext_rate,
-            weth_token_account_id.as_ref(),
+            predecessor_account_id.clone(),
+            amount * ext_rate / 10_u128.pow(8),
+            &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
         log!(
-            "predecessor_account_id deposited amount*ext_rate: {}",
-            amount * ext_rate
+            "internal_transfer_with_registration from dtoken_account_id: {} \
+        to predecessor_account_id: {} with amount {}",
+            predecessor_account_id.clone(),
+            dtoken_account_id.clone(),
+            amount * ext_rate / 10_u128.pow(8)
         );
 
         self.burn(&predecessor_account_id, amount);
+        log!(
+            "predecessor_account_id dtoken balance: {}",
+            self.internal_unwrap_balance_of(&predecessor_account_id)
+        );
     }
 
     pub fn borrow(amount: Balance) {
