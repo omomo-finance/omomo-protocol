@@ -73,19 +73,12 @@ impl Dtoken {
         // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
-                log!("PromiseResult::NotReady");
                 unreachable!()
             }
-            PromiseResult::Failed => {
-                log!("PromiseResult::Failed");
-                env::panic(b"Unable to make comparison")
-            }
-            PromiseResult::Successful(result) => {
-                log!("PromiseResult::Successful");
-                near_sdk::serde_json::from_slice::<bool>(&result)
-                    .unwrap()
-                    .into()
-            }
+            PromiseResult::Failed => env::panic(b"Unable to make comparison"),
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<bool>(&result)
+                .unwrap()
+                .into(),
         };
 
         if is_allowed {
@@ -93,7 +86,7 @@ impl Dtoken {
                 AccountId::new_unchecked(WETH_TOKEN_ACCOUNT_ID.to_string());
 
             weth_token::internal_transfer_with_registration(
-                weth_account_id.clone(),
+                env::current_account_id(),
                 env::predecessor_account_id(),
                 amount,
                 None,
