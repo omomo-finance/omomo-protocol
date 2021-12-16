@@ -49,8 +49,6 @@ impl Default for Controller
 impl Controller {
 
     pub fn callback_promise_result(&self) -> U128 {
-        log!("promise_results_count:{}", env::promise_results_count());
-        log!("signer_account_id:{}", env::signer_account_id());
 
         assert_eq!(
             env::promise_results_count(),
@@ -85,29 +83,24 @@ impl Controller {
         self.interest_rate_models.insert(&dtoken_address, &interest_rate_model_address);
     }
 
-    pub fn get_interest_rate(&mut self, dtoken_address : AccountId ) -> Promise
+    pub fn get_interest_rate(&mut self, dtoken_address : AccountId, underlying_balance : Balance, total_borrows : Balance, total_reserve : Balance ) -> Promise
     {
-        assert!(!self.interest_rate_models.contains_key(&dtoken_address));
+        assert!(self.interest_rate_models.contains_key(&dtoken_address));
 
         let interest_rate_model_address = self.interest_rate_models.get(&dtoken_address).unwrap();
-        let underlying_balance0:Balance = 10;
-        let total_borrows0:Balance = 11;
-        let total_reserve0:Balance = 12;
-
 
         ext_interest_rate_model::get_borrow_rate(
-            underlying_balance0,
-            total_borrows0,
-            total_reserve0,
+            underlying_balance,
+            total_borrows,
+            total_reserve,
             interest_rate_model_address,
-            22,                         // attached yocto NEAR
-            5_000_000_000_000.into(),          // attached gas
+            0,                         // attached yocto NEAR
+            5_000_000_000_000.into(),   // attached gas
         )
-
         .then(ext_self::callback_promise_result(
             env::current_account_id(), // this contract's account id
-            33,                         // yocto NEAR to attach to the callback
-            6_000_000_000_000.into()           // gas to attach to the callback
+            0,                        // yocto NEAR to attach to the callback
+            6_000_000_000_000.into()   // gas to attach to the callback
         ))
     }
 

@@ -8,6 +8,7 @@ pub struct InterestRateModel {}
 
 #[near_bindgen]
 impl InterestRateModel {
+
     pub fn get_borrow_rate(
         underlying_balance: Balance,
         total_borrows: Balance,
