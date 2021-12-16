@@ -88,7 +88,7 @@ impl Controller {
             Some(user_cap) => amount < user_cap,
         };
 
-        has_collaterall(user_address) && is_user_cap_allowed
+        self.has_collaterall(user_address) && is_user_cap_allowed
     }
 
     pub fn set_interest_rate_model(
