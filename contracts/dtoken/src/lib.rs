@@ -32,8 +32,6 @@ impl Default for Dtoken {
 
 #[ext_contract(weth_token)]
 trait WethTokenInterface {
-    fn internal_deposit_with_registration(&mut self, account_id: AccountId, amount: Balance);
-    fn internal_withdraw_with_registration(&mut self, account_id: AccountId, amount: Balance);
     fn internal_transfer_with_registration(
         &mut self,
         sender_id: AccountId,
@@ -62,7 +60,7 @@ impl Dtoken {
         weth_token::internal_deposit_with_registration(
             AccountId::from("dev-1639674065073-95989536008192"),
             100,
-            &weth_token_account_id.clone(),
+            weth_token_account_id.as_ref(),
             NO_DEPOSIT,
             BASE_GAS,
         );
@@ -74,7 +72,7 @@ impl Dtoken {
             predecessor_account_id.clone(),
             dtoken_account_id,
             amount,
-            &weth_token_account_id.clone(),
+            weth_token_account_id.as_ref(),
             NO_DEPOSIT,
             BASE_GAS,
         );
@@ -96,32 +94,12 @@ impl Dtoken {
         let weth_token_account_id: AccountId =
             AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
 
-        //mock balance
-        weth_token::internal_deposit_with_registration(
-            dtoken_account_id.clone(),
-            amount * 1000000,
-            &weth_token_account_id.clone(),
-            NO_DEPOSIT,
-            BASE_GAS,
-        );
-        log!("dtoken_account_id deposited amount: {}", amount * 1000000);
-
-        //burn tokens in dtoken
-        weth_token::internal_withdraw_with_registration(
-            dtoken_account_id.clone(),
-            amount,
-            &weth_token_account_id.clone(),
-            NO_DEPOSIT,
-            BASE_GAS,
-        );
-        log!("dtoken_account_id burned amount: {}", amount);
-
-        //return amount with ext_rate
         let ext_rate = self.get_exchange_rate();
-        weth_token::internal_deposit_with_registration(
-            predecessor_account_id.clone(),
+        weth_token::internal_transfer_with_registration(
+            dtoken_account_id.clone(),
+            predecessor_account_id,
             amount * ext_rate,
-            &weth_token_account_id.clone(),
+            weth_token_account_id.as_ref(),
             NO_DEPOSIT,
             BASE_GAS,
         );
@@ -129,9 +107,6 @@ impl Dtoken {
             "predecessor_account_id deposited amount*ext_rate: {}",
             amount * ext_rate
         );
-
-        //mock supply for predecessor_account_id
-        self.supply(amount * 1000);
 
         self.burn(&predecessor_account_id, amount);
     }
