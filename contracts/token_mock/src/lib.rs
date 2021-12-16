@@ -95,10 +95,6 @@ impl Contract {
             .internal_transfer(sender_id, receiver_id, amount, memo);
     }
 
-    pub fn internal_register_account(&mut self, account_id: &AccountId) {
-        self.token.internal_register_account(account_id);
-    }
-
     pub fn internal_transfer_with_registration(
         &mut self,
         sender_id: &AccountId,
@@ -111,6 +107,10 @@ impl Contract {
         }
         self.token
             .internal_transfer(sender_id, receiver_id, amount, memo);
+    }
+
+    pub fn internal_register_account(&mut self, account_id: &AccountId) {
+        self.token.internal_register_account(account_id);
     }
 
     pub fn internal_deposit_with_registration(&mut self, account_id: &AccountId, amount: Balance) {

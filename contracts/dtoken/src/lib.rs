@@ -2,25 +2,60 @@ use bigdecimal::{BigDecimal, ToPrimitive};
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas};
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PromiseResult};
 use std::convert::TryFrom;
 use std::str::FromStr;
+
+const NO_DEPOSIT: Balance = 0;
+const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
+const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
+const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639659058556-60126760016852";
+const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
+
+#[ext_contract(weth_token)]
+trait Erc20Interface {
+    fn internal_transfer_with_registration(
+        &mut self,
+        sender_id: AccountId,
+        receiver_id: AccountId,
+        amount: Balance,
+        memo: Option<String>,
+    );
+}
+
+#[ext_contract(ext_controller)]
+trait ControllerInterface {
+    fn borrow_allowed(
+        &mut self,
+        dtoken_address: AccountId,
+        user_address: AccountId,
+        amount: u128,
+    ) -> bool;
+}
+
+#[ext_contract(ext_self)]
+trait DtokenInterface {
+    fn borrow_callback(amount: Balance);
+}
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Dtoken {
     initial_exchange_rate: u128,
+    total_supply: u128,
     total_reserve: u128,
     total_borrows: u128,
     balance_of: UnorderedMap<AccountId, BigDecimal>,
     debt_of: UnorderedMap<AccountId, BigDecimal>,
     token: FungibleToken,
+    // TODO: Add underlying token address as field
 }
 
 impl Default for Dtoken {
     fn default() -> Self {
         Self {
             initial_exchange_rate: 0,
+            total_supply: 0,
             total_reserve: 0,
             total_borrows: 0,
             balance_of: UnorderedMap::new(b"s".to_vec()),
@@ -30,22 +65,36 @@ impl Default for Dtoken {
     }
 }
 
-#[ext_contract(weth_token)]
-trait WethTokenInterface {
-    fn internal_transfer_with_registration(
-        &mut self,
-        sender_id: AccountId,
-        receiver_id: AccountId,
-        amount: Balance,
-    );
-}
-
-const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639664095868-76379577854961";
-const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = 80_000_000_000_000;
-
 #[near_bindgen]
 impl Dtoken {
+    pub fn borrow_callback(amount: Balance) {
+        // Borrow allowed response
+        let is_allowed: bool = match env::promise_result(0) {
+            PromiseResult::NotReady => {
+                unreachable!()
+            }
+            PromiseResult::Failed => env::panic(b"Unable to make comparison"),
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<bool>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        assert!(is_allowed, "You are not allowed to borrow");
+
+        let weth_account_id: AccountId =
+            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.to_string()).unwrap();
+
+        weth_token::internal_transfer_with_registration(
+            env::current_account_id(),
+            env::predecessor_account_id(),
+            amount,
+            None,
+            &weth_account_id.to_string(), // Attention here!
+            NO_DEPOSIT,
+            10_000_000_000_000,
+        );
+    }
+
     pub fn supply(&mut self, amount: Balance) {
         let dtoken_account_id = env::current_account_id();
         let predecessor_account_id = env::predecessor_account_id();
@@ -60,6 +109,7 @@ impl Dtoken {
             predecessor_account_id.clone(),
             dtoken_account_id.clone(),
             amount,
+            None,
             &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
@@ -94,6 +144,7 @@ impl Dtoken {
             dtoken_account_id.clone(),
             predecessor_account_id.clone(),
             amount * ext_rate / 10_u128.pow(8),
+            None,
             &weth_token_account_id.clone(),
             NO_DEPOSIT,
             BASE_GAS,
@@ -114,7 +165,23 @@ impl Dtoken {
     }
 
     pub fn borrow(amount: Balance) {
-        //TODO: borrow implementation
+        let controller_account_id: AccountId =
+            AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
+
+        ext_controller::borrow_allowed(
+            env::current_account_id().to_string(),
+            env::predecessor_account_id(),
+            amount,
+            &controller_account_id.to_string(),
+            NO_DEPOSIT,
+            10_000_000_000_000,
+        )
+        .then(ext_self::borrow_callback(
+            amount,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            20_000_000_000_000,
+        ));
     }
 
     pub fn repay() {
@@ -171,11 +238,6 @@ impl Dtoken {
         );
     }
 
-    pub fn internal_register_account(&mut self, account_id: &AccountId) {
-        self.token
-            .internal_register_account(&account_id.to_string());
-    }
-
     fn mint(&mut self, account_id: &AccountId, amount: Balance) {
         if !self
             .token
@@ -215,8 +277,6 @@ mod tests {
     // provide a `predecessor` here, it'll modify the default context
     fn get_context(predecessor: AccountId) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
-        builder.predecessor_account_id(predecessor);
-        builder
     }
 
     // TESTS HERE
