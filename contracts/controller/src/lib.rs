@@ -91,7 +91,7 @@ impl Controller {
         amount: u128,
     ) -> bool {
         let is_user_cap_allowed = match self.borrow_caps.get(&dtoken_address) {
-            None => false,
+            None => true,
             Some(user_cap) => amount < user_cap,
         };
 
