@@ -1,13 +1,17 @@
-use near_sdk::BorshStorageKey;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::{env, ext_contract, near_bindgen, log, AccountId, Promise, PromiseResult, Balance};
 use near_sdk::json_types::U128;
-
+use near_sdk::BorshStorageKey;
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Promise, PromiseResult};
 
 #[ext_contract(ext_interest_rate_model)]
 pub trait InterestRateModel {
-    fn get_borrow_rate(&self, underlying_balance: Balance, total_borrows: Balance, total_reserve: Balance) -> U128;
+    fn get_borrow_rate(
+        &self,
+        underlying_balance: Balance,
+        total_borrows: Balance,
+        total_reserve: Balance,
+    ) -> U128;
 }
 
 #[ext_contract()]
@@ -16,8 +20,7 @@ pub trait ExtSelf {
 }
 
 #[derive(BorshStorageKey, BorshSerialize)]
-pub enum StorageKeys 
-{
+pub enum StorageKeys {
     SupportedMarkets,
     InterestRateModels,
     BorrowCaps,
@@ -26,8 +29,7 @@ pub enum StorageKeys
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct Controller 
-{
+pub struct Controller {
     supported_markets: UnorderedMap<AccountId, AccountId>,
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
@@ -56,9 +58,13 @@ impl Controller {
         );
 
         match env::promise_result(0) {
-            PromiseResult::NotReady =>  unreachable!(),
-            PromiseResult::Failed => env::panic_str("PANIC|callback_promise_result:PromiseResult::Failed"),
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Failed => {
+                env::panic_str("PANIC|callback_promise_result:PromiseResult::Failed")
+            }
+            PromiseResult::Successful(result) => {
+                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
+            }
         }
     }
 
@@ -70,24 +76,46 @@ impl Controller {
     pub fn get_markets(&self) -> Vec<(AccountId, AccountId)> {
         return self.supported_markets.to_vec();
     }
-    
-    pub fn supply_allowed(&mut self, dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
-    {
+
+    pub fn supply_allowed(
+        &mut self,
+        dtoken_address: AccountId,
+        user_address: AccountId,
+        amount: u128,
+    ) -> bool {
         true
     }
 
-    pub fn borrow_allowed(&mut self, dtoken_address : AccountId, user_address : AccountId, amount : u128 ) -> bool
-    {
-        true
+    pub fn borrow_allowed(
+        &mut self,
+        dtoken_address: AccountId,
+        user_address: AccountId,
+        amount: u128,
+    ) -> bool {
+        let is_user_cap_allowed = match self.borrow_caps.get(&dtoken_address) {
+            None => false,
+            Some(user_cap) => amount < user_cap,
+        };
+
+        self.has_collaterall(user_address) && is_user_cap_allowed
     }
 
-    pub fn set_interest_rate_model(&mut self, dtoken_address : AccountId, interest_rate_model_address : AccountId )
-    {
-        self.interest_rate_models.insert(&dtoken_address, &interest_rate_model_address);
+    pub fn set_interest_rate_model(
+        &mut self,
+        dtoken_address: AccountId,
+        interest_rate_model_address: AccountId,
+    ) {
+        self.interest_rate_models
+            .insert(&dtoken_address, &interest_rate_model_address);
     }
 
-    pub fn get_interest_rate(&mut self, dtoken_address : AccountId, underlying_balance : Balance, total_borrows : Balance, total_reserve : Balance ) -> Promise
-    {
+    pub fn get_interest_rate(
+        &mut self,
+        dtoken_address: AccountId,
+        underlying_balance: Balance,
+        total_borrows: Balance,
+        total_reserve: Balance,
+    ) -> Promise {
         assert!(self.interest_rate_models.contains_key(&dtoken_address));
 
         let interest_rate_model_address = self.interest_rate_models.get(&dtoken_address).unwrap();
@@ -97,23 +125,21 @@ impl Controller {
             total_borrows,
             total_reserve,
             interest_rate_model_address,
-            0,                         // attached yocto NEAR
-            5_000_000_000_000.into(),   // attached gas
+            0,                        // attached yocto NEAR
+            5_000_000_000_000.into(), // attached gas
         )
         .then(ext_self::callback_promise_result(
             env::current_account_id(), // this contract's account id
-            0,                        // yocto NEAR to attach to the callback
-            6_000_000_000_000.into()   // gas to attach to the callback
+            0,                         // yocto NEAR to attach to the callback
+            6_000_000_000_000.into(),  // gas to attach to the callback
         ))
     }
 
-    pub fn set_borrow_cap(&mut self, dtoken_address : AccountId, decimal : u128 )
-    {
+    pub fn set_borrow_cap(&mut self, dtoken_address: AccountId, decimal: u128) {
         self.borrow_caps.insert(&dtoken_address, &decimal);
     }
 
-    pub fn has_collaterall(&mut self, user_address: AccountId ) -> bool
-    {
+    pub fn has_collaterall(&mut self, user_address: AccountId) -> bool {
         // calling dToken contract
         true
     }
