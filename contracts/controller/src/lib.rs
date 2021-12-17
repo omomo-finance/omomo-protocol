@@ -1,8 +1,8 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
-use near_sdk::BorshStorageKey;
 use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, Promise, PromiseResult};
+use near_sdk::{log, BorshStorageKey};
 
 #[ext_contract(ext_interest_rate_model)]
 pub trait InterestRateModel {
@@ -25,6 +25,8 @@ pub enum StorageKeys {
     InterestRateModels,
     BorrowCaps,
     Prices,
+    UserSupplies,
+    TemporaryUserSupply,
 }
 
 #[near_bindgen]
@@ -33,17 +35,18 @@ pub struct Controller {
     supported_markets: UnorderedMap<AccountId, AccountId>,
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
-    prices: LookupMap<AccountId, U128>
+    prices: LookupMap<AccountId, U128>,
+    users_supplies: UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>, // user per dtoken and balance
 }
 
-impl Default for Controller
-{
+impl Default for Controller {
     fn default() -> Self {
         Self {
             supported_markets: UnorderedMap::new(StorageKeys::SupportedMarkets),
             interest_rate_models: LookupMap::new(StorageKeys::InterestRateModels),
             borrow_caps: LookupMap::new(StorageKeys::BorrowCaps),
             prices: LookupMap::new(StorageKeys::Prices),
+            users_supplies: UnorderedMap::new(StorageKeys::UserSupplies),
         }
     }
 }
@@ -68,8 +71,7 @@ impl Controller {
         }
     }
 
-    pub fn add_market(&mut self, underlying: AccountId, dtoken_address: AccountId )
-    {
+    pub fn add_market(&mut self, underlying: AccountId, dtoken_address: AccountId) {
         self.supported_markets.insert(&underlying, &dtoken_address);
     }
 
@@ -92,7 +94,8 @@ impl Controller {
         user_address: AccountId,
         amount: u128,
     ) -> bool {
-        return (self.has_collaterall(user_address) as bool) && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
+        return (self.has_collaterall(user_address) as bool)
+            && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
     }
 
     pub fn set_interest_rate_model(
@@ -144,9 +147,55 @@ impl Controller {
     }
 
     pub fn get_price(&self, dtoken_address: AccountId) -> U128 {
-        assert!(self.prices.contains_key(&dtoken_address), "price for token not found");
+        assert!(
+            self.prices.contains_key(&dtoken_address),
+            "price for token not found"
+        );
 
         return self.prices.get(&dtoken_address).unwrap().into();
+    }
+
+    // Interface for working with custom data structure
+    pub fn increase_user_supply(
+        &mut self,
+        user_address: AccountId,
+        dtoken: AccountId,
+        amount: Balance,
+    ) {
+        match self.users_supplies.get(&user_address) {
+            None => {
+                let mut dtoken_per_supply: UnorderedMap<AccountId, Balance> =
+                    UnorderedMap::new(StorageKeys::TemporaryUserSupply);
+                dtoken_per_supply.insert(&dtoken, &amount);
+                self.users_supplies
+                    .insert(&user_address, &dtoken_per_supply);
+            }
+            Some(mut value) => {
+                let new_amount = value.values_as_vector().get(0).unwrap() + amount;
+                value.insert(&dtoken, &new_amount);
+            }
+        }
+    }
+
+    pub fn decrease_user_supply(
+        &mut self,
+        user_address: AccountId,
+        dtoken: AccountId,
+        amount: Balance,
+    ) {
+        match self.users_supplies.get(&user_address) {
+            None => {
+                env::panic_str("Cannot decrease amount of user that not stored");
+            }
+            Some(mut value) => {
+                let new_amount = value.values_as_vector().get(0).unwrap() - amount;
+                if new_amount >= 0 {
+                    value.insert(&dtoken, &new_amount);
+                } else {
+                    env::panic_str("Tried to set negative supply to user");
+                }
+            }
+        }
     }
 }
 
