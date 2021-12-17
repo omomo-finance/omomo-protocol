@@ -92,7 +92,7 @@ impl Controller {
         user_address: AccountId,
         amount: u128,
     ) -> bool {
-        return self.has_collaterall(user_address) && self.borrow_caps.get(&dtoken_address).unwrap_or(true);
+        return (self.has_collaterall(user_address) as bool) && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
     }
 
     pub fn set_interest_rate_model(

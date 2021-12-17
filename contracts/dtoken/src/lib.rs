@@ -83,7 +83,7 @@ impl Dtoken {
 
         erc20_token::internal_transfer_with_registration(
             env::current_account_id(),
-            env::predecessor_account_id(),
+            env::signer_account_id(),
             amount,
             None,
             &self.underlying_token.to_string(), // Attention here!
@@ -92,9 +92,9 @@ impl Dtoken {
         );
 
 
-        let borrow: u128 = amount + self.borrow_of.get(&env::predecessor_account_id()).unwrap_or(0_u128);
-        self.borrow_of.insert(&env::predecessor_account_id(), &borrow);
-        log!("user {} total borrow {}", env::predecessor_account_id(), borrow);
+        let borrow: u128 = amount + self.borrow_of.get(&env::signer_account_id()).unwrap_or(0_u128);
+        self.borrow_of.insert(&env::signer_account_id(), &borrow);
+        log!("user {} total borrow {}", env::signer_account_id(), borrow);
     }
 
     pub fn supply(&mut self, amount: Balance) {
