@@ -12,6 +12,7 @@ const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
 const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
 const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
+const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
 #[ext_contract(weth_token)]
 trait Erc20Interface {
@@ -142,7 +143,7 @@ impl Dtoken {
         weth_token::internal_transfer_with_registration(
             dtoken_account_id.clone(),
             predecessor_account_id.clone(),
-            amount * ext_rate / 10_u128.pow(8),
+            amount * ext_rate / RATIO_DECIMALS,
             None,
             &weth_token_account_id.clone(),
             NO_DEPOSIT,
@@ -153,7 +154,7 @@ impl Dtoken {
         to predecessor_account_id: {} with amount {}",
             predecessor_account_id.clone(),
             dtoken_account_id.clone(),
-            amount * ext_rate / 10_u128.pow(8)
+            amount * ext_rate / RATIO_DECIMALS
         );
 
         self.burn(&predecessor_account_id, amount);
@@ -193,7 +194,7 @@ impl Dtoken {
 
     pub fn get_exchange_rate(&self) -> u128 {
         //TODO: get exchange rate by formula
-        return 1_u128;
+        return 1 * RATIO_DECIMALS;
     }
 
     pub fn get_supplies(&self) -> Balance {
