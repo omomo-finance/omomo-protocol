@@ -50,6 +50,7 @@ impl Default for Controller
 
 #[near_bindgen]
 impl Controller {
+    #[private]
     pub fn callback_promise_result(&self) -> U128 {
         assert_eq!(
             env::promise_results_count(),
