@@ -6,7 +6,6 @@ use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, Pr
 use near_sdk::json_types::{ValidAccountId, U128};
 
 use std::convert::TryFrom;
-use std::str::FromStr;
 
 const NO_DEPOSIT: Balance = 0;
 const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
@@ -66,6 +65,7 @@ impl Default for Dtoken {
 
 #[near_bindgen]
 impl Dtoken {
+    #[private]
     pub fn borrow_callback(amount: Balance) {
         // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {

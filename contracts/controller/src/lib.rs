@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::BorshStorageKey;
-use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Promise, PromiseResult};
+use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, Promise, PromiseResult};
 
 #[ext_contract(ext_interest_rate_model)]
 pub trait InterestRateModel {
