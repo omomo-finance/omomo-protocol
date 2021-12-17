@@ -52,8 +52,8 @@ trait ControllerInterface {
 trait DtokenInterface {
     fn borrow_callback(amount: Balance);
 
-    fn repay_callback_get_balance(&self, sender_id: AccountId) -> Promise;
-    fn repay_callback_get_interest_rate(&self, sender_id: AccountId);
+    fn repay_callback_get_balance(&self) -> Promise;
+    fn repay_callback_get_interest_rate(&mut self);
 }
 
 #[near_bindgen]
@@ -107,7 +107,7 @@ impl Dtoken {
         );
     }
 
-    pub fn repay_callback_get_interest_rate(&self, sender_id: AccountId) {
+    pub fn repay_callback_get_interest_rate(&mut self) {
         assert_eq!(
             env::promise_results_count(),
             1,
@@ -124,21 +124,24 @@ impl Dtoken {
             }
         };
 
+        let sender_id: AccountId = env::signer_account_id();
         let amount : Balance = self.borrow_of.get(&sender_id).unwrap() * interest_rate.0 / RATIO_DECIMALS;
-        
+
         erc20_token::internal_transfer_with_registration(
-            sender_id,
+            sender_id.clone(),
             env::current_account_id(),
             amount,
             None,
-            &self.underlying_token.to_string(), // Attention here!
+            &self.underlying_token, // Attention here!
             NO_DEPOSIT,
-            10_000_000_000_000,
+            20_000_000_000_000,
         );
 
+        let new_value : u128 = 0;
+        self.borrow_of.insert(&sender_id, &new_value);
     }
 
-    pub fn repay_callback_get_balance(&self, sender_id: AccountId) -> Promise {
+    pub fn repay_callback_get_balance(&self) -> Promise {
         assert_eq!(
             env::promise_results_count(),
             1,
@@ -156,20 +159,19 @@ impl Dtoken {
         };
 
         let controller_account_id: AccountId =
-            AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
+            AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
 
         ext_controller::get_interest_rate(
             env::current_account_id(),
             underlying_balance_of_dtoken.0,
             self.total_borrows,
             self.total_reserve,
-            &controller_account_id.to_string(),
+            &controller_account_id,
             NO_DEPOSIT,
             25_000_000_000_000,
         )
         .then(ext_self::repay_callback_get_interest_rate(
-            sender_id,
-            &env::current_account_id().to_string(),
+            &env::current_account_id(),
             NO_DEPOSIT,
             25_000_000_000_000,
         ))
@@ -260,19 +262,16 @@ impl Dtoken {
 
     pub fn repay() -> Promise {
         let weth_account_id: AccountId =
-        AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.to_string()).unwrap();
-
-        let predecessor_account_id = env::predecessor_account_id();
+        AccountId::try_from(WETH_TOKEN_ACCOUNT_ID).unwrap();
 
         erc20_token::internal_unwrap_balance_of(
             env::current_account_id(),
-            &weth_account_id.to_string(),
+            &weth_account_id,
             NO_DEPOSIT,
             30_000_000_000_000,
         )
         .then(ext_self::repay_callback_get_balance(
-            predecessor_account_id,
-            &env::current_account_id().to_string(),
+            &env::current_account_id(),
             NO_DEPOSIT,
             30_000_000_000_000,
         ))
