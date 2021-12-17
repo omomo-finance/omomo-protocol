@@ -17,7 +17,7 @@ const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
 const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
-#[ext_contract(weth_token)]
+#[ext_contract(erc20_token)]
 trait Erc20Interface {
     fn internal_transfer_with_registration(
         &mut self,
@@ -69,7 +69,7 @@ impl Dtoken {
     }
 
     #[private]
-    pub fn borrow_callback(amount: Balance) {
+    pub fn borrow_callback(&self, amount: Balance) {
         // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
@@ -83,15 +83,12 @@ impl Dtoken {
 
         assert!(is_allowed, "You are not allowed to borrow");
 
-        let weth_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.to_string()).unwrap();
-
-        weth_token::internal_transfer_with_registration(
+        erc20_token::internal_transfer_with_registration(
             env::current_account_id(),
             env::predecessor_account_id(),
             amount,
             None,
-            &weth_account_id.to_string(), // Attention here!
+            &self.underlying_token.to_string(), // Attention here!
             NO_DEPOSIT,
             10_000_000_000_000,
         );
@@ -104,15 +101,12 @@ impl Dtoken {
         log!("dtoken_account_id: {}", dtoken_account_id);
         log!("signer_account_id: {}", predecessor_account_id);
 
-        let weth_token_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
-
-        weth_token::internal_transfer_with_registration(
+        erc20_token::internal_transfer_with_registration(
             predecessor_account_id.clone(),
             dtoken_account_id.clone(),
             amount,
             None,
-            &weth_token_account_id.clone(),
+            &self.underlying_token.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
@@ -138,16 +132,13 @@ impl Dtoken {
         log!("dtoken_account_id: {}", dtoken_account_id);
         log!("signer_account_id: {}", predecessor_account_id);
 
-        let weth_token_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
-
         let ext_rate = self.get_exchange_rate();
-        weth_token::internal_transfer_with_registration(
+        erc20_token::internal_transfer_with_registration(
             dtoken_account_id.clone(),
             predecessor_account_id.clone(),
             amount * ext_rate / RATIO_DECIMALS,
             None,
-            &weth_token_account_id.clone(),
+            &self.underlying_token.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
