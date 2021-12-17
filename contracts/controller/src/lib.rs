@@ -25,7 +25,9 @@ pub enum StorageKeys {
     InterestRateModels,
     BorrowCaps,
     Prices,
-    UserBorrowsPerToken
+    UserBorrowsPerToken,
+    UserSupplies,
+    TemporaryUserSupply,
 }
 
 #[near_bindgen]
@@ -35,7 +37,8 @@ pub struct Controller {
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
     prices: LookupMap<AccountId, U128>,
-    user_borrows_per_token: LookupMap<AccountId, LookupMap<AccountId, u128>>
+    user_borrows_per_token: LookupMap<AccountId, LookupMap<AccountId, u128>>,
+    users_supplies: UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>, // user per dtoken and balance
 }
 
 impl Default for Controller {
@@ -45,7 +48,8 @@ impl Default for Controller {
             interest_rate_models: LookupMap::new(StorageKeys::InterestRateModels),
             borrow_caps: LookupMap::new(StorageKeys::BorrowCaps),
             prices: LookupMap::new(StorageKeys::Prices),
-            user_borrows_per_token: LookupMap::new(StorageKeys::UserBorrowsPerToken)
+            user_borrows_per_token: LookupMap::new(StorageKeys::UserBorrowsPerToken),
+            users_supplies: UnorderedMap::new(StorageKeys::UserSupplies),
         }
     }
 }
@@ -94,7 +98,8 @@ impl Controller {
         user_address: AccountId,
         amount: u128,
     ) -> bool {
-        return (self.has_collaterall(user_address) as bool) && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
+        return (self.has_collaterall(user_address) as bool)
+            && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
     }
 
     pub fn set_interest_rate_model(
@@ -154,17 +159,83 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
-    pub fn set_user_borrows_per_token(&mut self, user_address: AccountId, dtoken_address: AccountId, amount: U128) {
-        if self.user_borrows_per_token.contains_key(&user_address)
-        {
-            self.user_borrows_per_token.get(&user_address).unwrap().insert(&dtoken_address, &amount.0);
-        }
-        else
-        {
-            let mut tmp : LookupMap<AccountId, u128> = LookupMap::new(b"z".to_vec());
+    pub fn set_user_borrows_per_token(
+        &mut self,
+        user_address: AccountId,
+        dtoken_address: AccountId,
+        amount: U128,
+    ) {
+        if self.user_borrows_per_token.contains_key(&user_address) {
+            self.user_borrows_per_token
+                .get(&user_address)
+                .unwrap()
+                .insert(&dtoken_address, &amount.0);
+        } else {
+            let mut tmp: LookupMap<AccountId, u128> = LookupMap::new(b"z".to_vec());
             tmp.insert(&dtoken_address, &amount.0);
-    
+
             self.user_borrows_per_token.insert(&user_address, &tmp);
+        }
+    }
+
+    fn check_market(&self, user_address: AccountId) {
+        let markets = self.supported_markets.values_as_vector();
+        let mut is_found_market = false;
+        for market in markets.iter() {
+            if market == env::predecessor_account_id() {
+                is_found_market = true
+            }
+        }
+
+        if !is_found_market {
+            env::panic_str("DToken address is not part of allowed markets")
+        }
+    }
+
+    // Interface for working with custom data structure
+    pub fn increase_user_supply(
+        &mut self,
+        user_address: AccountId,
+        dtoken: AccountId,
+        amount: Balance,
+    ) {
+        self.check_market(user_address.clone());
+
+        match self.users_supplies.get(&user_address) {
+            None => {
+                let mut dtoken_per_supply: UnorderedMap<AccountId, Balance> =
+                    UnorderedMap::new(StorageKeys::TemporaryUserSupply);
+                dtoken_per_supply.insert(&dtoken, &amount);
+                self.users_supplies
+                    .insert(&user_address, &dtoken_per_supply);
+            }
+            Some(mut value) => {
+                let new_amount = value.values_as_vector().get(0).unwrap() + amount;
+                value.insert(&dtoken, &new_amount);
+            }
+        }
+    }
+
+    pub fn decrease_user_supply(
+        &mut self,
+        user_address: AccountId,
+        dtoken: AccountId,
+        amount: Balance,
+    ) {
+        self.check_market(user_address.clone());
+
+        match self.users_supplies.get(&user_address) {
+            None => {
+                env::panic_str("Cannot decrease amount of user that not stored");
+            }
+            Some(mut value) => {
+                let new_amount = value.values_as_vector().get(0).unwrap() - amount;
+                if new_amount >= 0 {
+                    value.insert(&dtoken, &new_amount);
+                } else {
+                    env::panic_str("Tried to set negative supply to user");
+                }
+            }
         }
     }
 }
