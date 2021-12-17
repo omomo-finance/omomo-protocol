@@ -12,7 +12,7 @@ use std::convert::TryFrom;
 
 const NO_DEPOSIT: Balance = 0;
 const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
-const CONTROLLER_ACCOUNT_ID: &str = "dev-1639769096988-11229832319462";
+const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
 const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
 const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);

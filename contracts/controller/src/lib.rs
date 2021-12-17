@@ -162,6 +162,11 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
+        match self.supported_markets.get(&env::predecessor_account_id()) {
+            None => env::panic_str("DToken address is not part of allowed markets"),
+            _ => {}
+        }
+
         match self.users_supplies.get(&user_address) {
             None => {
                 let mut dtoken_per_supply: UnorderedMap<AccountId, Balance> =
@@ -183,6 +188,11 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
+        match self.supported_markets.get(&env::predecessor_account_id()) {
+            None => env::panic_str("DToken address is not part of allowed markets"),
+            _ => {}
+        }
+
         match self.users_supplies.get(&user_address) {
             None => {
                 env::panic_str("Cannot decrease amount of user that not stored");
