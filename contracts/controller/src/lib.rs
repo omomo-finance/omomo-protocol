@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, LookupSet};
+use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::BorshStorageKey;
 use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Promise, PromiseResult};
@@ -24,22 +24,26 @@ pub enum StorageKeys {
     SupportedMarkets,
     InterestRateModels,
     BorrowCaps,
+    Prices,
 }
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Controller {
-    supported_markets: LookupSet<AccountId>,
+    supported_markets: UnorderedMap<AccountId, AccountId>,
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
+    prices: LookupMap<AccountId, U128>
 }
 
-impl Default for Controller {
+impl Default for Controller
+{
     fn default() -> Self {
         Self {
-            supported_markets: LookupSet::new(StorageKeys::SupportedMarkets),
+            supported_markets: UnorderedMap::new(StorageKeys::SupportedMarkets),
             interest_rate_models: LookupMap::new(StorageKeys::InterestRateModels),
             borrow_caps: LookupMap::new(StorageKeys::BorrowCaps),
+            prices: LookupMap::new(StorageKeys::Prices),
         }
     }
 }
@@ -64,8 +68,13 @@ impl Controller {
         }
     }
 
-    pub fn add_market(&mut self, dtoken_address: AccountId) {
-        self.supported_markets.insert(&dtoken_address);
+    pub fn add_market(&mut self, underlying: AccountId, dtoken_address: AccountId )
+    {
+        self.supported_markets.insert(&underlying, &dtoken_address);
+    }
+
+    pub fn get_markets(&self) -> Vec<(AccountId, AccountId)> {
+        return self.supported_markets.to_vec();
     }
 
     pub fn supply_allowed(
@@ -133,6 +142,16 @@ impl Controller {
     pub fn has_collaterall(&mut self, user_address: AccountId) -> bool {
         // calling dToken contract
         true
+    }
+
+    pub fn set_price(&mut self, dtoken_address: AccountId, price: U128) {
+        self.prices.insert(&dtoken_address, &price);
+    }
+
+    pub fn get_price(&self, dtoken_address: AccountId) -> U128 {
+        assert!(self.interest_rate_models.contains_key(&dtoken_address), "price for token not found");
+
+        return self.prices.get(&dtoken_address).unwrap().into();
     }
 }
 
