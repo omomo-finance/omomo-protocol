@@ -90,12 +90,7 @@ impl Controller {
         user_address: AccountId,
         amount: u128,
     ) -> bool {
-        let is_user_cap_allowed = match self.borrow_caps.get(&dtoken_address) {
-            None => true,
-            Some(user_cap) => amount < user_cap,
-        };
-
-        self.has_collaterall(user_address) && is_user_cap_allowed
+        return (self.has_collaterall(user_address) as bool) && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
     }
 
     pub fn set_interest_rate_model(
@@ -129,7 +124,7 @@ impl Controller {
         .then(ext_self::callback_promise_result(
             env::current_account_id(), // this contract's account id
             0,                         // yocto NEAR to attach to the callback
-            6_000_000_000_000.into(),  // gas to attach to the callback
+            5_000_000_000_000.into(),  // gas to attach to the callback
         ))
     }
 
