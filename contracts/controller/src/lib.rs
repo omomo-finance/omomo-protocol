@@ -176,7 +176,7 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
-        self.check_market(user_address);
+        self.check_market(user_address.clone());
 
         match self.users_supplies.get(&user_address) {
             None => {
@@ -199,7 +199,7 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
-        self.check_market(user_address);
+        self.check_market(user_address.clone());
 
         match self.users_supplies.get(&user_address) {
             None => {
