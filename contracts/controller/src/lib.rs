@@ -94,9 +94,9 @@ impl Controller {
         true
     }
 
-    pub fn borrow_allowed(&mut self, dtoken_address: AccountId, amount: u128) -> bool {
-        amount_usd = self.get_price(dtoken_address) * amount / RATIO_DECIMALS;
-        self.get_account_theoretical_liquidity - amount_usd >= 0
+    pub fn borrow_allowed(&self, dtoken_address: AccountId, amount: u128) -> bool {
+        let amount_usd = self.get_price(dtoken_address).0 * amount / RATIO_DECIMALS;
+        self.get_account_theoretical_liquidity() - amount_usd >= 0
     }
 
     pub fn set_interest_rate_model(
@@ -156,7 +156,7 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
-    pub fn get_account_theoretical_liquidity() -> u128 {
+    pub fn get_account_theoretical_liquidity(&self) -> u128 {
         0
     }
 

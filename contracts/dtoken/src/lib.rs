@@ -13,8 +13,6 @@ use std::convert::TryFrom;
 const NO_DEPOSIT: Balance = 0;
 const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
-const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
-const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
 #[ext_contract(erc20_token)]
@@ -58,6 +56,7 @@ trait DtokenInterface {
     fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance);
     fn repay_callback_get_balance(&self) -> Promise;
     fn repay_callback_get_interest_rate(&mut self);
+    fn exchange_rate_callback(&self) -> Promise;
 }
 
 #[near_bindgen]
@@ -105,7 +104,7 @@ impl Dtoken {
             env::signer_account_id(),
             amount,
             None,
-            &self.underlying_token.to_string(), // Attention here!
+            &self.underlying_token, // Attention here!
             NO_DEPOSIT,
             10_000_000_000_000,
         );
@@ -148,7 +147,7 @@ impl Dtoken {
             env::current_account_id(),
             amount,
             None,
-            &self.underlying_token, // Attention here!
+            &self.underlying_token,
             NO_DEPOSIT,
             20_000_000_000_000,
         );
@@ -220,7 +219,7 @@ impl Dtoken {
             account_id.clone(),
             amount * exchange_rate / 10_u128.pow(8),
             None,
-            &AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap(),
+            &self.underlying_token,
             NO_DEPOSIT,
             10_000_000_000_000,
         );
@@ -249,6 +248,30 @@ impl Dtoken {
             NO_DEPOSIT,
             10_000_000_000_000,
         );
+    }
+
+    #[private]
+    pub fn exchange_rate_callback(&self) -> PromiseOrValue<u128> {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a withdraw callback method"
+        );
+        let balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let exchange_rate: u128 = if self.token.total_supply == 0 {
+            self.initial_exchange_rate
+        } else {
+            (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS / self.token.total_supply
+        };
+
+        return near_sdk::PromiseOrValue::Value(exchange_rate);
     }
 
     pub fn supply(&mut self, amount: Balance) {
@@ -294,9 +317,22 @@ impl Dtoken {
         );
     }
 
-    pub fn withdraw(&mut self, amount: Balance) {
-        self.get_exchange_rate(amount);
+    pub fn withdraw(& self, amount: Balance) {
+        erc20_token::ft_balance_of(
+            env::current_account_id(),
+            &self.underlying_token,
+            NO_DEPOSIT,
+            40_000_000_000_000,
+        )
+        .then(ext_self::withdraw_callback(
+            env::predecessor_account_id(),
+            amount,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            20_000_000_000_000,
+        ));
     }
+
 
     pub fn borrow(amount: Balance) {
         let controller_account_id: AccountId =
@@ -318,12 +354,10 @@ impl Dtoken {
         ));
     }
 
-    pub fn repay() -> Promise {
-        let weth_account_id: AccountId = AccountId::try_from(WETH_TOKEN_ACCOUNT_ID).unwrap();
-
+    pub fn repay(&self) -> Promise {
         erc20_token::internal_unwrap_balance_of(
             env::current_account_id(),
-            &weth_account_id,
+            &self.underlying_token,
             NO_DEPOSIT,
             30_000_000_000_000,
         )
@@ -338,16 +372,14 @@ impl Dtoken {
         //TODO: add_reserve implementation
     }
 
-    pub fn get_exchange_rate(&mut self, amount: Balance) {
-        erc20_token::ft_balance_of(
+    pub fn get_exchange_rate(&self) -> Promise {
+        return erc20_token::ft_balance_of(
             env::current_account_id(),
-            &AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap(),
+            &self.underlying_token,
             NO_DEPOSIT,
             40_000_000_000_000,
         )
-        .then(ext_self::withdraw_callback(
-            env::predecessor_account_id(),
-            amount,
+        .then(ext_self::exchange_rate_callback(
             &env::current_account_id().to_string(),
             NO_DEPOSIT,
             20_000_000_000_000,
@@ -362,11 +394,8 @@ impl Dtoken {
         return self.internal_unwrap_balance_of(&account);
     }
 
-    pub fn get_borrows(&self) -> Balance {
-        return self
-            .borrow_of
-            .get(&env::predecessor_account_id())
-            .unwrap_or(0);
+    pub fn get_borrows(&self, account: AccountId) -> Balance {
+        return self.borrow_of.get(&account).unwrap_or(0);
     }
 
     pub fn get_total_reserve(&self) -> u128 {
