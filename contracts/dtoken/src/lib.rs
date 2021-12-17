@@ -1,7 +1,7 @@
 use near_contract_standards::fungible_token::FungibleToken;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::LookupMap;
+use near_sdk::collections::UnorderedMap;
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::{
     env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, PromiseOrValue,
@@ -48,8 +48,7 @@ trait DtokenInterface {
 pub struct Dtoken {
     initial_exchange_rate: u128,
     total_reserve: u128,
-    total_borrows: u128,
-    borrow_of: LookupMap<AccountId, u128>,
+    borrow_of: UnorderedMap<AccountId, Balance>,
     token: FungibleToken,
     underlying_token: AccountId,
 }
@@ -61,15 +60,14 @@ impl Dtoken {
         Self {
             initial_exchange_rate: 100000000,
             total_reserve: 0,
-            total_borrows: 0,
-            borrow_of: LookupMap::new(b"b".to_vec()),
+            borrow_of: UnorderedMap::new(b"b".to_vec()),
             token: FungibleToken::new(b"t".to_vec()),
             underlying_token,
         }
     }
 
     #[private]
-    pub fn borrow_callback(&self, amount: Balance) {
+    pub fn borrow_callback(&mut self, amount: Balance) {
         // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
@@ -92,6 +90,11 @@ impl Dtoken {
             NO_DEPOSIT,
             10_000_000_000_000,
         );
+
+
+        let borrow: u128 = amount + self.borrow_of.get(&env::predecessor_account_id()).unwrap_or(0_u128);
+        self.borrow_of.insert(&env::predecessor_account_id(), &borrow);
+        log!("user {} total borrow {}", env::predecessor_account_id(), borrow);
     }
 
     pub fn supply(&mut self, amount: Balance) {
@@ -207,7 +210,12 @@ impl Dtoken {
     }
 
     pub fn get_total_borrows(&self) -> u128 {
-        return self.total_borrows;
+        let mut total_borrows: Balance = 0;
+        for (key, value) in self.borrow_of.iter() {
+            total_borrows += value;
+        }
+        
+        return total_borrows;
     }
 
     pub fn internal_unwrap_balance_of(&self, account_id: &AccountId) -> Balance {

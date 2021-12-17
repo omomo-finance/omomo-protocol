@@ -93,7 +93,7 @@ impl Controller {
         amount: u128,
     ) -> bool {
         let is_user_cap_allowed = match self.borrow_caps.get(&dtoken_address) {
-            None => false,
+            None => true,
             Some(user_cap) => amount < user_cap,
         };
 
@@ -149,7 +149,7 @@ impl Controller {
     }
 
     pub fn get_price(&self, dtoken_address: AccountId) -> U128 {
-        assert!(self.interest_rate_models.contains_key(&dtoken_address), "price for token not found");
+        assert!(self.prices.contains_key(&dtoken_address), "price for token not found");
 
         return self.prices.get(&dtoken_address).unwrap().into();
     }
