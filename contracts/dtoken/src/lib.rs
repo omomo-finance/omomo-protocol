@@ -194,6 +194,10 @@ impl Dtoken {
     }
 
     pub fn get_supplies(&self, account: AccountId) -> Balance {
+        if !self.token.accounts.contains_key(&account) {
+            return 0;
+        }
+
         return self.internal_unwrap_balance_of(&account);
     }
 
