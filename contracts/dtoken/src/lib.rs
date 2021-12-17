@@ -240,7 +240,7 @@ impl Dtoken {
         log!(
             "internal_transfer_with_registration from dtoken_account_id: {} \
         to predecessor_account_id: {} with amount {}",
-            predecessor_account_id.clone(),
+            env::predecessor_account_id().clone(),
             env::current_account_id().clone(),
             amount * ext_rate / RATIO_DECIMALS
         );
@@ -248,7 +248,7 @@ impl Dtoken {
         self.burn(&env::predecessor_account_id(), amount);
         log!(
             "predecessor_account_id dtoken balance: {}",
-            self.internal_unwrap_balance_of(&predecessor_account_id)
+            self.internal_unwrap_balance_of(&env::predecessor_account_id())
         );
 
         let controller_account_id: AccountId =

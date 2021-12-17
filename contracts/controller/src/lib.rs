@@ -155,6 +155,20 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
+    fn check_market(&self, user_address: AccountId) {
+        let markets = self.supported_markets.values_as_vector();
+        let mut is_found_market = false;
+        for market in markets.iter() {
+            if market == env::predecessor_account_id() {
+                is_found_market = true
+            }
+        }
+
+        if !is_found_market {
+            env::panic_str("DToken address is not part of allowed markets")
+        }
+    }
+
     // Interface for working with custom data structure
     pub fn increase_user_supply(
         &mut self,
@@ -162,10 +176,7 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
-        match self.supported_markets.get(&env::predecessor_account_id()) {
-            None => env::panic_str("DToken address is not part of allowed markets"),
-            _ => {}
-        }
+        self.check_market(user_address);
 
         match self.users_supplies.get(&user_address) {
             None => {
@@ -188,10 +199,7 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
-        match self.supported_markets.get(&env::predecessor_account_id()) {
-            None => env::panic_str("DToken address is not part of allowed markets"),
-            _ => {}
-        }
+        self.check_market(user_address);
 
         match self.users_supplies.get(&user_address) {
             None => {
