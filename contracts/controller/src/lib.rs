@@ -33,11 +33,10 @@ pub struct Controller {
     supported_markets: UnorderedMap<AccountId, AccountId>,
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
-    prices: LookupMap<AccountId, U128>
+    prices: LookupMap<AccountId, U128>,
 }
 
-impl Default for Controller
-{
+impl Default for Controller {
     fn default() -> Self {
         Self {
             supported_markets: UnorderedMap::new(StorageKeys::SupportedMarkets),
@@ -68,8 +67,7 @@ impl Controller {
         }
     }
 
-    pub fn add_market(&mut self, underlying: AccountId, dtoken_address: AccountId )
-    {
+    pub fn add_market(&mut self, underlying: AccountId, dtoken_address: AccountId) {
         self.supported_markets.insert(&underlying, &dtoken_address);
     }
 
@@ -149,7 +147,10 @@ impl Controller {
     }
 
     pub fn get_price(&self, dtoken_address: AccountId) -> U128 {
-        assert!(self.interest_rate_models.contains_key(&dtoken_address), "price for token not found");
+        assert!(
+            self.interest_rate_models.contains_key(&dtoken_address),
+            "price for token not found"
+        );
 
         return self.prices.get(&dtoken_address).unwrap().into();
     }

@@ -2,8 +2,10 @@ use near_contract_standards::fungible_token::FungibleToken;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
-use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PromiseResult, PromiseOrValue};
 use near_sdk::json_types::{ValidAccountId, U128};
+use near_sdk::{
+    env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PromiseOrValue, PromiseResult,
+};
 
 use std::convert::TryFrom;
 
@@ -38,7 +40,7 @@ trait ControllerInterface {
 #[ext_contract(ext_self)]
 trait DtokenInterface {
     fn borrow_callback(amount: Balance);
-    fn exchange_rate_callback() -> u128;
+    fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance);
 }
 
 #[near_bindgen]
@@ -56,7 +58,7 @@ impl Default for Dtoken {
     fn default() -> Self {
         Self {
             // 1 with 8 decimals precision
-            initial_exchange_rate: 100000000,
+            initial_exchange_rate: 10_u128.pow(8),
             total_reserve: 0,
             total_borrows: 0,
             borrow_of: LookupMap::new(b"b".to_vec()),
@@ -97,15 +99,52 @@ impl Dtoken {
     }
 
     #[private]
-    pub fn exchange_rate_callback() {
-        assert_eq!(env::promise_results_count(), 1, "This is a callback method");
-        match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-    PromiseResult::Failed => env::panic(b"Unable to make comparison"),
-    PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
-    .unwrap()
-    .into(),
-    };
+    pub fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance) {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a withdraw callback method"
+        );
+        let balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let exchange_rate: u128;
+        if self.token.total_supply <= 0 {
+            exchange_rate = self.initial_exchange_rate
+        } else {
+            exchange_rate = (balance + self.total_borrows - self.total_reserve) * 10_u128.pow(8)
+                / self.token.total_supply
+        }
+
+        log!("return amount:{}", amount * exchange_rate / 10_u128.pow(8));
+
+        weth_token::internal_transfer_with_registration(
+            env::current_account_id(),
+            account_id.clone(),
+            amount * exchange_rate / 10_u128.pow(8),
+            None,
+            &AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap(),
+            NO_DEPOSIT,
+            10_000_000_000_000,
+        );
+        log!(
+            "internal_transfer_with_registration from dtoken_account_id: {} \
+        to predecessor_account_id: {} with amount: {}",
+            env::current_account_id(),
+            account_id.clone().to_string(),
+            amount * exchange_rate / 10_u128.pow(8)
+        );
+
+        self.burn(&account_id.to_string(), amount);
+        log!(
+            "predecessor_account_id dtoken balance: {}",
+            self.internal_unwrap_balance_of(&account_id.to_string())
+        );
     }
 
     pub fn supply(&mut self, amount: Balance) {
@@ -143,38 +182,7 @@ impl Dtoken {
     }
 
     pub fn withdraw(&mut self, amount: Balance) {
-        let dtoken_account_id = env::current_account_id();
-        let predecessor_account_id = env::predecessor_account_id();
-
-        log!("dtoken_account_id: {}", dtoken_account_id);
-        log!("signer_account_id: {}", predecessor_account_id);
-
-        let weth_token_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
-
-        let ext_rate = self.get_exchange_rate();
-        weth_token::internal_transfer_with_registration(
-            dtoken_account_id.clone(),
-            predecessor_account_id.clone(),
-            amount * ext_rate / 10_u128.pow(8),
-            None,
-            &weth_token_account_id.clone(),
-            NO_DEPOSIT,
-            BASE_GAS,
-        );
-        log!(
-            "internal_transfer_with_registration from dtoken_account_id: {} \
-        to predecessor_account_id: {} with amount {}",
-            predecessor_account_id.clone(),
-            dtoken_account_id.clone(),
-            amount * ext_rate / 10_u128.pow(8)
-        );
-
-        self.burn(&predecessor_account_id, amount);
-        log!(
-            "predecessor_account_id dtoken balance: {}",
-            self.internal_unwrap_balance_of(&predecessor_account_id)
-        );
+        self.get_exchange_rate(amount);
     }
 
     pub fn borrow(amount: Balance) {
@@ -205,28 +213,31 @@ impl Dtoken {
         //TODO: add_reserve implementation
     }
 
-    pub fn get_exchange_rate(&self) -> u128 {
-        let dtoken_account_id = env::current_account_id();
-        let underlying_balance: u128 = weth_token::ft_balance_of(dtoken_account_id.clone())
-            .then(
-            ext_self::exchange_rate_callback(
-            &dtoken_account_id().to_string(),
+    pub fn get_exchange_rate(&mut self, amount: Balance) {
+        weth_token::ft_balance_of(
+            env::current_account_id(),
+            &AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap(),
+            NO_DEPOSIT,
+            40_000_000_000_000,
+        )
+        .then(ext_self::withdraw_callback(
+            env::predecessor_account_id(),
+            amount,
+            &env::current_account_id().to_string(),
             NO_DEPOSIT,
             20_000_000_000_000,
         ));
-
-        if(!self.token.total_supply) {
-            self.initial_exchange_rate
-        }
-            underlying_balance + self.total_borrows - self.total_reserve) / self.token.total_supply
     }
 
     pub fn get_supplies(&self) -> Balance {
         return self.internal_unwrap_balance_of(&env::predecessor_account_id());
     }
-    
+
     pub fn get_borrows(&self) -> Balance {
-        return self.borrow_of.get(&env::predecessor_account_id()).unwrap_or(0);
+        return self
+            .borrow_of
+            .get(&env::predecessor_account_id())
+            .unwrap_or(0);
     }
 
     pub fn get_total_reserve(&self) -> u128 {
