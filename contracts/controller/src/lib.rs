@@ -25,6 +25,7 @@ pub enum StorageKeys {
     InterestRateModels,
     BorrowCaps,
     Prices,
+    UserBorrowsPerToken
 }
 
 #[near_bindgen]
@@ -34,6 +35,7 @@ pub struct Controller {
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
     prices: LookupMap<AccountId, U128>,
+    user_borrows_per_token: LookupMap<AccountId, LookupMap<AccountId, u128>>
 }
 
 impl Default for Controller {
@@ -43,6 +45,7 @@ impl Default for Controller {
             interest_rate_models: LookupMap::new(StorageKeys::InterestRateModels),
             borrow_caps: LookupMap::new(StorageKeys::BorrowCaps),
             prices: LookupMap::new(StorageKeys::Prices),
+            user_borrows_per_token: LookupMap::new(StorageKeys::UserBorrowsPerToken)
         }
     }
 }
@@ -149,6 +152,20 @@ impl Controller {
         );
 
         return self.prices.get(&dtoken_address).unwrap().into();
+    }
+
+    pub fn set_user_borrows_per_token(&mut self, user_address: AccountId, dtoken_address: AccountId, amount: U128) {
+        if self.user_borrows_per_token.contains_key(&user_address)
+        {
+            self.user_borrows_per_token.get(&user_address).unwrap().insert(&dtoken_address, &amount.0);
+        }
+        else
+        {
+            let mut tmp : LookupMap<AccountId, u128> = LookupMap::new(b"z".to_vec());
+            tmp.insert(&dtoken_address, &amount.0);
+    
+            self.user_borrows_per_token.insert(&user_address, &tmp);
+        }
     }
 }
 
