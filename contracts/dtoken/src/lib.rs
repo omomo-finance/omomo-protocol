@@ -167,7 +167,7 @@ impl Dtoken {
         ext_controller::get_interest_rate(
             env::current_account_id(),
             underlying_balance_of_dtoken.0,
-            self.total_borrows,
+            self.get_total_borrows(),
             self.total_reserve,
             &controller_account_id,
             NO_DEPOSIT,
