@@ -2,8 +2,11 @@ use near_contract_standards::fungible_token::FungibleToken;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
-use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PromiseResult, PromiseOrValue};
 use near_sdk::json_types::{ValidAccountId, U128};
+use near_sdk::{
+    env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, PromiseOrValue,
+    PromiseResult,
+};
 
 use std::convert::TryFrom;
 
@@ -14,7 +17,7 @@ const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
 const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
-#[ext_contract(weth_token)]
+#[ext_contract(erc20_token)]
 trait Erc20Interface {
     fn internal_transfer_with_registration(
         &mut self,
@@ -41,33 +44,32 @@ trait DtokenInterface {
 }
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Dtoken {
     initial_exchange_rate: u128,
     total_reserve: u128,
     total_borrows: u128,
     borrow_of: LookupMap<AccountId, u128>,
     token: FungibleToken,
-    // TODO: Add underlying token address as field
+    underlying_token: AccountId,
 }
 
-impl Default for Dtoken {
-    fn default() -> Self {
+#[near_bindgen]
+impl Dtoken {
+    #[init]
+    pub fn new(underlying_token: AccountId) -> Self {
         Self {
-            // 1 with 8 decimals precision
             initial_exchange_rate: 100000000,
             total_reserve: 0,
             total_borrows: 0,
             borrow_of: LookupMap::new(b"b".to_vec()),
             token: FungibleToken::new(b"t".to_vec()),
+            underlying_token,
         }
     }
-}
 
-#[near_bindgen]
-impl Dtoken {
     #[private]
-    pub fn borrow_callback(amount: Balance) {
+    pub fn borrow_callback(&self, amount: Balance) {
         // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
@@ -81,15 +83,12 @@ impl Dtoken {
 
         assert!(is_allowed, "You are not allowed to borrow");
 
-        let weth_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.to_string()).unwrap();
-
-        weth_token::internal_transfer_with_registration(
+        erc20_token::internal_transfer_with_registration(
             env::current_account_id(),
             env::predecessor_account_id(),
             amount,
             None,
-            &weth_account_id.to_string(), // Attention here!
+            &self.underlying_token.to_string(), // Attention here!
             NO_DEPOSIT,
             10_000_000_000_000,
         );
@@ -102,15 +101,12 @@ impl Dtoken {
         log!("dtoken_account_id: {}", dtoken_account_id);
         log!("signer_account_id: {}", predecessor_account_id);
 
-        let weth_token_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
-
-        weth_token::internal_transfer_with_registration(
+        erc20_token::internal_transfer_with_registration(
             predecessor_account_id.clone(),
             dtoken_account_id.clone(),
             amount,
             None,
-            &weth_token_account_id.clone(),
+            &self.underlying_token.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
@@ -136,16 +132,13 @@ impl Dtoken {
         log!("dtoken_account_id: {}", dtoken_account_id);
         log!("signer_account_id: {}", predecessor_account_id);
 
-        let weth_token_account_id: AccountId =
-            AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap();
-
         let ext_rate = self.get_exchange_rate();
-        weth_token::internal_transfer_with_registration(
+        erc20_token::internal_transfer_with_registration(
             dtoken_account_id.clone(),
             predecessor_account_id.clone(),
             amount * ext_rate / RATIO_DECIMALS,
             None,
-            &weth_token_account_id.clone(),
+            &self.underlying_token.clone(),
             NO_DEPOSIT,
             BASE_GAS,
         );
@@ -200,9 +193,12 @@ impl Dtoken {
     pub fn get_supplies(&self) -> Balance {
         return self.internal_unwrap_balance_of(&env::predecessor_account_id());
     }
-    
+
     pub fn get_borrows(&self) -> Balance {
-        return self.borrow_of.get(&env::predecessor_account_id()).unwrap_or(0);
+        return self
+            .borrow_of
+            .get(&env::predecessor_account_id())
+            .unwrap_or(0);
     }
 
     pub fn get_total_reserve(&self) -> u128 {
