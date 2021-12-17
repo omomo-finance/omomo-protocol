@@ -190,15 +190,12 @@ impl Dtoken {
         return 1 * RATIO_DECIMALS;
     }
 
-    pub fn get_supplies(&self) -> Balance {
-        return self.internal_unwrap_balance_of(&env::predecessor_account_id());
+    pub fn get_supplies(&self, account: AccountId) -> Balance {
+        return self.internal_unwrap_balance_of(&account);
     }
 
-    pub fn get_borrows(&self) -> Balance {
-        return self
-            .borrow_of
-            .get(&env::predecessor_account_id())
-            .unwrap_or(0);
+    pub fn get_borrows(&self, account: AccountId) -> Balance {
+        return self.borrow_of.get(&account).unwrap_or(0);
     }
 
     pub fn get_total_reserve(&self) -> u128 {
