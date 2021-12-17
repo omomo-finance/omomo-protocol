@@ -92,12 +92,7 @@ impl Controller {
         user_address: AccountId,
         amount: u128,
     ) -> bool {
-        let is_user_cap_allowed = match self.borrow_caps.get(&dtoken_address) {
-            None => true,
-            Some(user_cap) => amount < user_cap,
-        };
-
-        self.has_collaterall(user_address) && is_user_cap_allowed
+        return self.has_collaterall(user_address) && self.borrow_caps.get(&dtoken_address).unwrap_or(true);
     }
 
     pub fn set_interest_rate_model(
