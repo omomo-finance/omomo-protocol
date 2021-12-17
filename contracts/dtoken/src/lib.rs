@@ -5,7 +5,7 @@ use near_sdk::collections::LookupMap;
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::{
     env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, PromiseOrValue,
-    PromiseResult,
+    PromiseResult,Promise
 };
 
 use std::convert::TryFrom;
@@ -26,6 +26,8 @@ trait Erc20Interface {
         amount: Balance,
         memo: Option<String>,
     );
+
+    fn internal_unwrap_balance_of(&mut self, account_id: AccountId) -> Balance;
 }
 
 #[ext_contract(ext_controller)]
@@ -36,11 +38,22 @@ trait ControllerInterface {
         user_address: AccountId,
         amount: u128,
     ) -> bool;
+
+    fn get_interest_rate(
+        &mut self,
+        dtoken_address: AccountId,
+        underlying_balance: Balance,
+        total_borrows: Balance,
+        total_reserve: Balance,
+    ) -> Promise;
 }
 
 #[ext_contract(ext_self)]
 trait DtokenInterface {
     fn borrow_callback(amount: Balance);
+
+    fn repay_callback_get_balance(&self, sender_id: AccountId) -> Promise;
+    fn repay_callback_get_interest_rate(&self, sender_id: AccountId);
 }
 
 #[near_bindgen]
@@ -92,6 +105,74 @@ impl Dtoken {
             NO_DEPOSIT,
             10_000_000_000_000,
         );
+    }
+
+    pub fn repay_callback_get_interest_rate(&self, sender_id: AccountId) {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "ASSERT|repay_callback_get_interest_rate:promise_results_count"
+        );
+
+        let interest_rate : U128 = match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Failed => {
+                env::panic(b"Unable to make comparison")
+            }
+            PromiseResult::Successful(result) => {
+                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
+            }
+        };
+
+        let amount : Balance = self.borrow_of.get(&sender_id).unwrap() * interest_rate.0 / RATIO_DECIMALS;
+        
+        erc20_token::internal_transfer_with_registration(
+            sender_id,
+            env::current_account_id(),
+            amount,
+            None,
+            &self.underlying_token.to_string(), // Attention here!
+            NO_DEPOSIT,
+            10_000_000_000_000,
+        );
+
+    }
+
+    pub fn repay_callback_get_balance(&self, sender_id: AccountId) -> Promise {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "ASSERT|repay_callback_get_balance:promise_results_count"
+        );
+
+        let underlying_balance_of_dtoken : U128 = match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+            PromiseResult::Failed => {
+                env::panic(b"Unable to make comparison")
+            }
+            PromiseResult::Successful(result) => {
+                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
+            }
+        };
+
+        let controller_account_id: AccountId =
+            AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
+
+        ext_controller::get_interest_rate(
+            env::current_account_id(),
+            underlying_balance_of_dtoken.0,
+            self.total_borrows,
+            self.total_reserve,
+            &controller_account_id.to_string(),
+            NO_DEPOSIT,
+            25_000_000_000_000,
+        )
+        .then(ext_self::repay_callback_get_interest_rate(
+            sender_id,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            25_000_000_000_000,
+        ))
     }
 
     pub fn supply(&mut self, amount: Balance) {
@@ -177,8 +258,24 @@ impl Dtoken {
         ));
     }
 
-    pub fn repay() {
-        //TODO: repay implementation
+    pub fn repay() -> Promise {
+        let weth_account_id: AccountId =
+        AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.to_string()).unwrap();
+
+        let predecessor_account_id = env::predecessor_account_id();
+
+        erc20_token::internal_unwrap_balance_of(
+            env::current_account_id(),
+            &weth_account_id.to_string(),
+            NO_DEPOSIT,
+            30_000_000_000_000,
+        )
+        .then(ext_self::repay_callback_get_balance(
+            predecessor_account_id,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            30_000_000_000_000,
+        ))
     }
 
     pub fn add_reserve(amount: Balance) {

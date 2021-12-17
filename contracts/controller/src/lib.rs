@@ -131,7 +131,7 @@ impl Controller {
         .then(ext_self::callback_promise_result(
             env::current_account_id(), // this contract's account id
             0,                         // yocto NEAR to attach to the callback
-            6_000_000_000_000.into(),  // gas to attach to the callback
+            5_000_000_000_000.into(),  // gas to attach to the callback
         ))
     }
 
