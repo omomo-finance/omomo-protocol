@@ -4,6 +4,8 @@ use near_sdk::json_types::U128;
 use near_sdk::BorshStorageKey;
 use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, Promise, PromiseResult};
 
+const RATIO_DECIMALS: u128 = 10_u128.pow(8);
+
 #[ext_contract(ext_interest_rate_model)]
 pub trait InterestRateModel {
     fn get_borrow_rate(
@@ -92,14 +94,9 @@ impl Controller {
         true
     }
 
-    pub fn borrow_allowed(
-        &mut self,
-        dtoken_address: AccountId,
-        user_address: AccountId,
-        amount: u128,
-    ) -> bool {
-        return (self.has_collaterall(user_address) as bool)
-            && (self.borrow_caps.get(&dtoken_address).unwrap_or(amount) >= amount);
+    pub fn borrow_allowed(&mut self, dtoken_address: AccountId, amount: u128) -> bool {
+        amount_usd = self.get_price(dtoken_address) * amount / RATIO_DECIMALS;
+        self.get_account_theoretical_liquidity - amount_usd >= 0
     }
 
     pub fn set_interest_rate_model(
@@ -157,6 +154,10 @@ impl Controller {
         );
 
         return self.prices.get(&dtoken_address).unwrap().into();
+    }
+
+    pub fn get_account_theoretical_liquidity() -> u128 {
+        0
     }
 
     pub fn set_user_borrows_per_token(
