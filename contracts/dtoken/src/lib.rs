@@ -1,15 +1,17 @@
-use bigdecimal::{BigDecimal, ToPrimitive};
 use near_contract_standards::fungible_token::FungibleToken;
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PromiseResult};
+use near_sdk::collections::LookupMap;
+use near_sdk::{env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PromiseResult, PromiseOrValue};
+use near_sdk::json_types::{ValidAccountId, U128};
+
 use std::convert::TryFrom;
 use std::str::FromStr;
 
 const NO_DEPOSIT: Balance = 0;
 const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
-const WETH_TOKEN_ACCOUNT_ID: &str = "dev-1639659058556-60126760016852";
+const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
 const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 
 #[ext_contract(weth_token)]
@@ -42,11 +44,9 @@ trait DtokenInterface {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Dtoken {
     initial_exchange_rate: u128,
-    total_supply: u128,
     total_reserve: u128,
     total_borrows: u128,
-    balance_of: UnorderedMap<AccountId, BigDecimal>,
-    debt_of: UnorderedMap<AccountId, BigDecimal>,
+    borrow_of: LookupMap<AccountId, u128>,
     token: FungibleToken,
     // TODO: Add underlying token address as field
 }
@@ -54,13 +54,12 @@ pub struct Dtoken {
 impl Default for Dtoken {
     fn default() -> Self {
         Self {
-            initial_exchange_rate: 0,
-            total_supply: 0,
+            // 1 with 8 decimals precision
+            initial_exchange_rate: 100000000,
             total_reserve: 0,
             total_borrows: 0,
-            balance_of: UnorderedMap::new(b"s".to_vec()),
-            debt_of: UnorderedMap::new(b"s".to_vec()),
-            token: FungibleToken::new(b"a".to_vec()),
+            borrow_of: LookupMap::new(b"b".to_vec()),
+            token: FungibleToken::new(b"t".to_vec()),
         }
     }
 }
@@ -194,19 +193,27 @@ impl Dtoken {
 
     pub fn get_exchange_rate(&self) -> u128 {
         //TODO: get exchange rate by formula
-        BigDecimal::from_str("1.0").unwrap().to_u128().unwrap()
+        return 1_u128;
     }
 
-    pub fn get_total_reserve() -> u128 {
-        Dtoken::default().total_reserve
+    pub fn get_supplies(&self) -> Balance {
+        return self.internal_unwrap_balance_of(&env::predecessor_account_id());
+    }
+    
+    pub fn get_borrows(&self) -> Balance {
+        return self.borrow_of.get(&env::predecessor_account_id()).unwrap_or(0);
     }
 
-    pub fn get_total_borrows() -> u128 {
-        Dtoken::default().total_borrows
+    pub fn get_total_reserve(&self) -> u128 {
+        return self.total_reserve;
     }
 
-    pub fn get_underlying_balance() -> u128 {
-        BigDecimal::from_str("1.2").unwrap().to_u128().unwrap()
+    pub fn get_total_supplies(&self) -> u128 {
+        return self.token.total_supply;
+    }
+
+    pub fn get_total_borrows(&self) -> u128 {
+        return self.total_borrows;
     }
 
     pub fn internal_unwrap_balance_of(&self, account_id: &AccountId) -> Balance {
@@ -257,7 +264,19 @@ impl Dtoken {
         }
         self.internal_withdraw(account_id, amount);
     }
+
+    // Callbacks
+    fn on_account_closed(&mut self, account_id: AccountId, balance: Balance) {
+        log!("Closed @{} with {}", account_id, balance);
+    }
+
+    fn on_tokens_burned(&mut self, account_id: AccountId, amount: Balance) {
+        log!("Account @{} burned {}", account_id, amount);
+    }
 }
+
+near_contract_standards::impl_fungible_token_core!(Dtoken, token, on_tokens_burned);
+near_contract_standards::impl_fungible_token_storage!(Dtoken, token, on_account_closed);
 
 /*
  * the rest of this file sets up unit tests
