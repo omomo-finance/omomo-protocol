@@ -22,6 +22,7 @@ trait Erc20Interface {
         amount: Balance,
         memo: Option<String>,
     );
+    fn ft_balance_of(&self, account_id: AccountId) -> U128;
 }
 
 #[ext_contract(ext_controller)]
@@ -37,6 +38,7 @@ trait ControllerInterface {
 #[ext_contract(ext_self)]
 trait DtokenInterface {
     fn borrow_callback(amount: Balance);
+    fn exchange_rate_callback() -> u128;
 }
 
 #[near_bindgen]
@@ -92,6 +94,18 @@ impl Dtoken {
             NO_DEPOSIT,
             10_000_000_000_000,
         );
+    }
+
+    #[private]
+    pub fn exchange_rate_callback() {
+        assert_eq!(env::promise_results_count(), 1, "This is a callback method");
+        match env::promise_result(0) {
+            PromiseResult::NotReady => unreachable!(),
+    PromiseResult::Failed => env::panic(b"Unable to make comparison"),
+    PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+    .unwrap()
+    .into(),
+    };
     }
 
     pub fn supply(&mut self, amount: Balance) {
@@ -192,8 +206,19 @@ impl Dtoken {
     }
 
     pub fn get_exchange_rate(&self) -> u128 {
-        //TODO: get exchange rate by formula
-        return 1_u128;
+        let dtoken_account_id = env::current_account_id();
+        let underlying_balance: u128 = weth_token::ft_balance_of(dtoken_account_id.clone())
+            .then(
+            ext_self::exchange_rate_callback(
+            &dtoken_account_id().to_string(),
+            NO_DEPOSIT,
+            20_000_000_000_000,
+        ));
+
+        if(!self.token.total_supply) {
+            self.initial_exchange_rate
+        }
+            underlying_balance + self.total_borrows - self.total_reserve) / self.token.total_supply
     }
 
     pub fn get_supplies(&self) -> Balance {
