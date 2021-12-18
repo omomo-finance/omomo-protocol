@@ -103,7 +103,12 @@ impl Controller {
         amount: u128,
     ) -> bool {
         let amount_usd = self.get_price(dtoken_address.clone()).0 * amount / RATIO_DECIMALS;
-        self.get_account_theoretical_liquidity(user_address.clone(), dtoken_address.clone(), total_reserve) - amount_usd >= 0
+        self.get_account_theoretical_liquidity(
+            user_address.clone(),
+            dtoken_address.clone(),
+            total_reserve,
+        ) - amount_usd
+            >= 0
     }
 
     pub fn set_interest_rate_model(
@@ -163,8 +168,10 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
-    fn get_sum(user_address: AccountId, container: &UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>) -> Balance
-    {
+    fn get_sum(
+        user_address: AccountId,
+        container: &UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>,
+    ) -> Balance {
         let sum = match container.get(&user_address.clone()) {
             None => 0,
             Some(value) => {
@@ -180,8 +187,12 @@ impl Controller {
         sum
     }
 
-
-    pub fn get_account_theoretical_liquidity(&self, user_address: AccountId, dtoken_address: AccountId, total_reserve: Balance) -> u128 {
+    pub fn get_account_theoretical_liquidity(
+        &self,
+        user_address: AccountId,
+        dtoken_address: AccountId,
+        total_reserve: Balance,
+    ) -> u128 {
         let price = self.get_price(user_address.clone());
 
         let total_supplies = Controller::get_sum(user_address.clone(), &self.users_supplies);
