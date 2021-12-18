@@ -2,6 +2,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::{near_bindgen, Balance};
 
+const RATIO_DECIMALS: u128 = 10_u128.pow(8);
+
 #[near_bindgen]
 #[derive(Default, BorshDeserialize, BorshSerialize)]
 pub struct InterestRateModel {}
@@ -13,7 +15,7 @@ impl InterestRateModel {
         total_borrows: Balance,
         total_reserve: Balance,
     ) -> U128 {
-        1.into()
+        110000000.into()
     }
 
     pub fn get_supply_rate(
@@ -22,7 +24,7 @@ impl InterestRateModel {
         total_reserve: Balance,
         reserve_factor: i32,
     ) -> U128 {
-        1.into()
+        (1 * RATIO_DECIMALS).into()
     }
 }
 

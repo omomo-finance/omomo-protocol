@@ -4,8 +4,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::{
-    env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, PromiseOrValue,
-    PromiseResult,Promise
+    env, ext_contract, log, near_bindgen, AccountId, Balance, Gas, PanicOnDefault, Promise,
+    PromiseOrValue, PromiseResult,
 };
 
 use std::convert::TryFrom;
@@ -13,8 +13,6 @@ use std::convert::TryFrom;
 const NO_DEPOSIT: Balance = 0;
 const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
-const WETH_TOKEN_ACCOUNT_ID: &str = "weth.nearlend.testnet";
-const WNEAR_TOKEN_ACCOUNT_ID: &str = "wnear.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
 #[ext_contract(erc20_token)]
@@ -47,15 +45,20 @@ trait ControllerInterface {
         total_reserve: Balance,
     ) -> Promise;
 
+
     fn set_user_borrows_per_token(&mut self, user_address: AccountId, dtoken_address: AccountId, amount: U128);
+    fn increase_user_supply(&mut self, user_address: AccountId, dtoken: AccountId, amount: Balance);
+    fn decrease_user_supply(&mut self, user_address: AccountId, dtoken: AccountId, amount: Balance);
 }
 
 #[ext_contract(ext_self)]
 trait DtokenInterface {
-    fn borrow_callback(amount: Balance);
+    fn borrow_callback(amount: Balance) -> Promise;
     fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance);
+    fn supply_callback(&mut self, amount: Balance);
     fn repay_callback_get_balance(&self) -> Promise;
     fn repay_callback_get_interest_rate(&mut self);
+    fn exchange_rate_callback(&self) -> PromiseOrValue<u128>;
 }
 
 #[near_bindgen]
@@ -84,7 +87,7 @@ impl Dtoken {
     }
 
     #[private]
-    pub fn borrow_callback(&mut self, amount: Balance) {
+    pub fn borrow_callback(&mut self, amount: Balance) -> Promise {
         // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
@@ -98,20 +101,10 @@ impl Dtoken {
 
         assert!(is_allowed, "You are not allowed to borrow");
 
-        erc20_token::internal_transfer_with_registration(
-            env::current_account_id(),
-            env::signer_account_id(),
-            amount,
-            None,
-            &self.underlying_token.to_string(), // Attention here!
-            NO_DEPOSIT,
-            10_000_000_000_000,
-        );
-
-        let borrow: u128 = amount
+        let borrow_amount: u128 = amount
             + self
                 .borrow_of
-                .get(&env::predecessor_account_id())
+                .get(&env::signer_account_id())
                 .unwrap_or(0_u128);
         self.borrow_of
             .insert(&env::predecessor_account_id(), &borrow);
@@ -128,39 +121,55 @@ impl Dtoken {
         );
         log!(
             "user {} total borrow {}",
-            env::predecessor_account_id(),
-            borrow
+            env::signer_account_id(),
+            borrow_amount
+        );
+
+        return erc20_token::internal_transfer_with_registration(
+            env::current_account_id(),
+            env::signer_account_id(),
+            amount,
+            None,
+            &self.underlying_token, // Attention here!
+            NO_DEPOSIT,
+            10_000_000_000_000,
         );
     }
 
-    pub fn repay_callback_get_interest_rate(&mut self) {
+    pub fn repay_callback_get_interest_rate(&mut self) -> Promise {
+        log!("repay_callback_get_interest_rate env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
+
         assert_eq!(
             env::promise_results_count(),
             1,
             "ASSERT|repay_callback_get_interest_rate:promise_results_count"
         );
 
-        let interest_rate : U128 = match env::promise_result(0) {
+        let interest_rate: u128 = match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Failed => {
-                env::panic(b"Unable to make comparison")
-            }
-            PromiseResult::Successful(result) => {
-                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
-            }
+            PromiseResult::Failed => env::panic(b"ext_controller::get_interest_rate failed"),
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
         };
 
+        let borrow = self.borrow_of.get(&env::signer_account_id().clone()).unwrap();
         let sender_id: AccountId = env::signer_account_id();
-        let amount : Balance = self.borrow_of.get(&sender_id).unwrap() * interest_rate.0 / RATIO_DECIMALS;
+        let amount: Balance = borrow * interest_rate / RATIO_DECIMALS;
+        
+        log!("{} repay_callback_get_interest_rate {}; borrow {}; amount {}", env::signer_account_id().clone(), interest_rate, borrow, amount);
 
-        erc20_token::internal_transfer_with_registration(
-            sender_id.clone(),
+        let new_value: u128 = 0;
+        self.borrow_of.insert(&env::signer_account_id().clone(), &new_value);
+    
+        return erc20_token::internal_transfer_with_registration(
+            env::signer_account_id().clone(),
             env::current_account_id(),
             amount,
             None,
-            &self.underlying_token, // Attention here!
-            NO_DEPOSIT,
-            20_000_000_000_000,
+            &self.underlying_token,
+            NO_DEPOSIT,        
+            5_000_000_000_000,
         );
 
         let new_value : u128 = 0;
@@ -179,39 +188,41 @@ impl Dtoken {
     }
 
     pub fn repay_callback_get_balance(&self) -> Promise {
+        log!("repay_callback_get_balance env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
+
         assert_eq!(
             env::promise_results_count(),
             1,
             "ASSERT|repay_callback_get_balance:promise_results_count"
         );
 
-        let underlying_balance_of_dtoken : U128 = match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Failed => {
-                env::panic(b"Unable to make comparison")
-            }
-            PromiseResult::Successful(result) => {
-                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
-            }
+        let underlying_balance_of_dtoken = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<u128>(&result)
+                .unwrap()
+                .into(),
         };
 
-        let controller_account_id: AccountId =
-            AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
+        let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
 
-        ext_controller::get_interest_rate(
+        log!("repay_callback_get_balance env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
+        return ext_controller::get_interest_rate(
             env::current_account_id(),
-            underlying_balance_of_dtoken.0,
+            underlying_balance_of_dtoken,
             self.get_total_borrows(),
             self.total_reserve,
             &controller_account_id,
             NO_DEPOSIT,
-            25_000_000_000_000,
+            70_000_000_000_000,
         )
-        .then(ext_self::repay_callback_get_interest_rate(
-            &env::current_account_id(),
-            NO_DEPOSIT,
-            25_000_000_000_000,
-        ))
+        .then(
+            ext_self::repay_callback_get_interest_rate(
+                &env::current_account_id(),
+                NO_DEPOSIT,
+                15_000_000_000_000,
+            )
+        );
     }
 
     #[private]
@@ -233,18 +244,18 @@ impl Dtoken {
         if self.token.total_supply <= 0 {
             exchange_rate = self.initial_exchange_rate
         } else {
-            exchange_rate = (balance + self.total_borrows - self.total_reserve) * 10_u128.pow(8)
+            exchange_rate = (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS
                 / self.token.total_supply
         }
 
-        log!("return amount:{}", amount * exchange_rate / 10_u128.pow(8));
+        log!("return amount:{}", amount * exchange_rate / RATIO_DECIMALS);
 
         erc20_token::internal_transfer_with_registration(
             env::current_account_id(),
             account_id.clone(),
-            amount * exchange_rate / 10_u128.pow(8),
+            amount * exchange_rate / RATIO_DECIMALS,
             None,
-            &AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap(),
+            &self.underlying_token,
             NO_DEPOSIT,
             10_000_000_000_000,
         );
@@ -253,7 +264,7 @@ impl Dtoken {
         to predecessor_account_id: {} with amount: {}",
             env::current_account_id(),
             account_id.clone().to_string(),
-            amount * exchange_rate / 10_u128.pow(8)
+            amount * exchange_rate / RATIO_DECIMALS
         );
 
         self.burn(&account_id.to_string(), amount);
@@ -261,48 +272,143 @@ impl Dtoken {
             "predecessor_account_id dtoken balance: {}",
             self.internal_unwrap_balance_of(&account_id.to_string())
         );
-    }
 
-    pub fn supply(&mut self, amount: Balance) {
-        let dtoken_account_id = env::current_account_id();
-        let predecessor_account_id = env::predecessor_account_id();
-
-        log!("dtoken_account_id: {}", dtoken_account_id);
-        log!("signer_account_id: {}", predecessor_account_id);
-
-        erc20_token::internal_transfer_with_registration(
-            predecessor_account_id.clone(),
-            dtoken_account_id.clone(),
-            amount,
-            None,
-            &self.underlying_token.clone(),
-            NO_DEPOSIT,
-            BASE_GAS,
-        );
-        log!(
-            "internal_transfer_with_registration from predecessor_account_id: {} \
-        to dtoken_account_id: {} with amount: {}",
-            predecessor_account_id.clone(),
-            dtoken_account_id.clone(),
-            amount
-        );
-
-        self.mint(&predecessor_account_id.clone(), amount);
-        log!(
-            "predecessor_account_id dtoken balance: {}",
-            self.internal_unwrap_balance_of(&predecessor_account_id)
-        );
-    }
-
-    pub fn withdraw(&mut self, amount: Balance) {
-        self.get_exchange_rate(amount);
-    }
-
-    pub fn borrow(amount: Balance) {
         let controller_account_id: AccountId =
             AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
 
-        ext_controller::borrow_allowed(
+        // ext_controller::decrease_user_supply(
+        //     env::predecessor_account_id().to_string(),
+        //     env::current_account_id().to_string(),
+        //     amount,
+        //     &controller_account_id,
+        //     NO_DEPOSIT,
+        //     10_000_000_000_000,
+        // );
+    }
+
+    #[private]
+    pub fn exchange_rate_callback(&self) -> PromiseOrValue<u128> {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a withdraw callback method"
+        );
+        let balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let exchange_rate: u128 = if self.token.total_supply == 0 {
+            self.initial_exchange_rate
+        } else {
+            (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS
+                / self.token.total_supply
+        };
+
+        return near_sdk::PromiseOrValue::Value(exchange_rate);
+    }
+
+    #[private]
+    pub fn supply_callback(&mut self, amount: Balance) -> Promise {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a supply callback method"
+        );
+        let balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let exchange_rate: u128;
+        if self.token.total_supply <= 0 {
+            exchange_rate = self.initial_exchange_rate
+        } else {
+            exchange_rate = (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS
+                / self.token.total_supply
+        }
+
+
+        self.mint(&env::signer_account_id().clone(), amount);
+        log!(
+            "dtoken balance {} of {}", self.internal_unwrap_balance_of(&env::signer_account_id()), env::signer_account_id()
+        );
+
+        // let controller_account_id: AccountId =
+        //     AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
+
+        // ext_controller::increase_user_supply(
+        //     env::signer_account_id().to_string(),
+        //     env::current_account_id().to_string(),
+        //     amount,
+        //     &controller_account_id,
+        //     NO_DEPOSIT,
+        //     20_000_000_000_000,
+        // );
+
+        log!("exchange_rate: {}", exchange_rate);
+        log!("supply amount:{}", amount * RATIO_DECIMALS / exchange_rate);
+
+        log!(
+            "internal_transfer_with_registration from signer_account_id: {} to dtoken_account_id: {} with amount: {}",
+            env::signer_account_id(),
+            env::current_account_id(),
+            amount
+        );
+        
+        return erc20_token::internal_transfer_with_registration(
+            env::signer_account_id(),
+            env::current_account_id(),
+            amount * RATIO_DECIMALS / exchange_rate,
+            None,
+            &self.underlying_token.clone(),
+            NO_DEPOSIT,
+            40_000_000_000_000,
+        );
+    }
+
+    pub fn supply(&mut self, amount: Balance) {
+        erc20_token::ft_balance_of(
+            env::current_account_id(),
+            &self.underlying_token,
+            NO_DEPOSIT,
+            20_000_000_000_000,
+        )
+        .then(ext_self::supply_callback(
+            amount,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            80_000_000_000_000,
+        ));
+    }
+
+    pub fn withdraw(&self, amount: Balance) {
+        erc20_token::ft_balance_of(
+            env::current_account_id(),
+            &self.underlying_token,
+            NO_DEPOSIT,
+            40_000_000_000_000,
+        )
+        .then(ext_self::withdraw_callback(
+            env::signer_account_id(),
+            amount,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            20_000_000_000_000,
+        ));
+    }
+
+    pub fn borrow(amount: Balance) -> Promise {
+        let controller_account_id: AccountId =
+            AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
+
+        return ext_controller::borrow_allowed(
             env::current_account_id().to_string(),
             env::predecessor_account_id(),
             amount,
@@ -318,37 +424,34 @@ impl Dtoken {
         ));
     }
 
-    pub fn repay() -> Promise {
-        let weth_account_id: AccountId =
-        AccountId::try_from(WETH_TOKEN_ACCOUNT_ID).unwrap();
+    pub fn repay(&self) -> Promise {
+        log!("repay env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
 
-        erc20_token::internal_unwrap_balance_of(
+        return erc20_token::internal_unwrap_balance_of(
             env::current_account_id(),
-            &weth_account_id,
+            &self.underlying_token,
             NO_DEPOSIT,
-            30_000_000_000_000,
+            15_000_000_000_000,
         )
         .then(ext_self::repay_callback_get_balance(
             &env::current_account_id(),
             NO_DEPOSIT,
-            30_000_000_000_000,
-        ))
+            100_000_000_000_000,
+        ));
     }
 
     pub fn add_reserve(amount: Balance) {
         //TODO: add_reserve implementation
     }
 
-    pub fn get_exchange_rate(&mut self, amount: Balance) {
-        erc20_token::ft_balance_of(
+    pub fn get_exchange_rate(&self) -> Promise {
+        return erc20_token::ft_balance_of(
             env::current_account_id(),
-            &AccountId::try_from(WETH_TOKEN_ACCOUNT_ID.clone().to_string()).unwrap(),
+            &self.underlying_token,
             NO_DEPOSIT,
             40_000_000_000_000,
         )
-        .then(ext_self::withdraw_callback(
-            env::predecessor_account_id(),
-            amount,
+        .then(ext_self::exchange_rate_callback(
             &env::current_account_id().to_string(),
             NO_DEPOSIT,
             20_000_000_000_000,
@@ -363,11 +466,8 @@ impl Dtoken {
         return self.internal_unwrap_balance_of(&account);
     }
 
-    pub fn get_borrows(&self) -> Balance {
-        return self
-            .borrow_of
-            .get(&env::predecessor_account_id())
-            .unwrap_or(0);
+    pub fn get_borrows(&self, account: AccountId) -> Balance {
+        return self.borrow_of.get(&account).unwrap_or(0);
     }
 
     pub fn get_total_reserve(&self) -> u128 {
@@ -380,7 +480,7 @@ impl Dtoken {
 
     pub fn get_total_borrows(&self) -> u128 {
         let mut total_borrows: Balance = 0;
-        for (key, value) in self.borrow_of.iter() {
+        for (_, value) in self.borrow_of.iter() {
             total_borrows += value;
         }
 

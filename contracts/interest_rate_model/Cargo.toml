@@ -1,7 +1,7 @@
 [package]
 name = "interest_rate_model"
-version = "0.1.0"
-authors = ["mark.ts@blaize.tech"]
+version = "0.0.1"
+authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "vladyslav.v@blaize.tech", "orest.o@blaize.tech"]
 edition = "2018"
 
 [lib]
