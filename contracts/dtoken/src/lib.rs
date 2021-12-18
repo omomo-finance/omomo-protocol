@@ -54,7 +54,7 @@ trait ControllerInterface {
 trait DtokenInterface {
     fn borrow_callback(amount: Balance);
     fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance);
-    fn supply_callback(&mut self, account_id: AccountId, amount: Balance);
+    fn supply_callback(&mut self, amount: Balance);
     fn repay_callback_get_balance(&self) -> Promise;
     fn repay_callback_get_interest_rate(&mut self);
     fn exchange_rate_callback(&self) -> Promise;
@@ -277,7 +277,7 @@ impl Dtoken {
     }
 
     #[private]
-    pub fn supply_callback(&mut self, account_id: AccountId, amount: Balance) {
+    pub fn supply_callback(&mut self, amount: Balance) {
         assert_eq!(
             env::promise_results_count(),
             1,
@@ -302,7 +302,7 @@ impl Dtoken {
         log!("supply amount:{}", amount * exchange_rate / RATIO_DECIMALS);
 
         erc20_token::internal_transfer_with_registration(
-            account_id.clone(),
+            env::signer_account_id(),
             env::current_account_id(),
             amount * RATIO_DECIMALS / exchange_rate,
             None,
@@ -313,22 +313,22 @@ impl Dtoken {
         log!(
             "internal_transfer_with_registration from predecessor_account_id: {} \
         to dtoken_account_id: {} with amount: {}",
-            account_id.clone(),
+            env::signer_account_id(),
             env::current_account_id(),
             amount
         );
 
-        self.mint(&account_id.clone(), amount);
+        self.mint(&env::signer_account_id(), amount);
         log!(
             "predecessor_account_id dtoken balance: {}",
-            self.internal_unwrap_balance_of(&account_id)
+            self.internal_unwrap_balance_of(&env::signer_account_id())
         );
 
         let controller_account_id: AccountId =
             AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
 
         ext_controller::increase_user_supply(
-            env::predecessor_account_id().to_string(),
+            env::signer_account_id().to_string(),
             env::current_account_id().to_string(),
             amount,
             &controller_account_id,
@@ -345,7 +345,6 @@ impl Dtoken {
             20_000_000_000_000,
         )
         .then(ext_self::supply_callback(
-            env::predecessor_account_id(),
             amount,
             &env::current_account_id().to_string(),
             NO_DEPOSIT,
