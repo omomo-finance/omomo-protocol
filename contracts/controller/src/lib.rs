@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::BorshStorageKey;
-use near_sdk::{env, ext_contract, near_bindgen, log, Gas, AccountId, Balance, Promise, PromiseResult};
+use near_sdk::{env, ext_contract, near_bindgen, log, Gas, AccountId, Balance, Promise, PromiseOrValue, PromiseResult};
 
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
@@ -119,25 +119,28 @@ impl Controller {
         underlying_balance: Balance,
         total_borrows: Balance,
         total_reserve: Balance,
-    ) -> Promise {
-        log!("get_interest_rate env::prepaid_gas {:?}", &env::prepaid_gas());
-        assert!(self.interest_rate_models.contains_key(&dtoken_address));
+    ) -> PromiseOrValue<U128> {
 
-        let interest_rate_model_address = self.interest_rate_models.get(&dtoken_address).unwrap();
+        return near_sdk::PromiseOrValue::Value(110000000.into());
 
-        return ext_interest_rate_model::get_borrow_rate(
-            underlying_balance,
-            total_borrows,
-            total_reserve,
-            interest_rate_model_address,
-            0,                        // attached yocto NEAR
-            40_000_000_000_000.into(), // attached gas
-        )
-        .then(ext_self::callback_promise_result(
-            env::current_account_id(), // this contract's account id
-            0,                         // yocto NEAR to attach to the callback
-            20_000_000_000_000.into(),  // gas to attach to the callback
-        ));
+        // log!("get_interest_rate env::prepaid_gas {:?}", &env::prepaid_gas());
+        // assert!(self.interest_rate_models.contains_key(&dtoken_address));
+
+        // let interest_rate_model_address = self.interest_rate_models.get(&dtoken_address).unwrap();
+
+        // return ext_interest_rate_model::get_borrow_rate(
+        //     underlying_balance,
+        //     total_borrows,
+        //     total_reserve,
+        //     interest_rate_model_address,
+        //     0,                        // attached yocto NEAR
+        //     40_000_000_000_000.into(), // attached gas
+        // )
+        // .then(ext_self::callback_promise_result(
+        //     env::current_account_id(), // this contract's account id
+        //     0,                         // yocto NEAR to attach to the callback
+        //     20_000_000_000_000.into(),  // gas to attach to the callback
+        // ));
     }
 
     pub fn set_borrow_cap(&mut self, dtoken_address: AccountId, decimal: u128) {
