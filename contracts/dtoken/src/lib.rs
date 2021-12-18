@@ -56,7 +56,7 @@ trait DtokenInterface {
     fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance);
     fn repay_callback_get_balance(&self) -> Promise;
     fn repay_callback_get_interest_rate(&mut self);
-    fn exchange_rate_callback(&self) -> Promise;
+    fn exchange_rate_callback(&self) -> PromiseOrValue<u128>;
 }
 
 #[near_bindgen]
@@ -112,13 +112,13 @@ impl Dtoken {
         let borrow: u128 = amount
             + self
                 .borrow_of
-                .get(&env::predecessor_account_id())
+                .get(&env::signer_account_id())
                 .unwrap_or(0_u128);
         self.borrow_of
-            .insert(&env::predecessor_account_id(), &borrow);
+            .insert(&env::signer_account_id(), &borrow);
         log!(
             "user {} total borrow {}",
-            env::predecessor_account_id(),
+            env::signer_account_id(),
             borrow
         );
     }
@@ -173,7 +173,7 @@ impl Dtoken {
 
         let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
 
-        ext_controller::get_interest_rate(
+        return ext_controller::get_interest_rate(
             env::current_account_id(),
             underlying_balance_of_dtoken.0,
             self.get_total_borrows(),
@@ -182,11 +182,13 @@ impl Dtoken {
             NO_DEPOSIT,
             25_000_000_000_000,
         )
-        .then(ext_self::repay_callback_get_interest_rate(
-            &env::current_account_id(),
-            NO_DEPOSIT,
-            25_000_000_000_000,
-        ))
+        .then(
+            ext_self::repay_callback_get_interest_rate(
+                &env::current_account_id(),
+                NO_DEPOSIT,
+                25_000_000_000_000,
+            )
+        );
     }
 
     #[private]
@@ -325,7 +327,7 @@ impl Dtoken {
             40_000_000_000_000,
         )
         .then(ext_self::withdraw_callback(
-            env::predecessor_account_id(),
+            env::signer_account_id(),
             amount,
             &env::current_account_id().to_string(),
             NO_DEPOSIT,
@@ -408,7 +410,7 @@ impl Dtoken {
 
     pub fn get_total_borrows(&self) -> u128 {
         let mut total_borrows: Balance = 0;
-        for (key, value) in self.borrow_of.iter() {
+        for (_, value) in self.borrow_of.iter() {
             total_borrows += value;
         }
 
