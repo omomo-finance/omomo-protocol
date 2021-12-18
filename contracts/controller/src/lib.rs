@@ -1,6 +1,7 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
+use near_sdk::serde::de::Unexpected::Option;
 use near_sdk::BorshStorageKey;
 use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, Promise, PromiseResult};
 
@@ -39,7 +40,7 @@ pub struct Controller {
     interest_rate_models: LookupMap<AccountId, AccountId>,
     borrow_caps: LookupMap<AccountId, u128>,
     prices: LookupMap<AccountId, U128>,
-    user_borrows_per_token: LookupMap<AccountId, LookupMap<AccountId, u128>>,
+    user_borrows_per_token: UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>,
     users_supplies: UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>, // user per dtoken and balance
 }
 
@@ -50,7 +51,7 @@ impl Default for Controller {
             interest_rate_models: LookupMap::new(StorageKeys::InterestRateModels),
             borrow_caps: LookupMap::new(StorageKeys::BorrowCaps),
             prices: LookupMap::new(StorageKeys::Prices),
-            user_borrows_per_token: LookupMap::new(StorageKeys::UserBorrowsPerToken),
+            user_borrows_per_token: UnorderedMap::new(StorageKeys::UserBorrowsPerToken),
             users_supplies: UnorderedMap::new(StorageKeys::UserSupplies),
         }
     }
@@ -94,9 +95,15 @@ impl Controller {
         true
     }
 
-    pub fn borrow_allowed(&self, dtoken_address: AccountId, amount: u128) -> bool {
-        let amount_usd = self.get_price(dtoken_address).0 * amount / RATIO_DECIMALS;
-        self.get_account_theoretical_liquidity() - amount_usd >= 0
+    pub fn borrow_allowed(
+        &self,
+        user_address: AccountId,
+        dtoken_address: AccountId,
+        total_reserve: Balance,
+        amount: u128,
+    ) -> bool {
+        let amount_usd = self.get_price(dtoken_address.clone()).0 * amount / RATIO_DECIMALS;
+        self.get_account_theoretical_liquidity(user_address.clone(), dtoken_address.clone(), total_reserve) - amount_usd >= 0
     }
 
     pub fn set_interest_rate_model(
@@ -156,7 +163,35 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
-    pub fn get_account_theoretical_liquidity(&self) -> u128 {
+    fn get_sum(user_address: AccountId, container: &UnorderedMap<AccountId, UnorderedMap<AccountId, Balance>>) -> Balance
+    {
+        let sum = match container.get(&user_address.clone()) {
+            None => 0,
+            Some(value) => {
+                let mut sum = 0;
+                for supplyPerMarket in value.values_as_vector().iter() {
+                    sum += supplyPerMarket;
+                }
+
+                sum
+            }
+        };
+
+        sum
+    }
+
+
+    pub fn get_account_theoretical_liquidity(&self, user_address: AccountId, dtoken_address: AccountId, total_reserve: Balance) -> u128 {
+        let price = self.get_price(user_address.clone());
+
+        let total_supplies = Controller::get_sum(user_address.clone(), &self.users_supplies);
+        let total_borrows = Controller::get_sum(user_address.clone(), &self.user_borrows_per_token);
+
+        let usd_sum_of_supplies = total_supplies * price.0;
+        let usd_sum_of_borrows = total_borrows * price.0;
+
+        self.get_interest_rate();
+
         0
     }
 
@@ -166,16 +201,19 @@ impl Controller {
         dtoken_address: AccountId,
         amount: U128,
     ) {
-        if self.user_borrows_per_token.contains_key(&user_address) {
-            self.user_borrows_per_token
-                .get(&user_address)
-                .unwrap()
-                .insert(&dtoken_address, &amount.0);
-        } else {
-            let mut tmp: LookupMap<AccountId, u128> = LookupMap::new(b"z".to_vec());
-            tmp.insert(&dtoken_address, &amount.0);
+        match self.user_borrows_per_token.get(&user_address) {
+            None => {
+                let mut tmp: UnorderedMap<AccountId, u128> = UnorderedMap::new(b"z".to_vec());
+                tmp.insert(&dtoken_address, &amount.0);
 
-            self.user_borrows_per_token.insert(&user_address, &tmp);
+                self.user_borrows_per_token.insert(&user_address, &tmp);
+            }
+            Some(_) => {
+                self.user_borrows_per_token
+                    .get(&user_address)
+                    .unwrap()
+                    .insert(&dtoken_address, &amount.0);
+            }
         }
     }
 

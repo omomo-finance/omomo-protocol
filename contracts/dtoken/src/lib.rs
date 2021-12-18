@@ -34,6 +34,7 @@ trait ControllerInterface {
         &mut self,
         dtoken_address: AccountId,
         user_address: AccountId,
+        total_reserve: Balance,
         amount: u128,
     ) -> bool;
 
@@ -370,13 +371,14 @@ impl Dtoken {
         ));
     }
 
-    pub fn borrow(amount: Balance) {
+    pub fn borrow(&self, amount: Balance) {
         let controller_account_id: AccountId =
             AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
 
         ext_controller::borrow_allowed(
             env::current_account_id().to_string(),
             env::predecessor_account_id(),
+            self.total_reserve,
             amount,
             &controller_account_id.to_string(),
             NO_DEPOSIT,
