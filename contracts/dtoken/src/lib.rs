@@ -47,7 +47,6 @@ trait ControllerInterface {
 
     fn set_user_borrows_per_token(&mut self, user_address: AccountId, dtoken_address: AccountId, amount: U128);
     fn increase_user_supply(&mut self, user_address: AccountId, dtoken: AccountId, amount: Balance);
-
     fn decrease_user_supply(&mut self, user_address: AccountId, dtoken: AccountId, amount: Balance);
 }
 
@@ -170,20 +169,6 @@ impl Dtoken {
             &self.underlying_token,
             NO_DEPOSIT,        
             5_000_000_000_000,
-        );
-
-        let new_value : u128 = 0;
-        self.borrow_of.insert(&sender_id, &new_value);
-
-        let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
-
-        ext_controller::set_user_borrows_per_token(
-            sender_id, 
-            env::current_account_id(), 
-            0.into(),
-            &controller_account_id,
-            NO_DEPOSIT, 
-            5_000_000_000_000
         );
     }
 
