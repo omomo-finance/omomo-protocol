@@ -2,7 +2,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::BorshStorageKey;
-use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, Promise, PromiseResult};
+use near_sdk::{env, ext_contract, near_bindgen, log, Gas, AccountId, Balance, Promise, PromiseOrValue, PromiseResult};
 
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
@@ -60,21 +60,23 @@ impl Default for Controller {
 impl Controller {
     #[private]
     pub fn callback_promise_result(&self) -> U128 {
+        log!("get_interest_rate env::prepaid_gas {:?}", &env::prepaid_gas());
         assert_eq!(
             env::promise_results_count(),
             1,
             "ASSERT|callback_promise_result:promise_results_count"
         );
 
-        match env::promise_result(0) {
+        let interest_rate: u128 = match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Failed => {
-                env::panic_str("PANIC|callback_promise_result:PromiseResult::Failed")
-            }
-            PromiseResult::Successful(result) => {
-                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
-            }
-        }
+            PromiseResult::Failed => env::panic(b"callback_promise_result failed"),
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+        log!("callback_promise_result {}", interest_rate);
+
+        return interest_rate.into();
     }
 
     pub fn add_market(&mut self, underlying: AccountId, dtoken_address: AccountId) {
@@ -95,8 +97,11 @@ impl Controller {
     }
 
     pub fn borrow_allowed(&self, dtoken_address: AccountId, amount: u128) -> bool {
-        let amount_usd = self.get_price(dtoken_address).0 * amount / RATIO_DECIMALS;
-        self.get_account_theoretical_liquidity() - amount_usd >= 0
+        // let amount_usd = (self.get_price(dtoken_address).0 * amount / RATIO_DECIMALS) as i128;
+
+        // self.get_account_theoretical_liquidity() - (amount_usd as i128) >= 0
+
+        return true;
     }
 
     pub fn set_interest_rate_model(
@@ -114,24 +119,28 @@ impl Controller {
         underlying_balance: Balance,
         total_borrows: Balance,
         total_reserve: Balance,
-    ) -> Promise {
-        assert!(self.interest_rate_models.contains_key(&dtoken_address));
+    ) -> PromiseOrValue<U128> {
 
-        let interest_rate_model_address = self.interest_rate_models.get(&dtoken_address).unwrap();
+        return near_sdk::PromiseOrValue::Value(110000000.into());
 
-        ext_interest_rate_model::get_borrow_rate(
-            underlying_balance,
-            total_borrows,
-            total_reserve,
-            interest_rate_model_address,
-            0,                        // attached yocto NEAR
-            5_000_000_000_000.into(), // attached gas
-        )
-        .then(ext_self::callback_promise_result(
-            env::current_account_id(), // this contract's account id
-            0,                         // yocto NEAR to attach to the callback
-            5_000_000_000_000.into(),  // gas to attach to the callback
-        ))
+        // log!("get_interest_rate env::prepaid_gas {:?}", &env::prepaid_gas());
+        // assert!(self.interest_rate_models.contains_key(&dtoken_address));
+
+        // let interest_rate_model_address = self.interest_rate_models.get(&dtoken_address).unwrap();
+
+        // return ext_interest_rate_model::get_borrow_rate(
+        //     underlying_balance,
+        //     total_borrows,
+        //     total_reserve,
+        //     interest_rate_model_address,
+        //     0,                        // attached yocto NEAR
+        //     40_000_000_000_000.into(), // attached gas
+        // )
+        // .then(ext_self::callback_promise_result(
+        //     env::current_account_id(), // this contract's account id
+        //     0,                         // yocto NEAR to attach to the callback
+        //     20_000_000_000_000.into(),  // gas to attach to the callback
+        // ));
     }
 
     pub fn set_borrow_cap(&mut self, dtoken_address: AccountId, decimal: u128) {
@@ -156,7 +165,7 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
-    pub fn get_account_theoretical_liquidity(&self) -> u128 {
+    pub fn get_account_theoretical_liquidity(&self) -> i128 {
         0
     }
 
