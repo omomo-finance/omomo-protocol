@@ -211,7 +211,7 @@ impl Controller {
                     .insert(&user_address, &dtoken_per_supply);
             }
             Some(mut value) => {
-                let new_amount = value.values_as_vector().get(0).unwrap() + amount;
+                let new_amount = value.get(&dtoken).unwrap() + amount;
                 value.insert(&dtoken, &new_amount);
             }
         }
@@ -230,7 +230,7 @@ impl Controller {
                 env::panic_str("Cannot decrease amount of user that not stored");
             }
             Some(mut value) => {
-                let new_amount = value.values_as_vector().get(0).unwrap() - amount;
+                let new_amount = value.get(&dtoken).unwrap() + amount;
                 if new_amount >= 0 {
                     value.insert(&dtoken, &new_amount);
                 } else {

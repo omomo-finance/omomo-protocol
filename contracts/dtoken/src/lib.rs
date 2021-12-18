@@ -54,6 +54,7 @@ trait ControllerInterface {
 trait DtokenInterface {
     fn borrow_callback(amount: Balance);
     fn withdraw_callback(&mut self, account_id: AccountId, amount: Balance);
+    fn supply_callback(&mut self, account_id: AccountId, amount: Balance);
     fn repay_callback_get_balance(&self) -> Promise;
     fn repay_callback_get_interest_rate(&mut self);
     fn exchange_rate_callback(&self) -> Promise;
@@ -208,16 +209,16 @@ impl Dtoken {
         if self.token.total_supply <= 0 {
             exchange_rate = self.initial_exchange_rate
         } else {
-            exchange_rate = (balance + self.total_borrows - self.total_reserve) * 10_u128.pow(8)
+            exchange_rate = (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS
                 / self.token.total_supply
         }
 
-        log!("return amount:{}", amount * exchange_rate / 10_u128.pow(8));
+        log!("return amount:{}", amount * exchange_rate / RATIO_DECIMALS);
 
         erc20_token::internal_transfer_with_registration(
             env::current_account_id(),
             account_id.clone(),
-            amount * exchange_rate / 10_u128.pow(8),
+            amount * exchange_rate / RATIO_DECIMALS,
             None,
             &self.underlying_token,
             NO_DEPOSIT,
@@ -228,7 +229,7 @@ impl Dtoken {
         to predecessor_account_id: {} with amount: {}",
             env::current_account_id(),
             account_id.clone().to_string(),
-            amount * exchange_rate / 10_u128.pow(8)
+            amount * exchange_rate / RATIO_DECIMALS
         );
 
         self.burn(&account_id.to_string(), amount);
@@ -268,40 +269,59 @@ impl Dtoken {
         let exchange_rate: u128 = if self.token.total_supply == 0 {
             self.initial_exchange_rate
         } else {
-            (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS / self.token.total_supply
+            (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS
+                / self.token.total_supply
         };
 
         return near_sdk::PromiseOrValue::Value(exchange_rate);
     }
 
-    pub fn supply(&mut self, amount: Balance) {
-        let dtoken_account_id = env::current_account_id();
-        let predecessor_account_id = env::predecessor_account_id();
+    #[private]
+    pub fn supply_callback(&mut self, account_id: AccountId, amount: Balance) {
+        assert_eq!(
+            env::promise_results_count(),
+            1,
+            "This is a supply callback method"
+        );
+        let balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
 
-        log!("dtoken_account_id: {}", dtoken_account_id);
-        log!("signer_account_id: {}", predecessor_account_id);
+        let exchange_rate: u128;
+        if self.token.total_supply <= 0 {
+            exchange_rate = self.initial_exchange_rate
+        } else {
+            exchange_rate = (balance + self.total_borrows - self.total_reserve) * RATIO_DECIMALS
+                / self.token.total_supply
+        }
+
+        log!("supply amount:{}", amount * exchange_rate / RATIO_DECIMALS);
 
         erc20_token::internal_transfer_with_registration(
-            predecessor_account_id.clone(),
-            dtoken_account_id.clone(),
-            amount,
+            account_id.clone(),
+            env::current_account_id(),
+            amount * RATIO_DECIMALS / exchange_rate,
             None,
             &self.underlying_token.clone(),
             NO_DEPOSIT,
-            BASE_GAS,
+            40_000_000_000_000,
         );
         log!(
             "internal_transfer_with_registration from predecessor_account_id: {} \
         to dtoken_account_id: {} with amount: {}",
-            predecessor_account_id.clone(),
-            dtoken_account_id.clone(),
+            account_id.clone(),
+            env::current_account_id(),
             amount
         );
 
-        self.mint(&predecessor_account_id.clone(), amount);
+        self.mint(&account_id.clone(), amount);
         log!(
             "predecessor_account_id dtoken balance: {}",
-            self.internal_unwrap_balance_of(&predecessor_account_id)
+            self.internal_unwrap_balance_of(&account_id)
         );
 
         let controller_account_id: AccountId =
@@ -313,11 +333,27 @@ impl Dtoken {
             amount,
             &controller_account_id,
             NO_DEPOSIT,
-            10_000_000_000_000,
+            20_000_000_000_000,
         );
     }
 
-    pub fn withdraw(& self, amount: Balance) {
+    pub fn supply(&mut self, amount: Balance) {
+        erc20_token::ft_balance_of(
+            env::current_account_id(),
+            &self.underlying_token,
+            NO_DEPOSIT,
+            20_000_000_000_000,
+        )
+        .then(ext_self::supply_callback(
+            env::predecessor_account_id(),
+            amount,
+            &env::current_account_id().to_string(),
+            NO_DEPOSIT,
+            80_000_000_000_000,
+        ));
+    }
+
+    pub fn withdraw(&self, amount: Balance) {
         erc20_token::ft_balance_of(
             env::current_account_id(),
             &self.underlying_token,
@@ -332,7 +368,6 @@ impl Dtoken {
             20_000_000_000_000,
         ));
     }
-
 
     pub fn borrow(amount: Balance) {
         let controller_account_id: AccountId =
