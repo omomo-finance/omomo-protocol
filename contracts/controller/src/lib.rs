@@ -94,9 +94,10 @@ impl Controller {
         true
     }
 
-    pub fn borrow_allowed(&self, dtoken_address: AccountId, amount: u128) -> bool {
+    pub fn borrow_allowed(&self, dtoken_address: AccountId, user_address: AccountId, amount: u128) -> bool {
         let amount_usd = self.get_price(dtoken_address).0 * amount / RATIO_DECIMALS;
-        self.get_account_theoretical_liquidity() - amount_usd >= 0
+        let unsing_amount_usd = amount_usd as i128;
+        self.get_account_theoretical_liquidity(user_address) - unsing_amount_usd >= 0
     }
 
     pub fn set_interest_rate_model(
@@ -156,8 +157,33 @@ impl Controller {
         return self.prices.get(&dtoken_address).unwrap().into();
     }
 
-    pub fn get_account_theoretical_liquidity(&self) -> u128 {
-        0
+    pub fn get_account_theoretical_liquidity(&self, user_address: AccountId) -> i128 {
+        let markets = self.supported_markets.values_as_vector();
+        let collateral_rate = 60;
+
+        let mut supply_amount_usd: i128 = 0;
+        let mut borrow_amount_usd: i128 = 0;
+
+        for market in markets.iter() {
+            let mut amount: i128 = 0;
+            match self.users_supplies.get(&user_address) {
+                None => {
+                    amount = 0;
+                }
+                Some(value) => {
+                    amount = value.get(&market).unwrap() as i128;
+                }
+            }
+            supply_amount_usd += self.get_price(market).0 as i128 * amount / RATIO_DECIMALS as i128;
+
+            // amount = get user borrow amount;
+            // borrow_amount_usd += self.get_price(market).0 * amount / RATIO_DECIMALS;
+
+        }
+        supply_amount_usd = supply_amount_usd * collateral_rate / 100;
+        
+        
+        return supply_amount_usd - borrow_amount_usd
     }
 
     pub fn set_user_borrows_per_token(
@@ -183,7 +209,7 @@ impl Controller {
         let markets = self.supported_markets.values_as_vector();
         let mut is_found_market = false;
         for market in markets.iter() {
-            if market == env::predecessor_account_id() {
+            if market == user_address {
                 is_found_market = true
             }
         }
@@ -200,7 +226,7 @@ impl Controller {
         dtoken: AccountId,
         amount: Balance,
     ) {
-        self.check_market(user_address.clone());
+        self.check_market(env::predecessor_account_id());
 
         match self.users_supplies.get(&user_address) {
             None => {
