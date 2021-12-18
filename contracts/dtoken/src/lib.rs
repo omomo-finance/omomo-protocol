@@ -45,9 +45,9 @@ trait ControllerInterface {
         total_reserve: Balance,
     ) -> Promise;
 
-
     fn set_user_borrows_per_token(&mut self, user_address: AccountId, dtoken_address: AccountId, amount: U128);
     fn increase_user_supply(&mut self, user_address: AccountId, dtoken: AccountId, amount: Balance);
+
     fn decrease_user_supply(&mut self, user_address: AccountId, dtoken: AccountId, amount: Balance);
 }
 
@@ -107,7 +107,7 @@ impl Dtoken {
                 .get(&env::signer_account_id())
                 .unwrap_or(0_u128);
         self.borrow_of
-            .insert(&env::predecessor_account_id(), &borrow);
+        .insert(&env::predecessor_account_id(), &borrow);
 
 
         let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
