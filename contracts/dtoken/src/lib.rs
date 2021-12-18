@@ -106,14 +106,13 @@ impl Dtoken {
                 .get(&env::signer_account_id())
                 .unwrap_or(0_u128);
         self.borrow_of
-        .insert(&env::predecessor_account_id(), &borrow);
-
+            .insert(&env::predecessor_account_id(), &borrow_amount);
 
         let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
         ext_controller::set_user_borrows_per_token(
             env::signer_account_id(), 
             env::current_account_id(), 
-            borrow.into(),
+            borrow_amount.into(),
             &controller_account_id,
             NO_DEPOSIT, 
             5_000_000_000_000
@@ -160,6 +159,17 @@ impl Dtoken {
 
         let new_value: u128 = 0;
         self.borrow_of.insert(&env::signer_account_id().clone(), &new_value);
+
+        let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
+
+        ext_controller::set_user_borrows_per_token(
+            sender_id, 
+            env::current_account_id(), 
+            0.into(),
+            &controller_account_id,
+            NO_DEPOSIT, 
+            5_000_000_000_000
+        );
     
         return erc20_token::internal_transfer_with_registration(
             env::signer_account_id().clone(),
