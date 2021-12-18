@@ -5,6 +5,8 @@ use near_sdk::BorshStorageKey;
 use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, Promise, PromiseResult};
 
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
+const COLLATERAL_RATE: i128 = 60;
+const RATE_ACCURACY: i128 = 100;
 
 #[ext_contract(ext_interest_rate_model)]
 pub trait InterestRateModel {
@@ -159,7 +161,6 @@ impl Controller {
 
     pub fn get_account_theoretical_liquidity(&self, user_address: AccountId) -> i128 {
         let markets = self.supported_markets.values_as_vector();
-        let collateral_rate = 60;
 
         let mut supply_amount_usd: i128 = 0;
         let mut borrow_amount_usd: i128 = 0;
@@ -180,7 +181,7 @@ impl Controller {
             // borrow_amount_usd += self.get_price(market).0 * amount / RATIO_DECIMALS;
 
         }
-        supply_amount_usd = supply_amount_usd * collateral_rate / 100;
+        supply_amount_usd = supply_amount_usd * COLLATERAL_RATE / RATE_ACCURACY;
         
         
         return supply_amount_usd - borrow_amount_usd
