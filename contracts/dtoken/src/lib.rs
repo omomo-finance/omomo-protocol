@@ -46,6 +46,8 @@ trait ControllerInterface {
         total_borrows: Balance,
         total_reserve: Balance,
     ) -> Promise;
+
+    fn set_user_borrows_per_token(&mut self, user_address: AccountId, dtoken_address: AccountId, amount: U128);
 }
 
 #[ext_contract(ext_self)]
@@ -113,6 +115,17 @@ impl Dtoken {
                 .unwrap_or(0_u128);
         self.borrow_of
             .insert(&env::predecessor_account_id(), &borrow);
+
+
+        let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
+        ext_controller::set_user_borrows_per_token(
+            env::signer_account_id(), 
+            env::current_account_id(), 
+            borrow.into(),
+            &controller_account_id,
+            NO_DEPOSIT, 
+            5_000_000_000_000
+        );
         log!(
             "user {} total borrow {}",
             env::predecessor_account_id(),
@@ -152,6 +165,17 @@ impl Dtoken {
 
         let new_value : u128 = 0;
         self.borrow_of.insert(&sender_id, &new_value);
+
+        let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
+
+        ext_controller::set_user_borrows_per_token(
+            sender_id, 
+            env::current_account_id(), 
+            0.into(),
+            &controller_account_id,
+            NO_DEPOSIT, 
+            5_000_000_000_000
+        );
     }
 
     pub fn repay_callback_get_balance(&self) -> Promise {
