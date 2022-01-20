@@ -4,19 +4,21 @@ use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey};
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
-    Markets,
+    Borrows,
 }
+
+pub type TokenAmount = u128;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    // Market name -> Token contract address
-    pub markets: UnorderedMap<AccountId, AccountId>,
+    // Account Id -> Token's amount
+    pub borrows: UnorderedMap<AccountId, TokenAmount>
 }
 
 impl Default for Contract {
     fn default() -> Self {
-        env::panic_str("Controller contract should be initialized before usage")
+        env::panic_str("Token contract should be initialized before usage")
     }
 }
 
@@ -26,7 +28,7 @@ impl Contract {
     #[init]
     pub fn new() -> Self {
         Self {
-            markets: UnorderedMap::new(StorageKey::Markets),
+            borrows: UnorderedMap::new(StorageKey::Borrows),
         }
     }
 }

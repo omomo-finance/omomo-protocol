@@ -1,7 +1,7 @@
 # Table of contents
 
 
-* [Home](README.md) 
+* [Home](./README.md) 
 * [Tokenomics](docs/tokenomics.md) 
 * [Roadmap](docs/roadmap.md)
 
