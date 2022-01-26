@@ -11,5 +11,6 @@ overflow-checks = true
 [workspace]
 members = [
     "contracts/controller",
-    "contracts/token"
+    "contracts/dtoken",
+    "contracts/test-utoken"
 ]

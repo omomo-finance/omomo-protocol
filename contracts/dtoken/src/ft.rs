@@ -6,8 +6,6 @@ use near_sdk::{log, AccountId, Gas, Balance, PromiseOrValue};
 
 // TODO: move to config
 const CONTROLLER_ACCOUNT_ID: &str = "controller.near";
-// const CONTROLLER_ACCOUNT: AccountId = AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
-
 
 const NO_DEPOSIT: Balance = 0;
 const TGAS: Gas = near_sdk::Gas::ONE_TERA;
@@ -17,6 +15,7 @@ impl FungibleTokenReceiver for Contract {
     /// Receives the transfer from the underlying fungible token and executes method call on controller
     /// Requires to be called by the fungible underlying token account.
     /// amount - Token amount
+    #[allow(unreachable_code)]
     fn ft_on_transfer(
         &mut self,
         sender_id: AccountId,

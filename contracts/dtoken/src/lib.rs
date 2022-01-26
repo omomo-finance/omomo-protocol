@@ -1,20 +1,24 @@
 mod borrow;
+mod ft;
 mod repay;
 mod supply;
 mod withdraw;
-mod ft;
+mod common;
 
 pub use crate::borrow::*;
+pub use crate::ft::*;
 pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
-pub use crate::ft::*;
+pub use crate::common::*;
 
 use near_sdk::json_types::U128;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, ext_contract, near_bindgen, AccountId, BorshStorageKey};
+use near_sdk::{
+    env, ext_contract, near_bindgen, AccountId, BorshStorageKey,
+};
 
 use near_contract_standards::fungible_token::FungibleToken;
 
@@ -71,7 +75,6 @@ trait InternalTokenInterface {
 
 #[near_bindgen]
 impl Contract {
-
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
     pub fn new(underlying_token: AccountId) -> Self {

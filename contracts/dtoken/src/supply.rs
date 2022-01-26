@@ -9,19 +9,8 @@ pub const TGAS: Gas = near_sdk::Gas::ONE_TERA;
 #[near_bindgen]
 impl Contract {
 
-    // TODO: move to common.rs
-    pub fn get_exchange_rate(&self, underlying_balance: Balance) -> Balance {
-        let mut exchange_rate: u128;
-        exchange_rate = self.initial_exchange_rate;
-        if self.token.total_supply > 0 {
-            exchange_rate = (underlying_balance + self.total_borrows - self.total_supplies)
-                / self.token.total_supply;
-        }
-        return exchange_rate;
-    }
-
-    // TODO: Amount in token
     pub fn supply(&mut self, amount: Balance) -> Promise {
+
         return underline_token::ft_balance_of(
             env::current_account_id(),
             self.underlying_token.clone(),

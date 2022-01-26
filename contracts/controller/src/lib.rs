@@ -40,9 +40,9 @@ mod tests {
 
     // part of writing unit tests is setting up a mock context
     // provide a `predecessor` here, it'll modify the default context
-    fn get_context(predecessor: AccountId) -> VMContextBuilder {
-        let mut builder = VMContextBuilder::new();
-    }
+    // fn get_context(predecessor: AccountId) -> VMContextBuilder {
+    //     let mut builder = VMContextBuilder::new();
+    // }
 
     // TESTS HERE
 }
