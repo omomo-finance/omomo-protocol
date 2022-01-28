@@ -1,5 +1,7 @@
 # Liquidation 
 
+---
+
 ## Prerequisites
 
 A liquidation is a process that happened when a borrower's health factor goes below 100% due to their collateral value, which not fully covering their borrows value. 

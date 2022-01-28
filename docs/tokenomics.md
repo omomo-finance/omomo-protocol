@@ -1,10 +1,12 @@
 #Tokenomics
 
+---
+
 ## Interest rate model
 
 Interest rate model in Nearlend is similar to Compound protocol.
 
-###The utilization rate
+### The utilization rate
 Interest rate in Nearlend is determined as a function of a metric known as the utilization rate. 
 The utilization rate `U` for a money market a is defined as:
 
@@ -19,7 +21,7 @@ Intuitively speaking, this is the percentage of money borrowed out of the total 
 A high ratio signifies that a lot of borrowing is taking place, so interest rates go up to get more people to inject cash into the system. A low ratio signifies that demand for borrowing is low, so interest rates go down to encourage more people to borrow cash from the system. This follows economic theory's idea of price (the "price" of money is its interest rate) relative to supply and demand.
 
 
-###Borrow & Supply rates
+### Borrow & Supply rates
 
 Borrow and supply rates are calculated using the utilization rate and several arbitrary constants.
 
@@ -28,7 +30,7 @@ The supply rate is calculated as follows:
 > Supply Interest Rate<sub>a</sub> = Borrowing Interest Rate<sub>a</sub> * U<sub>a</sub> * ( 1−Reserve Factor<sub>a</sub> )
 
 
-###Standard Interest Rate Model
+### Standard Interest Rate Model
 
 The borrowing rate's calculation depends on something called an interest rate model -- the algorithmic model to determine a money market's borrow and supply rates. 
 
@@ -39,7 +41,7 @@ This standart interest rate model takes in two parameters:
 
 > Borrow Interest Rate = Multiplier * Utilization Rate + Base Rate
 
-###The Jump Rate model
+### The Jump Rate model
 
 Some markets follow what is known as the "Jump Rate" model. This model has the standard parameters:
 
