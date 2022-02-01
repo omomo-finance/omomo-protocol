@@ -10,9 +10,9 @@
 * [Deposit & Earning](product/supply\_withdraw.md)
 * [Borrow](product/borrow.md)
 * [Repay](product/repay.md)
-* [Interest rate model](product/tokenomics.md)
 * [Liquidation](product/liquidation.md)
-* [Tokenomics](product/tokenomics-1.md)
+* [Interest rate model](product/interest_rate_model.md)
+* [Tokenomics](product/tokenomics.md)
 
 ## Developers
 
