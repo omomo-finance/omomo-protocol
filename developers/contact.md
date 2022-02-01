@@ -1,4 +1,7 @@
-Contact us [Discuss]
+# Contact us
 
-| email 	| nearlend+support@blaize.tech 	|
-|:---:	|---:	|
+|         |                               |
+| ------- | ----------------------------- |
+| Email   | nearlend\_support@blaize.tech |
+| Twitter | @nearlend                     |
+| Discord | #discord\_nearlend            |
