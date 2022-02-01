@@ -1,23 +1,11 @@
-# FAQ
+# Introduction
 
-## General
+Welcome to Nearlend guide documentation site.
 
-* [Intro](docs/introduction.md)
-* [Roadmap](docs/roadmap.md) [Discuss]
+---
 
-## Product
+## What is Nearlend?
 
-* [Deposit and Earn](docs/supply_withdraw.md)
-* [Borrow](docs/borrow.md)
-* [Repay](docs/repay.md)
-* [Tokenomics](docs/tokenomics.md)
-* [Liquidation](docs/liquidation.md)
+NEARLEND non-custodial lending and borrowing liquidity protocol on NEAR blockchain
 
 
-## Developers
-
-* [Contracts](docs/contracts.md)
-* [Deploy](docs/deploy.md)
-
-
-* [Contact us](docs/contact.md)
