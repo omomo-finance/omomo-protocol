@@ -8,7 +8,9 @@ Withdrawing your assets means closing your position on that particular asset. Le
 
 For borrowing action you need to supply any asset to be used as collateral. After this, click on `Borrow` button for the asset you want to interact. Set the amount in `Borrow` tab, based on your available supplies that would be used as a collateral for the loan and confirm your transaction.
 
-***
+## How does borrow work?
+
+![](../.gitbook/assets/borrow.png)
 
 ## How much I can borrow?
 

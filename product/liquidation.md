@@ -1,12 +1,14 @@
 # Liquidation
 
+![](<../.gitbook/assets/Screen Shot 2022-02-03 at 15.35.31.png>)
+
 ## Prerequisites
 
-A liquidation is a process that happened when a borrower's health factor goes below 100% due to their collateral value, which not fully covering their borrows value. This might happen when the collateral decreases in value or the loan debt increases in value against each other. This collateral vs loan value ratio is shown in the health factor.
+Liquidation is a process that happened when a borrower's health factor goes below 100% due to their collateral value, which does not fully cover their borrows value. This might happen when the collateral decreases in value or the loan debt increases in value against each other. This collateral vs loan value ratio is shown in the health factor.
 
 ## Liquidation Threshold
 
-The liquidation threshold is the percentage at which a position is defined as undercollateralised. For example, a Liquidation threshold of 95% means that if the value rises above 95% of the collateral, the position is undercollateralised and could be liquidated.
+The liquidation threshold is the percentage at which a position is defined as undercollateralized. For example, a Liquidation threshold of 95% means that if the value rises above 95% of the collateral, the position is undercollateralized and could be liquidated.
 
 ## Liquidation Bonus
 
