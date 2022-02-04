@@ -1,6 +1,6 @@
 # Liquidation
 
-![](<../.gitbook/assets/Screen Shot 2022-02-03 at 15.35.31.png>)
+![](<../.gitbook/assets/liquidation.png>)
 
 ## Prerequisites
 

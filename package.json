@@ -1,0 +1,15 @@
+{
+  "name": "nearlend-protocol",
+  "version": "1.0.0",
+  "description": "end-to-end tests using Jest",
+  "license": "UNLICENSED",
+  "scripts": {
+    "test": "cross-env NODE_ENV=testnet && jest rest-api.test.js --useStderr --verbose false"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "fs": "^0.0.1-security",
+    "jest": "^27.4.7",
+    "near-api-js": "^0.44.2"
+  }
+}

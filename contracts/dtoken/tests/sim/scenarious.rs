@@ -4,7 +4,7 @@ use near_sdk_sim::types::Balance;
 use crate::utils::{init_dtoken, init_utoken};
 
 pub fn weth() -> AccountId {
-    "weth".to_string()
+    AccountId::new_unchecked("weth".to_string())
 }
 
 #[test]
