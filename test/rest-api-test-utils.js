@@ -2,6 +2,7 @@ const utils = require('./utils');
 const config = require("./config");
 
 function contract(contract_id) {
+    if (!contract_id) throw new Error("contract_id wasn't passed");
     this.contract_id = contract_id;
 }
 

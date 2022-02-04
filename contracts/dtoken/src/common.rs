@@ -18,6 +18,7 @@ impl Contract {
         return self.total_supplies;
     }
 
+    #[private]
     pub fn set_total_supplies(&mut self, amount: Balance) -> Balance {
         self.total_supplies = amount;
         return self.get_total_supplies();
@@ -27,8 +28,9 @@ impl Contract {
         return self.total_borrows;
     }
 
+    #[private]
     pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
-        self.total_supplies = amount;
+        self.total_borrows = amount;
         return self.get_total_borrows();
     }
 

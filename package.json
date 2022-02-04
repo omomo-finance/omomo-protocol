@@ -10,6 +10,7 @@
     "cross-env": "^7.0.3",
     "fs": "^0.0.1-security",
     "jest": "^27.4.7",
-    "near-api-js": "^0.44.2"
+    "near-api-js": "^0.44.2",
+    "regenerator-runtime": "^0.13.9"
   }
 }
