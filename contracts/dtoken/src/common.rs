@@ -1,21 +1,21 @@
-use near_sdk::Balance;
 use crate::*;
 
 #[near_bindgen]
 impl Contract {
-
     pub fn get_exchange_rate(&self, underlying_balance: Balance) -> Balance {
-        let mut exchange_rate: u128;
-        exchange_rate = self.initial_exchange_rate;
-        if self.token.total_supply > 0 {
-            exchange_rate = (underlying_balance + self.total_borrows - self.total_supplies)
-                / self.token.total_supply;
+        if self.token.total_supply == 0 {
+            return self.initial_exchange_rate;
         }
-        return exchange_rate;
+        return (underlying_balance + self.total_borrows - self.total_supplies)
+            / self.token.total_supply;
     }
 
     pub fn get_total_supplies(&self) -> Balance {
         return self.total_supplies;
+    }
+
+    pub fn get_total_borrows(&self) -> Balance {
+        return self.total_borrows;
     }
 
     #[private]
@@ -24,14 +24,9 @@ impl Contract {
         return self.get_total_supplies();
     }
 
-    pub fn get_total_borrows(&self) -> Balance {
-        return self.total_borrows;
-    }
-
     #[private]
     pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
         self.total_borrows = amount;
         return self.get_total_borrows();
     }
-
 }

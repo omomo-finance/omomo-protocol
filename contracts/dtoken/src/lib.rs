@@ -4,6 +4,8 @@ mod repay;
 mod supply;
 mod withdraw;
 mod common;
+mod config;
+mod constants;
 
 pub use crate::borrow::*;
 pub use crate::ft::*;
@@ -11,39 +13,50 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
 pub use crate::common::*;
+pub use crate::config::*;
+pub use crate::constants::*;
 
 use near_sdk::json_types::U128;
-
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::UnorderedMap;
+use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::collections::{UnorderedMap, LazyOption};
 use near_sdk::{
-    env, ext_contract, near_bindgen, AccountId, BorshStorageKey,
+    env, ext_contract, near_bindgen, AccountId, BorshStorageKey, Balance,
+    Promise, PromiseResult, PromiseOrValue, log, Gas
 };
-
 use near_contract_standards::fungible_token::FungibleToken;
+
+pub type TokenAmount = u128;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
     Borrows,
+    Config
 }
-
-pub type TokenAmount = u128;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    // Exchange rate in case of zero supplies
+    ///  Exchange rate in case of zero supplies
     initial_exchange_rate: u128,
-    // Total sum of supplied tokens
+
+    /// Total sum of supplied tokens
     total_supplies: TokenAmount,
-    // Total sum of borrowed tokens
+
+    /// Total sum of borrowed tokens
     total_borrows: TokenAmount,
-    // Account Id -> Token's amount
+
+    /// Account Id -> Token's amount
     borrows: UnorderedMap<AccountId, TokenAmount>,
-    // Address of underlying token
+
+    /// Address of underlying token
     underlying_token: AccountId,
-    //
+
+    /// Pointer for contract token
     token: FungibleToken,
+
+    /// Contract configuration object
+    config: LazyOption<Config>
 }
 
 impl Default for Contract {
@@ -77,30 +90,15 @@ trait InternalTokenInterface {
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
-    pub fn new(underlying_token: AccountId) -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
-            initial_exchange_rate: 1, //TODO: think about initial exchange rate
+            initial_exchange_rate: config.initial_exchange_rate.clone(),
             total_supplies: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKey::Borrows),
-            underlying_token,
+            underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
+            config: LazyOption::new(StorageKey::Config, Some(&config))
         }
     }
-}
-
-// use the attribute below for unit tests
-#[cfg(test)]
-mod tests {
-    // use super::*;
-    // use near_sdk::test_utils::{get_logs, VMContextBuilder};
-    // use near_sdk::{testing_env, AccountId};
-
-    // part of writing unit tests is setting up a mock context
-    // provide a `predecessor` here, it'll modify the default context
-    // fn get_context(predecessor: AccountId) -> VMContextBuilder {
-    //     let mut builder = VMContextBuilder::new();
-    // }
-
-    // TESTS HERE
 }
