@@ -1,2 +1,7 @@
 /target
-Cargo.lock
+contracts/Cargo.lock
+contracts/target
+/.idea
+/node_modules/
+/res/
+/.near-credentials
