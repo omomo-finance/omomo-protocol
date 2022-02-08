@@ -1,5 +1,5 @@
 use near_sdk_sim::{UserAccount, call, deploy, ContractAccount, init_simulator, to_yocto};
-use near_sdk::{AccountId };
+use near_sdk::{AccountId};
 
 use test_utoken::ContractContract as Utoken;
 use dtoken::ContractContract as Dtoken;
@@ -10,6 +10,25 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     UTOKEN_WASM_BYTES => "../../res/test_utoken.wasm",
     CONTROLLER_WASM_BYTES => "../../res/controller.wasm",
 }
+
+
+
+pub fn dai() -> AccountId {
+    AccountId::new_unchecked("dai001".to_string())
+}
+
+pub fn eth() -> AccountId {
+    AccountId::new_unchecked("eth002".to_string())
+}
+
+pub fn usdt() -> AccountId {
+    AccountId::new_unchecked("usdt".to_string())
+}
+
+pub fn usdc() -> AccountId {
+    AccountId::new_unchecked("usdc".to_string())
+}
+
 
 pub fn init_dtoken(
     root: &UserAccount,
@@ -26,7 +45,7 @@ pub fn init_dtoken(
 
     let user_account = root.create_user(
         "user_account".parse().unwrap(),
-        to_yocto("1000") // initial balance
+        to_yocto("1000"), // initial balance
     );
 
     (root, contract, user_account)
@@ -47,7 +66,7 @@ pub fn init_utoken(
 
     let user_account = root.create_user(
         "user_account".parse().unwrap(),
-        to_yocto("1000") // initial balance
+        to_yocto("1000"), // initial balance
     );
 
     (root, contract, user_account)
