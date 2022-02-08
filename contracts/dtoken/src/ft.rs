@@ -2,13 +2,6 @@ use crate::*;
 
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::json_types::U128;
-use near_sdk::{log, AccountId, Gas, Balance, PromiseOrValue};
-
-// TODO: move to config
-const CONTROLLER_ACCOUNT_ID: &str = "controller.near";
-
-const NO_DEPOSIT: Balance = 0;
-const TGAS: Gas = near_sdk::Gas::ONE_TERA;
 
 #[near_bindgen]
 impl FungibleTokenReceiver for Contract {
@@ -25,20 +18,17 @@ impl FungibleTokenReceiver for Contract {
 
         log!(format!("sender_id {}, msg {}", sender_id, msg));
 
-        // TODO:
-        // Check if sender_id == self.underlying_token
-
-        // assert_eq!(
-        //     sender_id,
-        //     self.underlying_token,
-        //     format!(
-        //         "ft_on_transfer: sender_id is not a valid address, actual {} expected {}",
-        //         sender_id, self.underlying_token
-        //     )
-        // );
+        assert_eq!(
+            sender_id,
+            self.underlying_token,
+            "ft_on_transfer: sender_id is not a valid address, actual {} expected {}",
+            sender_id,
+            self.underlying_token
+        );
 
         let tkn_amount: Balance = amount.into();
-        let user_account = AccountId::new_unchecked(CONTROLLER_ACCOUNT_ID.to_string());
+        let config: Config = self.get_contract_config();
+        let user_account = AccountId::new_unchecked(config.controller_account_id.to_string());
 
         controller::increase_supplies(
             env::signer_account_id(),
