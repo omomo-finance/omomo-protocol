@@ -1,18 +1,28 @@
 use crate::*;
 
-use near_sdk::{env, is_promise_success };
+impl Contract {
+    pub fn supply_ft_transfer_fallback(&mut self, user_account: AccountId, token_amount: WBalance) {
+        log!(
+            "user {}, tokens {}",
+            user_account,
+            Balance::from(token_amount),
+        );
+        //TODO: implement fallback method
+    }
+}
 
 #[near_bindgen]
 impl Contract {
+
     pub fn supply(&mut self, amount: Balance) -> Promise {
-        return underline_token::ft_balance_of(
+        return underlying_token::ft_balance_of(
             env::current_account_id(),
-            self.underlying_token.clone(),
+            self.get_underlying_contract_address(),
             NO_DEPOSIT,
             TGAS * 20u64,
         )
         .then(ext_self::supply_balance_of_callback(
-            amount,
+            amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
             TGAS * 60u64,
@@ -20,15 +30,15 @@ impl Contract {
     }
 
     #[allow(dead_code)]
-    fn supply_balance_of_callback(&mut self, amount: Balance) -> Promise {
+    fn supply_balance_of_callback(&mut self, amount: WBalance) -> Promise {
         let promise_success: bool = is_promise_success();
 
         assert_eq!(
             promise_success,
             true,
             "Supply has failed on receiving UToken balance_of: Account {} deposits {}",
-            env::predecessor_account_id(),
-            amount
+            env::signer_account_id(),
+            Balance::from(amount)
         );
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -38,22 +48,28 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
-        let token_amount: u128;
-        let exchange_rate = self.get_exchange_rate(balance_of);
-        token_amount = amount * exchange_rate;
+        let token_amount: Balance;
+        let exchange_rate: Balance = self.get_exchange_rate(balance_of.into());
+        token_amount = Balance::from(amount) * exchange_rate;
 
         // Cross-contract call to market token
-        underline_token::ft_transfer_call(
-            env::current_account_id(),
+        underlying_token::ft_transfer_call(
+            self.get_contract_address(),
             amount,
             Some(format!("Supply with token_amount {}", token_amount)),
-            self.underlying_token.clone(),
-            NO_DEPOSIT,
-            TGAS * 20u64, //
+            format!(
+                "Supply to {} from {} with token_amount {}",
+                env::current_account_id(),
+                self.get_contract_address(),
+                token_amount
+            ),
+            self.get_underlying_contract_address(),
+            ONE_YOCTO,
+            TGAS * 40u64,
             // TODO: move this value into constants lib
         )
         .then(ext_self::supply_ft_transfer_call_callback(
-            token_amount,
+            token_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
             TGAS * 60u64,
@@ -61,29 +77,23 @@ impl Contract {
     }
 
     #[allow(dead_code)]
-    fn supply_ft_transfer_call_callback(&mut self, amount: Balance) -> bool {
+    fn supply_ft_transfer_call_callback(&mut self, token_amount: WBalance) -> bool {
         let promise_success: bool = is_promise_success();
         if promise_success {
-            self.mint(&env::signer_account_id(), amount)
+            self.mint(&env::signer_account_id(), token_amount);
+        } else {
+            self.supply_ft_transfer_fallback(env::signer_account_id(), token_amount);
         }
-        promise_success
+        return promise_success;
     }
 
     #[allow(dead_code)]
-    fn controller_increase_supplies_callback(&mut self, amount: Balance) -> PromiseOrValue<U128> {
+    fn controller_increase_supplies_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
         let promise_success: bool = is_promise_success();
         if promise_success {
             let total_supplies = self.total_supplies;
-            self.total_supplies = total_supplies + amount;
+            self.total_supplies = total_supplies + Balance::from(amount);
         }
         PromiseOrValue::Value(U128(self.total_supplies))
-    }
-
-    #[allow(dead_code)]
-    fn mint(&mut self, account_id: &AccountId, amount: Balance) {
-        if !self.token.accounts.contains_key(&account_id.clone()) {
-            self.token.internal_register_account(&account_id.clone());
-        }
-        self.token.internal_deposit(&account_id, amount);
     }
 }
