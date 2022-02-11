@@ -26,7 +26,7 @@ Development of the MVP of the protocol is ongoing and is planned for Q1-Q2 2022.
 * Expand collaterization to include several markets
 * Expand the number of the markets
 * Develop DAO
-* expand tokenomics and utility of the native token
+* Expand tokenomics and utility of the native token
 
 ### Phase 3 (end of Q3 - Q4)
 * Add fixed-rate loans system over existing markets
@@ -35,6 +35,4 @@ Development of the MVP of the protocol is ongoing and is planned for Q1-Q2 2022.
 * Provide liquidity active management
 * Add 3rd-party protocols integrations to get DeFi strategies for the liquidity
 * Provide automated operations
-* become DeFi2.0 protocol in all aspects
-
-### 
+* Become DeFi2.0 protocol in all aspects
