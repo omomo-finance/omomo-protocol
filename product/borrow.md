@@ -14,7 +14,7 @@ For borrowing action you need to supply any asset to be used as collateral. Afte
 
 ## How much I can borrow?
 
-The highest value you can borrow, related to the value you have supplied and the available liquidity. Let's say, you can’t borrow an asset if there is not enough liquidity or if your health factor doesn’t allow you to.
+The highest value you can borrow, related to the value you have supplied and the available liquidity. Let's say, you can’t borrow an asset if there is not enough liquidity or if your health factor doesn’t allow you to. Though, the platform provides the collaterization factor in order to get the overcollaterized loan and protect the user from the early liquidation.
 
 ***
 
@@ -33,6 +33,8 @@ You repay your loan in the same asset you borrowed.
 ## How much would I pay in interest? \[Discuss]
 
 The interest rate you pay for borrowing assets depends on the borrowing rate which is derived from the supply and demand ratio of the asset.
+<br>
+In the later stages, the protocol will provide the user the instrumentary for custom interest models creation for custom supply markets. Thus, creation of profitable models will be incentivized by the protocol and the market will be included into the core collaterals of the protocol.
 
 ***
 

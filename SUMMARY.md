@@ -2,7 +2,7 @@
 
 ## GENERAL
 
-* [Introduction](README.md)
+* [Overview](README.md)
 * [Roadmap](general/roadmap.md)
 
 ## Product
