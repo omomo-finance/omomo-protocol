@@ -63,7 +63,7 @@ Now we can compute the taken discounted collateral sum and the repaid borrowed s
 
 
 $$
-Taken\_sum = \sum_{i=0}^{n}{(out\_asset_i * price_i)} \\ Discounted\_collateral\_sum = taken\_sum * (1 - discount) \\
+Taken\_sum = \sum_{i=0}^{n}{(out\_asset_i * price_i)} \\Discounted\_collateral\_sum = taken\_sum * (1 - discount) \\
 Repaid\_sum =\sum_{i=0}^{n}{(in\_asset_i * price_i)}
 $$
 

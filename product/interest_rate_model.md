@@ -33,6 +33,7 @@ Supply Interest Rate_a = Borrowing Interest Rate_a * U_a * ( 1−Reserve Factor_
 $$
 
 ## Standard Interest Rate Model
+At the early stage the protocol supports the limited number of standard interest rate models. Though, for the V2 version of the protocol there is planned support of the custom interest rate models for user's custom markets.<br>
 
 The borrowing rate's calculation depends on something called an interest rate model -- the algorithmic model to determine a money market's borrow and supply rates.
 
