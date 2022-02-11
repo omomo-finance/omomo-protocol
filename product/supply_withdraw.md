@@ -9,6 +9,12 @@ Before you want to make a deposit, you should connect a wallet. You can do it vi
 ## What's the profit ?
 
 Once your deposit will be supplied, your account will be rewarded by `dTokens`. `dTokens` holders receive continuous earnings that evolve with market conditions. You can look at the Interest Model category to find out how does it work more precisely.
+<br>
+Also, after the native token integration and DAO implementation, the protocol with provide incentivisation for the market supply, thus encouraging user to provide the liquidity.
+<br>
+At later stages the prtocol will provide user the instrumentary for most important operations:
+* custom markets creation and supply
+* active management of the user's liquidity - choose by yourself the way the liquidity should work
 
 ## How does supply work?
 
