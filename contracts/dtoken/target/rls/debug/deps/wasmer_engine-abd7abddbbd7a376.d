@@ -1,0 +1,17 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmer_engine-abd7abddbbd7a376.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\artifact.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\engine.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\error.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\export.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\resolver.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\serialize.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\error.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\frame_info.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\tunables.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmer_engine-abd7abddbbd7a376.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\artifact.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\engine.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\error.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\export.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\resolver.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\serialize.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\error.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\frame_info.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\tunables.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\artifact.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\engine.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\error.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\export.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\resolver.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\serialize.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\mod.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\error.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\trap\frame_info.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-1.0.2\src\tunables.rs:
+
+# env-dep:CARGO_PKG_VERSION=1.0.2

@@ -94,7 +94,7 @@ trait ControllerInterface {
 #[ext_contract(ext_self)]
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, amount: WBalance);
-    fn withdraw_balance_of_callback(&mut self, amount: WBalance);
+    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128>;
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn withdraw_supplies_callback(
@@ -116,7 +116,7 @@ impl Contract {
     #[init]
     pub fn new(config: Config) -> Self {
         Self {
-            initial_exchange_rate: config.initial_exchange_rate.clone(),
+            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
             total_supplies: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),

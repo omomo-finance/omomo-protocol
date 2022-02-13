@@ -1,0 +1,11 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\test-utoken\target\rls\debug\deps\generic_array-f8f71543ce9000f2.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\hex.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\impls.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\arr.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\functional.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\iter.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\sequence.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\test-utoken\target\rls\debug\deps\generic_array-f8f71543ce9000f2.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\hex.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\impls.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\arr.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\functional.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\iter.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\sequence.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\hex.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\impls.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\arr.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\functional.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\iter.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\generic-array-0.12.4\src\sequence.rs:

@@ -1,0 +1,13 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\clang_sys-18e54f598bdc0ad1.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\support.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\link.rs c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/common.rs c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/dynamic.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\libclang_sys-18e54f598bdc0ad1.rlib: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\support.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\link.rs c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/common.rs c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/dynamic.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\clang_sys-18e54f598bdc0ad1.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\support.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\link.rs c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/common.rs c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/dynamic.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\support.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\clang-sys-1.3.1\src\link.rs:
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/common.rs:
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\build\clang-sys-1753fc60c5c5a99f\out/dynamic.rs:
+
+# env-dep:OUT_DIR=c:\\Users\\комфи\\Documents\\Stest\\nearlend-protocol\\contracts\\dtoken\\target\\rls\\debug\\build\\clang-sys-1753fc60c5c5a99f\\out

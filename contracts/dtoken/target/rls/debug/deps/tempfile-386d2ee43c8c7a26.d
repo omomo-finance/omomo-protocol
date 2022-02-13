@@ -1,0 +1,12 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\tempfile-386d2ee43c8c7a26.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\dir.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\error.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\imp\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\spooled.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\util.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\imp\windows.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\tempfile-386d2ee43c8c7a26.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\dir.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\error.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\imp\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\spooled.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\util.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\imp\windows.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\dir.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\error.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\mod.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\imp\mod.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\spooled.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\util.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\tempfile-3.3.0\src\file\imp\windows.rs:

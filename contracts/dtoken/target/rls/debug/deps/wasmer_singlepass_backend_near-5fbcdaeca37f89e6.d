@@ -1,0 +1,8 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmer_singlepass_backend_near-5fbcdaeca37f89e6.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\codegen_x64.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\emitter_x64.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\machine.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmer_singlepass_backend_near-5fbcdaeca37f89e6.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\codegen_x64.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\emitter_x64.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\machine.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\codegen_x64.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\emitter_x64.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-singlepass-backend-near-0.17.1\src\machine.rs:

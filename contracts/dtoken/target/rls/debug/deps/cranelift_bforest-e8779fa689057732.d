@@ -1,0 +1,10 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\cranelift_bforest-e8779fa689057732.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\map.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\node.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\path.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\pool.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\set.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\cranelift_bforest-e8779fa689057732.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\map.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\node.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\path.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\pool.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\set.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\map.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\node.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\path.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\pool.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\cranelift-bforest-0.68.0\src\set.rs:

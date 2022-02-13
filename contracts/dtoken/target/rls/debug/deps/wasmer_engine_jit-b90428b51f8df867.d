@@ -1,0 +1,15 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmer_engine_jit-b90428b51f8df867.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\artifact.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\builder.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\code_memory.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\engine.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\link.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\serialize.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\unwind\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\unwind\windows_x64.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmer_engine_jit-b90428b51f8df867.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\artifact.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\builder.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\code_memory.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\engine.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\link.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\serialize.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\unwind\mod.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\unwind\windows_x64.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\artifact.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\builder.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\code_memory.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\engine.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\link.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\serialize.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\unwind\mod.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmer-engine-jit-1.0.2\src\unwind\windows_x64.rs:
+
+# env-dep:CARGO_PKG_VERSION=1.0.2

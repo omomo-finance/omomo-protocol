@@ -1,0 +1,8 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\lazy_static_include-994b387dbd91e91e.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_array.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_bytes.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_str.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\lazy_static_include-994b387dbd91e91e.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_array.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_bytes.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_str.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_array.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_bytes.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\lazy-static-include-3.1.1\src\macro_include_str.rs:

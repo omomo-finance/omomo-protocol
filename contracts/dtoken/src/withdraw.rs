@@ -20,7 +20,7 @@ impl Contract {
 #[near_bindgen]
 impl Contract {
 
-    pub fn withdraw(&mut self, dtoken_amount: Balance) -> Promise {
+    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> Promise {
         return underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
@@ -37,7 +37,6 @@ impl Contract {
 
     pub fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> Promise {
         let promise_success: bool = is_promise_success();
-
         assert_eq!(
             promise_success,
             true,
@@ -49,13 +48,17 @@ impl Contract {
         let balance_of: Balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<u128>(&result)
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
                 .unwrap()
                 .into(),
         };
 
+
         let exchange_rate: Balance = self.get_exchange_rate(WBalance::from(balance_of));
-        let token_amount: Balance = dtoken_amount / exchange_rate;
+        let token_amount: Balance = Balance::from(dtoken_amount) / exchange_rate;
+
+        assert_eq!(2,0);
+        //
 
         return controller::withdraw_supplies(
             env::signer_account_id(),
@@ -65,21 +68,21 @@ impl Contract {
             NO_DEPOSIT,
             TGAS * 20u64,
         )
-        .then(ext_self::withdraw_supplies_callback(
-            env::signer_account_id(),
-            token_amount.into(),
-            dtoken_amount.into(),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 60u64,
-        ));
+        // .then(ext_self::withdraw_supplies_callback(
+        //     env::signer_account_id(),
+        //     token_amount.into(),
+        //     dtoken_amount.into(),
+        //     env::current_account_id().clone(),
+        //     NO_DEPOSIT,
+        //     TGAS * 60u64,
+        // ));
     }
 
     pub fn withdraw_supplies_callback(
         &mut self,
         user_account: AccountId,
-        token_amount: Balance,
-        dtoken_amount: Balance,
+        token_amount: WBalance,
+        dtoken_amount: WBalance,
     ) -> Promise {
         let promise_success: bool = is_promise_success();
 
@@ -89,8 +92,8 @@ impl Contract {
         underlying_token::ft_transfer_call(
             user_account,
             token_amount.into(),
-            Some(format!("Withdraw with token_amount {}", token_amount)),
-            format!("Withdraw with token_amount {}", token_amount),
+            Some(format!("Withdraw with token_amount {}", Balance::from(token_amount))),
+            format!("Withdraw with token_amount {}", Balance::from(token_amount)),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
             TGAS * 20u64,

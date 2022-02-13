@@ -1,0 +1,10 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\secp256k1-ecd30045e18dbc0b.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src/lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\macros.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\constants.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\ecdh.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\ffi.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\key.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\secp256k1-ecd30045e18dbc0b.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src/lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\macros.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\constants.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\ecdh.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\ffi.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\key.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src/lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\macros.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\constants.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\ecdh.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\ffi.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\parity-secp256k1-0.7.0\src\key.rs:

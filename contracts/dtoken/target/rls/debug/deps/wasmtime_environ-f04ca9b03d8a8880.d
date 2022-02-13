@@ -1,0 +1,15 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmtime_environ-f04ca9b03d8a8880.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\address_map.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\builtin.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\compilation.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\data_structures.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\module.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\module_environ.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\tunables.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\vmoffsets.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmtime_environ-f04ca9b03d8a8880.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\address_map.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\builtin.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\compilation.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\data_structures.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\module.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\module_environ.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\tunables.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\vmoffsets.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\address_map.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\builtin.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\compilation.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\data_structures.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\module.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\module_environ.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\tunables.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-environ-0.20.0\src\vmoffsets.rs:
+
+# env-dep:CARGO_PKG_VERSION=0.20.0

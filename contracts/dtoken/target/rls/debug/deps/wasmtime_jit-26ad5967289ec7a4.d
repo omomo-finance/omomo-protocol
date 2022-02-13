@@ -1,0 +1,16 @@
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmtime_jit-26ad5967289ec7a4.rmeta: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\code_memory.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\compiler.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\instantiate.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\link.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\object.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\unwind.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\native.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\trampoline.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\unwind\winx64.rs
+
+c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\dtoken\target\rls\debug\deps\wasmtime_jit-26ad5967289ec7a4.d: C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\lib.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\code_memory.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\compiler.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\instantiate.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\link.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\object.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\unwind.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\native.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\trampoline.rs C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\unwind\winx64.rs
+
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\lib.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\code_memory.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\compiler.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\instantiate.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\link.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\object.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\unwind.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\native.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\trampoline.rs:
+C:\Users\комфи\.cargo\registry\src\github.com-1ecc6299db9ec823\wasmtime-jit-0.20.0\src\unwind\winx64.rs:
+
+# env-dep:CARGO_PKG_VERSION=0.20.0

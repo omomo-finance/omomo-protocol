@@ -1,0 +1,26 @@
+cargo:rerun-if-changed=src/helpers.c
+TARGET = Some("x86_64-pc-windows-msvc")
+OPT_LEVEL = Some("0")
+HOST = Some("x86_64-pc-windows-msvc")
+CC_x86_64-pc-windows-msvc = None
+CC_x86_64_pc_windows_msvc = None
+HOST_CC = None
+CC = None
+CFLAGS_x86_64-pc-windows-msvc = None
+CFLAGS_x86_64_pc_windows_msvc = None
+HOST_CFLAGS = None
+CFLAGS = None
+CRATE_CC_NO_DEFAULTS = None
+CARGO_CFG_TARGET_FEATURE = Some("fxsr,sse,sse2")
+DEBUG = Some("true")
+running: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\cl.exe" "-nologo" "-MD" "-Z7" "-Brepro" "-W4" "-Foc:\\Users\\комфи\\Documents\\Stest\\nearlend-protocol\\contracts\\test-utoken\\target\\rls\\debug\\build\\wasmtime-runtime-4c94079b603b6783\\out\\src/helpers.o" "-c" "src/helpers.c"
+helpers.c
+exit code: 0
+AR_x86_64-pc-windows-msvc = None
+AR_x86_64_pc_windows_msvc = None
+HOST_AR = None
+AR = None
+running: "C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\bin\\HostX64\\x64\\lib.exe" "-out:c:\\Users\\комфи\\Documents\\Stest\\nearlend-protocol\\contracts\\test-utoken\\target\\rls\\debug\\build\\wasmtime-runtime-4c94079b603b6783\\out\\libhelpers.a" "-nologo" "c:\\Users\\комфи\\Documents\\Stest\\nearlend-protocol\\contracts\\test-utoken\\target\\rls\\debug\\build\\wasmtime-runtime-4c94079b603b6783\\out\\src/helpers.o"
+exit code: 0
+cargo:rustc-link-lib=static=helpers
+cargo:rustc-link-search=native=c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\test-utoken\target\rls\debug\build\wasmtime-runtime-4c94079b603b6783\out
