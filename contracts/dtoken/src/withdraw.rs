@@ -19,7 +19,6 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-
     pub fn withdraw(&mut self, dtoken_amount: Balance) -> Promise {
         return underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -27,12 +26,12 @@ impl Contract {
             NO_DEPOSIT,
             TGAS * 20u64,
         )
-        .then(ext_self::withdraw_balance_of_callback(
-            dtoken_amount.into(),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 60u64,
-        ));
+            .then(ext_self::withdraw_balance_of_callback(
+                dtoken_amount.into(),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                TGAS * 60u64,
+            ));
     }
 
     pub fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> Promise {
@@ -65,14 +64,14 @@ impl Contract {
             NO_DEPOSIT,
             TGAS * 20u64,
         )
-        .then(ext_self::withdraw_supplies_callback(
-            env::signer_account_id(),
-            token_amount.into(),
-            dtoken_amount.into(),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 60u64,
-        ));
+            .then(ext_self::withdraw_supplies_callback(
+                env::signer_account_id(),
+                token_amount.into(),
+                dtoken_amount.into(),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                TGAS * 60u64,
+            ));
     }
 
     pub fn withdraw_supplies_callback(
@@ -95,13 +94,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS * 20u64,
         )
-        .then(ext_self::withdraw_ft_transfer_call_callback(
-            dtoken_amount.into(),
-            token_amount.into(),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 60u64,
-        ))
+            .then(ext_self::withdraw_ft_transfer_call_callback(
+                dtoken_amount.into(),
+                token_amount.into(),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                TGAS * 60u64,
+            ))
     }
 
     pub fn withdraw_ft_transfer_call_callback(

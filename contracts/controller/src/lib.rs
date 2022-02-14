@@ -4,25 +4,24 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 
-pub use crate::borrows::*;
 pub use crate::config::*;
 pub use crate::constants::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
-pub use crate::supplies::*;
 
 mod constants;
 mod oraclehook;
 mod config;
 mod prices;
-mod supplies;
-mod borrows;
+mod borrows_n_supplies;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
     Markets,
     Supplies,
+    Borrows,
     SuppliesToken,
+    BorrowsToken,
     Prices,
     Config,
 }
@@ -43,7 +42,7 @@ pub struct Contract {
     pub prices: UnorderedMap<AccountId, u128>,
 
     /// Contract configuration object
-    pub config: LazyOption<Config>,
+    pub config: LazyOption<Config>
 }
 
 impl Default for Contract {
@@ -87,7 +86,7 @@ impl Contract {
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
             account_supplies: LookupMap::new(StorageKeys::Supplies),
-            account_borrows: LookupMap::new(StorageKeys::Supplies),
+            account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: UnorderedMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
         }

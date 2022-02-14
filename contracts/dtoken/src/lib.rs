@@ -1,11 +1,12 @@
-mod borrow;
-mod common;
-mod config;
-mod constants;
-mod ft;
-mod repay;
-mod supply;
-mod withdraw;
+use near_contract_standards::fungible_token::FungibleToken;
+use near_sdk::{
+    AccountId, Balance, BorshStorageKey, env, ext_contract, Gas, is_promise_success, log,
+    near_bindgen, Promise, PromiseOrValue, PromiseResult,
+};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::{LazyOption, UnorderedMap};
+use near_sdk::json_types::U128;
+use near_sdk::serde::{Deserialize, Serialize};
 
 pub use crate::borrow::*;
 pub use crate::common::*;
@@ -16,15 +17,14 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
 
-use near_contract_standards::fungible_token::FungibleToken;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, UnorderedMap};
-use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{
-    env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey,
-    Gas, Promise, PromiseOrValue, PromiseResult,
-};
+mod borrow;
+mod common;
+mod config;
+mod constants;
+mod ft;
+mod repay;
+mod supply;
+mod withdraw;
 
 pub type TokenAmount = u128;
 
@@ -81,14 +81,26 @@ trait UnderlineTokenInterface {
 
 #[ext_contract(controller)]
 trait ControllerInterface {
-    fn increase_supplies(&mut self, account_id: AccountId, amount: WBalance);
+    fn increase_supplies(&mut self, event: EventType, account_id: AccountId, amount: WBalance);
     fn decrease_supplies(&mut self, account_id: AccountId, amount: WBalance);
+
+    fn increase_borrows(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
+    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
+
+    // fn borrow_allowed(
+    //     &mut self,
+    //     dtoken_address: AccountId,
+    //     user_address: AccountId,
+    //     amount: u128,
+    // ) -> bool;
+
     fn withdraw_supplies(
         &mut self,
         account_id: AccountId,
         token_address: AccountId,
         tokens_amount: WBalance,
     ) -> Promise;
+
 }
 
 #[ext_contract(ext_self)]
@@ -108,6 +120,8 @@ trait InternalTokenInterface {
         token_amount: WBalance,
         dtoken_amount: WBalance,
     );
+
+    // TODO add fn callbacks for borrow as long as they need
 }
 
 #[near_bindgen]
