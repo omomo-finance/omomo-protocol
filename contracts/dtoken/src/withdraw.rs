@@ -27,13 +27,13 @@ impl Contract {
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            TGAS * 20u64,
+            self.terra_gas(20),
         )
         .then(ext_self::withdraw_balance_of_callback(
             dtoken_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            TGAS * 60u64,
+            self.terra_gas(60),
         ));
     }
 
@@ -65,7 +65,7 @@ impl Contract {
             token_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
-            TGAS * 20u64,
+            self.terra_gas(20),
         )
         .then(ext_self::withdraw_supplies_callback(
             env::signer_account_id(),
@@ -73,7 +73,7 @@ impl Contract {
             dtoken_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            TGAS * 60u64,
+            self.terra_gas(60),
         ));
     }
 
@@ -96,14 +96,14 @@ impl Contract {
             format!("Withdraw with token_amount {}", token_amount),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
-            TGAS * 20u64,
+            self.terra_gas(20),
         )
         .then(ext_self::withdraw_ft_transfer_call_callback(
             dtoken_amount.into(),
             token_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            TGAS * 60u64,
+            self.terra_gas(60),
         ))
     }
 
