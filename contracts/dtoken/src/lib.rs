@@ -22,7 +22,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::collections::{UnorderedMap, LazyOption};
 use near_sdk::{
     env, ext_contract, near_bindgen, AccountId, BorshStorageKey, Balance,
-    Promise, PromiseResult, PromiseOrValue, log, Gas
+    Promise, PromiseResult, PromiseOrValue, log, Gas,
 };
 use near_contract_standards::fungible_token::FungibleToken;
 
@@ -31,7 +31,7 @@ pub type TokenAmount = u128;
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
     Borrows,
-    Config
+    Config,
 }
 
 #[near_bindgen]
@@ -56,7 +56,7 @@ pub struct Contract {
     token: FungibleToken,
 
     /// Contract configuration object
-    config: LazyOption<Config>
+    config: LazyOption<Config>,
 }
 
 impl Default for Contract {
@@ -98,7 +98,7 @@ impl Contract {
             borrows: UnorderedMap::new(StorageKey::Borrows),
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
-            config: LazyOption::new(StorageKey::Config, Some(&config))
+            config: LazyOption::new(StorageKey::Config, Some(&config)),
         }
     }
 }

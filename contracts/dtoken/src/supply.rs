@@ -1,6 +1,6 @@
 use crate::*;
 
-use near_sdk::{env, is_promise_success };
+use near_sdk::{env, is_promise_success};
 
 #[near_bindgen]
 impl Contract {
@@ -11,12 +11,12 @@ impl Contract {
             NO_DEPOSIT,
             TGAS * 20u64,
         )
-        .then(ext_self::supply_balance_of_callback(
-            amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 60u64,
-        ));
+            .then(ext_self::supply_balance_of_callback(
+                amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                TGAS * 60u64,
+            ));
     }
 
     #[allow(dead_code)]
@@ -52,12 +52,12 @@ impl Contract {
             TGAS * 20u64, //
             // TODO: move this value into constants lib
         )
-        .then(ext_self::supply_ft_transfer_call_callback(
-            token_amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 60u64,
-        ))
+            .then(ext_self::supply_ft_transfer_call_callback(
+                token_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                TGAS * 60u64,
+            ))
     }
 
     #[allow(dead_code)]

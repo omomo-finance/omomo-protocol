@@ -15,7 +15,6 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-
         log!(format!("sender_id {}, msg {}", sender_id, msg));
 
         assert_eq!(
@@ -37,15 +36,14 @@ impl FungibleTokenReceiver for Contract {
             NO_DEPOSIT,
             TGAS * 20u64,
         )
-        .then(ext_self::controller_increase_supplies_callback(
-            tkn_amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            TGAS * 20u64,
-        ));
+            .then(ext_self::controller_increase_supplies_callback(
+                tkn_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                TGAS * 20u64,
+            ));
 
         PromiseOrValue::Value(U128(0))
-
     }
 }
 
