@@ -91,9 +91,9 @@ impl Contract {
     fn controller_increase_supplies_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
         let promise_success: bool = is_promise_success();
         if promise_success {
-            let total_supplies = self.total_supplies;
-            self.total_supplies = total_supplies + Balance::from(amount);
+            let total_reserves = self.total_reserves;
+            self.total_reserves = total_reserves + Balance::from(amount);
         }
-        PromiseOrValue::Value(U128(self.total_supplies))
+        PromiseOrValue::Value(U128(self.total_reserves))
     }
 }

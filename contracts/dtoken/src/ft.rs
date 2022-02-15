@@ -15,9 +15,7 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-
         log!(format!("sender_id {}, msg {}", sender_id, msg));
-
         assert_eq!(
             sender_id,
             self.underlying_token,

@@ -1,6 +1,9 @@
 /target
 contracts/Cargo.lock
 contracts/target
+contracts/dtoken/target
+contracts/controller/target
+contracts/test-utoken/target
 /.idea
 /node_modules/
 /res/

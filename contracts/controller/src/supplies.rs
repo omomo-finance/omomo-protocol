@@ -24,8 +24,8 @@ impl Contract {
         return tokens_amount;
     }
 
-    #[private]
-    fn get_supplies_by_token(&mut self, account: AccountId, token_address: AccountId) -> Balance {
+    // #[private]
+    pub fn get_supplies_by_token(&self, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
         if !self.account_supplies.contains_key(&account) {
             return balance;
@@ -54,7 +54,7 @@ impl Contract {
         tokens_amount: WBalance,
     ) -> Balance {
         let existing_supplies = self.get_supplies_by_token(account.clone(), token_address.clone());
-
+        
         assert!(
             Balance::from(tokens_amount) <= existing_supplies,
             "Not enough existing supplies"
@@ -75,7 +75,6 @@ impl Contract {
         tokens_amount: WBalance,
     ) -> bool {
         let existing_supplies = self.get_supplies_by_token(account.clone(), token_address.clone());
-
         return existing_supplies >= Balance::from(tokens_amount);
     }
 
