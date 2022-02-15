@@ -1,11 +1,11 @@
 [package]
 name = "controller"
 version = "0.0.1"
-authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "vladyslav.v@blaize.tech", "orest.o@blaize.tech", "sergii.p@blaize.tech"]
+authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "vladyslav.v@blaize.tech", "orest.o@blaize.tech"]
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = "4.0.0-pre.6"
+near-sdk = "4.0.0-pre.4"

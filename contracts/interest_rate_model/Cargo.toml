@@ -1,0 +1,23 @@
+[package]
+name = "interest_rate_model"
+version = "0.0.1"
+authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "vladyslav.v@blaize.tech", "orest.o@blaize.tech"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "4.0.0-pre.4"
+near-contract-standards = "3.1.1"
+bigdecimal = "0.3.0"
+
+[profile.release]
+codegen-units = 1
+# Tell `rustc` to optimize for small code size.
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+# Opt into extra safety checks on arithmetic operations https://stackoverflow.com/a/64136471/249801
+overflow-checks = true

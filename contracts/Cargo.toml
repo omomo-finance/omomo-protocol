@@ -12,5 +12,6 @@ overflow-checks = true
 members = [
     "controller",
     "dtoken",
-    "test-utoken"
+    "interest_rate_model",
+    "token_mock"
 ]
