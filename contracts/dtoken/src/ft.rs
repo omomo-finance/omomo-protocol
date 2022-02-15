@@ -27,18 +27,16 @@ impl FungibleTokenReceiver for Contract {
         );
 
         let tkn_amount: Balance = amount.into();
-        let config: Config = self.get_contract_config();
-        let user_account = AccountId::new_unchecked(config.controller_account_id.to_string());
 
         controller::increase_supplies(
             env::signer_account_id(),
-            tkn_amount,
-            user_account,
+            tkn_amount.into(),
+            self.get_controller_address(),
             NO_DEPOSIT,
             TGAS * 20u64,
         )
         .then(ext_self::controller_increase_supplies_callback(
-            tkn_amount,
+            tkn_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
             TGAS * 20u64,
