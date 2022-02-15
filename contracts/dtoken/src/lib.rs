@@ -1,7 +1,6 @@
 mod borrow;
 mod common;
 mod config;
-mod constants;
 mod ft;
 mod repay;
 mod supply;
@@ -10,11 +9,13 @@ mod withdraw;
 pub use crate::borrow::*;
 pub use crate::common::*;
 pub use crate::config::*;
-pub use crate::constants::*;
 pub use crate::ft::*;
 pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
+
+#[allow(unused_imports)]
+use general::*;
 
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};

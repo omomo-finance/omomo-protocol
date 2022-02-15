@@ -1,20 +1,20 @@
-mod constants;
 mod oraclehook;
 mod config;
 mod prices;
 mod supplies;
 
-pub use crate::constants::*;
 pub use crate::oraclehook::*;
 pub use crate::config::*;
 pub use crate::prices::*;
 pub use crate::supplies::*;
 
+#[allow(unused_imports)]
+use general::*;
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, LookupMap, LazyOption};
+use near_sdk::collections::{LookupMap, LazyOption};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, Balance, Gas};
-use near_sdk::json_types::U128;
+use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, Balance};
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -35,7 +35,7 @@ pub struct Contract {
     pub account_supplies: LookupMap<AccountId, LookupMap<AccountId, Balance>>,
 
     /// Asset ID -> Price value
-    pub prices: UnorderedMap<AccountId, u128>,
+    pub prices: LookupMap<AccountId, Price>,
 
     /// Contract configuration object
     pub config: LazyOption<Config>
@@ -49,22 +49,10 @@ impl Default for Contract {
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Price {
-    /// Asset Id
-    pub asset_id: AccountId,
-
-    /// Asset price value
-    pub value: u128
-}
-
-
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
 pub struct PriceJsonList {
-    /// Timestamp in milliseconds
-    pub timestamp: u64,
 
-    // pub blockheight: ...
+    /// Block number
+    pub block_height: u64,
 
     /// Vector of asset prices
     pub price_list: Vec<Price>
@@ -84,7 +72,7 @@ impl Contract {
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
             account_supplies: LookupMap::new(StorageKeys::Supplies),
-            prices: UnorderedMap::new(StorageKeys::Prices),
+            prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config))
         }
     }

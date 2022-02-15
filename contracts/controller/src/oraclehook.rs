@@ -16,8 +16,7 @@ impl OraclePriceHandlerHook for Contract {
 
 
         for price in price_data.price_list {
-
-            self.prices.insert(&price.asset_id, &price.value);
+            self.prices.insert(&price.asset_id, &price);
         }
     }
 

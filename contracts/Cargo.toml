@@ -10,6 +10,7 @@ overflow-checks = true
 
 [workspace]
 members = [
+    "general",
     "controller",
     "dtoken",
     "test-utoken"
