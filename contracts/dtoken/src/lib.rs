@@ -37,7 +37,7 @@ enum StorageKeys {
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-    pub struct Contract {
+pub struct Contract {
     ///  Exchange rate in case of zero supplies
     initial_exchange_rate: u128,
 
@@ -101,7 +101,7 @@ trait InternalTokenInterface {
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn withdraw_supplies_callback(
         &mut self,
-        account_id: AccountId,
+        user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
     );
@@ -118,7 +118,7 @@ impl Contract {
     #[init]
     pub fn new(config: Config) -> Self {
         Self {
-            initial_exchange_rate: config.initial_exchange_rate.clone(),
+            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
             total_supplies: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),

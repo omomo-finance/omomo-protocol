@@ -15,3 +15,5 @@ general = { path = "../general" }
 [dev-dependencies]
 near-sdk-sim = "4.0.0-pre.6"
 test-utoken = { path = "../test-utoken" }
+controller = { path = "../controller" }
+
