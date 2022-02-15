@@ -14,3 +14,5 @@ near-contract-standards = "4.0.0-pre.6"
 [dev-dependencies]
 near-sdk-sim = "4.0.0-pre.6"
 test-utoken = { path = "../test-utoken" }
+controller = { path = "../controller" }
+
