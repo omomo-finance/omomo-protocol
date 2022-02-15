@@ -14,7 +14,8 @@ impl Contract {
                 LookupMap::new(StorageKeys::SuppliesToken);
             supplies_map.insert(&token_address, &tokens_amount);
             self.account_supplies.insert(&account, &supplies_map);
-        } else {
+        } 
+        else {
             self.account_supplies
                 .get(&account)
                 .unwrap()

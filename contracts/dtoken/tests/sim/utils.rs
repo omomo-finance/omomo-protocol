@@ -1,8 +1,11 @@
 use near_sdk_sim::{UserAccount, call, deploy, ContractAccount, init_simulator, to_yocto};
 use near_sdk::{AccountId };
+use near_sdk::json_types::{ U128};
 
 use test_utoken::ContractContract as Utoken;
 use dtoken::ContractContract as Dtoken;
+use controller::ContractContract as Controller;
+
 
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -12,10 +15,9 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 }
 
 pub fn init_dtoken(
-    root: &UserAccount,
+    root: UserAccount,
     token_id: AccountId,
 ) -> (UserAccount, ContractAccount<Dtoken>, UserAccount) {
-    let root = init_simulator(None);
 
     let contract = deploy!(
         contract: Dtoken,
@@ -26,17 +28,17 @@ pub fn init_dtoken(
 
     let user_account = root.create_user(
         "user_account".parse().unwrap(),
-        to_yocto("1000") // initial balance
+        to_yocto("1000000") // initial balance
     );
 
     (root, contract, user_account)
 }
 
 pub fn init_utoken(
-    root: &UserAccount,
+    root: UserAccount,
     token_id: AccountId,
 ) -> (UserAccount, ContractAccount<Utoken>, UserAccount) {
-    let root = init_simulator(None);
+
 
     let contract = deploy!(
         contract: Utoken,
@@ -46,8 +48,29 @@ pub fn init_utoken(
     );
 
     let user_account = root.create_user(
-        "user_account".parse().unwrap(),
-        to_yocto("1000") // initial balance
+        "user2_account".parse().unwrap(),
+        to_yocto("1000000") // initial balance
+    );
+
+    (root, contract, user_account)
+}
+
+pub fn init_controller(
+    root: UserAccount,
+    token_id: AccountId,
+) -> (UserAccount, ContractAccount<Controller>, UserAccount) {
+
+
+    let contract = deploy!(
+        contract: Controller,
+        contract_id: token_id,
+        bytes: &CONTROLLER_WASM_BYTES,
+        signer_account: root
+    );
+
+    let user_account = root.create_user(
+        "user3_account".parse().unwrap(),
+        to_yocto("1000000") // initial balance
     );
 
     (root, contract, user_account)

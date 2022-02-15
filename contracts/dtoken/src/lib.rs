@@ -18,13 +18,10 @@ pub use crate::withdraw::*;
 
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, UnorderedMap};
+use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{
-    env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey,
-    Gas, Promise, PromiseOrValue, PromiseResult,
-};
+use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
 
 pub type TokenAmount = u128;
 
@@ -32,11 +29,12 @@ pub type TokenAmount = u128;
 enum StorageKeys {
     Borrows,
     Config,
+    Actions
 }
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-    pub struct Contract {
+pub struct Contract {
     ///  Exchange rate in case of zero supplies
     initial_exchange_rate: u128,
 
@@ -57,6 +55,9 @@ enum StorageKeys {
 
     /// Contract configuration object
     config: LazyOption<Config>,
+
+    /// BlockHeight of last action user produced
+    actions: LookupMap<AccountId, BlockHeight>
 }
 
 impl Default for Contract {
@@ -95,12 +96,12 @@ trait ControllerInterface {
 trait InternalTokenInterface {
     fn supply_callback(&mut self, token_amount: WBalance);
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
-    fn withdraw_balance_of_callback(&mut self, amount: WBalance);
+    fn withdraw_balance_of_callback(&mut self, dtoken_amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128>;
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn withdraw_supplies_callback(
         &mut self,
-        account_id: AccountId,
+        user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
     );
@@ -117,13 +118,14 @@ impl Contract {
     #[init]
     pub fn new(config: Config) -> Self {
         Self {
-            initial_exchange_rate: config.initial_exchange_rate.clone(),
+            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
             total_supplies: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
+            actions: LookupMap::new(StorageKeys::Actions),
         }
     }
 }
