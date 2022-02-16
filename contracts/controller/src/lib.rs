@@ -1,12 +1,14 @@
-mod oraclehook;
 mod config;
+mod oraclehook;
 mod prices;
 mod supplies;
+mod borrows;
 
-pub use crate::oraclehook::*;
 pub use crate::config::*;
+pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::supplies::*;
+pub use crate::borrows::*;
 
 #[allow(unused_imports)]
 use general::*;
@@ -22,7 +24,8 @@ pub enum StorageKeys {
     Supplies,
     SuppliesToken,
     Prices,
-    Config
+    Config,
+    Borrows
 }
 
 #[near_bindgen]
@@ -34,11 +37,14 @@ pub struct Contract {
     /// User Account ID -> Dtoken address -> Supplies balance
     pub account_supplies: LookupMap<AccountId, LookupMap<AccountId, Balance>>,
 
+    /// User Account ID -> Dtoken address -> Borrow balance
+    pub account_borrows: LookupMap<AccountId, LookupMap<AccountId, Balance>>,
+
     /// Asset ID -> Price value
     pub prices: LookupMap<AccountId, Price>,
 
     /// Contract configuration object
-    pub config: LazyOption<Config>
+    pub config: LazyOption<Config>,
 }
 
 impl Default for Contract {
@@ -55,13 +61,11 @@ pub struct PriceJsonList {
     pub block_height: u64,
 
     /// Vector of asset prices
-    pub price_list: Vec<Price>
+    pub price_list: Vec<Price>,
 }
 
 pub trait OraclePriceHandlerHook {
-
     fn oracle_on_data(&mut self, price_data: PriceJsonList);
-
 }
 
 #[near_bindgen]
@@ -72,8 +76,9 @@ impl Contract {
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
             account_supplies: LookupMap::new(StorageKeys::Supplies),
+            account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: LookupMap::new(StorageKeys::Prices),
-            config: LazyOption::new(StorageKeys::Config, Some(&config))
+            config: LazyOption::new(StorageKeys::Config, Some(&config)),
         }
     }
 }

@@ -6,7 +6,7 @@ Liquidation is the process of terminating a borrower's account when their Health
 
 ## **How does liquidation work?**
 
-![](../.gitbook/assets/Liquidation.png)
+![](../.gitbook/assets/liquidation.png)
 
 ## **Liquidation threshold**
 
