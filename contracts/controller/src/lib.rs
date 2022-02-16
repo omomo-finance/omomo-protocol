@@ -17,6 +17,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, LazyOption};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, Balance};
+use near_sdk::json_types::U128;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
