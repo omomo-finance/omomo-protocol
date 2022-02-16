@@ -1,32 +1,35 @@
-mod config;
-mod oraclehook;
-mod prices;
-mod supplies;
-mod borrows;
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::{LazyOption, LookupMap};
+use near_sdk::serde::{Deserialize, Serialize};
 
-pub use crate::config::*;
-pub use crate::oraclehook::*;
-pub use crate::prices::*;
-pub use crate::supplies::*;
-pub use crate::borrows::*;
 
 #[allow(unused_imports)]
 use general::*;
 
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, LazyOption};
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey, Balance};
+#[allow(unused_imports)]
 use near_sdk::json_types::U128;
+
+pub use crate::config::*;
+pub use crate::oraclehook::*;
+pub use crate::prices::*;
+
+
+#[allow(unused_imports)]
+mod config;
+mod oraclehook;
+mod prices;
+mod borrows_supplies;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
     Markets,
     Supplies,
     SuppliesToken,
+    BorrowsToken,
     Prices,
     Config,
-    Borrows
+    Borrows,
 }
 
 #[near_bindgen]
@@ -57,7 +60,6 @@ impl Default for Contract {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct PriceJsonList {
-
     /// Block number
     pub block_height: u64,
 
