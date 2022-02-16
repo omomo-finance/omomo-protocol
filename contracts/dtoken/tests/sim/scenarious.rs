@@ -112,6 +112,19 @@ fn scenario_01() {
     ).unwrap_json();
     assert_eq!(user_balance, 20.to_string(), "As to mistake in command, transfer shouldn't be done");
 
+    // Supply test with calling from dtoken instead of utoken
+    let result = call!(
+        d_user,
+        dtoken.ft_on_transfer(
+            d_user.account_id(),
+            U128(20),
+            "SUPPLY".to_string()
+        ),
+        deposit = 0
+    );
+
+    assert_failure(result, "The call should come from token account");
+
     // Supply test
 
     call!(

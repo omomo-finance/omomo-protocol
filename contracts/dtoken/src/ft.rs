@@ -1,7 +1,8 @@
 use crate::*;
 
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
-use near_sdk::json_types::U128;
+use near_sdk::{json_types::U128, serde_json::to_string};
+
 
 #[near_bindgen]
 impl FungibleTokenReceiver for Contract {
@@ -20,17 +21,13 @@ impl FungibleTokenReceiver for Contract {
         assert!(msg == "SUPPLY".to_string() || msg == "REPAY".to_string(), "There is no such command");
 
         log!(format!("sender_id {}, msg {}", sender_id, msg));
+        
         if msg == "SUPPLY".to_string() {
-
             self.supply(amount)
-
         } 
-        else if msg == "REPAY".to_string(){
+        else{
+            //repay
             PromiseOrValue::Value(U128(0))
-
-        } else {
-            // ? What return should be here or simply change "else if" to "if"
-            PromiseOrValue::Value(U128(0))
-        }
+        } 
     }
 }

@@ -48,7 +48,7 @@ impl Contract {
             self.terra_gas(40),
         )
         .then(ext_self::supply_balance_of_callback(
-            Balance::from(token_amount),
+            token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(60),
@@ -57,10 +57,10 @@ impl Contract {
     }
 
     #[allow(dead_code)]
-    pub fn supply_balance_of_callback(&mut self, token_amount: Balance) -> Promise {
+    pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> Promise {
 
         if !is_promise_success() {
-            self.supply_ft_transfer_fallback(env::signer_account_id(), U128(token_amount));
+            self.supply_ft_transfer_fallback(env::signer_account_id(), token_amount);
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -88,13 +88,13 @@ impl Contract {
         return controller::increase_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
-            U128(token_amount),
+            token_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(20),
         )
         .then(ext_self::controller_increase_supplies_callback(
-            U128(token_amount),
+            token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(10),
