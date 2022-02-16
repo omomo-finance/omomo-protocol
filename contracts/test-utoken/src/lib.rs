@@ -1,8 +1,8 @@
 use near_contract_standards::fungible_token::FungibleToken;
 use near_contract_standards::fungible_token::metadata::{
-    FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider,
+    FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC,
 };
-use near_sdk::{AccountId, env, near_bindgen, PanicOnDefault, PromiseOrValue};
+use near_sdk::{AccountId, near_bindgen, PanicOnDefault, PromiseOrValue, env};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
@@ -189,4 +189,5 @@ mod tests {
         assert_eq!(contract.ft_balance_of(accounts(2)).0, (TOTAL_SUPPLY - transferred_tokens));
         assert_eq!(contract.ft_balance_of(accounts(1)).0, transferred_tokens);
     }
+
 }
