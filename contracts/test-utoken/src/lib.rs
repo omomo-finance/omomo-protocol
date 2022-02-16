@@ -2,7 +2,7 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_contract_standards::fungible_token::metadata::{
     FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC,
 };
-use near_sdk::{AccountId, near_bindgen, PanicOnDefault, Balance, PromiseOrValue, env};
+use near_sdk::{AccountId, near_bindgen, PanicOnDefault, PromiseOrValue, env};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;

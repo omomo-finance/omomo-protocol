@@ -1,58 +1,49 @@
 # Borrow
 
-## Borrow vs Withdraw
+## Borrow VS Withdraw
 
-Withdrawing your assets means closing your position on that particular asset. Let's imagine, if you are long on the asset, you would not be entitled to the potential upside value gain. By borrowing you are able to obtain liquidity (working capital) without selling your assets.
+Withdrawing your assets means closing your position on that particular asset. However, if you are in a deposit but you need liquidity, withdrawing funds is not the only option. Instead of withdrawal, you can borrow assets against your deposited assets without losing your position.
+
+You can get a loan on any asset, even the one you have deposited. This way, you won’t use your position and will be able to use necessary assets for the chosen strategy.
 
 ## How do I borrow?
 
-For borrowing action you need to supply any asset to be used as collateral. After this, click on `Borrow` button for the asset you want to interact. Set the amount in `Borrow` tab, based on your available supplies that would be used as a collateral for the loan and confirm your transaction.
+1. To enable borrowing, you need to supply any asset to be used as collateral.&#x20;
+2. Select the asset you are interested in and click on the **Borrow** button.&#x20;
+3. In the **Borrow tab**, set the amount you’d like to borrow based on your available supplies that would be used as collateral for the loan.&#x20;
+4. Submit your transaction and wait for confirmation.
 
-## How does borrow work?
+## How does borrowing work?
 
 ![](../.gitbook/assets/borrow.png)
 
-## How much I can borrow?
+## **How much can I borrow?**
 
-The highest value you can borrow, related to the value you have supplied and the available liquidity. Let's say, you can’t borrow an asset if there is not enough liquidity or if your health factor doesn’t allow you to. Though, the platform provides the collaterization factor in order to get the overcollaterized loan and protect the user from the early liquidation.
+The maximum amount you can borrow depends on the value you have supplied and the available liquidity. In other words, you can’t borrow an asset if there is not enough liquidity or if your Health factor doesn’t allow you to.
 
-***
+## **What is the Health factor**?
 
-## What is the Health factor?
+Health factor indicates the safety of your deposited assets against the borrowed assets and their underlying value. It directly influences the amount you can still borrow on the platform or the amount you need to deposit to avoid liquidation.
 
-The numeric representation of the safety of your deposited assets against the borrowed assets and its underlying value called health factor. For more details how health factor computes, please look into `liquidation flow`
-
-***
-
-## What asset do I need to repay? \[Discuss]
-
-You repay your loan in the same asset you borrowed.
+Learn more about how the Health factor is computed in the corresponding part of the [**Liquidation**](liquidation.md) chapter.
 
 ***
 
-## How much would I pay in interest? \[Discuss]
+## **When do I pay back the loan?**
 
-The interest rate you pay for borrowing assets depends on the borrowing rate which is derived from the supply and demand ratio of the asset.
-<br>
-In the later stages, the protocol will provide the user the instrumentary for custom interest models creation for custom supply markets. Thus, creation of profitable models will be incentivized by the protocol and the market will be included into the core collaterals of the protocol.
+There are no particular time limits to pay back the loan. As long as your position is safe and you haven’t reached the critical Health factor, you can borrow for an undefined period. However, please keep in mind that the accrued interest will grow with time, decreasing your Health factor, which may lead to the liquidation of your deposited assets.
 
 ***
 
-## What ETA to pay back the loan?
+## **What if my Health factor is getting low?**
 
-There is no time restricitons to pay back the loan. As long as your position is safe, you can borrow for an undefined period. Nevertheless, as time passes, the accrued interest will grow making your health factor decrease, which might result in your deposited assets becoming more likely to be liquidated.
-
-***
-
-## What happens when my health factor is reduced?
-
-Unfortunately, it's causing the risk of liquidation to increase.
+Unfortunately, as your Health factor decreases, the risk of liquidation gets higher.
 
 ***
 
-## How do I avoid liquidation?
+## **How can I avoid liquidation?**&#x20;
 
-To prevent of reducing your health factor leading to liquidation you can:
+To avoid liquidation, you need to keep your Health factor high. For that, you should do the following:
 
-* repay the loan
+* repay your loans
 * deposit more assets to increase your liquidity

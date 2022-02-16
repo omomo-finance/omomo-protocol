@@ -31,13 +31,13 @@ impl FungibleTokenReceiver for Contract {
             tkn_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
-            TGAS * 20u64,
+            self.terra_gas(20),
         )
         .then(ext_self::controller_increase_supplies_callback(
             tkn_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            TGAS * 20u64,
+            self.terra_gas(20),
         ));
 
         PromiseOrValue::Value(U128(0))

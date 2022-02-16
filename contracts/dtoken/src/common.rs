@@ -12,6 +12,10 @@ impl Contract {
         return env::current_account_id().clone();
     }
 
+    pub fn get_signer_address(&self) -> AccountId {
+        return env::signer_account_id().clone();
+    }
+
     pub fn get_underlying_contract_address(&self) -> AccountId {
         return self.underlying_token.clone();
     }
@@ -23,14 +27,18 @@ impl Contract {
         return (Balance::from(underlying_balance) + self.total_borrows - self.total_reserves)
             / self.token.total_supply;
     }
+
+    pub fn terra_gas(&self, gas: u64) -> Gas {
+        return TGAS * gas;
+    }
 }
 
 #[near_bindgen]
 impl Contract {
 
+    pub fn get_total_supplies(&self) -> Balance {
+        return self.total_supplies;
 
-    pub fn get_total_reserves(&self) -> Balance {
-        return self.total_reserves;
     }
 
     pub fn get_total_borrows(&self) -> Balance {
