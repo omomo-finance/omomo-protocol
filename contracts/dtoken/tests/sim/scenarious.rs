@@ -20,12 +20,156 @@ fn view_balance(contract: &ContractAccount<ContractContract>, user_account: Acco
 
 #[test]
 fn scenario_01() {
+    // Supply
+    let root = init_simulator(None);
+    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
+    let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
 
-    // supply test
+
+    let (droot, dtoken, d_user) = init_dtoken(
+        droot,
+        AccountId::new_unchecked("dtoken_contract".to_string())
+    );
+
+    let (uroot, utoken, u_user) = init_utoken(
+        uroot,
+        AccountId::new_unchecked("utoken_contract".to_string())
+    );
+
+    let (croot, controller, c_user) = init_controller(
+        croot,
+        AccountId::new_unchecked("controller_contract".to_string())
+    );
+
+
+    //  Initialize
+    call!(
+        uroot,
+        utoken.new_default_meta(uroot.account_id(), U128(10000)),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        croot,
+        controller.new(
+            cConfig{
+                owner_id: croot.account_id().clone(), 
+                oracle_account_id: "oracle".parse().unwrap()
+            }),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        droot,
+        dtoken.new(
+            dConfig{
+                initial_exchange_rate: U128(1), 
+                underlying_token_id: utoken.account_id().clone(), 
+                owner_id: droot.account_id().clone(), 
+                controller_account_id: controller.account_id().clone()
+            }),
+        deposit = 0
+    )
+    .assert_success();
+
+    // Supply preparation 
+    call!(
+        uroot,
+        utoken.mint(dtoken.account_id(), U128(0)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        d_user,
+        utoken.mint(d_user.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20.to_string(), "User balance should be 20");
+
+    // Supply test with error in command
+    call!(
+        d_user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPL".to_string()),
+            "SUPPL".to_string()
+        ),
+        deposit = 1
+    ).assert_success();
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20.to_string(), "As to mistake in command, transfer shouldn't be done");
+
+    // Supply test with calling from dtoken instead of utoken
+    let result = call!(
+        d_user,
+        dtoken.ft_on_transfer(
+            d_user.account_id(),
+            U128(20),
+            "SUPPLY".to_string()
+        ),
+        deposit = 0
+    );
+
+    assert_failure(result, "The call should come from token account");
+
+    // Supply test
+
+    call!(
+        d_user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            "SUPPLY".to_string()
+        ),
+        deposit = 1
+    ).assert_success();
+
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance should be 20");
+
+    let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance on controller should be 20");
+
+    // Supply test with 0 balance
+    let result = call!(
+        d_user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            "SUPPLY".to_string()
+        ),
+        deposit = 1
+    );
+    assert_failure(result, "The account doesn't have enough balance");
+
 }
 
 #[test]
 fn scenario_02(){
+    // Wihdraw
     let root = init_simulator(None);
     let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
     let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
@@ -157,7 +301,6 @@ fn scenario_02(){
 
     let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
-    
 
     call!(
         d_user,

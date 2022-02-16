@@ -3,13 +3,19 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap};
 use near_sdk::serde::{Deserialize, Serialize};
 
+
 #[allow(unused_imports)]
 use general::*;
+
+#[allow(unused_imports)]
+use near_sdk::json_types::U128;
 
 pub use crate::config::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 
+
+#[allow(unused_imports)]
 mod config;
 mod oraclehook;
 mod prices;

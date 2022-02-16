@@ -44,7 +44,6 @@ impl Contract {
         return self.total_reserves;
     }
 
-
     #[private]
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
