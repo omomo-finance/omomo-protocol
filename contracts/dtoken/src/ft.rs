@@ -25,13 +25,12 @@ impl FungibleTokenReceiver for Contract {
             self.supply(amount)
 
         } 
-        // else if msg == "REPAY".to_string(){
+        else if msg == "REPAY".to_string(){
+            PromiseOrValue::Value(U128(0))
 
-        // }
-        else{
-            // What to return in case of error
+        } else {
+            // ? What return should be here or simply change "else if" to "if"
             PromiseOrValue::Value(U128(0))
         }
-
     }
 }
