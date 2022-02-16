@@ -11,8 +11,7 @@ use near_sdk::{
 use std::convert::TryFrom;
 
 const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = 80_000_000_000_000;
-// Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
+const BASE_GAS: Gas = 80_000_000_000_000; // Need to attach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
@@ -88,7 +87,6 @@ impl Dtoken {
 
     #[private]
     pub fn borrow_callback(&mut self, amount: Balance) -> Promise {
-        // Borrow allowed response
         let is_allowed: bool = match env::promise_result(0) {
             PromiseResult::NotReady => {
                 unreachable!()
@@ -119,15 +117,13 @@ impl Dtoken {
             env::signer_account_id(),
             amount,
             None,
-            &self.underlying_token, // Attention here!
+            &self.underlying_token,
             NO_DEPOSIT,
             10_000_000_000_000,
         );
     }
 
     pub fn repay_callback_get_interest_rate(&mut self) -> Promise {
-        log!("repay_callback_get_interest_rate env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
-
         assert_eq!(
             env::promise_results_count(),
             1,
@@ -143,11 +139,10 @@ impl Dtoken {
         };
 
         let borrow = self.borrow_of.get(&env::signer_account_id().clone()).unwrap();
-        let sender_id: AccountId = env::signer_account_id();
         let amount: Balance = borrow * interest_rate / RATIO_DECIMALS;
 
-        log!("{} repay_callback_get_interest_rate {}; borrow {}; amount {}", env::signer_account_id().clone(), interest_rate, borrow, amount);
 
+        log!("{} repay_callback_get_interest_rate {}; borrow {}; amount {}", env::signer_account_id().clone(), interest_rate, borrow, amount);
         let new_value: u128 = 0;
         self.borrow_of.insert(&env::signer_account_id().clone(), &new_value);
 
@@ -163,8 +158,6 @@ impl Dtoken {
     }
 
     pub fn repay_callback_get_balance(&self) -> Promise {
-        log!("repay_callback_get_balance env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
-
         assert_eq!(
             env::promise_results_count(),
             1,
@@ -181,7 +174,6 @@ impl Dtoken {
 
         let controller_account_id: AccountId = AccountId::try_from(CONTROLLER_ACCOUNT_ID).unwrap();
 
-        log!("repay_callback_get_balance env::prepaid_gas {} env::used_gas {}", &env::prepaid_gas(), &env::used_gas());
         return ext_controller::get_interest_rate(
             env::current_account_id(),
             underlying_balance_of_dtoken,
