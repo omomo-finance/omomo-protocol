@@ -52,7 +52,6 @@ impl Contract {
                 .into(),
         };
 
-
         let exchange_rate: Balance = self.get_exchange_rate(WBalance::from(balance_of));
         let token_amount: Balance = Balance::from(dtoken_amount) / exchange_rate;
 
@@ -60,7 +59,7 @@ impl Contract {
 
         return controller::withdraw_supplies(
             env::signer_account_id(),
-            self.get_underlying_contract_address(),
+            self.get_contract_address(),
             token_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
@@ -87,11 +86,10 @@ impl Contract {
         assert_eq!(promise_success, true, "Withdraw supplies has been failed");
 
         // Cross-contract call to market token
-        underlying_token::ft_transfer_call(
+        underlying_token::ft_transfer(
             user_account,
             token_amount,
             Some(format!("Withdraw with token_amount {}", Balance::from(token_amount))),
-            format!("Withdraw with token_amount {}", Balance::from(token_amount)),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
             self.terra_gas(40),

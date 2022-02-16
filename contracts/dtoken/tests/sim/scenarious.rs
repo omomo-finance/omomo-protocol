@@ -89,13 +89,13 @@ fn scenario_01() {
 #[test]
 fn scenario_02(){
     let root = init_simulator(None);
-    let droot = root.create_user("dtoken".parse().unwrap(), 1900000090000000000000000000000);
-    let uroot = root.create_user("utoken".parse().unwrap(), 1900000090000000000000000000000);
-    let croot = root.create_user("controller".parse().unwrap(), 1900000090000000000000000000000);
+    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
+    let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
 
 
     println!("--1-- Deploy");
-    let (droot, dtoken, user) = init_dtoken(
+    let (droot, dtoken, d_user) = init_dtoken(
         droot,
         AccountId::new_unchecked("dtoken_contract".to_string())
     );
@@ -147,59 +147,125 @@ fn scenario_02(){
     println!("--3-- Call");
 
     // 1. If User doesn't supply any tokens
+    
+    // let result = call!(
+    //     d_user,
+    //     dtoken.withdraw(U128(20)),
+    //     deposit = 0
+    // );
+
+    // assert_failure(result, "Withdrawal operation is not allowed");
+
+    println!("--4-- Call");
+
+    // 2. If User supply some tokens and wants to withdraw 1) More 2) Less 3) The same
+        // Simulate supply process
+    call!(
+        uroot,
+        utoken.mint(dtoken.account_id(), U128(0)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        d_user,
+        utoken.mint(d_user.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        d_user,
+        dtoken.mint(&d_user.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        d_user,
+        controller.increase_supplies(d_user.account_id(), dtoken.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        d_user,
+        utoken.ft_transfer(
+            dtoken.account_id(), 
+            U128(20), 
+            Some(format!("Supply with token_amount 20"))),
+        1,
+        100000000000000
+    ).assert_success();
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0.to_string());
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 20.to_string());
+
+    let user_balance: u128 = view!(
+        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20, "Before. Balance = 20");
+
+    println!("--5-- More. Balance = 20, return = {}", user_balance);
+
     let result = call!(
-        user,
-        dtoken.withdraw(U128(20)),
+        d_user,
+        dtoken.withdraw(U128(30)),
         deposit = 0
     );
 
     assert_failure(result, "Withdrawal operation is not allowed");
 
-    println!("--4-- Call");
-
-    // 2. If User supply some tokens and wants to withdraw the same amount
-        // Simulate supply process
-    call!(
-        user,
-        utoken.mint(dtoken.account_id(), U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
+    let user_balance: u128 = view!(
+        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20, "More. Balance = 20");
+    
+    println!("--5-- Less. Balance = 20, return = {}", user_balance);
 
     call!(
-        user,
-        controller.increase_supplies(user.account_id(), utoken.account_id(), U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    call!(
-        uroot,
-        utoken.ft_transfer_call(
-            dtoken.account_id(), 
-            U128(20), 
-            Some(format!("Supply with token_amount 20")), 
-            format!("Supply to dtoken from utoken with token_amount")),
-        1,
-        100000000000000
-    ).assert_success();
-
-    // let total_supply: u128 = view!(
-    //     dtoken.get_total_supplies()
-    // ).unwrap_json();
-    // assert_eq!(total_supply, 20);
-
-    call!(
-        user,
-        dtoken.withdraw(U128(20)),
+        d_user,
+        dtoken.withdraw(U128(10)),
         deposit = 0
     ).assert_success();
 
-    // let total_supply: u128 = view!(
-    //     dtoken.get_total_supplies()
-    // ).unwrap_json();
-    // assert_eq!(total_supply, 0);
+    let user_balance: u128 = view!(
+        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 10, "Less. Balance = 20");
 
+    println!("--5-- The same. Balance = 10, return = {}", user_balance);
+
+    call!(
+        d_user,
+        dtoken.withdraw(U128(10)),
+        deposit = 0
+    ).assert_success();
+
+    let user_balance: u128 = view!(
+        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0, "Less. Balance = 0");
+
+    println!("--5-- More. Balance = 0,return = {}", user_balance);
+
+    let result = call!(
+        d_user,
+        dtoken.withdraw(U128(10)),
+        deposit = 0
+    );
+
+    assert_failure(result, "Withdrawal operation is not allowed");
     
-    
+    let user_balance: u128 = view!(
+        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0, "More. Balance = 0, return = {}", user_balance);
 }

@@ -40,7 +40,7 @@ pub struct Contract {
     initial_exchange_rate: u128,
 
     /// Total sum of supplied tokens
-    total_supplies: TokenAmount,
+    total_reserves: TokenAmount,
 
     /// Total sum of borrowed tokens
     total_borrows: TokenAmount,
@@ -120,7 +120,7 @@ impl Contract {
     pub fn new(config: Config) -> Self {
         Self {
             initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
-            total_supplies: 0,
+            total_reserves: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),
             underlying_token: config.underlying_token_id.clone(),
