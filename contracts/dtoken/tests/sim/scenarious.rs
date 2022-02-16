@@ -94,7 +94,6 @@ fn scenario_02(){
     let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
 
 
-    println!("--1-- Deploy");
     let (droot, dtoken, d_user) = init_dtoken(
         droot,
         AccountId::new_unchecked("dtoken_contract".to_string())
@@ -110,7 +109,6 @@ fn scenario_02(){
         AccountId::new_unchecked("controller_contract".to_string())
     );
 
-    println!("--2-- Init");
 
     //  Initialize
     call!(
@@ -144,19 +142,17 @@ fn scenario_02(){
     )
     .assert_success();
 
-    println!("--3-- Call");
 
     // 1. If User doesn't supply any tokens
     
-    // let result = call!(
-    //     d_user,
-    //     dtoken.withdraw(U128(20)),
-    //     deposit = 0
-    // );
+    let result = call!(
+        d_user,
+        dtoken.withdraw(U128(20)),
+        deposit = 0
+    );
 
-    // assert_failure(result, "Withdrawal operation is not allowed");
+    assert_failure(result, "Withdrawal operation is not allowed");
 
-    println!("--4-- Call");
 
     // 2. If User supply some tokens and wants to withdraw 1) More 2) Less 3) The same
         // Simulate supply process
@@ -201,19 +197,20 @@ fn scenario_02(){
     let user_balance: String = view!(
         utoken.ft_balance_of(d_user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 0.to_string());
+    assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
 
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 20.to_string());
+    assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance should be 20");
+
+    //
 
     let user_balance: u128 = view!(
         controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 20, "Before. Balance = 20");
+    assert_eq!(user_balance, 20, "More. Balance = 20");
 
-    println!("--5-- More. Balance = 20, return = {}", user_balance);
 
     let result = call!(
         d_user,
@@ -228,7 +225,6 @@ fn scenario_02(){
     ).unwrap_json();
     assert_eq!(user_balance, 20, "More. Balance = 20");
     
-    println!("--5-- Less. Balance = 20, return = {}", user_balance);
 
     call!(
         d_user,
@@ -241,8 +237,6 @@ fn scenario_02(){
     ).unwrap_json();
     assert_eq!(user_balance, 10, "Less. Balance = 20");
 
-    println!("--5-- The same. Balance = 10, return = {}", user_balance);
-
     call!(
         d_user,
         dtoken.withdraw(U128(10)),
@@ -253,8 +247,6 @@ fn scenario_02(){
         controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 0, "Less. Balance = 0");
-
-    println!("--5-- More. Balance = 0,return = {}", user_balance);
 
     let result = call!(
         d_user,
@@ -267,5 +259,4 @@ fn scenario_02(){
     let user_balance: u128 = view!(
         controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 0, "More. Balance = 0, return = {}", user_balance);
 }

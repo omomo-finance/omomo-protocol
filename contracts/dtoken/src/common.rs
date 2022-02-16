@@ -36,8 +36,8 @@ impl Contract {
 #[near_bindgen]
 impl Contract {
 
-    pub fn get_total_supplies(&self) -> Balance {
-        return self.total_supplies;
+    pub fn get_total_reserves(&self) -> Balance {
+        return self.total_reserves;
 
     }
 
