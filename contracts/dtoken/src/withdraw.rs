@@ -28,7 +28,7 @@ impl Contract {
             self.terra_gas(10),
         )
         .then(ext_self::withdraw_balance_of_callback(
-            dtoken_amount.into(),
+            Balance::from(dtoken_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(140),
