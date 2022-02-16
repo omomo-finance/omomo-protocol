@@ -11,7 +11,8 @@ use near_sdk::{
 use std::convert::TryFrom;
 
 const NO_DEPOSIT: Balance = 0;
-const BASE_GAS: Gas = 80_000_000_000_000; // Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
+const BASE_GAS: Gas = 80_000_000_000_000;
+// Need to atach --gas=200000000000000 to 'borrow' call (80TGas here and 200TGas for call)
 const CONTROLLER_ACCOUNT_ID: &str = "ctrl.nearlend.testnet";
 const RATIO_DECIMALS: u128 = 10_u128.pow(8);
 
@@ -102,9 +103,9 @@ impl Dtoken {
 
         let borrow_amount: u128 = amount
             + self
-                .borrow_of
-                .get(&env::signer_account_id())
-                .unwrap_or(0_u128);
+            .borrow_of
+            .get(&env::signer_account_id())
+            .unwrap_or(0_u128);
         self.borrow_of
             .insert(&env::signer_account_id(), &borrow_amount);
         log!(
@@ -144,19 +145,19 @@ impl Dtoken {
         let borrow = self.borrow_of.get(&env::signer_account_id().clone()).unwrap();
         let sender_id: AccountId = env::signer_account_id();
         let amount: Balance = borrow * interest_rate / RATIO_DECIMALS;
-        
+
         log!("{} repay_callback_get_interest_rate {}; borrow {}; amount {}", env::signer_account_id().clone(), interest_rate, borrow, amount);
 
         let new_value: u128 = 0;
         self.borrow_of.insert(&env::signer_account_id().clone(), &new_value);
-    
+
         return erc20_token::internal_transfer_with_registration(
             env::signer_account_id().clone(),
             env::current_account_id(),
             amount,
             None,
             &self.underlying_token,
-            NO_DEPOSIT,        
+            NO_DEPOSIT,
             5_000_000_000_000,
         );
     }
@@ -190,13 +191,13 @@ impl Dtoken {
             NO_DEPOSIT,
             70_000_000_000_000,
         )
-        .then(
-            ext_self::repay_callback_get_interest_rate(
-                &env::current_account_id(),
-                NO_DEPOSIT,
-                15_000_000_000_000,
-            )
-        );
+            .then(
+                ext_self::repay_callback_get_interest_rate(
+                    &env::current_account_id(),
+                    NO_DEPOSIT,
+                    15_000_000_000_000,
+                )
+            );
     }
 
     #[private]
@@ -204,7 +205,7 @@ impl Dtoken {
         assert_eq!(
             env::promise_results_count(),
             1,
-            "This is a withdraw callback method"
+            "Withdraw callback method called"
         );
         let balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
@@ -222,8 +223,6 @@ impl Dtoken {
                 / self.token.total_supply
         }
 
-        log!("return amount:{}", amount * exchange_rate / RATIO_DECIMALS);
-
         erc20_token::internal_transfer_with_registration(
             env::current_account_id(),
             account_id.clone(),
@@ -233,31 +232,8 @@ impl Dtoken {
             NO_DEPOSIT,
             10_000_000_000_000,
         );
-        log!(
-            "internal_transfer_with_registration from dtoken_account_id: {} \
-        to predecessor_account_id: {} with amount: {}",
-            env::current_account_id(),
-            account_id.clone().to_string(),
-            amount * exchange_rate / RATIO_DECIMALS
-        );
 
         self.burn(&account_id.to_string(), amount);
-        log!(
-            "predecessor_account_id dtoken balance: {}",
-            self.internal_unwrap_balance_of(&account_id.to_string())
-        );
-
-        let controller_account_id: AccountId =
-            AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
-
-        // ext_controller::decrease_user_supply(
-        //     env::predecessor_account_id().to_string(),
-        //     env::current_account_id().to_string(),
-        //     amount,
-        //     &controller_account_id,
-        //     NO_DEPOSIT,
-        //     10_000_000_000_000,
-        // );
     }
 
     #[private]
@@ -265,7 +241,7 @@ impl Dtoken {
         assert_eq!(
             env::promise_results_count(),
             1,
-            "This is a withdraw callback method"
+            "Exchange rate callback method called"
         );
         let balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
@@ -290,7 +266,7 @@ impl Dtoken {
         assert_eq!(
             env::promise_results_count(),
             1,
-            "This is a supply callback method"
+            "Supply callback method called"
         );
         let balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
@@ -308,34 +284,7 @@ impl Dtoken {
                 / self.token.total_supply
         }
 
-
         self.mint(&env::signer_account_id().clone(), amount);
-        log!(
-            "dtoken balance {} of {}", self.internal_unwrap_balance_of(&env::signer_account_id()), env::signer_account_id()
-        );
-
-        // let controller_account_id: AccountId =
-        //     AccountId::try_from(CONTROLLER_ACCOUNT_ID.to_string()).unwrap();
-
-        // ext_controller::increase_user_supply(
-        //     env::signer_account_id().to_string(),
-        //     env::current_account_id().to_string(),
-        //     amount,
-        //     &controller_account_id,
-        //     NO_DEPOSIT,
-        //     20_000_000_000_000,
-        // );
-
-        log!("exchange_rate: {}", exchange_rate);
-        log!("supply amount:{}", amount * RATIO_DECIMALS / exchange_rate);
-
-        log!(
-            "internal_transfer_with_registration from signer_account_id: {} to dtoken_account_id: {} with amount: {}",
-            env::signer_account_id(),
-            env::current_account_id(),
-            amount
-        );
-        
         return erc20_token::internal_transfer_with_registration(
             env::signer_account_id(),
             env::current_account_id(),
@@ -354,12 +303,12 @@ impl Dtoken {
             NO_DEPOSIT,
             20_000_000_000_000,
         )
-        .then(ext_self::supply_callback(
-            amount,
-            &env::current_account_id().to_string(),
-            NO_DEPOSIT,
-            80_000_000_000_000,
-        ));
+            .then(ext_self::supply_callback(
+                amount,
+                &env::current_account_id().to_string(),
+                NO_DEPOSIT,
+                80_000_000_000_000,
+            ));
     }
 
     pub fn withdraw(&self, amount: Balance) {
@@ -369,13 +318,13 @@ impl Dtoken {
             NO_DEPOSIT,
             40_000_000_000_000,
         )
-        .then(ext_self::withdraw_callback(
-            env::signer_account_id(),
-            amount,
-            &env::current_account_id().to_string(),
-            NO_DEPOSIT,
-            20_000_000_000_000,
-        ));
+            .then(ext_self::withdraw_callback(
+                env::signer_account_id(),
+                amount,
+                &env::current_account_id().to_string(),
+                NO_DEPOSIT,
+                20_000_000_000_000,
+            ));
     }
 
     pub fn borrow(amount: Balance) -> Promise {
@@ -390,12 +339,12 @@ impl Dtoken {
             NO_DEPOSIT,
             10_000_000_000_000,
         )
-        .then(ext_self::borrow_callback(
-            amount,
-            &env::current_account_id().to_string(),
-            NO_DEPOSIT,
-            20_000_000_000_000,
-        ));
+            .then(ext_self::borrow_callback(
+                amount,
+                &env::current_account_id().to_string(),
+                NO_DEPOSIT,
+                20_000_000_000_000,
+            ));
     }
 
     pub fn repay(&self) -> Promise {
@@ -407,11 +356,11 @@ impl Dtoken {
             NO_DEPOSIT,
             15_000_000_000_000,
         )
-        .then(ext_self::repay_callback_get_balance(
-            &env::current_account_id(),
-            NO_DEPOSIT,
-            100_000_000_000_000,
-        ));
+            .then(ext_self::repay_callback_get_balance(
+                &env::current_account_id(),
+                NO_DEPOSIT,
+                100_000_000_000_000,
+            ));
     }
 
     pub fn add_reserve(amount: Balance) {
@@ -425,11 +374,11 @@ impl Dtoken {
             NO_DEPOSIT,
             40_000_000_000_000,
         )
-        .then(ext_self::exchange_rate_callback(
-            &env::current_account_id().to_string(),
-            NO_DEPOSIT,
-            20_000_000_000_000,
-        ));
+            .then(ext_self::exchange_rate_callback(
+                &env::current_account_id().to_string(),
+                NO_DEPOSIT,
+                20_000_000_000_000,
+            ));
     }
 
     pub fn get_supplies(&self, account: AccountId) -> Balance {
