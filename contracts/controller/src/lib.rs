@@ -13,7 +13,7 @@ pub use crate::prices::*;
 mod config;
 mod oraclehook;
 mod prices;
-mod borrows_n_supplies;
+mod borrows_supplies;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
