@@ -1,9 +1,9 @@
 use near_sdk::{AccountId, collections::LookupMap};
-use near_sdk_sim::{call, init_simulator, view, to_yocto, ExecutionResult};
+use near_sdk_sim::{call, init_simulator, view, to_yocto, ExecutionResult, ContractAccount, UserAccount};
 use crate::utils::{init_dtoken, init_utoken, init_controller};
 use near_sdk::json_types::{ U128};
 use dtoken::Config as dConfig;
-use controller::Config as cConfig;
+use controller::{Config as cConfig, ContractContract};
 
 fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(!outcome.is_ok());
@@ -12,78 +12,16 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(exe_status.contains(error_message));
 }
 
+fn view_balance(contract: &ContractAccount<ContractContract>, user_account: AccountId, dtoken_account: AccountId) -> u128{
+    view!(
+        contract.get_supplies_by_token(user_account, dtoken_account)
+    ).unwrap_json()
+}
+
 #[test]
 fn scenario_01() {
 
-    // let root = init_simulator(None);
-    // let droot = root.create_user("dtoken".parse().unwrap(), 1900000090000000000000000000000);
-    // let uroot = root.create_user("utoken".parse().unwrap(), 9110000000086184677687500000000);
-    
-
-
-    // println!("--1--");
-    // let (root, dtoken, user) = init_dtoken(
-    //     droot,
-    //     weth()
-    // );
-    // println!("--1/1--");
-
-    // let (uroot, utoken, uuser) = init_utoken(
-    //     uroot,
-    //     weth()
-    // );
-
-    // call!(
-    //     uroot,
-    //     utoken.new_default_meta("owner".parse().unwrap(), U128(10000)),
-    //     deposit = 0
-    // )
-    // .assert_success();
-
-
-    // call!(
-    //     root,
-    //     dtoken.new(
-    //         Config{
-    //             initial_exchange_rate: U128(0), 
-    //             underlying_token_id: utoken.account_id().clone(), 
-    //             owner_id: "owner2".parse().unwrap(), 
-    //             controller_account_id: "controller".parse().unwrap()
-    //         }),
-    //     deposit = 0
-    // )
-    // .assert_success();
-
-    // println!("--3--");
-
-    // // call!(
-    // //     root,
-    // //     dtoken.supply_balance_of_callback(U128(20)),
-    // //     deposit = 0
-    // // )
-    // // .assert_success();
-
-    // call!(
-    //     user,
-    //     dtoken.supply(U128(1)),
-    //     deposit = 0
-    // )
-    // .assert_success();
-
-    // //Если напрямую, ft_balance есть и отрабатывает
-    // // let balance: u128 = view!(
-    // //     utoken.ft_balance_of(dtoken.account_id())
-    // // ).unwrap_json::<U128>().into();
-    // // println!("Balance is {}", balance);
-
-    // println!("--4--");
-
-    // let total_supply: u128 = view!(
-    //     dtoken.get_total_supplies()
-    // ).unwrap_json();
-    // println!("--5--");
-
-    // assert_eq!(total_supply, 20);
+    // supply test
 }
 
 #[test]
@@ -204,12 +142,9 @@ fn scenario_02(){
     ).unwrap_json();
     assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance should be 20");
 
-    //
 
-    let user_balance: u128 = view!(
-        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 20, "More. Balance = 20");
+    let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
 
 
     let result = call!(
@@ -220,10 +155,8 @@ fn scenario_02(){
 
     assert_failure(result, "Withdrawal operation is not allowed");
 
-    let user_balance: u128 = view!(
-        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 20, "More. Balance = 20");
+    let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
     
 
     call!(
@@ -232,10 +165,8 @@ fn scenario_02(){
         deposit = 0
     ).assert_success();
 
-    let user_balance: u128 = view!(
-        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 10, "Less. Balance = 20");
+    let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 10, "Balance should be 10");
 
     call!(
         d_user,
@@ -243,10 +174,8 @@ fn scenario_02(){
         deposit = 0
     ).assert_success();
 
-    let user_balance: u128 = view!(
-        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 0, "Less. Balance = 0");
+    let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Balance should be 0");
 
     let result = call!(
         d_user,
@@ -256,7 +185,7 @@ fn scenario_02(){
 
     assert_failure(result, "Withdrawal operation is not allowed");
     
-    let user_balance: u128 = view!(
-        controller.get_supplies_by_token(d_user.account_id(), dtoken.account_id())
-    ).unwrap_json();
+    let user_balance: u128 = view_balance(&controller, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Balance should be 0");
+
 }
