@@ -85,6 +85,8 @@ trait UnderlineTokenInterface {
 trait ControllerInterface {
     fn increase_supplies(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
     fn decrease_supplies(&mut self, account_id: AccountId, amount: WBalance);
+    fn repay_borrows(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
+    fn increase_borrows(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
     fn withdraw_supplies(
         &mut self,
         account_id: AccountId,
@@ -96,8 +98,10 @@ trait ControllerInterface {
 #[ext_contract(ext_self)]
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128>;
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn withdraw_supplies_callback(
         &mut self,

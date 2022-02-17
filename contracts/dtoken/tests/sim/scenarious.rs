@@ -4,7 +4,6 @@ use crate::utils::{init_dtoken, init_utoken, init_controller};
 use near_sdk::json_types::{ U128};
 use dtoken::Config as dConfig;
 use controller::{Config as cConfig, ContractContract};
-use controller::borrows_supplies::ActionType::{Borrow, Supply};
 
 fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(!outcome.is_ok());
