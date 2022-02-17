@@ -21,13 +21,10 @@ impl FungibleTokenReceiver for Contract {
         assert!(msg == "SUPPLY".to_string() || msg == "REPAY".to_string(), "There is no such command");
 
         log!(format!("sender_id {}, msg {}", sender_id, msg));
-        
-        if msg == "SUPPLY".to_string() {
-            self.supply(amount)
-        } 
-        else{
-            //repay
-            PromiseOrValue::Value(U128(0))
-        } 
+        match msg.as_str() {
+            "SUPPLY" => self.supply(amount),
+            "REPAY" => PromiseOrValue::Value(U128(0)),
+            _ => PromiseOrValue::Value(amount)
+        }
     }
 }

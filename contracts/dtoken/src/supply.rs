@@ -74,7 +74,7 @@ impl Contract {
                 dtoken_amount.into()
             );
             PromiseOrValue::Value(amount)
-        }else{
+        } else {
             PromiseOrValue::Value(U128(0))
         }
     }
