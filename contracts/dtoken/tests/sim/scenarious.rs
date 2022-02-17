@@ -4,6 +4,7 @@ use crate::utils::{init_dtoken, init_utoken, init_controller};
 use near_sdk::json_types::{ U128};
 use dtoken::Config as dConfig;
 use controller::{Config as cConfig, ContractContract};
+use controller::borrows_supplies::ActionType::{Borrow, Supply};
 
 fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(!outcome.is_ok());
@@ -14,7 +15,7 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
 
 fn view_balance(contract: &ContractAccount<ContractContract>, user_account: AccountId, dtoken_account: AccountId) -> u128{
     view!(
-        contract.get_supplies_by_token(user_account, dtoken_account)
+        contract.get_by_token(controller::borrows_supplies::Supply, user_account, dtoken_account)
     ).unwrap_json()
 }
 

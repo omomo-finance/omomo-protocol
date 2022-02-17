@@ -1,5 +1,5 @@
 use crate::*;
-use crate::borrows_supplies::ActionType::{Borrow, Supply};
+pub use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -34,10 +34,13 @@ impl Contract {
     }
 
 
-    pub fn get_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
-        let (accounts, _) = self.get_params_by_action(action);
+        let (accounts, _) = match action {
+            ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
+            ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
+        };
 
         if !accounts.contains_key(&account) {
             return balance;

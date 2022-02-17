@@ -13,13 +13,16 @@ use near_sdk::json_types::U128;
 pub use crate::config::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
+pub use crate::borrows_supplies::*;
+
 
 
 #[allow(unused_imports)]
 mod config;
 mod oraclehook;
 mod prices;
-mod borrows_supplies;
+pub mod borrows_supplies;
+
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
