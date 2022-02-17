@@ -13,45 +13,33 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(exe_status.contains(error_message));
 }
 
-fn view_balance(contract: &ContractAccount<ContractContract>, user_account: AccountId, dtoken_account: AccountId) -> u128{
+fn view_balance(contract: &ContractAccount<controller::ContractContract>, user_account: AccountId, dtoken_account: AccountId) -> u128{
     view!(
         contract.get_by_token(controller::borrows_supplies::Supply, user_account, dtoken_account)
     ).unwrap_json()
 }
 
-#[test]
-fn scenario_01() {
-    // Supply
-    let root = init_simulator(None);
-    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+fn initialize_utoken(root: &UserAccount)-> (UserAccount, ContractAccount<test_utoken::ContractContract>, UserAccount){
     let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
-    let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
-
-
-    let (droot, dtoken, d_user) = init_dtoken(
-        droot,
-        AccountId::new_unchecked("dtoken_contract".to_string())
-    );
-
     let (uroot, utoken, u_user) = init_utoken(
         uroot,
         AccountId::new_unchecked("utoken_contract".to_string())
     );
-
-    let (croot, controller, c_user) = init_controller(
-        croot,
-        AccountId::new_unchecked("controller_contract".to_string())
-    );
-
-
-    //  Initialize
     call!(
         uroot,
         utoken.new_default_meta(uroot.account_id(), U128(10000)),
         deposit = 0
     )
     .assert_success();
+    (uroot, utoken, u_user)
+}
 
+fn initialize_controller(root: &UserAccount) -> (UserAccount, ContractAccount<controller::ContractContract>, UserAccount) {
+    let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
+    let (croot, controller, c_user) = init_controller(
+        croot,
+        AccountId::new_unchecked("controller_contract".to_string())
+    );
     call!(
         croot,
         controller.new(
@@ -62,19 +50,39 @@ fn scenario_01() {
         deposit = 0
     )
     .assert_success();
+    (croot, controller, c_user)
+}
 
+fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_account: AccountId) -> (UserAccount, ContractAccount<dtoken::ContractContract>, UserAccount){
+    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let (droot, dtoken, d_user) = init_dtoken(
+        droot,
+        AccountId::new_unchecked("dtoken_contract".to_string())
+    );
     call!(
         droot,
         dtoken.new(
             dConfig{
                 initial_exchange_rate: U128(1), 
-                underlying_token_id: utoken.account_id().clone(), 
+                underlying_token_id: utoken_account ,
                 owner_id: droot.account_id().clone(), 
-                controller_account_id: controller.account_id().clone()
+                controller_account_id: controller_account,
             }),
         deposit = 0
     )
     .assert_success();
+    (droot, dtoken, d_user)
+}
+
+#[test]
+fn scenario_01() {
+    // Supply
+    let root = init_simulator(None);
+    //  Initialize
+
+    let (uroot, utoken, u_user) = initialize_utoken(&root);
+    let (croot, controller, c_user) = initialize_controller(&root);
+    let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     // Supply preparation 
     call!(
@@ -172,59 +180,9 @@ fn scenario_01() {
 fn scenario_02(){
     // Wihdraw
     let root = init_simulator(None);
-    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
-    let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
-    let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
-
-
-    let (droot, dtoken, d_user) = init_dtoken(
-        droot,
-        AccountId::new_unchecked("dtoken_contract".to_string())
-    );
-
-    let (uroot, utoken, u_user) = init_utoken(
-        uroot,
-        AccountId::new_unchecked("utoken_contract".to_string())
-    );
-
-    let (croot, controller, c_user) = init_controller(
-        croot,
-        AccountId::new_unchecked("controller_contract".to_string())
-    );
-
-
-    //  Initialize
-    call!(
-        uroot,
-        utoken.new_default_meta(uroot.account_id(), U128(10000)),
-        deposit = 0
-    )
-    .assert_success();
-
-    call!(
-        croot,
-        controller.new(
-            cConfig{
-                owner_id: croot.account_id().clone(), 
-                oracle_account_id: "oracle".parse().unwrap()
-            }),
-        deposit = 0
-    )
-    .assert_success();
-
-    call!(
-        droot,
-        dtoken.new(
-            dConfig{
-                initial_exchange_rate: U128(1), 
-                underlying_token_id: utoken.account_id().clone(), 
-                owner_id: droot.account_id().clone(), 
-                controller_account_id: controller.account_id().clone()
-            }),
-        deposit = 0
-    )
-    .assert_success();
-
+    let (uroot, utoken, u_user) = initialize_utoken(&root);
+    let (croot, controller, c_user) = initialize_controller(&root);
+    let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     // 1. If User doesn't supply any tokens
     
@@ -235,7 +193,6 @@ fn scenario_02(){
     );
 
     assert_failure(result, "Withdrawal operation is not allowed");
-
 
     // 2. If User supply some tokens and wants to withdraw 1) More 2) Less 3) The same
         // Simulate supply process
