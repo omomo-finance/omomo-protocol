@@ -2,7 +2,6 @@ use crate::*;
 
 #[near_bindgen]
 impl OraclePriceHandlerHook for Contract {
-
     fn oracle_on_data(&mut self, price_data: PriceJsonList) {
         let config: Config = self.get_contract_config();
 
@@ -14,10 +13,10 @@ impl OraclePriceHandlerHook for Contract {
             env::predecessor_account_id().to_string()
         );
 
-
         for price in price_data.price_list {
-            self.prices.insert(&price.asset_id, &price);
+            self.add_price(&price);
         }
     }
-
 }
+
+

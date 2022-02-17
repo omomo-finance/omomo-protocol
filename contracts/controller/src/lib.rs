@@ -14,6 +14,7 @@ mod config;
 mod oraclehook;
 mod prices;
 mod borrows_supplies;
+mod test_utils;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {

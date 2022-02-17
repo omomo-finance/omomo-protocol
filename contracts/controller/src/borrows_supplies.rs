@@ -173,23 +173,11 @@ mod tests {
     use near_sdk::test_utils::test_env::{alice, bob, carol};
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
-
-    use super::*;
-
-    fn init() -> (Contract, AccountId, AccountId) {
-        let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-
-        let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-
-        let token_address: AccountId = "near".parse().unwrap();
-
-        return (eth_contract, token_address, user_account);
-    }
-
+    use crate::test_utils::*;
 
     #[test]
     fn test_for_supply_and_borrow_getters() {
-        let (mut near_contract, token_address, user_account) = init();
+        let (mut near_contract, token_address, user_account) = init_test_env();
         assert_eq!(near_contract.get_by_token(Supply, user_account.clone(), token_address.clone()), 0);
         assert_eq!(near_contract.get_by_token(Borrow, user_account.clone(), token_address.clone()), 0);
     }
@@ -197,7 +185,7 @@ mod tests {
 
     #[test]
     fn test_for_supply_and_borrow_setters() {
-        let (mut near_contract, token_address, user_account) = init();
+        let (mut near_contract, token_address, user_account) = init_test_env();
         near_contract.set_entity_by_token(Supply, user_account.clone(), token_address.clone(), 100);
         assert_eq!(near_contract.get_by_token(Supply, user_account.clone(), token_address.clone()), 100);
 
@@ -209,7 +197,7 @@ mod tests {
 
     #[test]
     fn success_increase_n_decrease_borrows() {
-        let (mut near_contract, token_address, user_account) = init();
+        let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
 
@@ -223,7 +211,7 @@ mod tests {
 
     #[test]
     fn success_increase_n_decrease_supplies() {
-        let (mut near_contract, token_address, user_account) = init();
+        let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
 
@@ -241,10 +229,9 @@ mod tests {
         /*
         Test for decrease flow behavior computation
         */
-        let (mut near_contract, token_address, user_account) = init();
+        let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
-
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(20));
     }

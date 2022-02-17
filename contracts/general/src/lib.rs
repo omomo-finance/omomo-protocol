@@ -9,7 +9,7 @@ pub const TGAS: Gas = near_sdk::Gas::ONE_TERA;
 
 pub type WBalance = U128;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Price {
     /// Asset Id
