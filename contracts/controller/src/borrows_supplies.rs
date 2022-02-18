@@ -78,14 +78,14 @@ impl Contract {
         account: AccountId,
         token_address: AccountId,
         tokens_amount: WBalance,
-    ) {
+    ) -> Balance {
         let existing_borrows: Balance = self.get_by_token(Borrow, account.clone(), token_address.clone());
 
         assert!(existing_borrows >= Balance::from(tokens_amount), "Too much borrowed assets trying to pay out");
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(tokens_amount);
 
-        self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
+        return self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
     }
 
 
@@ -108,7 +108,6 @@ impl Contract {
         tokens_amount: WBalance,
     ) -> Balance {
         let existing_supplies = self.get_by_token(Supply, account.clone(), token_address.clone());
-
         
         assert!(
             Balance::from(tokens_amount) <= existing_supplies,
@@ -155,11 +154,6 @@ impl Contract {
 
         return self.decrease_supplies(account_id, token_address, tokens_amount);
     }
-
-    
-
-    
-
 
     #[warn(dead_code)]
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _tokens_amount: WBalance) -> bool {

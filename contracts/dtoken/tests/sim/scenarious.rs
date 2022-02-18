@@ -310,6 +310,72 @@ fn scenario_02(){
 
 }
 
+#[test]
+fn scenario_03(){
+     // Supply
+     let root = init_simulator(None);
+     //  Initialize
+ 
+     let (uroot, utoken, u_user) = initialize_utoken(&root);
+     let (croot, controller, c_user) = initialize_controller(&root);
+     let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+ 
+     // Supply preparation 
+     call!(
+         uroot,
+         utoken.mint(dtoken.account_id(), U128(0)),
+         0,
+         100000000000000
+     ).assert_success();
+ 
+     call!(
+         d_user,
+         utoken.mint(d_user.account_id(), U128(20)),
+         0,
+         100000000000000
+     ).assert_success();
+ 
+     let user_balance: String = view!(
+         utoken.ft_balance_of(d_user.account_id())
+     ).unwrap_json();
+     assert_eq!(user_balance, 20.to_string(), "User balance should be 20");
+ 
+     let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+     assert_eq!(user_balance, 0, "Balance should be 0");
+
+     // Repay
+    //  call!(
+    //     d_user,
+    //     utoken.ft_transfer_call(
+    //         dtoken.account_id(),
+    //         U128(0),
+    //         Some("REPAY".to_string()),
+    //         "REPAY".to_string()
+    //     ),
+    //     deposit = 1
+    // ).assert_success();
+
+    call!(
+        d_user,
+        dtoken.repay(
+            U128(20)
+        ),
+        deposit = 0
+    ).assert_success();
+
+    // call!(
+    //     d_user,
+    //     controller.repay_borrows(
+    //         d_user.account_id(),
+    //         dtoken.account_id(),
+    //         U128(20)
+    //     ),
+    //     deposit = 0
+    // ).assert_success();
+    
+ 
+     
+}
 
 
 
