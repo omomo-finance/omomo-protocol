@@ -14,6 +14,8 @@ pub use crate::config::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::borrows_supplies::*;
+pub use crate::repay::*;
+
 
 
 
@@ -22,6 +24,7 @@ mod config;
 mod oraclehook;
 mod prices;
 pub mod borrows_supplies;
+pub mod repay;
 
 
 #[derive(BorshSerialize, BorshStorageKey)]

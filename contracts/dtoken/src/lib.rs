@@ -5,6 +5,7 @@ mod ft;
 mod repay;
 mod supply;
 mod withdraw;
+mod interest_model;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
@@ -13,6 +14,8 @@ pub use crate::ft::*;
 pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
+pub use crate::interest_model::*;
+
 
 #[allow(unused_imports)]
 use general::*;
@@ -101,7 +104,7 @@ trait InternalTokenInterface {
     fn repay_balance_of_callback(&mut self, token_amount: WBalance);
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128>;
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance, repay_amount: WBalance) -> PromiseOrValue<U128>;
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn withdraw_supplies_callback(
         &mut self,

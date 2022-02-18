@@ -17,7 +17,7 @@ impl Contract {
             self.terra_gas(60),
         )).into()
     }
-
+ 
     #[allow(dead_code)]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
 

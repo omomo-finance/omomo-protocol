@@ -3,7 +3,6 @@ use crate::*;
 impl Contract {
 
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-
         underlying_token::ft_balance_of(
             env::signer_account_id(),
             self.get_underlying_contract_address(),
@@ -22,6 +21,7 @@ impl Contract {
     pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
 
         if !is_promise_success() {
+            log!("Call to discover user balance ended incorrect");
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -33,8 +33,10 @@ impl Contract {
                 .into(),
         };
 
-        //let borrow_rate: Balance = self.get_borrow_rate(balance_of.into());
-        let repay_amount = Balance::from(token_amount)/* * borrow_rate*/;
+        let borrow_rate: Balance = self.get_borrow_rate(balance_of.into());
+        let repay_amount = Balance::from(token_amount) * borrow_rate;
+
+        assert!(Balance::from(token_amount)>= repay_amount, "Token amount should be more or equal repay amount");
 
         log!(
             "Repay from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
@@ -53,6 +55,7 @@ impl Contract {
         )
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
+            U128(repay_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(10),
@@ -61,12 +64,17 @@ impl Contract {
     }
     
     #[allow(dead_code)]
-    pub fn controller_repay_borrows_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
+    pub fn controller_repay_borrows_callback(&mut self, amount: WBalance, repay_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
+            log!("Call to decrease user borrows ended incorrect");
             PromiseOrValue::Value(amount)
-            
+           
         } else {
-            PromiseOrValue::Value(U128(0))
+            let existing_borrows: Balance = self.borrows.get(&env::signer_account_id()).unwrap();
+            let decreased_borrows: Balance = existing_borrows - Balance::from(repay_amount);
+            self.borrows.insert(&env::signer_account_id(), &decreased_borrows);
+            let return_amount = Balance::from(amount) - Balance::from(repay_amount);
+            PromiseOrValue::Value(U128(return_amount))
         }
     }
 
