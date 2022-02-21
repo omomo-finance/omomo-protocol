@@ -4,11 +4,12 @@ use crate::*;
 impl Contract {
 
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-        assert!(Balance::from(token_amount) >= self.get_borrows_by_account(env::signer_account_id())*self.get_borrow_rate(), "Amount should be more than borrow * borrow rate");
+        let debt_amount = self.get_borrows_by_account(env::signer_account_id());
+        assert!(Balance::from(token_amount) >= debt_amount*self.get_borrow_rate(), "Amount should be more than borrow * borrow rate");
         return controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
-            token_amount,
+            U128(debt_amount),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
@@ -26,9 +27,9 @@ impl Contract {
             log!("Call to decrease user borrows ended incorrect");
             return PromiseOrValue::Value(amount);
         } 
-
-        self.decrease_borrows(env::signer_account_id(), amount);
-        return PromiseOrValue::Value(U128(0));
+        let extra_balance = Balance::from(amount) - self.get_borrows_by_account(env::signer_account_id());
+        self.decrease_borrows(env::signer_account_id(), U128(self.get_borrows_by_account(env::signer_account_id())));
+        return PromiseOrValue::Value(U128(extra_balance));
         
     }
 

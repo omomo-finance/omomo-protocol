@@ -89,32 +89,26 @@ trait ControllerInterface {
     fn increase_supplies(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
     fn decrease_supplies(&mut self, account_id: AccountId, amount: WBalance);
     fn repay_borrows(&mut self, account_id: AccountId, token_address: AccountId, tokens_amount: WBalance);
-    fn withdraw_supplies(
-        &mut self,
-        account_id: AccountId,
-        token_address: AccountId,
-        tokens_amount: WBalance,
-    ) -> Promise;
+    fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, tokens_amount: WBalance) -> Promise;
+    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, tokens_amount: WBalance); 
+    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance); 
+
 }
 
 #[ext_contract(ext_self)]
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
-    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
-    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance);
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
-    fn withdraw_supplies_callback(
-        &mut self,
-        user_account: AccountId,
-        token_amount: WBalance,
-        dtoken_amount: WBalance,
-    );
-    fn withdraw_ft_transfer_call_callback(
-        &mut self,
-        token_amount: WBalance,
-        dtoken_amount: WBalance,
-    );
+    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
+
+    fn make_borrow_callback(&mut self, token_amount: WBalance);
+    fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance);
+    fn controller_decrease_borrows_fail(&mut self);
+
+    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
+    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
 }
 
 #[near_bindgen]

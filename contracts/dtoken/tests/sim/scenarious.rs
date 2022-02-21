@@ -95,7 +95,7 @@ fn scenario_01() {
     ).assert_success();
 
     call!(
-        d_user,
+        uroot,
         utoken.mint(d_user.account_id(), U128(20)),
         0,
         100000000000000
@@ -220,7 +220,7 @@ fn scenario_02(){
     ).assert_success();
 
     call!(
-        d_user,
+        uroot,
         utoken.mint(d_user.account_id(), U128(20)),
         0,
         100000000000000
@@ -313,7 +313,7 @@ fn scenario_02(){
 
 #[test]
 fn scenario_03(){
-     // Supply
+     // Repay
      let root = init_simulator(None);
      //  Initialize
  
@@ -329,7 +329,7 @@ fn scenario_03(){
     ).assert_success();
 
     call!(
-        d_user,
+        uroot,
         utoken.mint(d_user.account_id(), U128(20)),
         0,
         100000000000000
@@ -397,6 +397,7 @@ fn scenario_03(){
         utoken.ft_balance_of(d_user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 0.to_string(), "As it was borrowed and repayed 20 tokens, balance should be 0");
+    
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
             d_user.account_id()
@@ -406,9 +407,5 @@ fn scenario_03(){
     let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }
-
-
-
-
 
 
