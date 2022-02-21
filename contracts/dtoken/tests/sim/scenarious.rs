@@ -17,7 +17,7 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
 
 fn view_balance(contract: &ContractAccount<controller::ContractContract>, action: ActionType, user_account: AccountId, dtoken_account: AccountId) -> u128{
     view!(
-        contract.get_by_token(action, user_account, dtoken_account)
+        contract.get_entity_by_token(action, user_account, dtoken_account)
     ).unwrap_json()
 }
 
