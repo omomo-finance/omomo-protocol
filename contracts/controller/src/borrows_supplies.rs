@@ -32,7 +32,6 @@ impl Contract {
         return token_amount;
     }
 
-
     pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
@@ -204,7 +203,6 @@ mod tests {
     use crate::{Config, Contract};
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
-    use crate::test_utils::*;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
