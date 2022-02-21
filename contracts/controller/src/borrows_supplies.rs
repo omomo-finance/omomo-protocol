@@ -16,7 +16,7 @@ impl Contract {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
-        let (accounts, key_prefix) = self.get_params_by_action(action);
+        let (accounts, key_prefix) = self.get_params_by_action_mut(action);
 
 
         if !accounts.contains_key(&account) {
@@ -34,7 +34,7 @@ impl Contract {
     }
 
 
-    pub fn get_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
         let (accounts, _) = self.get_params_by_action(action);
@@ -48,7 +48,15 @@ impl Contract {
         accounts_map.get(&token_address).unwrap_or(balance)
     }
 
-    fn get_params_by_action(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action(& self, action: ActionType) -> (&LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
+        // return parameters respective to ActionType
+        match action {
+            ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
+            ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
+        }
+    }
+
+    fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
             ActionType::Supply => (&mut self.account_supplies, StorageKeys::SuppliesToken),
@@ -174,6 +182,19 @@ mod tests {
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
     use crate::test_utils::*;
+    use near_sdk::AccountId;
+
+    use crate::{Config, Contract};
+
+    pub fn init_test_env() -> (Contract, AccountId, AccountId) {
+        let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
+
+        let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
+
+        let token_address: AccountId = "near".parse().unwrap();
+
+        return (eth_contract, token_address, user_account);
+    }
 
     #[test]
     fn test_for_supply_and_borrow_getters() {
