@@ -27,6 +27,7 @@ impl Contract {
             total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
+                // FIXME rename the symbol and name field
                 name: "dmytro".to_string(),
                 symbol: "DMTR".to_string(),
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
