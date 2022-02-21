@@ -22,31 +22,45 @@ impl Contract {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use crate::test_utils::init_test_env;
 
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use near_sdk::AccountId;
+    use near_sdk::test_utils::test_env::{alice, bob, carol};
 
-//     #[test]
-//     fn test_add_get_price() {
-//         let (mut near_contract, token_address, user_account) = init_test_env();
+    use crate::{Config, Contract};
 
-//         let price_1 = Price {
-//             // adding price of Near
-//             asset_id: token_address.clone(),
-//             value: 20,
-//         };
+    pub fn init_test_env() -> (Contract, AccountId, AccountId) {
+        let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
 
-//         let price_2 = Price {
-//             // adding price of Ether
-//             asset_id: "eth".parse().unwrap(),
-//             value: 3000,
-//         };
+        let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
 
-//         near_contract.upsert_price(&price_1);
-//         near_contract.upsert_price(&price_2);
-//         dbg!(near_contract.get_price(token_address));
-//         dbg!(near_contract.get_price("eth".parse().unwrap()));
-//     }
-// }
+        let token_address: AccountId = "near".parse().unwrap();
+
+        return (eth_contract, token_address, user_account);
+    }
+
+    use super::*;
+
+    #[test]
+    fn test_add_get_price() {
+        let (mut near_contract, token_address, user_account) = init_test_env();
+
+        let price_1 = Price {
+            // adding price of Near
+            asset_id: token_address.clone(),
+            value: 20,
+        };
+
+        let price_2 = Price {
+            // adding price of Ether
+            asset_id: "eth".parse().unwrap(),
+            value: 3000,
+        };
+
+        near_contract.upsert_price(&price_1);
+        near_contract.upsert_price(&price_2);
+        dbg!(near_contract.get_price(token_address));
+        dbg!(near_contract.get_price("eth".parse().unwrap()));
+    }
+}

@@ -46,6 +46,13 @@ impl Contract {
         accounts_map.get(&token_address).unwrap_or(balance)
     }
 
+    fn get_params_by_action(& self, action: ActionType) -> (&LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
+        // return parameters respective to ActionType
+        match action {
+            ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
+            ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
+        }
+    }
     fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
@@ -203,14 +210,18 @@ mod tests {
     use crate::{Config, Contract};
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
+    use crate::test_utils::*;
+    use near_sdk::AccountId;
+
+    use crate::{Config, Contract};
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-    
+
         let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-    
+
         let token_address: AccountId = "near".parse().unwrap();
-    
+
         return (eth_contract, token_address, user_account);
     }
 

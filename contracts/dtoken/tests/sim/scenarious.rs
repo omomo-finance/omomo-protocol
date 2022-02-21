@@ -1,11 +1,14 @@
 use near_sdk::{AccountId, collections::LookupMap};
-use near_sdk_sim::{call, init_simulator, view, to_yocto, ExecutionResult, ContractAccount, UserAccount};
-use crate::utils::{init_dtoken, init_utoken, init_controller};
-use near_sdk::json_types::{ U128};
-use dtoken::Config as dConfig;
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, to_yocto, UserAccount, view};
+
 use controller::{Config as cConfig, ContractContract};
+
 use controller::ActionType;
 use controller::ActionType::{Supply, Borrow};
+use dtoken::Config as dConfig;
+
+use crate::utils::{init_controller, init_dtoken, init_utoken};
 
 
 fn assert_failure(outcome: ExecutionResult, error_message: &str) {
@@ -15,24 +18,25 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(exe_status.contains(error_message));
 }
 
+
 fn view_balance(contract: &ContractAccount<controller::ContractContract>, action: ActionType, user_account: AccountId, dtoken_account: AccountId) -> u128{
     view!(
         contract.get_entity_by_token(action, user_account, dtoken_account)
     ).unwrap_json()
 }
 
-fn initialize_utoken(root: &UserAccount)-> (UserAccount, ContractAccount<test_utoken::ContractContract>, UserAccount){
+fn initialize_utoken(root: &UserAccount) -> (UserAccount, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
     let (uroot, utoken, u_user) = init_utoken(
         uroot,
-        AccountId::new_unchecked("utoken_contract".to_string())
+        AccountId::new_unchecked("utoken_contract".to_string()),
     );
     call!(
         uroot,
         utoken.new_default_meta(uroot.account_id(), U128(10000)),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
     (uroot, utoken, u_user)
 }
 
@@ -40,7 +44,7 @@ fn initialize_controller(root: &UserAccount) -> (UserAccount, ContractAccount<co
     let croot = root.create_user("controller".parse().unwrap(), 1200000000000000000000000000000);
     let (croot, controller, c_user) = init_controller(
         croot,
-        AccountId::new_unchecked("controller_contract".to_string())
+        AccountId::new_unchecked("controller_contract".to_string()),
     );
     call!(
         croot,
@@ -51,15 +55,15 @@ fn initialize_controller(root: &UserAccount) -> (UserAccount, ContractAccount<co
             }),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
     (croot, controller, c_user)
 }
 
-fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_account: AccountId) -> (UserAccount, ContractAccount<dtoken::ContractContract>, UserAccount){
+fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_account: AccountId) -> (UserAccount, ContractAccount<dtoken::ContractContract>, UserAccount) {
     let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
     let (droot, dtoken, d_user) = init_dtoken(
         droot,
-        AccountId::new_unchecked("dtoken_contract".to_string())
+        AccountId::new_unchecked("dtoken_contract".to_string()),
     );
     call!(
         droot,
@@ -72,7 +76,7 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
             }),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
     (droot, dtoken, d_user)
 }
 
@@ -193,7 +197,6 @@ fn scenario_01() {
 
 #[test]
 fn scenario_02(){
-
     // Wihdraw
     let root = init_simulator(None);
     let (uroot, utoken, u_user) = initialize_utoken(&root);
@@ -201,7 +204,7 @@ fn scenario_02(){
     let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     // 1. If User doesn't supply any tokens
-    
+
     let result = call!(
         d_user,
         dtoken.withdraw(U128(20)),
@@ -212,6 +215,7 @@ fn scenario_02(){
 
     // 2. If User supply some tokens and wants to withdraw 
         // Simulate supply process
+
     call!(
         uroot,
         utoken.mint(dtoken.account_id(), U128(0)),
@@ -305,6 +309,7 @@ fn scenario_02(){
     );
 
     assert_failure(result, "Withdrawal operation is not allowed");
+
     
     let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Balance should be 0");
@@ -407,5 +412,4 @@ fn scenario_03(){
     let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }
-
 
