@@ -25,7 +25,6 @@ impl Contract {
         &mut self,
         token_amount: WBalance,
     ) ->Promise {
-
         assert_eq!(is_promise_success(), true, "Increasing borrow has been failed");
 
         // Cross-contract call to market token
@@ -48,33 +47,31 @@ impl Contract {
     pub fn borrow_ft_transfer_callback(
         &mut self,
         token_amount: WBalance,
-    ) ->bool {
-
+    ) -> bool {
         if is_promise_success(){
-            self.increase_borrows(env::signer_account_id(), token_amount);
-            return is_promise_success() ;
+             self.increase_borrows(env::signer_account_id(), token_amount);
+            return true
         } 
-        else {
-            log!("Transfer tokens from user to dtoken has failed");
-            controller::decrease_borrows(
-                env::signer_account_id(),
-                self.get_contract_address(),
-                token_amount,
-                self.get_underlying_contract_address(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            )
-            .then(ext_self::controller_decrease_borrows_fail(
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            ));
-            return is_promise_success() ;
-        }
+        log!("Transfer tokens from user to dtoken has failed");
+        controller::decrease_borrows(
+            env::signer_account_id(),
+            self.get_contract_address(),
+            token_amount,
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(10),
+        )
+        .then(ext_self::controller_decrease_borrows_fail(
+            env::current_account_id().clone(),
+            NO_DEPOSIT,
+            self.terra_gas(10),
+        ));
+        return true
     }
 
     pub fn controller_decrease_borrows_fail(&mut self){
         log!("Couldn't decrease borrow after mistake in transfer ");
+        assert_eq!(is_promise_success(),true);
     }
 
 
@@ -102,6 +99,7 @@ impl Contract {
         tokens_amount: WBalance,
     ) -> Balance {
         let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
+
         let increased_borrows: Balance = existing_borrows + Balance::from(tokens_amount);
 
         self.total_borrows += Balance::from(tokens_amount);
@@ -110,6 +108,7 @@ impl Contract {
 
     #[private]
     pub fn set_borrows(&mut self, account: AccountId, tokens_amount: WBalance) -> Balance {
+
         self.borrows
             .insert(&account, &Balance::from(tokens_amount));
         return Balance::from(tokens_amount);

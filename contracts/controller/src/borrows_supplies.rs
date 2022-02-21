@@ -79,8 +79,9 @@ impl Contract {
         token_address: AccountId,
         tokens_amount: WBalance,
     ) -> Balance {
-        let existing_borrows: Balance = self.get_by_token(Borrow, account.clone(), token_address.clone());
+        //assert_eq!(2,0);
 
+        let existing_borrows: Balance = self.get_by_token(Borrow, account.clone(), token_address.clone());
         assert!(existing_borrows >= Balance::from(tokens_amount), "Too much borrowed assets trying to pay out");
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(tokens_amount);
@@ -97,7 +98,7 @@ impl Contract {
     ) {
         let existing_supplies = self.get_by_token(Supply, account.clone(), token_address.clone());
         let increased_supplies: Balance = existing_supplies + Balance::from(tokens_amount);
-
+        
         self.set_entity_by_token(Supply, account.clone(), token_address.clone(), increased_supplies);
     }
 
@@ -187,7 +188,7 @@ impl Contract {
             token_address,
             Balance::from(tokens_amount)
         );
-
+        
        self.increase_borrows(account_id, token_address, tokens_amount);
     }
 }
