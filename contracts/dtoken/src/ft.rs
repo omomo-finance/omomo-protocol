@@ -22,8 +22,11 @@ impl FungibleTokenReceiver for Contract {
         log!(format!("sender_id {}, msg {}", sender_id, msg));
         match msg.as_str() {
             "SUPPLY" => self.supply(amount),
-            "REPAY" => PromiseOrValue::Value(U128(0)),
-            _ => PromiseOrValue::Value(amount)
+            "REPAY" => self.repay(amount),
+            _ => {
+                log!("Incorrect command in transfer: {}", msg);
+                PromiseOrValue::Value(amount)
+            }
         }
     }
 }

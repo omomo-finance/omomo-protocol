@@ -12,12 +12,15 @@ pub use crate::borrows_supplies::*;
 pub use crate::config::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
+pub use crate::borrows_supplies::*;
+pub use crate::repay::*;
 
 #[allow(unused_imports)]
 mod config;
 mod oraclehook;
 mod prices;
 pub mod borrows_supplies;
+pub mod repay;
 mod test_utils;
 
 #[derive(BorshSerialize, BorshStorageKey)]

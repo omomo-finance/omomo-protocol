@@ -4,8 +4,7 @@ use crate::*;
 impl Contract {
     #[payable]
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-
-        near_sdk::PromiseOrValue::Promise(underlying_token::ft_balance_of(
+        underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
@@ -16,13 +15,14 @@ impl Contract {
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(60),
-        )))
+        )).into()
     }
-
+ 
     #[allow(dead_code)]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
 
         if !is_promise_success() {
+            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -48,7 +48,7 @@ impl Contract {
             Balance::from(token_amount)
         );
         
-        near_sdk::PromiseOrValue::Promise(controller::increase_supplies(
+        controller::increase_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
@@ -62,20 +62,20 @@ impl Contract {
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(10),
-        )))
+        )).into()
     }
 
     #[allow(dead_code)]
     pub fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128> {
-        let promise_success: bool = is_promise_success();
-        if !promise_success {
+        if !is_promise_success(){
+            log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
             self.burn(
                 &self.get_signer_address(),
                 dtoken_amount.into()
             );
-            PromiseOrValue::Value(amount)
-        } else {
-            PromiseOrValue::Value(U128(0))
-        }
+            return PromiseOrValue::Value(amount);
+        } 
+        PromiseOrValue::Value(U128(0))
     }
+
 }

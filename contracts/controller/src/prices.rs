@@ -22,6 +22,7 @@ impl Contract {
     }
 }
 
+
 #[cfg(test)]
 mod tests {
     use near_sdk::AccountId;
