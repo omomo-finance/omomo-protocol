@@ -21,8 +21,8 @@ pub use crate::borrows_supplies::*;
 mod config;
 mod oraclehook;
 mod prices;
-pub mod borrows_supplies;
-
+mod borrows_supplies;
+mod test_utils;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
