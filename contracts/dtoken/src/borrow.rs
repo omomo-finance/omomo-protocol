@@ -2,6 +2,14 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+    
+
+    pub fn borrow(token_amount: WBalance)   {
+
+    }
+
+
+
     pub fn decrease_borrows(
         &mut self,
         account: AccountId,
