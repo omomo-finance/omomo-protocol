@@ -2,12 +2,11 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-
     fn is_repay_allowed(
         &self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> bool {
         true
     }
@@ -16,23 +15,22 @@ impl Contract {
         &mut self,
         account_id: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     )-> Balance{
-        
         assert_eq!(
             self.is_repay_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                tokens_amount.clone(),
+                token_amount.clone(),
             ),
             true,
-            "Repay operation is not allowed for account {} token_address {} tokens_amount {}",
+            "repay operation is not allowed for account {} on market {}, repay amount {}",
             account_id,
             token_address,
-            Balance::from(tokens_amount)
+            Balance::from(token_amount)
         );
 
-        return self.decrease_borrows(account_id, token_address, tokens_amount);
+        return self.decrease_borrows(account_id, token_address, token_amount);
     }
 
 }

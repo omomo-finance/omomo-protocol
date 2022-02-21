@@ -12,7 +12,7 @@ pub enum ActionType {
 #[near_bindgen]
 impl Contract {
     #[private]
-    fn set_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId, tokens_amount: Balance) -> Balance {
+    fn set_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
@@ -22,15 +22,15 @@ impl Contract {
         if !accounts.contains_key(&account) {
             let mut account_map: LookupMap<AccountId, u128> =
                 LookupMap::new(key_prefix);
-            account_map.insert(&token_address, &tokens_amount);
+            account_map.insert(&token_address, &token_amount);
             accounts.insert(&account, &account_map);
         } else {
             accounts
                 .get(&account)
                 .unwrap()
-                .insert(&token_address, &tokens_amount);
+                .insert(&token_address, &token_amount);
         }
-        return tokens_amount;
+        return token_amount;
     }
 
 
@@ -64,10 +64,10 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) {
         let existing_borrows: Balance = self.get_by_token(Borrow, account.clone(), token_address.clone());
-        let increased_borrows: Balance = existing_borrows + Balance::from(tokens_amount);
+        let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
         self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), increased_borrows);
     }
@@ -77,13 +77,13 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> Balance {
         let existing_borrows: Balance = self.get_by_token(Borrow, account.clone(), token_address.clone());
 
-        assert!(existing_borrows >= Balance::from(tokens_amount), "Too much borrowed assets trying to pay out");
+        assert!(existing_borrows >= Balance::from(token_amount), "Too much borrowed assets trying to pay out");
 
-        let decreased_borrows: Balance = existing_borrows - Balance::from(tokens_amount);
+        let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         return self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
     }
@@ -93,10 +93,10 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) {
         let existing_supplies = self.get_by_token(Supply, account.clone(), token_address.clone());
-        let increased_supplies: Balance = existing_supplies + Balance::from(tokens_amount);
+        let increased_supplies: Balance = existing_supplies + Balance::from(token_amount);
 
         self.set_entity_by_token(Supply, account.clone(), token_address.clone(), increased_supplies);
     }
@@ -105,15 +105,15 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> Balance {
         let existing_supplies = self.get_by_token(Supply, account.clone(), token_address.clone());
         
         assert!(
-            Balance::from(tokens_amount) <= existing_supplies,
+            Balance::from(token_amount) <= existing_supplies,
             "Not enough existing supplies"
         );
-        let decreased_supplies: Balance = existing_supplies - Balance::from(tokens_amount);
+        let decreased_supplies: Balance = existing_supplies - Balance::from(token_amount);
 
         return self.set_entity_by_token(Supply,
                                         account.clone(),
@@ -126,39 +126,39 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> bool {
         let existing_supplies = self.get_by_token(Supply, account.clone(), token_address.clone());
 
-        return existing_supplies >= Balance::from(tokens_amount);
+        return existing_supplies >= Balance::from(token_amount);
     }
 
     pub fn withdraw_supplies(
         &mut self,
         account_id: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> Balance {
         assert_eq!(
             self.is_withdraw_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                tokens_amount.clone(),
+                token_amount.clone(),
             ),
             true,
-            "Withdrawal operation is not allowed for account {} token_address {} tokens_amount {}",
+            "Withdrawal operation is not allowed for account {} token_address {} token_amount {}",
             account_id,
             token_address,
-            Balance::from(tokens_amount)
+            Balance::from(token_amount)
         );
 
-        return self.decrease_supplies(account_id, token_address, tokens_amount);
+        return self.decrease_supplies(account_id, token_address, token_amount);
     }
 
     
 
     #[warn(dead_code)]
-    fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _tokens_amount: WBalance) -> bool {
+    fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _token_amount: WBalance) -> bool {
         let _existing_borrows = self.get_by_token(Borrow, account.clone(), token_address.clone());
 
 
@@ -173,22 +173,22 @@ impl Contract {
         &mut self,
         account_id: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) {
         assert_eq!(
             self.is_borrow_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                tokens_amount.clone(),
+                token_amount.clone(),
             ),
             true,
-            "Borrow operation is not allowed for account {} token_address {} tokens_amount {}",
+            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
             account_id,
             token_address,
-            Balance::from(tokens_amount)
+            Balance::from(token_amount)
         );
 
-       self.increase_borrows(account_id, token_address, tokens_amount);
+       self.increase_borrows(account_id, token_address, token_amount);
     }
 }
 

@@ -5,14 +5,14 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     #[private]
-    fn set_borrows_by_token(&mut self, account: AccountId, token_address: AccountId, tokens_amount: Balance) -> Balance {
+    fn set_borrows_by_token(&mut self, account: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
 
         // if user hasn't borrowed yet, we set up the config in account_borrows LookupMap
 
         if !self.account_borrows.contains_key(&account) {
             let mut borrows_map: LookupMap<AccountId, u128> =
                 LookupMap::new(StorageKeys::SuppliesToken);
-            borrows_map.insert(&token_address, &tokens_amount);
+            borrows_map.insert(&token_address, &token_amount);
             self.account_borrows.insert(&account, &borrows_map);
         } else {
 
@@ -20,9 +20,9 @@ impl Contract {
             self.account_borrows
                 .get(&account)
                 .unwrap()
-                .insert(&token_address, &tokens_amount);
+                .insert(&token_address, &token_amount);
         }
-        return tokens_amount;
+        return token_amount;
     }
 
 
@@ -50,10 +50,10 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) {
         let existing_borrows: Balance = self.get_borrows_by_token(account.clone(), token_address.clone());
-        let increased_borrows: Balance = existing_borrows + Balance::from(tokens_amount);
+        let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
         self.set_borrows_by_token(account.clone(), token_address.clone(), increased_borrows);
     }
@@ -63,16 +63,16 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) {
         let existing_borrows: Balance = self.get_borrows_by_token(account.clone(), token_address.clone());
 
 
         // checking if i pay out ["return"] more than have to
         // f.e. i have 10 eth borrowed and trying to "give" to the contract 11
-        assert!(existing_borrows >= Balance::from(tokens_amount), "Too much borrowed assets trying to pay out");
+        assert!(existing_borrows >= Balance::from(token_amount), "Too much borrowed assets trying to pay out");
 
-        let decreased_borrows: Balance = existing_borrows - Balance::from(tokens_amount);
+        let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         self.set_borrows_by_token(account.clone(), token_address.clone(), decreased_borrows);
     }

@@ -86,12 +86,12 @@ trait UnderlineTokenInterface {
 
 #[ext_contract(controller)]
 trait ControllerInterface {
-    fn increase_supplies(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance);
+    fn increase_supplies(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance);
     fn decrease_supplies(&mut self, account_id: AccountId, amount: WBalance);
-    fn repay_borrows(&mut self, account_id: AccountId, token_address: AccountId, tokens_amount: WBalance);
-    fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, tokens_amount: WBalance) -> Promise;
-    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, tokens_amount: WBalance); 
-    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, tokens_amount: WBalance); 
+    fn repay_borrows(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
+    fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance) -> Promise;
+    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance); 
+    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance); 
 
 }
 
