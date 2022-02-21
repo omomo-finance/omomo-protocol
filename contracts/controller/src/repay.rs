@@ -18,7 +18,6 @@ impl Contract {
         token_address: AccountId,
         tokens_amount: WBalance,
     )-> Balance{
-        assert_eq!(2,0, "{} ", Balance::from(tokens_amount));
         
         assert_eq!(
             self.is_repay_allowed(

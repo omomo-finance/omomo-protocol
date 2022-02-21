@@ -155,6 +155,8 @@ impl Contract {
         return self.decrease_supplies(account_id, token_address, tokens_amount);
     }
 
+    
+
     #[warn(dead_code)]
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _tokens_amount: WBalance) -> bool {
         let _existing_borrows = self.get_by_token(Borrow, account.clone(), token_address.clone());

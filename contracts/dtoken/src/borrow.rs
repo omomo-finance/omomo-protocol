@@ -29,11 +29,4 @@ impl Contract {
         return self.borrows.get(&account).unwrap();
     }
 
-    // Borrow * rate
-    pub fn get_borrow_amount(&self, account: AccountId) -> Balance{
-        let borrow = self.get_borrows_by_account(account);
-        return borrow * self.get_borrow_rate();
-
-    }
-
 }
