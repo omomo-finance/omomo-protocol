@@ -50,11 +50,3 @@ mod tests {
         dbg!(near_contract.get_price("eth".parse().unwrap()));
     }
 }
-
-
-
-
-
-
-
-
