@@ -14,7 +14,7 @@ impl OraclePriceHandlerHook for Contract {
         );
 
         for price in price_data.price_list {
-            self.add_price(&price);
+            self.upsert_price(&price);
         }
     }
 }

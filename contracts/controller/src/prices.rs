@@ -16,7 +16,8 @@ impl Contract {
         return self.prices.get(&asset_id);
     }
 
-    pub fn add_price(&mut self, price: &Price) {
+    pub fn upsert_price(&mut self, price: &Price) {
+        // Update & insert operation
         self.prices.insert(&price.asset_id, &price);
     }
 }
@@ -43,8 +44,8 @@ mod tests {
             value: 3000,
         };
 
-        near_contract.add_price(&price_1);
-        near_contract.add_price(&price_2);
+        near_contract.upsert_price(&price_1);
+        near_contract.upsert_price(&price_2);
         dbg!(near_contract.get_price(token_address));
         dbg!(near_contract.get_price("eth".parse().unwrap()));
     }
