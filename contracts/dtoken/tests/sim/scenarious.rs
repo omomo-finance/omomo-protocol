@@ -311,7 +311,6 @@ fn scenario_02(){
 
 }
 
-
 #[test]
 fn scenario_03(){
      // Supply
@@ -341,7 +340,7 @@ fn scenario_03(){
     ).unwrap_json();
     assert_eq!(user_balance, 20.to_string(), "User balance should be 20");
 
-     // Repay
+     // Repay if nothing has been borrowed
     call!(
         d_user,
         utoken.ft_transfer_call(
@@ -359,12 +358,53 @@ fn scenario_03(){
     assert_eq!(user_balance, 20.to_string(), "As user has never borrowed, transfer shouldn't be done");
 
     call!(
-        droot,
-        dtoken.set_borrows(d_user.account_id(),U128(20)),
+        d_user,
+        dtoken.increase_borrows(d_user.account_id(),U128(20)),
         0,
         100000000000000
     ).assert_success();
-     
+
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(
+            d_user.account_id()
+        )
+    ).unwrap_json();
+    assert_eq!(user_balance, 20, "Borrow balance on dtoken should be 20");
+
+    call!(
+        d_user,
+        controller.increase_borrows(d_user.account_id(), dtoken.account_id() ,U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Borrow balance on controller should be 20");
+
+     // Repay 20 tokens if 20 tokens has been borrowed
+     call!(
+        d_user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("REPAY".to_string()),
+            "REPAY".to_string()
+        ),
+        deposit = 1
+    ).assert_success();
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0.to_string(), "As it was borrowed and repayed 20 tokens, balance should be 0");
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(
+            d_user.account_id()
+        )
+    ).unwrap_json();
+    assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
+    let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }
 
 

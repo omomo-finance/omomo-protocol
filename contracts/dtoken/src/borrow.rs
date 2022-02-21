@@ -16,6 +16,18 @@ impl Contract {
         return self.set_borrows(account.clone(), U128(decreased_borrows));
     }
 
+    pub fn increase_borrows(
+        &mut self,
+        account: AccountId,
+        tokens_amount: WBalance,
+    ) -> Balance {
+        let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
+        let increased_borrows: Balance = existing_borrows + Balance::from(tokens_amount);
+
+        self.total_borrows += Balance::from(tokens_amount);
+        return self.set_borrows(account.clone(), U128(increased_borrows));
+    }
+
     #[private]
     pub fn set_borrows(&mut self, account: AccountId, tokens_amount: WBalance) -> Balance {
         self.borrows
@@ -24,7 +36,9 @@ impl Contract {
     }
 
     pub fn get_borrows_by_account(&self, account: AccountId) -> Balance{
-        assert!(self.borrows.get(&account).is_some(), "This account has never borrowed");
+        if self.borrows.get(&account).is_none(){
+            return 0;
+        }
         return self.borrows.get(&account).unwrap();
     }
 
