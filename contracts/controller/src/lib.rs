@@ -23,7 +23,6 @@ mod oraclehook;
 mod prices;
 mod borrows_supplies;
 mod test_utils;
-лает несколько операций за раз это грозит нам потенциальными проблемами с безопасностью, мы хотим добавить на каждое действие пользователя что-то наподобие Mutex with timeout 
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
