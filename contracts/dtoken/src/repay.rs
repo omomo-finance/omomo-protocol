@@ -5,7 +5,7 @@ impl Contract {
 
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         let debt_amount = self.get_borrows_by_account(env::signer_account_id());
-        assert!(Balance::from(token_amount) >= debt_amount*self.get_borrow_rate(), "Amount should be more than borrow * borrow rate");
+        assert!(Balance::from(token_amount) >= debt_amount*self.get_borrow_rate(), "Amount should be more or equal than borrow * borrow rate");
         return controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),

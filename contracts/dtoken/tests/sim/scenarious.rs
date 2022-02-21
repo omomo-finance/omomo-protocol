@@ -408,4 +408,56 @@ fn scenario_03(){
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }
 
+#[test]
+fn scenario_04(){
+    // Borrow
+    let root = init_simulator(None);
+     //  Initialize
+ 
+     let (uroot, utoken, u_user) = initialize_utoken(&root);
+     let (croot, controller, c_user) = initialize_controller(&root);
+     let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+
+     call!(
+        uroot,
+        utoken.mint(dtoken.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        uroot,
+        utoken.mint(d_user.account_id(), U128(0)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
+
+    call!(
+        d_user,
+        dtoken.borrow(
+            U128(20)
+        ),
+        deposit = 0
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Borrow balance on controller should be 20");
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(d_user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20.to_string(), "User utoken balance should be 20");
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 0.to_string(), "Dtoken balance on utoken should be 0");
+}
+
+
 
