@@ -23,7 +23,6 @@ impl Contract {
         return tokens_amount;
     }
 
-    // Simple borrow
     pub fn get_borrows_by_account(&self, account: AccountId) -> Balance{
         assert!(self.borrows.get(&account).is_some(), "This account is never borrowed");
         return self.borrows.get(&account).unwrap();
