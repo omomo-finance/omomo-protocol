@@ -13,19 +13,18 @@ impl Contract {
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(tokens_amount);
         self.total_borrows -= Balance::from(tokens_amount);
-        return self.set_borrows(account.clone(), decreased_borrows);
+        return self.set_borrows(account.clone(), U128(decreased_borrows));
     }
 
     #[private]
-    fn set_borrows(&mut self, account: AccountId, tokens_amount: Balance) -> Balance {
+    pub fn set_borrows(&mut self, account: AccountId, tokens_amount: WBalance) -> Balance {
         self.borrows
-            .insert(&account, &tokens_amount);
-        return tokens_amount;
+            .insert(&account, &Balance::from(tokens_amount));
+        return Balance::from(tokens_amount);
     }
 
-    // Simple borrow
     pub fn get_borrows_by_account(&self, account: AccountId) -> Balance{
-        assert!(self.borrows.get(&account).is_some(), "This account is never borrowed");
+        assert!(self.borrows.get(&account).is_some(), "This account has never borrowed");
         return self.borrows.get(&account).unwrap();
     }
 

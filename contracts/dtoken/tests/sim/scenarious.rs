@@ -342,7 +342,7 @@ fn scenario_03(){
     assert_eq!(user_balance, 20.to_string(), "User balance should be 20");
 
      // Repay
-     call!(
+    call!(
         d_user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
@@ -357,6 +357,13 @@ fn scenario_03(){
         utoken.ft_balance_of(d_user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 20.to_string(), "As user has never borrowed, transfer shouldn't be done");
+
+    call!(
+        droot,
+        dtoken.set_borrows(d_user.account_id(),U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
      
 }
 
