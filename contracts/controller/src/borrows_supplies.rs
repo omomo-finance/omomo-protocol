@@ -61,15 +61,6 @@ impl Contract {
         }
     }
 
-    fn get_params_by_action(&self, action: ActionType) -> (& LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
-        // return parameters respective to ActionType
-        match action {
-            ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
-            ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
-        }
-    }
-
-
     pub fn increase_borrows(
         &mut self,
         account: AccountId,
@@ -211,9 +202,6 @@ mod tests {
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
     use crate::test_utils::*;
-    use near_sdk::AccountId;
-
-    use crate::{Config, Contract};
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());

@@ -2,7 +2,7 @@ use near_sdk::{AccountId, collections::LookupMap};
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, to_yocto, UserAccount, view};
 
-use controller::{Config as cConfig, ContractContract};
+use controller::{Config as cConfig};
 
 use controller::ActionType;
 use controller::ActionType::{Supply, Borrow};
@@ -17,7 +17,6 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     println!("{}", exe_status);
     assert!(exe_status.contains(error_message));
 }
-
 
 fn view_balance(contract: &ContractAccount<controller::ContractContract>, action: ActionType, user_account: AccountId, dtoken_account: AccountId) -> u128{
     view!(
@@ -79,6 +78,13 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
         .assert_success();
     (droot, dtoken, d_user)
 }
+
+fn supply_fixture(){
+    
+}
+
+
+
 
 #[test]
 fn scenario_01() {
