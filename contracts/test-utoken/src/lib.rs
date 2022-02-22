@@ -1,8 +1,8 @@
 use near_contract_standards::fungible_token::FungibleToken;
 use near_contract_standards::fungible_token::metadata::{
-    FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC,
+    FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider,
 };
-use near_sdk::{AccountId, near_bindgen, PanicOnDefault, PromiseOrValue, env};
+use near_sdk::{AccountId, env, near_bindgen, PanicOnDefault, PromiseOrValue};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
@@ -83,7 +83,7 @@ impl FungibleTokenMetadataProvider for Contract {
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::{env, testing_env, Balance};
+    use near_sdk::{Balance, env, log, testing_env};
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::test_utils::test_env::{alice, bob};
 
@@ -93,24 +93,25 @@ mod tests {
 
 
     fn init() -> (VMContextBuilder, AccountId, Contract) {
-        // get VM builer
-        let context = VMContextBuilder::new();
 
         // account for contract
-        let _contract_account = alice();
+        let contract_account: AccountId = "near.testnet".parse().unwrap();
 
         // init the contract
-        let contract = Contract::new_default_meta(_contract_account.clone(), TOTAL_SUPPLY.into());
+        let contract = Contract::new_default_meta(contract_account.clone(), TOTAL_SUPPLY.into());
 
 
-        (context, _contract_account, contract)
+        let context = get_context(contract_account.clone());
+
+
+        (context, contract_account, contract)
     }
 
-    #[allow(dead_code)]
+
     fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
         let mut builder = VMContextBuilder::new();
         builder
-            .current_account_id(accounts(0))
+            .current_account_id(predecessor_account_id.clone())
             .signer_account_id(predecessor_account_id.clone())
             .predecessor_account_id(predecessor_account_id);
         builder
@@ -119,7 +120,7 @@ mod tests {
 
     #[test]
     fn check_total_supply() {
-        let (mut context, contract_account, mut contract) = init();
+        let (context, contract_account, mut contract) = init();
 
         testing_env!(context.build());
 
@@ -190,5 +191,4 @@ mod tests {
         assert_eq!(contract.ft_balance_of(accounts(2)).0, (TOTAL_SUPPLY - transferred_tokens));
         assert_eq!(contract.ft_balance_of(accounts(1)).0, transferred_tokens);
     }
-
 }

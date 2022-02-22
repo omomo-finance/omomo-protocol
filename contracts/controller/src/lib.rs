@@ -21,7 +21,6 @@ mod oraclehook;
 mod prices;
 pub mod borrows_supplies;
 pub mod repay;
-mod test_utils;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -51,6 +50,9 @@ pub struct Contract {
 
     /// Contract configuration object
     pub config: LazyOption<Config>,
+
+    /// Contract admin account (controller itself by default)
+    pub admin: AccountId,
 }
 
 impl Default for Contract {
@@ -84,6 +86,7 @@ impl Contract {
             account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
+            admin: "controller.testnet".parse().unwrap(),
         }
     }
 }
