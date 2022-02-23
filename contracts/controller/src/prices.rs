@@ -25,8 +25,10 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+
     use near_sdk::AccountId;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use assert_matches::assert_matches;
 
     use crate::{Config, Contract};
 
@@ -44,23 +46,21 @@ mod tests {
 
     #[test]
     fn test_add_get_price() {
-        let (mut near_contract, token_address, user_account) = init_test_env();
+        let (mut near_contract, token_address, _user_account) = init_test_env();
 
-        let price_1 = Price {
+        let price = Price {
             // adding price of Near
             asset_id: token_address.clone(),
             value: 20,
+            volatility: 100
         };
 
-        let price_2 = Price {
-            // adding price of Ether
-            asset_id: "eth".parse().unwrap(),
-            value: 3000,
-        };
+        near_contract.upsert_price(&price);
 
-        near_contract.upsert_price(&price_1);
-        near_contract.upsert_price(&price_2);
-        dbg!(near_contract.get_price(token_address));
-        dbg!(near_contract.get_price("eth".parse().unwrap()));
+        let gotten_price = near_contract.get_price(token_address).unwrap();
+        assert_matches!(&gotten_price, price, "Get price format check has been failed");
+        assert_eq!(&gotten_price.value, &price.value, "Get price values check has been failed");
+        assert_eq!(&gotten_price.volatility, &price.volatility,  "Get price volatility check has been failed");
+        assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");
     }
 }
