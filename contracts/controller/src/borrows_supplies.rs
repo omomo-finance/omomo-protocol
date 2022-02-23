@@ -53,6 +53,7 @@ impl Contract {
             ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
         }
     }
+
     fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
@@ -60,7 +61,6 @@ impl Contract {
             ActionType::Borrow => (&mut self.account_borrows, StorageKeys::BorrowsToken)
         }
     }
-
     pub fn increase_borrows(
         &mut self,
         account: AccountId,
@@ -187,7 +187,6 @@ impl Contract {
             token_address,
             Balance::from(token_amount)
         );
-
        self.increase_borrows(account_id, token_address, token_amount);
     }
 }
@@ -201,15 +200,14 @@ mod tests {
     use crate::{Config, Contract};
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
-    use crate::test_utils::*;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-
+    
         let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-
+    
         let token_address: AccountId = "near".parse().unwrap();
-
+    
         return (eth_contract, token_address, user_account);
     }
 

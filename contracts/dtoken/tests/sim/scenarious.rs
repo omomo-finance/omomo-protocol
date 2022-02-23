@@ -1,13 +1,10 @@
 use near_sdk::{AccountId, collections::LookupMap};
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, to_yocto, UserAccount, view};
-
 use controller::{Config as cConfig};
-
 use controller::ActionType;
 use controller::ActionType::{Supply, Borrow};
 use dtoken::Config as dConfig;
-
 use crate::utils::{init_controller, init_dtoken, init_utoken};
 
 
@@ -202,7 +199,6 @@ fn scenario_supply_zero_tokens(){
         ),
         deposit = 1
     );
-
     assert_failure(result, "The amount should be a positive number");
 }
 
@@ -285,6 +281,7 @@ fn scenario_withdraw_with_no_supply(){
 #[test]
 fn scenario_withdraw_more(){
     let (dtoken, controller, utoken, user) = withdraw_fixture();
+
     let result = call!(
         user,
         dtoken.withdraw(U128(30)),
@@ -405,3 +402,90 @@ fn scenario_repay_more_than_borrow(){
     let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }
+
+// #[test]
+// fn scenario_04(){
+//     // Borrow
+//     let root = init_simulator(None);
+//      //  Initialize
+ 
+//      let (uroot, utoken, u_user) = initialize_utoken(&root);
+//      let (croot, controller, c_user) = initialize_controller(&root);
+//      let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+
+//      call!(
+//         uroot,
+//         utoken.mint(dtoken.account_id(), U128(20)),
+//         0,
+//         100000000000000
+//     ).assert_success();
+
+//     call!(
+//         uroot,
+//         utoken.mint(d_user.account_id(), U128(0)),
+//         0,
+//         100000000000000
+//     ).assert_success();
+
+//     let user_balance: String = view!(
+//         utoken.ft_balance_of(d_user.account_id())
+//     ).unwrap_json();
+//     assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
+
+//     // Borrow if dtoken account has enought balance
+//     call!(
+//         d_user,
+//         dtoken.borrow(
+//             U128(20)
+//         ),
+//         deposit = 0
+//     ).assert_success();
+
+//     let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+//     assert_eq!(user_balance, 20, "Borrow balance on controller should be 20");
+
+//     let user_balance: u128 = view!(
+//         dtoken.get_borrows_by_account(d_user.account_id())
+//     ).unwrap_json();
+//     assert_eq!(user_balance, 20, "User borrow balance should be 20");
+
+//     let user_balance: String = view!(
+//         utoken.ft_balance_of(d_user.account_id())
+//     ).unwrap_json();
+//     assert_eq!(user_balance, 20.to_string(), "User utoken balance should be 20");
+
+//     let dtoken_balance: String = view!(
+//         utoken.ft_balance_of(dtoken.account_id())
+//     ).unwrap_json();
+//     assert_eq!(dtoken_balance, 0.to_string(), "Dtoken balance on utoken should be 0");
+
+//     // Borrow if dtoken account doesn't have enought balance
+//     let result = call!(
+//         d_user,
+//         dtoken.borrow(
+//             U128(30)
+//         ),
+//         deposit = 0
+//     ).assert_success();
+
+//     //assert_failure(result, "Th account doesn't have enough balance");
+
+//     let user_balance: u128 = view!(
+//         dtoken.get_borrows_by_account(d_user.account_id())
+//     ).unwrap_json();
+//     assert_eq!(user_balance, 20, "2User borrow balance should be 20");
+
+//     let user_balance: String = view!(
+//         utoken.ft_balance_of(d_user.account_id())
+//     ).unwrap_json();
+//     assert_eq!(user_balance, 20.to_string(), "2User balance on utoken should be 20");
+
+//     let dtoken_balance: String = view!(
+//         utoken.ft_balance_of(dtoken.account_id())
+//     ).unwrap_json();
+//     assert_eq!(dtoken_balance, 0.to_string(), "2Dtoken balance on utoken should be 0");
+
+//     let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+//     assert_eq!(user_balance, 20, "2Borrow balance on controller should be 20");
+// }
+
