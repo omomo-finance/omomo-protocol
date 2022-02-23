@@ -11,24 +11,24 @@ pub enum ActionType {
 #[near_bindgen]
 impl Contract {
     #[private]
-    fn set_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId, tokens_amount: Balance) -> Balance {
+    fn set_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
-        let (accounts, key_prefix) = self.get_params_by_action(action);
+        let (accounts, key_prefix) = self.get_params_by_action_mut(action);
         let account_entry = accounts.get(&account);
 
         if let None = account_entry {
-                let mut account_map: UnorderedMap<AccountId, u128> =
-                    UnorderedMap::new(key_prefix);
-                account_map.insert(&token_address, &tokens_amount);
-                accounts.insert(&account, &account_map);
+            let mut account_map: UnorderedMap<AccountId, u128> =
+                UnorderedMap::new(key_prefix);
+            account_map.insert(&token_address, &token_amount);
+            accounts.insert(&account, &account_map);
         } else {
             account_entry
                 .unwrap()
-                .insert(&token_address, &tokens_amount);
+                .insert(&token_address, &token_amount);
         }
-        return tokens_amount;
+        return token_amount;
     }
 
     pub fn get_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
@@ -47,13 +47,22 @@ impl Contract {
         accounts_map.get(&token_address).unwrap_or(balance)
     }
 
-    fn get_params_by_action(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
-        // return parameters respective to ActionType
+    fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
+        // return mutable parameters respective to ActionType
         match action {
             ActionType::Supply => (&mut self.account_supplies, StorageKeys::SuppliesToken),
             ActionType::Borrow => (&mut self.account_borrows, StorageKeys::BorrowsToken)
         }
     }
+
+    fn get_params_by_action(&self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
+        // return parameters respective to ActionType
+        match action {
+            ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
+            ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
+        }
+    }
+
 
     pub fn increase_borrows(
         &mut self,
@@ -72,13 +81,13 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> Balance {
         let existing_borrows: Balance = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
-        assert!(existing_borrows >= Balance::from(tokens_amount), "Too much borrowed assets trying to pay out");
+        assert!(existing_borrows >= Balance::from(token_amount), "Too much borrowed assets trying to pay out");
 
-        let decreased_borrows: Balance = existing_borrows - Balance::from(tokens_amount);
+        let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         return self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
     }
@@ -88,10 +97,10 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) {
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-        let increased_supplies: Balance = existing_supplies + Balance::from(tokens_amount);
+        let increased_supplies: Balance = existing_supplies + Balance::from(token_amount);
 
         self.set_entity_by_token(Supply, account.clone(), token_address.clone(), increased_supplies);
     }
@@ -100,15 +109,15 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> Balance {
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
 
         assert!(
-            Balance::from(tokens_amount) <= existing_supplies,
+            Balance::from(token_amount) <= existing_supplies,
             "Not enough existing supplies"
         );
-        let decreased_supplies: Balance = existing_supplies - Balance::from(tokens_amount);
+        let decreased_supplies: Balance = existing_supplies - Balance::from(token_amount);
 
         return self.set_entity_by_token(Supply,
                                         account.clone(),
@@ -121,36 +130,35 @@ impl Contract {
         &mut self,
         account: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> bool {
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
 
-        return existing_supplies >= Balance::from(tokens_amount);
+        return existing_supplies >= Balance::from(token_amount);
     }
 
     pub fn withdraw_supplies(
         &mut self,
         account_id: AccountId,
         token_address: AccountId,
-        tokens_amount: WBalance,
+        token_amount: WBalance,
     ) -> Balance {
         assert_eq!(
             self.is_withdraw_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                tokens_amount.clone(),
+                token_amount.clone(),
             ),
             true,
             "Withdrawal operation is not allowed for account {} token_address {} tokens_amount` {}",
             account_id,
             token_address,
-            Balance::from(tokens_amount)
+            Balance::from(token_amount)
         );
 
-        return self.decrease_supplies(account_id, token_address, tokens_amount);
+        return self.decrease_supplies(account_id, token_address, token_amount);
     }
 
-    
 
     #[warn(dead_code)]
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _tokens_amount: WBalance) -> bool {
@@ -182,7 +190,7 @@ impl Contract {
             Balance::from(tokens_amount)
         );
 
-       self.increase_borrows(account_id, token_address, tokens_amount);
+        self.increase_borrows(account_id, token_address, tokens_amount);
     }
 }
 
@@ -190,21 +198,9 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
-    use crate::{Config, Contract};
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
-
-    pub fn init_test_env() -> (Contract, AccountId, AccountId) {
-        let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-
-        let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-
-        let token_address: AccountId = "near".parse().unwrap();
-
-        return (eth_contract, token_address, user_account);
-    }
+    use crate::test_helper::init_test_env;
 
     #[test]
     fn test_for_supply_and_borrow_getters() {
