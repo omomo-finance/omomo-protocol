@@ -23,9 +23,8 @@ impl Contract {
         &mut self,
         token_amount: WBalance,
     ) ->Promise {
-        assert_eq!(is_promise_success(), true, "Increasing borrow has been failed");
+        assert_eq!(is_promise_success(), true, "Failed to increase borrow for {} with token amount {}", env::signer_account_id(), Balance::from(token_amount));
 
-        // Cross-contract call to market token
         underlying_token::ft_transfer(
             env::signer_account_id(),
             token_amount,
@@ -47,10 +46,11 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         if is_promise_success(){
-             self.increase_borrows(env::signer_account_id(), token_amount);
+            self.increase_borrows(env::signer_account_id(), token_amount);
             return true
         } 
-        log!("Transfer tokens from user to dtoken has failed");
+
+        log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
         controller::decrease_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -68,8 +68,9 @@ impl Contract {
     }
 
     pub fn controller_decrease_borrows_fail(&mut self){
-        log!("Couldn't decrease borrow after mistake in transfer ");
-        assert_eq!(is_promise_success(),true);
+        if !is_promise_success(){
+            log!("Failed to decrease borrows for {}", env::signer_account_id());
+        }
     }
 
     pub fn decrease_borrows(

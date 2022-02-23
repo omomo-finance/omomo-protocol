@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn check_total_supply() {
-        let (mut context, contract_account, mut contract) = init();
+        let ( context, _contract_account,  contract) = init();
 
         testing_env!(context.build());
 

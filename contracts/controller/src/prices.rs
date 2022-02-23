@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn test_add_get_price() {
-        let (mut near_contract, token_address, user_account) = init_test_env();
+        let (mut near_contract, token_address, _user_account) = init_test_env();
 
         let price_1 = Price {
             // adding price of Near
