@@ -22,7 +22,7 @@ impl Contract {
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
 
         if !is_promise_success() {
-            log!("Call to discover dtoken balance ended incorrect");
+            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -68,7 +68,7 @@ impl Contract {
     #[allow(dead_code)]
     pub fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success(){
-            log!("Call to increase supply ended incorrect");
+            log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
             self.burn(
                 &self.get_signer_address(),
                 dtoken_amount.into()
