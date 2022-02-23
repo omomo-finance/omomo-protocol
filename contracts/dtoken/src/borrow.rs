@@ -44,32 +44,32 @@ impl Contract {
     pub fn borrow_ft_transfer_callback(
         &mut self,
         token_amount: WBalance,
-    ) -> bool {
+    ) {
         if is_promise_success(){
             self.increase_borrows(env::signer_account_id(), token_amount);
-            return true
         } 
-
-        log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
-        controller::decrease_borrows(
-            env::signer_account_id(),
-            self.get_contract_address(),
-            token_amount,
-            self.get_controller_address(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        )
-        .then(ext_self::controller_decrease_borrows_fail(
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        ));
-        return true
+        else {
+            log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
+            controller::decrease_borrows(
+                env::signer_account_id(),
+                self.get_contract_address(),
+                token_amount,
+                self.get_controller_address(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            )
+            .then(ext_self::controller_decrease_borrows_fail(
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ));
+        }
     }
 
     pub fn controller_decrease_borrows_fail(&mut self){
         if !is_promise_success(){
             log!("Failed to decrease borrows for {}", env::signer_account_id());
+            // TODO Account should be marked
         }
     }
 
