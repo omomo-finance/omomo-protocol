@@ -1,6 +1,5 @@
-use near_sdk_sim::{UserAccount, call, deploy, ContractAccount, init_simulator, to_yocto};
+use near_sdk_sim::{UserAccount, deploy, ContractAccount, to_yocto};
 use near_sdk::{AccountId };
-use near_sdk::json_types::{ U128};
 
 use test_utoken::ContractContract as Utoken;
 use dtoken::ContractContract as Dtoken;

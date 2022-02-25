@@ -2,6 +2,77 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+    pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
+        return controller::make_borrow(
+            env::signer_account_id(),
+            self.get_contract_address(),
+            token_amount,
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(10),
+        )
+        .then(ext_self::make_borrow_callback(
+            token_amount,
+            env::current_account_id().clone(),
+            NO_DEPOSIT,
+            self.terra_gas(150),
+        ));
+    }
+
+    pub fn make_borrow_callback(
+        &mut self,
+        token_amount: WBalance,
+    ) ->Promise {
+        assert_eq!(is_promise_success(), true, "Failed to increase borrow for {} with token amount {}", env::signer_account_id(), Balance::from(token_amount));
+
+        underlying_token::ft_transfer(
+            env::signer_account_id(),
+            token_amount,
+            Some(format!("Borrow with token_amount {}", Balance::from(token_amount))),
+            self.get_underlying_contract_address(),
+            ONE_YOCTO,
+            self.terra_gas(40),
+        )
+        .then(ext_self::borrow_ft_transfer_callback(
+            token_amount,
+            env::current_account_id().clone(),
+            NO_DEPOSIT,
+            self.terra_gas(80),
+        ))
+    }
+
+    pub fn borrow_ft_transfer_callback(
+        &mut self,
+        token_amount: WBalance,
+    ) {
+        if is_promise_success(){
+            self.increase_borrows(env::signer_account_id(), token_amount);
+        } 
+        else {
+            log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
+            controller::decrease_borrows(
+                env::signer_account_id(),
+                self.get_contract_address(),
+                token_amount,
+                self.get_controller_address(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            )
+            .then(ext_self::controller_decrease_borrows_callback(
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ));
+        }
+    }
+
+    pub fn controller_decrease_borrows_callback(&mut self){
+        if !is_promise_success(){
+            log!("Failed to decrease borrows for {}", env::signer_account_id());
+            // TODO Account should be marked
+        }
+    }
+
     pub fn decrease_borrows(
         &mut self,
         account: AccountId,
