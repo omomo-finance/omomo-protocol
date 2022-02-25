@@ -31,7 +31,7 @@ impl Contract {
         return token_amount;
     }
 
-    pub fn get_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
         let (accounts, _) = self.get_params_by_action(action);
