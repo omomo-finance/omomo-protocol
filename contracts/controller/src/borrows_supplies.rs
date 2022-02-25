@@ -8,7 +8,6 @@ pub enum ActionType {
     Borrow,
 }
 
-
 #[near_bindgen]
 impl Contract {
     #[private]
@@ -16,37 +15,39 @@ impl Contract {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
-        let (accounts, key_prefix) = self.get_params_by_action_mut(action);
+        let (accounts, key_prefix) = self.get_params_by_action(action);
+        let account_entry = accounts.get(&account);
 
-        if !accounts.contains_key(&account) {
-            let mut account_map: LookupMap<AccountId, u128> =
-                LookupMap::new(key_prefix);
-            account_map.insert(&token_address, &token_amount);
-            accounts.insert(&account, &account_map);
+        if let None = account_entry {
+                let mut account_map: UnorderedMap<AccountId, u128> =
+                    UnorderedMap::new(key_prefix);
+                account_map.insert(&token_address, &token_amount);
+                accounts.insert(&account, &account_map);
         } else {
-            accounts
-                .get(&account)
+            account_entry
                 .unwrap()
                 .insert(&token_address, &token_amount);
         }
         return token_amount;
     }
 
-    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
         let (accounts, _) = self.get_params_by_action(action);
 
-        if !accounts.contains_key(&account) {
+        let account_entry = accounts.get(&account);
+
+        if let None = account_entry {
             return balance;
         }
 
-        let accounts_map = accounts.get(&account).unwrap();
+        let accounts_map = account_entry.unwrap();
 
         accounts_map.get(&token_address).unwrap_or(balance)
     }
 
-    fn get_params_by_action(& self, action: ActionType) -> (&LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action(& self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
             ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
@@ -54,13 +55,14 @@ impl Contract {
         }
     }
 
-    fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, LookupMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
             ActionType::Supply => (&mut self.account_supplies, StorageKeys::SuppliesToken),
             ActionType::Borrow => (&mut self.account_borrows, StorageKeys::BorrowsToken)
         }
     }
+
     pub fn increase_borrows(
         &mut self,
         account: AccountId,
@@ -145,7 +147,7 @@ impl Contract {
                 token_amount.clone(),
             ),
             true,
-            "Withdrawal operation is not allowed for account {} token_address {} token_amount {}",
+            "Withdrawal operation is not allowed for account {} token_address {} tokens_amount` {}",
             account_id,
             token_address,
             Balance::from(token_amount)
@@ -178,7 +180,7 @@ impl Contract {
                 token_amount.clone(),
             ),
             true,
-            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
+            "Borrow operation is not allowed for account {} token_address {} tokens_amount {}",
             account_id,
             token_address,
             Balance::from(token_amount)
