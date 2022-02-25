@@ -6,6 +6,7 @@ mod repay;
 mod supply;
 mod withdraw;
 mod interest_model;
+mod interest_rate_model;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
@@ -15,6 +16,7 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
 pub use crate::interest_model::*;
+pub use crate::interest_rate_model::*;
 
 
 #[allow(unused_imports)]
@@ -61,7 +63,10 @@ pub struct Contract {
     config: LazyOption<Config>,
 
     /// BlockHeight of last action user produced
-    actions: LookupMap<AccountId, BlockHeight>
+    actions: LookupMap<AccountId, BlockHeight>,
+
+    model: InterestRateModel
+
 }
 
 impl Default for Contract {
@@ -102,8 +107,9 @@ trait InternalTokenInterface {
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
 
     fn make_borrow_callback(&mut self, token_amount: WBalance);
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance);
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
     fn controller_decrease_borrows_fail(&mut self);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
@@ -125,6 +131,12 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
+            model: InterestRateModel{
+                kink: InterestRateModel::get_with_ratio_decimals(1),
+                base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1),
+                multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1),
+                jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1),
+            }
         }
     }
 }

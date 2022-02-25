@@ -2,7 +2,7 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance)  -> Promise {
+    pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
         return controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
