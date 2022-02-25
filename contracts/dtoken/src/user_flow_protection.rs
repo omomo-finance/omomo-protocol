@@ -33,15 +33,16 @@ impl UserFlowProtection {
         match self.blocked_accounts.iter().position(|value| value == account_id) {
             Some(index) => {
                 self.blocked_accounts.swap_remove(index as u64);
-                println!("Account unblocked successful!")
+                log!("Account unblocked successful!")
             }
-            None => println!("Account not found!")
+            None => log!("Account not found!")
         }
     }
 
     pub fn set_account_action_index(&mut self, account_id: AccountId) {
         let block_height = block_height();
         log!("Set last perform account: {} block_height: {}", account_id, block_height);
+        self.block_account(account_id.clone());
         self.account_action_index.insert(&account_id, &block_height);
     }
 
@@ -50,12 +51,22 @@ impl UserFlowProtection {
         self.account_action_index.get(&account_id)
     }
 
-    pub fn is_user_can_perform_operation(&self, account_id: AccountId) -> bool {
+    pub fn is_user_can_perform_operation(&mut self, account_id: AccountId) -> bool {
         log!("User can perform: {}", account_id);
+        let mut access: bool = false;
         let last_perform_block_height = self.get_last_user_perform(account_id.clone());
         let current_block_height = block_height();
-        current_block_height - last_perform_block_height.unwrap() >= BLOCKS_TO_NEXT_OPERATION ||
-            self.blocked_accounts.iter().any(|account| account == account_id)
+        if current_block_height - last_perform_block_height.unwrap() >= BLOCKS_TO_NEXT_OPERATION {
+            match self.blocked_accounts.iter().position(|account| account == account_id) {
+                Some(index) => {
+                    self.blocked_accounts.swap_remove(index as u64);
+                    log!("Account: {} unblocked successful!", account_id)
+                }
+                None => log!("Account: {} not blocked!", account_id)
+            }
+            access = true;
+        }
+        access
     }
 }
 
