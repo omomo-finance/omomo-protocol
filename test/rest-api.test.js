@@ -44,32 +44,32 @@ describe("Dtoken common methods", () => {
         dtoken_near = new contract(dtoken_contract_id);
     })
 
-    test("Total_supplies: [get_total_supplies, set_total_supplies]", async () => {
+    test("Total_reserves: [get_total_reserves, set_total_reserves]", async () => {
 
-        const total_supplies = await dtoken_near.view("get_total_supplies", {},
+        const total_reserves = await dtoken_near.view("get_total_reserves", {},
             {account_id: dtoken_contract_id });
 
-        expect(total_supplies).toBeGreaterThanOrEqual(0);
+        expect(total_reserves).toBeGreaterThanOrEqual(0);
 
-        await dtoken_near.call("set_total_supplies", {amount: total_supplies + 1 },
+        await dtoken_near.call("set_total_reserves", {amount: total_reserves + 1 },
             {account_id: dtoken_contract_id });
 
-        const new_total_supplies = await dtoken_near.view("get_total_supplies", {});
+        const new_total_reserves = await dtoken_near.view("get_total_reserves", {});
 
-        expect(new_total_supplies).toBeGreaterThanOrEqual(0);
-        expect(total_supplies).toBeLessThan(new_total_supplies);
-        expect(total_supplies).toBe(new_total_supplies - 1);
+        expect(new_total_reserves).toBeGreaterThanOrEqual(0);
+        expect(total_reserves).toBeLessThan(new_total_reserves);
+        expect(total_reserves).toBe(new_total_reserves - 1);
     });
 
-    test("[Negative value test]: Total_supplies", async () => {
-        const NegativeValue = await dtoken_near.call("set_total_supplies", { amount: -1 },
+    test("[Negative value test]: Total_reserves", async () => {
+        const NegativeValue = await dtoken_near.call("set_total_reserves", { amount: -1 },
             {account_id: dtoken_contract_id });
 
         expect(NegativeValue.type).toBe('FunctionCallError');
     })
 
-    test("[Private method test]: Total_supplies", async () => {
-        const PrivateMethodCheck = await dtoken_near.call("set_total_supplies", { amount: 10 },
+    test("[Private method test]: Total_reserves", async () => {
+        const PrivateMethodCheck = await dtoken_near.call("set_total_reserves", { amount: 10 },
             {account_id: root_user });
 
         expect(PrivateMethodCheck.type).toBe('FunctionCallError');

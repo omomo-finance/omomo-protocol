@@ -2,7 +2,7 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_contract_standards::fungible_token::metadata::{
     FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC,
 };
-use near_sdk::{AccountId, near_bindgen, PanicOnDefault, Balance, PromiseOrValue, env};
+use near_sdk::{AccountId, near_bindgen, PanicOnDefault, PromiseOrValue, env};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
@@ -27,6 +27,7 @@ impl Contract {
             total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
+                // FIXME rename the symbol and name field
                 name: "dmytro".to_string(),
                 symbol: "DMTR".to_string(),
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
@@ -82,7 +83,7 @@ impl FungibleTokenMetadataProvider for Contract {
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::{env, testing_env};
+    use near_sdk::{env, testing_env, Balance};
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::test_utils::test_env::{alice, bob};
 

@@ -1,0 +1,21 @@
+name: master nearlend-protocol deploy automatically
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+  
+concurrency: nearlend
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - run: ./build.sh

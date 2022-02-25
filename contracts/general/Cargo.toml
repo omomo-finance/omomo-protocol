@@ -1,0 +1,11 @@
+[package]
+name = "general"
+version = "0.0.1"
+authors = ["sergii.p@blaize.tech"]
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "4.0.0-pre.6"

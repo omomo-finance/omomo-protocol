@@ -2,27 +2,37 @@
 
 ## How do I deposit
 
-Before you want to make a deposit, you should connect a wallet. You can do it via the "Connect wallet" button on the main page of the application. After, please find an asset that you wanna supply and click "Supply", select the amount you'd like to deposit in an appeared modal window and submit your transaction. Once the transaction is confirmed, your deposit is successfully registered and you begin earning interest.
+1. Connect your wallet by clicking on the Connect Wallet button on the main page of the application.&#x20;
+2. Find an asset you’d like to supply and click the Supply button. Then, select the amount you wish to deposit in a pop-up window and submit your transaction.&#x20;
+3. Once the transaction is confirmed, your deposit is successfully registered, and you start earning interest on the supplied amount.
+
+## How do I earn?
+
+Once your deposit is registered and supplied, you start getting rewards in dTokens.
+
+All dTokens holders receive incentives that evolve with market conditions. You can learn more about incentivization and earning interest with Nearlend in the Interest Rate Model chapter.
+
+
+
+## How does deposit work?
+
+![](<../.gitbook/assets/deposit (1).png>)
+
+## **Is there any minimum or maximum limit to deposit?**
+
+You can deposit any amount you want, there are no limits. Still, it's important to keep in mind potential transaction fees that will directly influence your deposit amount and final earnings. We highly recommend you consider this when depositing low amounts since transaction fees might be higher than the expected earnings, and your deposit may lose its value.
 
 ***
 
-## What's the profit ?
+## **How can I withdraw?**
 
-Once your deposit will be supplied, your account will be rewarded by `dTokens`. `dTokens` holders receive continuous earnings that evolve with market conditions. You can look at the Interest Model category to find out how does it work more precisely.
+You can withdraw deposited funds anytime.
 
-## How does supply work?
-
-![](../.gitbook/assets/supply.png)
-
-## Are there any restrictions on the amount
-
-You can deposit any amount you want, there are no limit restrictions. Still, it's important to keep in mind that any transaction has costs and tiny deposits could be not relevant. It is recommended that you consider this when depositing very low amounts.
-
-***
-
-## How do I withdraw?
-
-To withdraw your money please go to the "Dashboard", select the interested asset you want to withdraw, and click the "Supply" button. In the modal window please select `Withdraw` tab and select the amount `dTokens` which you wanna return. Submit transaction and wait for confirmation, in case the transaction was succeeded please check your wallet. Otherwise please try it again or contact to help center.
+1. Open the main page of the application.&#x20;
+2. Select the asset you would like to withdraw and click the Supply button.&#x20;
+3. In the pop-up window, go to the Withdraw tab and select the amount of dTokens you wish to withdraw.&#x20;
+4. Submit the transaction and wait a few minutes for confirmation. Check your wallet as you receive the confirmation and find your assets.&#x20;
+5. In case the transaction fails, try again or contact our team.
 
 ## How does withdrawal work?
 
@@ -30,4 +40,4 @@ To withdraw your money please go to the "Dashboard", select the interested asset
 
 ## Can I use my assets as collateral?
 
-After depositing your assets, you are able to use the asset as collateral. If you don't want to do this, you will always be able to exclude this asset from collateral-able assets.
+After depositing your assets, you can use them as collateral in any way or combination. If you don't want to use a particular asset as collateral, you can disable this feature anytime.

@@ -2,7 +2,7 @@
 
 ## GENERAL
 
-* [Introduction](README.md)
+* [Overview](README.md)
 * [Roadmap](general/roadmap.md)
 
 ## Product
@@ -11,11 +11,10 @@
 * [Borrow](product/borrow.md)
 * [Repay](product/repay.md)
 * [Liquidation](product/liquidation.md)
-* [Interest rate model](product/interest_rate_model.md)
+* [Interest rate model](product/interest\_rate\_model.md)
 * [Tokenomics](product/tokenomics.md)
 
 ## Developers
 
 * [Contracts](developers/contracts.md)
-* [How to deploy](developers/deploy.md)
 * [Contact us](developers/contact.md)

@@ -1,17 +1,59 @@
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::UnorderedMap;
-use near_sdk::{env, near_bindgen, AccountId, BorshStorageKey};
+
+use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
+#[allow(unused_imports)]
+use near_sdk::json_types::U128;
+use near_sdk::serde::{Deserialize, Serialize};
+use percentage::Percentage;
+
+#[allow(unused_imports)]
+use general::*;
+
+pub use crate::borrows_supplies::*;
+pub use crate::config::*;
+pub use crate::oraclehook::*;
+pub use crate::prices::*;
+pub use crate::borrows_supplies::*;
+pub use crate::repay::*;
+
+#[allow(unused_imports)]
+mod config;
+mod oraclehook;
+mod prices;
+pub mod borrows_supplies;
+pub mod repay;
+mod test_utils;
+mod healthfactor;
 
 #[derive(BorshSerialize, BorshStorageKey)]
-enum StorageKey {
+pub enum StorageKeys {
     Markets,
+    Supplies,
+    SuppliesToken,
+    BorrowsToken,
+    Prices,
+    Config,
+    Borrows,
 }
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    // Market name -> Token contract address
-    pub markets: UnorderedMap<AccountId, AccountId>,
+    /// Market name [Underlying asset name] -> Dtoken contract address
+    pub markets: LookupMap<AccountId, AccountId>,
+
+    /// User Account ID -> Dtoken address -> Supplies balance
+    pub account_supplies: LookupMap<AccountId, UnorderedMap<AccountId, Balance>>,
+
+    /// User Account ID -> Dtoken address -> Borrow balance
+    pub account_borrows: LookupMap<AccountId, UnorderedMap<AccountId, Balance>>,
+
+    /// Asset ID -> Price value
+    pub prices: LookupMap<AccountId, Price>,
+
+    /// Contract configuration object
+    pub config: LazyOption<Config>,
 }
 
 impl Default for Contract {
@@ -20,29 +62,31 @@ impl Default for Contract {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PriceJsonList {
+    /// Block number
+    pub block_height: u64,
+
+    /// Vector of asset prices
+    pub price_list: Vec<Price>,
+}
+
+pub trait OraclePriceHandlerHook {
+    fn oracle_on_data(&mut self, price_data: PriceJsonList);
+}
+
 #[near_bindgen]
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
-            markets: UnorderedMap::new(StorageKey::Markets),
+            markets: LookupMap::new(StorageKeys::Markets),
+            account_supplies: LookupMap::new(StorageKeys::Supplies),
+            account_borrows: LookupMap::new(StorageKeys::Borrows),
+            prices: LookupMap::new(StorageKeys::Prices),
+            config: LazyOption::new(StorageKeys::Config, Some(&config)),
         }
     }
-}
-
-// use the attribute below for unit tests
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use near_sdk::test_utils::{get_logs, VMContextBuilder};
-    use near_sdk::{testing_env, AccountId};
-
-    // part of writing unit tests is setting up a mock context
-    // provide a `predecessor` here, it'll modify the default context
-    // fn get_context(predecessor: AccountId) -> VMContextBuilder {
-    //     let mut builder = VMContextBuilder::new();
-    // }
-
-    // TESTS HERE
 }
