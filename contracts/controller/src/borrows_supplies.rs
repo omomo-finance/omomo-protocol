@@ -73,7 +73,6 @@ impl Contract {
         self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), increased_borrows);
     }
 
-
     pub fn decrease_borrows(
         &mut self,
         account: AccountId,
@@ -88,7 +87,6 @@ impl Contract {
 
         return self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
     }
-
 
     pub fn increase_supplies(
         &mut self,
@@ -155,8 +153,6 @@ impl Contract {
 
         return self.decrease_supplies(account_id, token_address, token_amount);
     }
-
-    
 
     #[warn(dead_code)]
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _token_amount: WBalance) -> bool {
@@ -229,7 +225,6 @@ mod tests {
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 50);
     }
 
-
     #[test]
     fn success_increase_n_decrease_borrows() {
         let (mut near_contract, token_address, user_account) = init_test_env();
@@ -243,7 +238,6 @@ mod tests {
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 8);
     }
 
-
     #[test]
     fn success_increase_n_decrease_supplies() {
         let (mut near_contract, token_address, user_account) = init_test_env();
@@ -256,7 +250,6 @@ mod tests {
 
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 8);
     }
-
 
     #[test]
     #[should_panic]
