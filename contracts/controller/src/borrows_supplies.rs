@@ -15,7 +15,7 @@ impl Contract {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
-        let (accounts, key_prefix) = self.get_params_by_action(action);
+        let (accounts, key_prefix) = self.get_params_by_action_mut(action);
         let account_entry = accounts.get(&account);
 
         if let None = account_entry {
@@ -31,7 +31,7 @@ impl Contract {
         return token_amount;
     }
 
-    pub fn get_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
         let (accounts, _) = self.get_params_by_action(action);
