@@ -1,9 +1,11 @@
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap};
+
+use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
+use percentage::Percentage;
 
 #[allow(unused_imports)]
 use general::*;
@@ -22,6 +24,8 @@ mod prices;
 pub mod borrows_supplies;
 pub mod repay;
 mod test_utils;
+mod healthfactor;
+
 
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -38,14 +42,14 @@ pub enum StorageKeys {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    /// Market name -> Dtoken contract address
+    /// Market name [Underlying asset name] -> Dtoken contract address
     pub markets: LookupMap<AccountId, AccountId>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
-    pub account_supplies: LookupMap<AccountId, LookupMap<AccountId, Balance>>,
+    pub account_supplies: LookupMap<AccountId, UnorderedMap<AccountId, Balance>>,
 
     /// User Account ID -> Dtoken address -> Borrow balance
-    pub account_borrows: LookupMap<AccountId, LookupMap<AccountId, Balance>>,
+    pub account_borrows: LookupMap<AccountId, UnorderedMap<AccountId, Balance>>,
 
     /// Asset ID -> Price value
     pub prices: LookupMap<AccountId, Price>,
