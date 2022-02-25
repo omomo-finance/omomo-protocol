@@ -1,13 +1,10 @@
-use near_sdk::{AccountId, collections::LookupMap};
+use near_sdk::{AccountId};
 use near_sdk::json_types::U128;
-use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, to_yocto, UserAccount, view};
-
-use controller::{Config as cConfig, ContractContract};
-
+use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
+use controller::{Config as cConfig};
 use controller::ActionType;
 use controller::ActionType::{Supply, Borrow};
 use dtoken::Config as dConfig;
-
 use crate::utils::{init_controller, init_dtoken, init_utoken};
 
 
@@ -17,7 +14,6 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     println!("{}", exe_status);
     assert!(exe_status.contains(error_message));
 }
-
 
 fn view_balance(contract: &ContractAccount<controller::ContractContract>, action: ActionType, user_account: AccountId, dtoken_account: AccountId) -> u128{
     view!(
@@ -80,39 +76,125 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
     (droot, dtoken, d_user)
 }
 
-#[test]
-fn scenario_01() {
-    // Supply
-    let root = init_simulator(None);
-    //  Initialize
+fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+     // Supply
+     let root = init_simulator(None);
+     //  Initialize
+ 
+     let (uroot, utoken, _u_user) = initialize_utoken(&root);
+     let (_croot, controller, _c_user) = initialize_controller(&root);
+     let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+ 
+     // Supply preparation 
+     call!(
+         uroot,
+         utoken.mint(dtoken.account_id(), U128(0)),
+         0,
+         100000000000000
+     );
+ 
+     call!(
+         uroot,
+         utoken.mint(d_user.account_id(), U128(20)),
+         0,
+         100000000000000
+     );
 
-    let (uroot, utoken, u_user) = initialize_utoken(&root);
-    let (croot, controller, c_user) = initialize_controller(&root);
-    let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+     (dtoken, controller, utoken, d_user)
+}
 
-    // Supply preparation 
+fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+    let (dtoken, controller, utoken, user) = base_fixture();
+
     call!(
-        uroot,
-        utoken.mint(dtoken.account_id(), U128(0)),
+        user,
+        dtoken.mint(&user.account_id(), U128(20)),
         0,
         100000000000000
     ).assert_success();
 
     call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
+        user,
+        controller.increase_supplies(user.account_id(), dtoken.account_id(), U128(20)),
         0,
         100000000000000
     ).assert_success();
 
-    let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
+    call!(
+        user,
+        utoken.ft_transfer(
+            dtoken.account_id(), 
+            U128(20), 
+            Some(format!("Supply with token_amount 20"))),
+        1,
+        100000000000000
+    );
+
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
+
+    (dtoken, controller, utoken, user)
+}
+
+fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
+    let (dtoken, controller, utoken, user) = base_fixture();
+
+    call!(
+        user,
+        dtoken.increase_borrows(user.account_id(),U128(10)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(
+            user.account_id()
+        )
     ).unwrap_json();
-    assert_eq!(user_balance, 20.to_string(), "User balance should be 20");
+    assert_eq!(user_balance, 10, "Borrow balance on dtoken should be 10");
 
-    // Supply test with error in command
     call!(
-        d_user,
+        user,
+        controller.increase_borrows(user.account_id(), dtoken.account_id() ,U128(10)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 10, "Borrow balance on controller should be 10");
+
+    (dtoken, controller, utoken, user)
+}
+
+fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
+    let root = init_simulator(None);
+              
+    let (uroot, utoken, _u_user) = initialize_utoken(&root);
+    let (_croot, controller, _c_user) = initialize_controller(&root);
+    let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+
+    call!(
+        uroot,
+        utoken.mint(dtoken.account_id(), U128(20)),
+        0,
+        100000000000000
+    );
+
+    call!(
+        uroot,
+        utoken.mint(d_user.account_id(), U128(0)),
+        0,
+        100000000000000
+    );
+    (dtoken, controller, utoken, d_user)
+
+}
+
+#[test]
+fn scenario_supply_error_command(){
+    let (dtoken, _controller, utoken, user) = base_fixture();
+    call!(
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
@@ -123,13 +205,16 @@ fn scenario_01() {
     ).assert_success();
 
     let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
+        utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 20.to_string(), "As to mistake in command, transfer shouldn't be done");
+}
 
-    // Supply test with 0 tokens
+#[test]
+fn scenario_supply_zero_tokens(){
+    let (dtoken, _controller, utoken, user) = base_fixture();
     let result = call!(
-        d_user,
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(0),
@@ -138,14 +223,16 @@ fn scenario_01() {
         ),
         deposit = 1
     );
-
     assert_failure(result, "The amount should be a positive number");
+}
 
-    // Supply test with calling from dtoken instead of utoken
+#[test]
+fn scenario_supply_error_contract(){
+    let (dtoken, _controller, _utoken, user) = base_fixture();
     let result = call!(
-        d_user,
+        user,
         dtoken.ft_on_transfer(
-            d_user.account_id(),
+            user.account_id(),
             U128(20),
             "SUPPLY".to_string()
         ),
@@ -153,40 +240,16 @@ fn scenario_01() {
     );
 
     assert_failure(result, "The call should come from token account");
+}
 
-    // Supply test
-
-    call!(
-        d_user,
-        utoken.ft_transfer_call(
-            dtoken.account_id(),
-            U128(20),
-            Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
-        ),
-        deposit = 1
-    ).assert_success();
-
-
-    let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
-
-    let dtoken_balance: String = view!(
-        utoken.ft_balance_of(dtoken.account_id())
-    ).unwrap_json();
-    assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance should be 20");
-
-    let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 20, "Balance on controller should be 20");
-
-    // Supply test with 0 balance
+#[test]
+fn scenario_supply_not_enough_balance(){
+    let (dtoken, _controller, utoken, user) = base_fixture();
     let result = call!(
-        d_user,
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(20),
+            U128(50),
             Some("SUPPLY".to_string()),
             "SUPPLY".to_string()
         ),
@@ -196,66 +259,23 @@ fn scenario_01() {
 }
 
 #[test]
-fn scenario_02(){
-    // Wihdraw
-    let root = init_simulator(None);
-    let (uroot, utoken, u_user) = initialize_utoken(&root);
-    let (croot, controller, c_user) = initialize_controller(&root);
-    let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
-
-    // 1. If User doesn't supply any tokens
-
-    let result = call!(
-        d_user,
-        dtoken.withdraw(U128(20)),
-        deposit = 0
-    );
-
-    assert_failure(result, "Withdrawal operation is not allowed");
-
-    // 2. If User supply some tokens and wants to withdraw 
-        // Simulate supply process
+fn scenario_supply() {
+    let (dtoken, controller, utoken, user) = base_fixture();
 
     call!(
-        uroot,
-        utoken.mint(dtoken.account_id(), U128(0)),
-        0,
-        100000000000000
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            "SUPPLY".to_string()
+        ),
+        deposit = 1
     ).assert_success();
 
-    call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    call!(
-        d_user,
-        dtoken.mint(&d_user.account_id(), U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    call!(
-        d_user,
-        controller.increase_supplies(d_user.account_id(), dtoken.account_id(), U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    call!(
-        d_user,
-        utoken.ft_transfer(
-            dtoken.account_id(), 
-            U128(20), 
-            Some(format!("Supply with token_amount 20"))),
-        1,
-        100000000000000
-    ).assert_success();
 
     let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
+        utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
 
@@ -264,90 +284,72 @@ fn scenario_02(){
     ).unwrap_json();
     assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance should be 20");
 
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance on controller should be 20");
+    
+}
 
-    let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 20, "Balance should be 20");
+#[test]
+fn scenario_withdraw_with_no_supply(){
+    let (dtoken, _controller, _utoken, user) = base_fixture();
 
-    // Withdraw more
     let result = call!(
-        d_user,
+        user,
+        dtoken.withdraw(U128(20)),
+        deposit = 0
+    );
+
+    assert_failure(result, "Withdrawal operation is not allowed");
+}
+
+#[test]
+fn scenario_withdraw_more(){
+    let (dtoken, controller, _utoken, user) = withdraw_fixture();
+
+    let result = call!(
+        user,
         dtoken.withdraw(U128(30)),
         deposit = 0
     );
 
     assert_failure(result, "Withdrawal operation is not allowed");
 
-    let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
+}
 
+#[test]
+fn scenario_withdraw_less_same(){
+    let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
     // Withdraw less
     call!(
-        d_user,
+        user,
         dtoken.withdraw(U128(10)),
         deposit = 0
     ).assert_success();
 
-    let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 10, "Balance should be 10");
 
     // Withdraw the same
     call!(
-        d_user,
+        user,
         dtoken.withdraw(U128(10)),
         deposit = 0
     ).assert_success();
 
-    let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 0, "Balance should be 0");
-
-    // Withdraw more
-    let result = call!(
-        d_user,
-        dtoken.withdraw(U128(10)),
-        deposit = 0
-    );
-
-    assert_failure(result, "Withdrawal operation is not allowed");
-
-    
-    let user_balance: u128 = view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Balance should be 0");
 
 }
 
 #[test]
-fn scenario_03(){
-     // Repay
-     let root = init_simulator(None);
-     //  Initialize
- 
-     let (uroot, utoken, u_user) = initialize_utoken(&root);
-     let (croot, controller, c_user) = initialize_controller(&root);
-     let (droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
-
-     call!(
-        uroot,
-        utoken.mint(dtoken.account_id(), U128(0)),
-        0,
-        100000000000000
-    ).assert_success();
+fn scenario_repay_no_borrow(){
+    let (dtoken, _controller, utoken, user) = base_fixture();
 
     call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 20.to_string(), "User balance should be 20");
-
-     // Repay if nothing has been borrowed
-    call!(
-        d_user,
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
@@ -358,40 +360,20 @@ fn scenario_03(){
     ).assert_success();
 
     let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
+        utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 20.to_string(), "As user has never borrowed, transfer shouldn't be done");
+}
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(),U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(
-            d_user.account_id()
-        )
-    ).unwrap_json();
-    assert_eq!(user_balance, 20, "Borrow balance on dtoken should be 20");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id() ,U128(20)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 20, "Borrow balance on controller should be 20");
-
-     // Repay 20 tokens if 20 tokens has been borrowed
+#[test]
+fn scenario_repay(){
+    let (dtoken, controller, utoken, user) = repay_fixture();
+     
      call!(
-        d_user,
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(20),
+            U128(10),
             Some("REPAY".to_string()),
             "REPAY".to_string()
         ),
@@ -399,17 +381,111 @@ fn scenario_03(){
     ).assert_success();
 
     let user_balance: String = view!(
-        utoken.ft_balance_of(d_user.account_id())
+        utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 0.to_string(), "As it was borrowed and repayed 20 tokens, balance should be 0");
+    assert_eq!(user_balance, 10.to_string(), "After repay of 10 tokens, balance should be 10");
     
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
-            d_user.account_id()
+            user.account_id()
         )
     ).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
-    let user_balance: u128 = view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+
+    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+}
+
+#[test]
+fn scenario_repay_more_than_borrow(){
+    let (dtoken, controller, utoken, user) = repay_fixture();
+     
+     call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("REPAY".to_string()),
+            "REPAY".to_string()
+        ),
+        deposit = 1
+    ).assert_success();
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 10.to_string(), "As it was borrowed 10 tokens and repayed 20 tokens, balance should be 10");
+    
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(
+            user.account_id()
+        )
+    ).unwrap_json();
+    assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
+
+    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+}
+
+#[test]
+fn scenario_borrow(){
+    let (dtoken, controller, utoken, user) = borrow_fixture();
+
+    call!(
+        user,
+        dtoken.borrow(
+            U128(20)
+        ),
+        deposit = 0
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "User borrow balance on controller should be 20");
+
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20, "User borrow balance on dtoken should be 20");
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 20.to_string(), "User utoken balance should be 20");
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 0.to_string(), "Dtoken balance on utoken should be 0");
+}
+
+#[test]
+fn scenatio_borrow_more_than_on_dtoken(){
+    let (dtoken, controller, utoken, user) = borrow_fixture();
+
+    call!(
+        user,
+        dtoken.borrow(
+            U128(40)
+        ),
+        deposit = 0
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0, "User borrow balance on dtoken should be 0");
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0.to_string(), "User balance on utoken should be 0");
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance on utoken should be 20");
 }
 

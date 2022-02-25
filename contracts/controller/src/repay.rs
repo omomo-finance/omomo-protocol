@@ -5,9 +5,9 @@ impl Contract {
 
     fn is_repay_allowed(
         &self,
-        account: AccountId,
-        token_address: AccountId,
-        token_amount: WBalance,
+        _account: AccountId,
+        _token_address: AccountId,
+        _token_amount: WBalance,
     ) -> bool {
         true
     }
