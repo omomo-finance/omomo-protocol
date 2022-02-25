@@ -2,7 +2,7 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance)  -> Promise {
+    pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
         return controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -58,7 +58,7 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(10),
             )
-            .then(ext_self::controller_decrease_borrows_fail(
+            .then(ext_self::controller_decrease_borrows_callback(
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
                 self.terra_gas(10),
@@ -66,7 +66,7 @@ impl Contract {
         }
     }
 
-    pub fn controller_decrease_borrows_fail(&mut self){
+    pub fn controller_decrease_borrows_callback(&mut self){
         if !is_promise_success(){
             log!("Failed to decrease borrows for {}", env::signer_account_id());
             // TODO Account should be marked

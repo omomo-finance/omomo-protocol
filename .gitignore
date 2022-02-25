@@ -4,6 +4,7 @@ contracts/target
 contracts/dtoken/target
 contracts/controller/target
 contracts/test-utoken/target
+contracts/general/target
 /.idea
 /node_modules/
 /res/
