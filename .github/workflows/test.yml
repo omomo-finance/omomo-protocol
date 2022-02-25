@@ -17,5 +17,5 @@ jobs:
           ref: master
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: wasm32-unknown-unknown
       - run: ./build.sh
