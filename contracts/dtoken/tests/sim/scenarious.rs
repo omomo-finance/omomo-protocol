@@ -550,10 +550,10 @@ fn scenario_get_borrow_rate(){
     let borrow_rate: u128 = view!(
         dtoken.get_borrow_rate(U128(0), U128(20), U128(0))
     ).unwrap_json();
-    assert_eq!(borrow_rate, 20000, "Borrow rate");
+    assert_eq!(borrow_rate, 20000, "Borrow rate: Supply 0, Borrow 10");
 
     let borrow_rate: u128 = view!(
         dtoken.get_borrow_rate(U128(20), U128(10), U128(0))
     ).unwrap_json();
-    assert_eq!(borrow_rate, 13333, "Borrow rate 2");
+    assert_eq!(borrow_rate, 13333, "Borrow rate: Supply 20, Borrow 10");
 }
