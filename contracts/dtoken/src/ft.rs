@@ -16,16 +16,25 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(env::predecessor_account_id(), self.underlying_token, "The call should come from token account");
-        assert!(Balance::from(amount) > 0, "Amount should be a positive number");
-        assert!(msg == "SUPPLY".to_string() || msg == "REPAY".to_string(), "There is no such command");
-        panic!("Called...");
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.underlying_token,
+            "The call should come from token account"
+        );
+        assert!(
+            Balance::from(amount) > 0,
+            "Amount should be a positive number"
+        );
+        assert!(
+            msg == "SUPPLY".to_string() || msg == "REPAY".to_string(),
+            "There is no such command"
+        );
         log!(format!("sender_id {}, msg {}", sender_id, msg));
 
-        let msg: Value = serde_json::from_str(msg.to_string().as_str()).expect("Can't parse JSON message");
+        let msg: Value =
+            serde_json::from_str(msg.to_string().as_str()).expect("Can't parse JSON message");
 
-        if !msg["memo"].is_null()
-        {
+        if !msg["memo"].is_null() {
             let memo_data = msg["memo"].clone();
             log!("borrower: {}", memo_data["borrower"]);
             log!("borrowing_dtoken: {}", memo_data["borrowing_dtoken"]);
@@ -37,14 +46,8 @@ impl FungibleTokenReceiver for Contract {
         // TODO: In future make action not a single one, but array in JSON message
         let action: &str = msg["action"].as_str().unwrap();
         match action {
-            "SUPPLY" => {
-                panic!("Supply called...");
-                self.supply(amount)
-            },
-            "REPAY" => {
-                panic!("Repay called...");
-                self.repay(amount)
-            },
+            "SUPPLY" => self.supply(amount),
+            "REPAY" => self.repay(amount),
             _ => {
                 log!("Incorrect command in transfer: {}", action);
                 PromiseOrValue::Value(amount)
