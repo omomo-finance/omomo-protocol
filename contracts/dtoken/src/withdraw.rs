@@ -55,8 +55,6 @@ impl Contract {
         let exchange_rate: Balance = self.get_exchange_rate(WBalance::from(balance_of));
         let token_amount: Balance = Balance::from(dtoken_amount) / exchange_rate;
 
-        
-
         return controller::withdraw_supplies(
             env::signer_account_id(),
             self.get_contract_address(),

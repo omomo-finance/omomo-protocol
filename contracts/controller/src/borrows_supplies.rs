@@ -47,7 +47,7 @@ impl Contract {
         accounts_map.get(&token_address).unwrap_or(balance)
     }
 
-    fn get_params_by_action(& self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action(&self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
             ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
