@@ -1,4 +1,4 @@
-use near_sdk::{AccountId};
+use near_sdk::{AccountId, serde_json};
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 use controller::{Config as cConfig};
@@ -229,12 +229,25 @@ fn scenario_supply_zero_tokens(){
 #[test]
 fn scenario_supply_error_contract(){
     let (dtoken, _controller, _utoken, user) = base_fixture();
+
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
     let result = call!(
         user,
         dtoken.ft_on_transfer(
             user.account_id(),
             U128(20),
-            "SUPPLY".to_string()
+            String::from(json)
         ),
         deposit = 0
     );
