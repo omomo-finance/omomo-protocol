@@ -2,7 +2,6 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -19,7 +18,6 @@ impl Contract {
     }
 
     pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-
         if !is_promise_success() {
             log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
             return PromiseOrValue::Value(token_amount);
@@ -65,5 +63,4 @@ impl Contract {
         return PromiseOrValue::Value(U128(extra_balance));
         
     }
-
 }

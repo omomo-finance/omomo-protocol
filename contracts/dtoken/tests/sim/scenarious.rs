@@ -447,7 +447,6 @@ fn scenario_repay(){
 
     let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
-
 }
 
 #[test]
