@@ -40,7 +40,7 @@ impl InterestRateModel{
 
 #[near_bindgen]
 impl InterestRateModel{
-    pub fn get_with_ratio_decimals(value: u128) -> u128{
-        return value * RATIO_DECIMALS;
+    pub fn get_with_ratio_decimals(value: f32) -> u128{
+        return (value * RATIO_DECIMALS as f32) as u128;
     }
 }

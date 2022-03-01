@@ -159,6 +159,39 @@ fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcc
     (dtoken, controller, utoken, user)
 }
 
+fn withdraw2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+    let (dtoken, controller, utoken, user) = base_fixture();
+
+    call!(
+        user,
+        dtoken.mint(&user.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        user,
+        controller.increase_supplies(user.account_id(), dtoken.account_id(), U128(20)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        user,
+        utoken.ft_transfer(
+            dtoken.account_id(), 
+            U128(10), 
+            Some(format!("Supply with token_amount 10"))),
+        1,
+        100000000000000
+    );
+
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
+
+    (dtoken, controller, utoken, user)
+}
+
 fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let (dtoken, controller, utoken, user) = base_fixture();
 
@@ -394,7 +427,37 @@ fn scenario_withdraw_less_same(){
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Balance should be 0");
+}
 
+#[test]
+fn scenario_withdraw(){
+    let (dtoken, controller, _utoken, user) = withdraw_fixture();
+
+    // 1. Increase borrows
+
+    // Withdraw the same
+    call!(
+        user,
+        dtoken.withdraw(U128(20)),
+        deposit = 0
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Balance should be 0");
+}
+
+#[test]
+fn scenario_withdraw_error_transfer(){
+    let (dtoken, controller, _utoken, user) = withdraw2_fixture();
+
+    call!(
+        user,
+        dtoken.withdraw(U128(10)),
+        deposit = 0
+    ).assert_success();
+
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
 }
 
 #[test]
@@ -555,4 +618,45 @@ fn scenario_get_borrow_rate(){
         dtoken.get_borrow_rate(U128(20), U128(10), U128(0))
     ).unwrap_json();
     assert_eq!(borrow_rate, 13333, "Borrow rate: Supply 20, Borrow 10");
+
+    let borrow_rate: u128 = view!(
+        dtoken.get_borrow_rate(U128(20), U128(0), U128(0))
+    ).unwrap_json();
+    assert_eq!(borrow_rate, 10000, "Borrow rate: Supply 20, Borrow 0");
+}
+
+#[test]
+fn scenario_get_supply_rate(){
+    let (dtoken, controller, utoken, user) = base_fixture();
+
+    let supply_rate: u128 = view!(
+        dtoken.get_supply_rate(U128(20), U128(0), U128(0), U128(500))
+    ).unwrap_json();
+    assert_eq!(supply_rate, 10000, "Supply rate: Supply 20, Borrow 0, Factor 5%");
+
+    let supply_rate: u128 = view!(
+        dtoken.get_supply_rate(U128(20), U128(10), U128(0), U128(500))
+    ).unwrap_json();
+    assert_eq!(supply_rate, 4221, "Supply rate: Supply 20, Borrow 10, Factor 5%");
+
+    let supply_rate: u128 = view!(
+        dtoken.get_supply_rate(U128(20), U128(30), U128(0), U128(500))
+    ).unwrap_json();
+    assert_eq!(supply_rate, 9120, "Supply rate: Supply 20, Borrow 30, Factor 5%");
+
+    let supply_rate: u128 = view!(
+        dtoken.get_supply_rate(U128(20), U128(30), U128(0), U128(5000))
+    ).unwrap_json();
+    assert_eq!(supply_rate, 4800, "Supply rate: Supply 20, Borrow 30, Factor 50%");
+
+    let supply_rate: u128 = view!(
+        dtoken.get_supply_rate(U128(20), U128(100), U128(0), U128(500))
+    ).unwrap_json();
+    assert_eq!(supply_rate, 14512, "Supply rate: Supply 20, Borrow 100, Factor 5%");
+
+    let supply_rate: u128 = view!(
+        dtoken.get_supply_rate(U128(20), U128(40), U128(0), U128(500))
+    ).unwrap_json();
+    assert_eq!(supply_rate, 10553, "Supply rate: Supply 20, Borrow 40, Factor 5%");
+
 }

@@ -104,7 +104,7 @@ trait ControllerInterface {
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
-    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
+    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
     fn make_borrow_callback(&mut self, token_amount: WBalance);
     fn repay_balance_of_callback(&mut self, token_amount: WBalance);
@@ -113,8 +113,10 @@ trait InternalTokenInterface {
     fn controller_decrease_borrows_fail(&mut self);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
-    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance, token_return_amount: WBalance,);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance);
+
 }
 
 #[near_bindgen]
@@ -132,11 +134,11 @@ impl Contract {
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel{
-                kink: InterestRateModel::get_with_ratio_decimals(1),
-                base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1),
-                multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1),
-                jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1),
-                reserve_factor: InterestRateModel::get_with_ratio_decimals(2),
+                kink: InterestRateModel::get_with_ratio_decimals(1.0),
+                base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
+                multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
+                jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
+                reserve_factor: InterestRateModel::get_with_ratio_decimals(0.05),
             }
         }
     }
