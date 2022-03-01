@@ -25,10 +25,7 @@ impl FungibleTokenReceiver for Contract {
             Balance::from(amount) > 0,
             "Amount should be a positive number"
         );
-        assert!(
-            msg == "SUPPLY".to_string() || msg == "REPAY".to_string(),
-            "There is no such command"
-        );
+
         log!(format!("sender_id {}, msg {}", sender_id, msg));
 
         let msg: Value =
