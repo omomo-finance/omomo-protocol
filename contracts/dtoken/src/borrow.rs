@@ -45,10 +45,7 @@ impl Contract {
         &mut self,
         token_amount: WBalance,
     ) {
-        if is_promise_success(){
-            self.increase_borrows(env::signer_account_id(), token_amount);
-        } 
-        else {
+        if !is_promise_success(){
             log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
             controller::decrease_borrows(
                 env::signer_account_id(),
@@ -63,6 +60,9 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(10),
             ));
+        } 
+        else {
+            self.increase_borrows(env::signer_account_id(), token_amount);
         }
     }
 

@@ -14,12 +14,12 @@ impl Contract {
         let jump_multiplier_per_block = self.model.get_jump_multiplier_per_block();
 
         if util <= kink{
-            return util*multiplier_per_block/RATIO_DECIMALS + base_rate_per_block;
+            return util * multiplier_per_block / RATIO_DECIMALS + base_rate_per_block;
         }
         else{
-            let normal_rate = kink * multiplier_per_block /RATIO_DECIMALS + base_rate_per_block;
+            let normal_rate = kink * multiplier_per_block / RATIO_DECIMALS + base_rate_per_block;
             let excess_util = util - kink;
-            return excess_util * jump_multiplier_per_block/ RATIO_DECIMALS + normal_rate;
+            return excess_util * jump_multiplier_per_block / RATIO_DECIMALS + normal_rate;
         }
     }
 

@@ -131,12 +131,7 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
-            model: InterestRateModel{
-                kink: InterestRateModel::get_with_ratio_decimals(1),
-                base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1),
-                multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1),
-                jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1),
-            }
+            model: InterestRateModel::default()
         }
     }
 }
