@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, BlockHeight, log, near_bindgen};
-use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::collections::{UnorderedMap};
 use near_sdk::env::block_height;
 
 const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
@@ -8,15 +8,13 @@ const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserFlowProtection {
-    account_action_index: UnorderedMap<AccountId, BlockHeight>,
-    blocked_accounts: Vector<AccountId>,
+    blocked_accounts: UnorderedMap<AccountId, BlockHeight>,
 }
 
 impl Default for UserFlowProtection {
     fn default() -> Self {
         Self {
-            account_action_index: UnorderedMap::new(b"s".to_vec()),
-            blocked_accounts: Vector::new(b"s".to_vec()),
+            blocked_accounts: UnorderedMap::new(b"s".to_vec()),
         }
     }
 }
@@ -24,46 +22,30 @@ impl Default for UserFlowProtection {
 #[near_bindgen]
 impl UserFlowProtection {
     pub fn block_account(&mut self, account_id: AccountId) {
-        log!("Block operation for account: {}", account_id);
-        self.blocked_accounts.push(&account_id);
+        let block_height = block_height();
+        log!("Block account: {} at block index: {}", account_id, block_height);
+        self.blocked_accounts.insert(&account_id, &block_height);
     }
 
     pub fn unblock_account(&mut self, account_id: AccountId) {
         log!("Unblock operation for account: {}", account_id);
-        match self.blocked_accounts.iter().position(|value| value == account_id) {
-            Some(index) => {
-                self.blocked_accounts.swap_remove(index as u64);
-                log!("Account unblocked successful!")
-            }
-            None => log!("Account not found!")
+        self.blocked_accounts.remove(&account_id);
+    }
+
+    pub fn get_last_block_index(&self, account_id: AccountId) -> BlockHeight {
+        match self.blocked_accounts.get(&account_id) {
+            Some(index) => index,
+            None => 0
         }
     }
 
-    pub fn set_account_action_index(&mut self, account_id: AccountId) {
-        let block_height = block_height();
-        log!("Set last perform account: {} block_height: {}", account_id, block_height);
-        self.block_account(account_id.clone());
-        self.account_action_index.insert(&account_id, &block_height);
-    }
-
-    pub fn get_last_user_perform(&self, account_id: AccountId) -> Option<BlockHeight> {
-        log!("Get last perform account: {}", account_id);
-        self.account_action_index.get(&account_id)
-    }
-
     pub fn is_user_can_perform_operation(&mut self, account_id: AccountId) -> bool {
-        log!("User can perform: {}", account_id);
+        log!("Account: {}  can do action", account_id);
         let mut access: bool = false;
-        let last_perform_block_height = self.get_last_user_perform(account_id.clone());
         let current_block_height = block_height();
-        if current_block_height - last_perform_block_height.unwrap() >= BLOCKS_TO_NEXT_OPERATION {
-            match self.blocked_accounts.iter().position(|account| account == account_id) {
-                Some(index) => {
-                    self.blocked_accounts.swap_remove(index as u64);
-                    log!("Account: {} unblocked successful!", account_id)
-                }
-                None => log!("Account: {} not blocked!", account_id)
-            }
+        let blocked_index = self.get_last_block_index(account_id.clone());
+        if current_block_height - blocked_index >= BLOCKS_TO_NEXT_OPERATION {
+            self.unblock_account(account_id);
             access = true;
         }
         access
@@ -89,24 +71,24 @@ mod tests {
     }
 
     #[test]
-    fn set_last_user_perform() {
+    fn block_account() {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = UserFlowProtection::default();
-        contract.set_account_action_index(AccountId::try_from("alice_near".to_string()).unwrap());
+        contract.block_account(AccountId::try_from("alice_near".to_string()).unwrap());
         assert_eq!(
             101,
-            contract.get_last_user_perform(AccountId::try_from("alice_near".to_string()).unwrap()).unwrap()
+            contract.get_last_block_index(AccountId::try_from("alice_near".to_string()).unwrap())
         );
     }
 
     #[test]
-    fn get_last_user_perform() {
+    fn unblock_account() {
         let context = get_context(false);
         testing_env!(context);
         let contract = UserFlowProtection::default();
         let account = AccountId::try_from("alice_near".to_string()).unwrap();
-        assert_eq!(None, contract.get_last_user_perform(account));
+        assert_eq!(0, contract.get_last_block_index(account));
     }
 
     #[test]
@@ -115,7 +97,7 @@ mod tests {
         testing_env!(context);
         let mut contract = UserFlowProtection::default();
         let account = AccountId::try_from("alice_near".to_string()).unwrap();
-        contract.set_account_action_index(AccountId::try_from("alice_near".to_string()).unwrap());
+        contract.block_account(AccountId::try_from("alice_near".to_string()).unwrap());
         assert_eq!(false, contract.is_user_can_perform_operation(account));
     }
 }
