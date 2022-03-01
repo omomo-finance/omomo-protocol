@@ -22,7 +22,7 @@ impl Contract {
             self.is_repay_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                token_amount.clone(),
+                token_amount,
             ),
             true,
             "repay operation is not allowed for account {} on market {}, repay amount {}",
@@ -31,7 +31,7 @@ impl Contract {
             Balance::from(token_amount)
         );
 
-        return self.decrease_borrows(account_id, token_address, token_amount);
+        self.decrease_borrows(account_id, token_address, token_amount)
     }
 
 }

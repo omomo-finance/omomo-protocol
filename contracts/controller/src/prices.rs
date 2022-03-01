@@ -9,16 +9,16 @@ impl Contract {
                 result.insert(&price.asset_id, &price.value);
             }
         }
-        return result;
+        result
     }
 
     pub fn get_price(&self, asset_id: AccountId) -> Option<Price> {
-        return self.prices.get(&asset_id);
+        self.prices.get(&asset_id)
     }
 
     pub fn upsert_price(&mut self, price: &Price) {
         // Update & insert operation
-        self.prices.insert(&price.asset_id, &price);
+        self.prices.insert(&price.asset_id, price);
     }
 }
 
@@ -38,7 +38,7 @@ mod tests {
 
         let token_address: AccountId = "near".parse().unwrap();
 
-        return (eth_contract, token_address, user_account);
+        (eth_contract, token_address, user_account)
     }
 
     use super::*;
@@ -57,7 +57,7 @@ mod tests {
         near_contract.upsert_price(&price);
 
         let gotten_price = near_contract.get_price(token_address).unwrap();
-        assert_matches!(&gotten_price, price, "Get price format check has been failed");
+        assert_matches!(&gotten_price, _price, "Get price format check has been failed");
         assert_eq!(&gotten_price.value, &price.value, "Get price values check has been failed");
         assert_eq!(&gotten_price.volatility, &price.volatility,  "Get price volatility check has been failed");
         assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");

@@ -21,7 +21,7 @@ impl Contract {
 impl Contract {
 
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> Promise {
-        return underlying_token::ft_balance_of(
+        underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
@@ -29,10 +29,10 @@ impl Contract {
         )
         .then(ext_self::withdraw_balance_of_callback(
             Balance::from(dtoken_amount),
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(140),
-        ));
+        ))
     }
 
     pub fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> Promise {
@@ -53,9 +53,9 @@ impl Contract {
         };
 
         let exchange_rate: Balance = self.get_exchange_rate(WBalance::from(balance_of));
-        let token_amount: Balance = Balance::from(dtoken_amount) / exchange_rate;
+        let token_amount: Balance = dtoken_amount / exchange_rate;
 
-        return controller::withdraw_supplies(
+        controller::withdraw_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount.into(),
@@ -67,10 +67,10 @@ impl Contract {
             env::signer_account_id(),
             token_amount.into(),
             dtoken_amount.into(),
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(70),
-        ));
+        ))
     }
 
     pub fn withdraw_supplies_callback(
@@ -93,9 +93,9 @@ impl Contract {
             self.terra_gas(40),
         )
         .then(ext_self::withdraw_ft_transfer_call_callback(
-            dtoken_amount.into(),
-            token_amount.into(),
-            env::current_account_id().clone(),
+            dtoken_amount,
+            token_amount,
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(10),
         ))
@@ -117,6 +117,6 @@ impl Contract {
                 dtoken_amount,
             );
         }
-        return promise_success;
+        promise_success
     }
 }

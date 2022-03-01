@@ -117,7 +117,7 @@ impl Contract {
     #[init]
     pub fn new(config: Config) -> Self {
         Self {
-            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
+            initial_exchange_rate: u128::from(config.initial_exchange_rate),
             total_reserves: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),

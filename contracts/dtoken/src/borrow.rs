@@ -3,7 +3,7 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
-        return controller::make_borrow(
+        controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
@@ -13,10 +13,10 @@ impl Contract {
         )
         .then(ext_self::make_borrow_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(150),
-        ));
+        ))
     }
 
     pub fn make_borrow_callback(
@@ -35,7 +35,7 @@ impl Contract {
         )
         .then(ext_self::borrow_ft_transfer_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(80),
         ))
@@ -59,7 +59,7 @@ impl Contract {
                 self.terra_gas(10),
             )
             .then(ext_self::controller_decrease_borrows_callback(
-                env::current_account_id().clone(),
+                env::current_account_id(),
                 NO_DEPOSIT,
                 self.terra_gas(10),
             ));
@@ -87,7 +87,7 @@ impl Contract {
         assert_eq!(new_borrows.1, false, "Overflow occurs while decreasing total supply");
         self.total_borrows = new_borrows.0;
         
-        return self.set_borrows(account.clone(), U128(decreased_borrows));
+        self.set_borrows(account, U128(decreased_borrows))
     }
 
     pub fn increase_borrows(
@@ -101,21 +101,21 @@ impl Contract {
         let new_borrows = self.total_borrows.overflowing_add(Balance::from(token_amount));
         assert_eq!(new_borrows.1, false, "Overflow occurs while incresing total supply");
         self.total_borrows = new_borrows.0;
-        return self.set_borrows(account.clone(), U128(increased_borrows));
+        self.set_borrows(account, U128(increased_borrows))
     }
 
     #[private]
     pub fn set_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         self.borrows
             .insert(&account, &Balance::from(token_amount));
-        return Balance::from(token_amount);
+        Balance::from(token_amount)
     }
 
     pub fn get_borrows_by_account(&self, account: AccountId) -> Balance{
         if self.borrows.get(&account).is_none(){
             return 0;
         }
-        return self.borrows.get(&account).unwrap();
+        self.borrows.get(&account).unwrap()
     }
 
 }

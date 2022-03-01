@@ -46,7 +46,7 @@ fn initialize_controller(root: &UserAccount) -> (UserAccount, ContractAccount<co
         croot,
         controller.new(
             cConfig{
-                owner_id: croot.account_id().clone(), 
+                owner_id: croot.account_id(), 
                 oracle_account_id: "oracle".parse().unwrap()
             }),
         deposit = 0
@@ -67,7 +67,7 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
             dConfig{
                 initial_exchange_rate: U128(1), 
                 underlying_token_id: utoken_account ,
-                owner_id: droot.account_id().clone(), 
+                owner_id: droot.account_id(), 
                 controller_account_id: controller_account,
             }),
         deposit = 0
@@ -125,7 +125,7 @@ fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcc
         utoken.ft_transfer(
             dtoken.account_id(), 
             U128(20), 
-            Some(format!("Supply with token_amount 20"))),
+            Some("Supply with token_amount 20".to_string())),
         1,
         100000000000000
     );
