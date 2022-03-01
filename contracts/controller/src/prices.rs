@@ -57,7 +57,7 @@ mod tests {
         near_contract.upsert_price(&price);
 
         let gotten_price = near_contract.get_price(token_address).unwrap();
-        assert_matches!(&gotten_price, price, "Get price format check has been failed");
+        assert_matches!(&gotten_price, _price, "Get price format check has been failed");
         assert_eq!(&gotten_price.value, &price.value, "Get price values check has been failed");
         assert_eq!(&gotten_price.volatility, &price.volatility,  "Get price volatility check has been failed");
         assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");
