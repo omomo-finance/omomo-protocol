@@ -36,9 +36,9 @@ impl Contract {
         };
 
         let exchange_rate: f32 = self.get_exchange_rate(WBalance::from(balance_of)) as f32 / RATIO_DECIMALS as f32;
-        let supply_rate: Balance = self.get_supply_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.reserve_factor));
+        let supply_rate: Balance = self.get_supply_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        
         let token_amount: Balance = (Balance::from(dtoken_amount) as f32 / exchange_rate) as u128;
-        let token_return_amount: Balance = token_amount * supply_rate / RATIO_DECIMALS;
+        let token_return_amount: Balance = token_amount + Balance::from(dtoken_amount) * supply_rate / RATIO_DECIMALS;
 
         return controller::withdraw_supplies(
             env::signer_account_id(),

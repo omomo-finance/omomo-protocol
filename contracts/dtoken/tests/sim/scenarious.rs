@@ -77,9 +77,8 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
 }
 
 fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
-     // Supply
      let root = init_simulator(None);
-     //  Initialize
+     // Initialize
      let (uroot, utoken, _u_user) = initialize_utoken(&root);
      let (_croot, controller, _c_user) = initialize_controller(&root);
      let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
@@ -101,10 +100,9 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
      (dtoken, controller, utoken, d_user)
 }
 
-fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
-    // Supply
+fn base_more_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
     let root = init_simulator(None);
-    //  Initialize
+    // Initialize
     let (uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
@@ -159,7 +157,7 @@ fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcc
     (dtoken, controller, utoken, user)
 }
 
-fn withdraw2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+fn withdraw_less_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
     let (dtoken, controller, utoken, user) = base_fixture();
 
     call!(
@@ -222,8 +220,8 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     (dtoken, controller, utoken, user)
 }
 
-fn repay2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
-    let (dtoken, controller, utoken, user) = base2_fixture();
+fn repay_more_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
+    let (dtoken, controller, utoken, user) = base_more_dtoken_fixture();
 
     call!(
         user,
@@ -385,7 +383,7 @@ fn scenario_withdraw_with_no_supply(){
         deposit = 0
     );
 
-    assert_failure(result, "Withdrawal operation is not allowed");
+    assert_failure(result, "Attempt to divide by zero");
 }
 
 #[test]
@@ -406,7 +404,7 @@ fn scenario_withdraw_more(){
 
 #[test]
 fn scenario_withdraw_less_same(){
-    let (dtoken, controller, _utoken, user) = withdraw_fixture();
+    let (dtoken, controller, utoken, user) = withdraw_fixture();
 
     // Withdraw less
     call!(
@@ -418,7 +416,7 @@ fn scenario_withdraw_less_same(){
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 10, "Balance should be 10");
 
-    // Withdraw the same
+    // Withdraw same
     call!(
         user,
         dtoken.withdraw(U128(10)),
@@ -427,28 +425,50 @@ fn scenario_withdraw_less_same(){
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Balance should be 0");
+
 }
 
 #[test]
 fn scenario_withdraw(){
-    let (dtoken, controller, _utoken, user) = withdraw_fixture();
+    let (dtoken, controller, utoken, user) = base_fixture();
 
-    // 1. Increase borrows
-
-    // Withdraw the same
     call!(
         user,
-        dtoken.withdraw(U128(20)),
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            "SUPPLY".to_string()
+        ),
+        deposit = 1
+    ).assert_success();
+
+    call!(
+        user,
+        dtoken.borrow(
+            U128(5)
+        ),
+        deposit = 0
+    ).assert_success();
+
+    call!(
+        user,
+        dtoken.withdraw(U128(10)),
         deposit = 0
     ).assert_success();
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 0, "Balance should be 0");
+    assert_eq!(user_balance, 10, "Balance should be 10");
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 3.to_string(), "After withdraw balance should be 3");
 }
 
 #[test]
 fn scenario_withdraw_error_transfer(){
-    let (dtoken, controller, _utoken, user) = withdraw2_fixture();
+    let (dtoken, controller, _utoken, user) = withdraw_less_dtoken_fixture();
 
     call!(
         user,
@@ -514,7 +534,7 @@ fn scenario_repay(){
 
 #[test]
 fn scenario_repay_more_than_borrow(){
-    let (dtoken, controller, utoken, user) = repay2_fixture();
+    let (dtoken, controller, utoken, user) = repay_more_dtoken_fixture();
      
     call!(
         user,
@@ -627,12 +647,12 @@ fn scenario_get_borrow_rate(){
 
 #[test]
 fn scenario_get_supply_rate(){
-    let (dtoken, controller, utoken, user) = base_fixture();
+    let (dtoken, controller, utoken, _user) = base_fixture();
 
     let supply_rate: u128 = view!(
         dtoken.get_supply_rate(U128(20), U128(0), U128(0), U128(500))
     ).unwrap_json();
-    assert_eq!(supply_rate, 10000, "Supply rate: Supply 20, Borrow 0, Factor 5%");
+    assert_eq!(supply_rate, 0, "Supply rate: Supply 20, Borrow 0, Factor 5%");
 
     let supply_rate: u128 = view!(
         dtoken.get_supply_rate(U128(20), U128(10), U128(0), U128(500))

@@ -4,9 +4,7 @@ use crate::*;
 impl Contract {
     pub fn get_supply_rate(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance, reserve_factor: WBalance) -> Balance {
         assert!(Balance::from(reserve_factor) < 1 * RATIO_DECIMALS, "Reserve factor should be less 1 * 10^4" );
-        if Balance::from(total_borrows) == 0 {
-            return 1 * RATIO_DECIMALS
-        }
+        
         let rest_of_supply_factor = RATIO_DECIMALS - Balance::from(reserve_factor);
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
@@ -33,6 +31,7 @@ impl Contract {
     }
 
     fn get_util(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance)-> Balance{
+        assert!(Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves) != 0, "Attempt to divide by zero");
         return Balance::from(total_borrows) * RATIO_DECIMALS / (Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves));
     }
 }

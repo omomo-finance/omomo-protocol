@@ -125,7 +125,7 @@ impl Contract {
     #[init]
     pub fn new(config: Config) -> Self {
         Self {
-            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
+            initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),
@@ -133,13 +133,7 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
-            model: InterestRateModel{
-                kink: InterestRateModel::get_with_ratio_decimals(1.0),
-                base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-                multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-                jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-                reserve_factor: InterestRateModel::get_with_ratio_decimals(0.05),
-            }
+            model: InterestRateModel::default()
         }
     }
 }
