@@ -1,6 +1,5 @@
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
@@ -16,15 +15,14 @@ pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
 
-
 #[allow(unused_imports)]
 mod config;
 mod oraclehook;
 mod prices;
 pub mod borrows_supplies;
 pub mod repay;
-mod test_utils;
 mod healthfactor;
+mod admin;
 
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -55,6 +53,12 @@ pub struct Contract {
 
     /// Contract configuration object
     pub config: LazyOption<Config>,
+
+    /// Contract admin account (controller itself by default)
+    pub admin: AccountId,
+
+    /// Configuration for pausing/proceeding controller processes (false by default)
+    pub is_action_paused: ActionStatus,
 }
 
 impl Default for Contract {
@@ -73,6 +77,17 @@ pub struct PriceJsonList {
     pub price_list: Vec<Price>,
 }
 
+
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ActionStatus {
+    pub withdraw: bool,
+    pub repay: bool,
+    pub supply: bool,
+    pub liquidate: bool,
+    pub borrow: bool,
+}
+
 pub trait OraclePriceHandlerHook {
     fn oracle_on_data(&mut self, price_data: PriceJsonList);
 }
@@ -88,6 +103,14 @@ impl Contract {
             account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
+            admin: config.owner_id,
+            is_action_paused: ActionStatus {
+                withdraw: false,
+                repay: false,
+                supply: false,
+                liquidate: false,
+                borrow: false,
+            },
         }
     }
 }

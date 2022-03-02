@@ -15,14 +15,14 @@ impl Contract {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
-        let (accounts, key_prefix) = self.get_params_by_action(action);
+        let (accounts, key_prefix) = self.get_params_by_action_mut(action);
         let account_entry = accounts.get(&account);
 
         if let None = account_entry {
-                let mut account_map: UnorderedMap<AccountId, u128> =
-                    UnorderedMap::new(key_prefix);
-                account_map.insert(&token_address, &token_amount);
-                accounts.insert(&account, &account_map);
+            let mut account_map: UnorderedMap<AccountId, u128> =
+                UnorderedMap::new(key_prefix);
+            account_map.insert(&token_address, &token_amount);
+            accounts.insert(&account, &account_map);
         } else {
             account_entry
                 .unwrap()
@@ -47,7 +47,7 @@ impl Contract {
         accounts_map.get(&token_address).unwrap_or(balance)
     }
 
-    fn get_params_by_action(& self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action(&self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
         // return parameters respective to ActionType
         match action {
             ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
@@ -131,7 +131,12 @@ impl Contract {
     ) -> bool {
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
 
-        return existing_supplies >= Balance::from(token_amount);
+        assert!(
+            !self.is_action_paused.withdraw,
+            "Withdraw is paused, cant perform action"
+        );
+
+        existing_supplies >= Balance::from(token_amount)
     }
 
     pub fn withdraw_supplies(
@@ -163,6 +168,12 @@ impl Contract {
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         // TODO add check if allowed  (USD-estimated ACCOUNT SUPPLIES > USD-estimated ACCOUNT BORROWED  * ratio ? (or just 0.8) )
 
+        assert!(
+            !self.is_action_paused.borrow,
+            "Withdraw is paused, cant perform action"
+        );
+
+
         // FIXME mock-checking for now
         return true;
     }
@@ -185,33 +196,37 @@ impl Contract {
             token_address,
             Balance::from(token_amount)
         );
-       self.increase_borrows(account_id, token_address, token_amount);
+        self.increase_borrows(account_id, token_address, token_amount);
     }
 }
 
 
 #[cfg(test)]
 mod tests {
+    use near_sdk::AccountId;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
-    use crate::{Config, Contract};
 
+    use crate::{Config, Contract};
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-    
-        let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-    
+
+        let near_contract = Contract::new(Config {
+            owner_id: owner_account,
+            oracle_account_id: oracle_account,
+        });
+
         let token_address: AccountId = "near".parse().unwrap();
-    
-        return (eth_contract, token_address, user_account);
+
+        return (near_contract, token_address, user_account);
     }
+
 
     #[test]
     fn test_for_supply_and_borrow_getters() {
-        let (near_contract, token_address, user_account) = init_test_env();
+        let (mut near_contract, token_address, user_account) = init_test_env();
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 0);
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 0);
     }
