@@ -77,7 +77,6 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
 }
 
 fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
-     // Supply
      let root = init_simulator(None);
      //  Initialize
      let (uroot, utoken, _u_user) = initialize_utoken(&root);
@@ -102,7 +101,6 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
 }
 
 fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
-    // Supply
     let root = init_simulator(None);
     //  Initialize
     let (uroot, utoken, _u_user) = initialize_utoken(&root);
@@ -542,17 +540,3 @@ fn scenatio_borrow_more_than_on_dtoken(){
     assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance on utoken should be 20");
 }
 
-#[test]
-fn scenario_get_borrow_rate(){
-    let (dtoken, controller, utoken, user) = base_fixture();
-
-    let borrow_rate: u128 = view!(
-        dtoken.get_borrow_rate(U128(0), U128(20), U128(0))
-    ).unwrap_json();
-    assert_eq!(borrow_rate, 20000, "Borrow rate: Supply 0, Borrow 10");
-
-    let borrow_rate: u128 = view!(
-        dtoken.get_borrow_rate(U128(20), U128(10), U128(0))
-    ).unwrap_json();
-    assert_eq!(borrow_rate, 13333, "Borrow rate: Supply 20, Borrow 10");
-}
