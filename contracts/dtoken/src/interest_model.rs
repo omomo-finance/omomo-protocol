@@ -30,7 +30,7 @@ mod tests {
     use near_sdk::AccountId;
     use crate::{Config, Contract};
 
-    pub fn init_test_env() -> (Contract, AccountId, AccountId, AccountId) {
+    pub fn init_test_env() -> Contract {
         let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
     
         let contract = Contract::new(Config { 
@@ -40,18 +40,18 @@ mod tests {
             controller_account_id: controller_account.clone(), 
         });
     
-        return (contract, underlying_token_account, controller_account, user_account);
+        return contract;
     }
 
     #[test]
     fn test_get_util_rate(){
-        let (contract, underlying_account, controller_account, user_account) = init_test_env();
+        let contract = init_test_env();
         assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), 9000);
     }
 
     #[test]
     fn test_get_borrow_rate(){
-        let (mut contract, underlying_account, controller_account, user_account) = init_test_env();
+        let mut contract = init_test_env();
         contract.model.set_base_rate_per_block(0);
         contract.model.set_multiplier_per_block(500);
         contract.model.set_kink(8000);
