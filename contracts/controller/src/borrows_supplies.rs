@@ -147,7 +147,7 @@ impl Contract {
                 token_amount.clone(),
             ),
             true,
-            "Withdrawal operation is not allowed for account {} token_address {} tokens_amount` {}",
+            "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
             account_id,
             token_address,
             Balance::from(token_amount)
@@ -180,7 +180,7 @@ impl Contract {
                 token_amount.clone(),
             ),
             true,
-            "Borrow operation is not allowed for account {} token_address {} tokens_amount {}",
+            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
             account_id,
             token_address,
             Balance::from(token_amount)
