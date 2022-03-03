@@ -383,7 +383,7 @@ fn scenario_withdraw_with_no_supply(){
         deposit = 0
     );
 
-    assert_failure(result, "Attempt to divide by zero");
+    assert_failure(result, "Cannot calculate utilization rate as contract has no assets");
 }
 
 #[test]
@@ -623,60 +623,4 @@ fn scenatio_borrow_more_than_on_dtoken(){
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
     assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance on utoken should be 20");
-}
-
-#[test]
-fn scenario_get_borrow_rate(){
-    let (dtoken, controller, utoken, user) = base_fixture();
-
-    let borrow_rate: u128 = view!(
-        dtoken.get_borrow_rate(U128(0), U128(20), U128(0))
-    ).unwrap_json();
-    assert_eq!(borrow_rate, 20000, "Borrow rate: Supply 0, Borrow 10");
-
-    let borrow_rate: u128 = view!(
-        dtoken.get_borrow_rate(U128(20), U128(10), U128(0))
-    ).unwrap_json();
-    assert_eq!(borrow_rate, 13333, "Borrow rate: Supply 20, Borrow 10");
-
-    let borrow_rate: u128 = view!(
-        dtoken.get_borrow_rate(U128(20), U128(0), U128(0))
-    ).unwrap_json();
-    assert_eq!(borrow_rate, 10000, "Borrow rate: Supply 20, Borrow 0");
-}
-
-#[test]
-fn scenario_get_supply_rate(){
-    let (dtoken, controller, utoken, _user) = base_fixture();
-
-    let supply_rate: u128 = view!(
-        dtoken.get_supply_rate(U128(20), U128(0), U128(0), U128(500))
-    ).unwrap_json();
-    assert_eq!(supply_rate, 0, "Supply rate: Supply 20, Borrow 0, Factor 5%");
-
-    let supply_rate: u128 = view!(
-        dtoken.get_supply_rate(U128(20), U128(10), U128(0), U128(500))
-    ).unwrap_json();
-    assert_eq!(supply_rate, 4221, "Supply rate: Supply 20, Borrow 10, Factor 5%");
-
-    let supply_rate: u128 = view!(
-        dtoken.get_supply_rate(U128(20), U128(30), U128(0), U128(500))
-    ).unwrap_json();
-    assert_eq!(supply_rate, 9120, "Supply rate: Supply 20, Borrow 30, Factor 5%");
-
-    let supply_rate: u128 = view!(
-        dtoken.get_supply_rate(U128(20), U128(30), U128(0), U128(5000))
-    ).unwrap_json();
-    assert_eq!(supply_rate, 4800, "Supply rate: Supply 20, Borrow 30, Factor 50%");
-
-    let supply_rate: u128 = view!(
-        dtoken.get_supply_rate(U128(20), U128(100), U128(0), U128(500))
-    ).unwrap_json();
-    assert_eq!(supply_rate, 14512, "Supply rate: Supply 20, Borrow 100, Factor 5%");
-
-    let supply_rate: u128 = view!(
-        dtoken.get_supply_rate(U128(20), U128(40), U128(0), U128(500))
-    ).unwrap_json();
-    assert_eq!(supply_rate, 10553, "Supply rate: Supply 20, Borrow 40, Factor 5%");
-
 }

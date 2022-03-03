@@ -31,6 +31,31 @@ impl InterestRateModel{
     pub fn get_reserve_factor(&self) -> Balance{
         return self.reserve_factor;
     }
+
+    #[private]
+    pub fn set_kink(&mut self, value: Ratio){
+        self.kink = value;
+    }
+
+    #[private]
+    pub fn set_multiplier_per_block(&mut self, value: Ratio){
+        self.multiplier_per_block = value;
+    }
+
+    #[private]
+    pub fn set_base_rate_per_block(&mut self, value: Ratio){
+        self.base_rate_per_block = value;
+    }
+
+    #[private]
+    pub fn set_jump_multiplier_per_block(&mut self, value: Ratio){
+        self.jump_multiplier_per_block = value;
+    }
+
+    #[private]
+    pub fn set_reserve_factor(&mut self, value: Ratio){
+        self.reserve_factor = value;
+    }
 }
 
 #[near_bindgen]
