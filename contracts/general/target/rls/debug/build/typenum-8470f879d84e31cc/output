@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\general\target\rls\debug\build\typenum-8470f879d84e31cc\out\consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=c:\Users\комфи\Documents\Stest\nearlend-protocol\contracts\general\target\rls\debug\build\typenum-8470f879d84e31cc\out\op.rs
