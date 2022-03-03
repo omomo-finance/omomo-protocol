@@ -26,8 +26,6 @@ pub mod repay;
 mod test_utils;
 mod healthfactor;
 
-
-
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
     Markets,
