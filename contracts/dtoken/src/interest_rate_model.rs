@@ -3,32 +3,32 @@ use crate::*;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct InterestRateModel {
-    kink: Balance,
-    multiplier_per_block: Balance,
-    base_rate_per_block: Balance,
-    jump_multiplier_per_block: Balance,
-    reserve_factor: Balance
+    kink: Ratio,
+    multiplier_per_block: Ratio,
+    base_rate_per_block: Ratio,
+    jump_multiplier_per_block: Ratio,
+    reserve_factor: Ratio
 }
 
 #[near_bindgen]
 impl InterestRateModel{
-    pub fn get_kink(&self) -> Balance{
+    pub fn get_kink(&self) -> Ratio{
         return self.kink;
     }
 
-    pub fn get_multiplier_per_block(&self) -> Balance{
+    pub fn get_multiplier_per_block(&self) -> Ratio{
         return self.multiplier_per_block;
     }
 
-    pub fn get_base_rate_per_block(&self) -> Balance{
+    pub fn get_base_rate_per_block(&self) -> Ratio{
         return self.base_rate_per_block;
     }
 
-    pub fn get_jump_multiplier_per_block(&self) -> Balance{
+    pub fn get_jump_multiplier_per_block(&self) -> Ratio{
         return self.jump_multiplier_per_block;
     }
 
-    pub fn get_reserve_factor(&self) -> Balance{
+    pub fn get_reserve_factor(&self) -> Ratio{
         return self.reserve_factor;
     }
 
@@ -60,8 +60,8 @@ impl InterestRateModel{
 
 #[near_bindgen]
 impl InterestRateModel{
-    pub fn get_with_ratio_decimals(value: f32) -> Balance{
-        return (value * RATIO_DECIMALS as f32) as Balance;
+    pub fn get_with_ratio_decimals(value: f32) -> Ratio{
+        return (value * RATIO_DECIMALS as f32) as Ratio;
     }
 }
 

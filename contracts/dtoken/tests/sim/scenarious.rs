@@ -1,4 +1,4 @@
-use near_sdk::{AccountId};
+use near_sdk::AccountId;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 use controller::{Config as cConfig};
@@ -78,6 +78,7 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
 
 fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
      let root = init_simulator(None);
+
      // Initialize
      let (uroot, utoken, _u_user) = initialize_utoken(&root);
      let (_croot, controller, _c_user) = initialize_controller(&root);
@@ -313,12 +314,24 @@ fn scenario_supply_zero_tokens(){
 #[test]
 fn scenario_supply_error_contract(){
     let (dtoken, _controller, _utoken, user) = base_fixture();
+
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
     let result = call!(
         user,
         dtoken.ft_on_transfer(
             user.account_id(),
             U128(20),
-            "SUPPLY".to_string()
+            String::from(json)
         ),
         deposit = 0
     );
@@ -346,13 +359,25 @@ fn scenario_supply_not_enough_balance(){
 fn scenario_supply() {
     let (dtoken, controller, utoken, user) = base_fixture();
 
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
@@ -432,13 +457,25 @@ fn scenario_withdraw_less_same(){
 fn scenario_withdraw(){
     let (dtoken, controller, utoken, user) = base_fixture();
 
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
@@ -504,14 +541,26 @@ fn scenario_repay_no_borrow(){
 #[test]
 fn scenario_repay(){
     let (dtoken, controller, utoken, user) = repay_fixture();
-     
+
+    let json = r#"
+       {
+          "action":"REPAY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
      call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("REPAY".to_string()),
-            "REPAY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
@@ -535,14 +584,26 @@ fn scenario_repay(){
 #[test]
 fn scenario_repay_more_than_borrow(){
     let (dtoken, controller, utoken, user) = repay_more_dtoken_fixture();
-     
-    call!(
+
+    let json = r#"
+       {
+          "action":"REPAY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
+     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("REPAY".to_string()),
-            "REPAY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
