@@ -1,4 +1,4 @@
-use near_sdk::{AccountId};
+use near_sdk::AccountId;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 use controller::{Config as cConfig};
@@ -82,7 +82,7 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
      let (uroot, utoken, _u_user) = initialize_utoken(&root);
      let (_croot, controller, _c_user) = initialize_controller(&root);
      let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
- 
+
      call!(
          uroot,
          utoken.mint(dtoken.account_id(), U128(0)),
@@ -280,12 +280,24 @@ fn scenario_supply_zero_tokens(){
 #[test]
 fn scenario_supply_error_contract(){
     let (dtoken, _controller, _utoken, user) = base_fixture();
+
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
     let result = call!(
         user,
         dtoken.ft_on_transfer(
             user.account_id(),
             U128(20),
-            "SUPPLY".to_string()
+            String::from(json)
         ),
         deposit = 0
     );
@@ -313,13 +325,25 @@ fn scenario_supply_not_enough_balance(){
 fn scenario_supply() {
     let (dtoken, controller, utoken, user) = base_fixture();
 
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
@@ -419,14 +443,26 @@ fn scenario_repay_no_borrow(){
 #[test]
 fn scenario_repay(){
     let (dtoken, controller, utoken, user) = repay_fixture();
-     
+
+    let json = r#"
+       {
+          "action":"REPAY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
      call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(20),
+            U128(10),
             Some("REPAY".to_string()),
-            "REPAY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
@@ -434,7 +470,7 @@ fn scenario_repay(){
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 0.to_string(), "After repay of 20 tokens (borrow was 10, rate 2), balance should be 0");
+    assert_eq!(user_balance, 10.to_string(), "After repay of 10 tokens, balance should be 10");
     
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
@@ -449,15 +485,27 @@ fn scenario_repay(){
 
 #[test]
 fn scenario_repay_more_than_borrow(){
-    let (dtoken, controller, utoken, user) = repay2_fixture();
-     
-    call!(
+    let (dtoken, controller, utoken, user) = repay_fixture();
+
+    let json = r#"
+       {
+          "action":"REPAY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
+     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("REPAY".to_string()),
-            "REPAY".to_string()
+            String::from(json)
         ),
         deposit = 1
     ).assert_success();
