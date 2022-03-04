@@ -6,6 +6,7 @@ mod repay;
 mod supply;
 mod withdraw;
 mod interest_model;
+mod user_profile;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
