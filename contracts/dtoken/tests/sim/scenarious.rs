@@ -65,7 +65,7 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
         droot,
         dtoken.new(
             dConfig{
-                initial_exchange_rate: U128(1), 
+                initial_exchange_rate: U128(10000), 
                 underlying_token_id: utoken_account ,
                 owner_id: droot.account_id().clone(), 
                 controller_account_id: controller_account,
@@ -408,7 +408,7 @@ fn scenario_withdraw_with_no_supply(){
         deposit = 0
     );
 
-    assert_failure(result, "Cannot calculate utilization rate as contract has no assets");
+    assert_failure(result, "Cannot calculate utilization rate as denominator is equal 0");
 }
 
 #[test]

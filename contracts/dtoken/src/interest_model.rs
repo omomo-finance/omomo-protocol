@@ -14,7 +14,7 @@ impl Contract {
         util_rate * rate_to_pool / RATIO_DECIMALS
     }
 
-    pub fn get_borrow_rate(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves: WBalance) -> Ratio{
+    pub fn get_borrow_rate(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves: WBalance) -> Ratio {
 
         let util = self.get_util(underlying_balance, total_borrows, total_reserves);
         let kink = self.model.get_kink();
@@ -25,8 +25,12 @@ impl Contract {
         return min(util, kink) * multiplier_per_block / RATIO_DECIMALS + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block / RATIO_DECIMALS + base_rate_per_block        
     }
 
-    fn get_util(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance) -> Ratio{
-        assert!((Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves)) > 0, "Cannot calculate utilization rate as contract has no assets");
+    fn get_util(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance) -> Ratio {
+        let sum_balance_borrows = Balance::from(underlying_balance).overflowing_add(Balance::from(total_borrows));
+        assert_eq!(sum_balance_borrows.1, false, "Overflowing occurs while adding undelying balance and total borrows");
+        let denominator = sum_balance_borrows.0.overflowing_sub(Balance::from(total_reserves));
+        assert_eq!(denominator.1, false, "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
+        assert_ne!(denominator.0, 0, "Cannot calculate utilization rate as denominator is equal 0");
         return Balance::from(total_borrows) * RATIO_DECIMALS / (Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves));
     }
 }
@@ -42,7 +46,7 @@ mod tests {
         let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
     
         let contract = Contract::new(Config { 
-            initial_exchange_rate: U128(1), 
+            initial_exchange_rate: U128(10000), 
             underlying_token_id: underlying_token_account.clone() ,
             owner_id: user_account.clone(), 
             controller_account_id: controller_account.clone(), 
