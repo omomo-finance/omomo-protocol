@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, BlockHeight, log, near_bindgen};
-use near_sdk::collections::{UnorderedMap};
+use near_sdk::collections::{LookupMap};
 use near_sdk::env::block_height;
 
 const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
@@ -8,13 +8,13 @@ const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ActionMutex {
-    blocked_accounts: UnorderedMap<AccountId, BlockHeight>,
+    blocked_accounts: LookupMap<AccountId, BlockHeight>,
 }
 
 impl Default for ActionMutex {
     fn default() -> Self {
         Self {
-            blocked_accounts: UnorderedMap::new(b"s".to_vec()),
+            blocked_accounts: LookupMap::new(b"s".to_vec()),
         }
     }
 }
@@ -43,8 +43,9 @@ impl ActionMutex {
         let blocked_index = self.get_last_block_index(account_id.clone());
         if blocked_index > 0 || current_block_height - blocked_index <= BLOCKS_TO_NEXT_OPERATION {
             is_locked = false;
+        } else {
+            self.blocked_accounts.insert(&account_id, &current_block_height);
         }
-        self.blocked_accounts.insert(&account_id, &current_block_height);
         is_locked
     }
 
