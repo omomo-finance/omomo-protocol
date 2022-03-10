@@ -11,18 +11,18 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-        .then(ext_self::make_borrow_callback(
-            token_amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(150),
-        ));
+            .then(ext_self::make_borrow_callback(
+                token_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(150),
+            ));
     }
 
     pub fn make_borrow_callback(
         &mut self,
         token_amount: WBalance,
-    ) ->Promise {
+    ) -> Promise {
         assert_eq!(is_promise_success(), true, "Failed to increase borrow for {} with token amount {}", env::signer_account_id(), Balance::from(token_amount));
 
         underlying_token::ft_transfer(
@@ -33,22 +33,25 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(40),
         )
-        .then(ext_self::borrow_ft_transfer_callback(
-            token_amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(80),
-        ))
+            .then(ext_self::borrow_ft_transfer_callback(
+                token_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(80),
+            ))
     }
 
     pub fn borrow_ft_transfer_callback(
         &mut self,
         token_amount: WBalance,
     ) {
-        if is_promise_success(){
-            self.increase_borrows(env::signer_account_id(), token_amount);
-        } 
-        else {
+        if is_promise_success() {
+            let user_profile = UserProfileDtoken::default();
+            if !user_profile.is_exist(self.get_signer_address().clone()) ||
+                user_profile.get_profile(self.get_signer_address().clone()).borrow_amount == 0 {
+                self.increase_borrows(env::signer_account_id(), token_amount);
+            }
+        } else {
             log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
             controller::decrease_borrows(
                 env::signer_account_id(),
@@ -58,16 +61,16 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(10),
             )
-            .then(ext_self::controller_decrease_borrows_callback(
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            ));
+                .then(ext_self::controller_decrease_borrows_callback(
+                    env::current_account_id().clone(),
+                    NO_DEPOSIT,
+                    self.terra_gas(10),
+                ));
         }
     }
 
-    pub fn controller_decrease_borrows_callback(&mut self){
-        if !is_promise_success(){
+    pub fn controller_decrease_borrows_callback(&mut self) {
+        if !is_promise_success() {
             log!("Failed to decrease borrows for {}", env::signer_account_id());
             // TODO Account should be marked
         }
@@ -86,7 +89,7 @@ impl Contract {
         let new_borrows = self.total_borrows.overflowing_sub(Balance::from(token_amount));
         assert_eq!(new_borrows.1, false, "Overflow occurs while decreasing total supply");
         self.total_borrows = new_borrows.0;
-        
+
         return self.set_borrows(account.clone(), U128(decreased_borrows));
     }
 
@@ -111,11 +114,10 @@ impl Contract {
         return Balance::from(token_amount);
     }
 
-    pub fn get_borrows_by_account(&self, account: AccountId) -> Balance{
-        if self.borrows.get(&account).is_none(){
+    pub fn get_borrows_by_account(&self, account: AccountId) -> Balance {
+        if self.borrows.get(&account).is_none() {
             return 0;
         }
         return self.borrows.get(&account).unwrap();
     }
-
 }

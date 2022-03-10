@@ -16,6 +16,7 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
 pub use crate::interest_model::*;
+pub use crate::user_profile::*;
 
 
 #[allow(unused_imports)]
@@ -26,7 +27,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
+use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance,
+               BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
 
 pub type TokenAmount = u128;
 
@@ -34,7 +36,7 @@ pub type TokenAmount = u128;
 enum StorageKeys {
     Borrows,
     Config,
-    Actions
+    Actions,
 }
 
 #[near_bindgen]
@@ -62,7 +64,7 @@ pub struct Contract {
     config: LazyOption<Config>,
 
     /// BlockHeight of last action user produced
-    actions: LookupMap<AccountId, BlockHeight>
+    actions: LookupMap<AccountId, BlockHeight>,
 }
 
 impl Default for Contract {
@@ -91,9 +93,8 @@ trait ControllerInterface {
     fn decrease_supplies(&mut self, account_id: AccountId, amount: WBalance);
     fn repay_borrows(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
     fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance) -> Promise;
-    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance); 
-    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance); 
-
+    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
+    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance);
 }
 
 #[ext_contract(ext_self)]

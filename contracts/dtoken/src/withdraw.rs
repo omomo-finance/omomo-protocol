@@ -1,3 +1,4 @@
+use near_sdk::PromiseOrValue::Promise;
 use crate::*;
 
 impl Contract {
@@ -19,20 +20,25 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> Promise {
-        return underlying_token::ft_balance_of(
+        let user_profile = UserProfileDtoken::default();
+        if !user_profile.is_exist(self.get_signer_address().clone()) {
+            log!("failed withdraw, uer profile is not exist: {}", self.get_contract_address());
+            Promise::new(())
+        }
+
+        underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-        .then(ext_self::withdraw_balance_of_callback(
-            Balance::from(dtoken_amount),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(140),
-        ));
+            .then(ext_self::withdraw_balance_of_callback(
+                Balance::from(dtoken_amount),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(140),
+            ))
     }
 
     pub fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> Promise {
@@ -44,6 +50,7 @@ impl Contract {
             env::signer_account_id(),
             self.get_underlying_contract_address()
         );
+
         let balance_of: Balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
@@ -63,14 +70,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-        .then(ext_self::withdraw_supplies_callback(
-            env::signer_account_id(),
-            token_amount.into(),
-            dtoken_amount.into(),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(70),
-        ));
+            .then(ext_self::withdraw_supplies_callback(
+                env::signer_account_id(),
+                token_amount.into(),
+                dtoken_amount.into(),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(70),
+            ));
     }
 
     pub fn withdraw_supplies_callback(
@@ -78,10 +85,11 @@ impl Contract {
         user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
-    ) ->Promise {
+    ) -> Promise {
         let promise_success: bool = is_promise_success();
 
         assert_eq!(promise_success, true, "Withdraw supplies has been failed");
+        let user_profile = UserProfileDtoken::default();
 
         // Cross-contract call to market token
         underlying_token::ft_transfer(
@@ -92,13 +100,13 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(40),
         )
-        .then(ext_self::withdraw_ft_transfer_call_callback(
-            dtoken_amount.into(),
-            token_amount.into(),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        ))
+            .then(ext_self::withdraw_ft_transfer_call_callback(
+                dtoken_amount.into(),
+                token_amount.into(),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ))
     }
 
     pub fn withdraw_ft_transfer_call_callback(

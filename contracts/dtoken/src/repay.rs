@@ -2,11 +2,17 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         let debt_amount = self.get_borrows_by_account(env::signer_account_id());
-        assert!(Balance::from(token_amount) >= debt_amount*self.get_borrow_rate(), "repay amount {} is less than existing borrow {}", Balance::from(token_amount), debt_amount * self.get_borrow_rate());
-        return controller::repay_borrows(
+        assert!(Balance::from(token_amount) >= debt_amount * self.get_borrow_rate(), "repay amount {} is less than existing borrow {}", Balance::from(token_amount), debt_amount * self.get_borrow_rate());
+
+        let user_profile = UserProfileDtoken::default();
+        if !user_profile.is_exist(self.get_signer_address().clone()) {
+            log!("failed repay, uer profile is not exist: {}", self.get_contract_address());
+            PromiseOrValue::Value(U128(amount))
+        }
+
+        controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
             U128(debt_amount),
@@ -14,23 +20,21 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-        .then(ext_self::controller_repay_borrows_callback(
-            token_amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        )).into();
+            .then(ext_self::controller_repay_borrows_callback(
+                token_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            )).into()
     }
 
     pub fn controller_repay_borrows_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             log!("failed to update user {} balance {}: user is not registered", env::signer_account_id(), Balance::from(amount));
             return PromiseOrValue::Value(amount);
-        } 
+        }
         let extra_balance = Balance::from(amount) - self.get_borrows_by_account(env::signer_account_id());
         self.decrease_borrows(env::signer_account_id(), U128(self.get_borrows_by_account(env::signer_account_id())));
         return PromiseOrValue::Value(U128(extra_balance));
-        
     }
-
 }
