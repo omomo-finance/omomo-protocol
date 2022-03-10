@@ -6,6 +6,7 @@ mod repay;
 mod supply;
 mod withdraw;
 mod interest_model;
+mod interest_rate_model;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
@@ -15,6 +16,7 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
 pub use crate::interest_model::*;
+pub use crate::interest_rate_model::*;
 
 
 #[allow(unused_imports)]
@@ -26,6 +28,7 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
+use near_sdk::require;
 
 pub type TokenAmount = u128;
 
@@ -61,7 +64,10 @@ pub struct Contract {
     config: LazyOption<Config>,
 
     /// BlockHeight of last action user produced
-    actions: LookupMap<AccountId, BlockHeight>
+    actions: LookupMap<AccountId, BlockHeight>,
+
+    model: InterestRateModel
+
 }
 
 impl Default for Contract {
@@ -102,9 +108,10 @@ trait InternalTokenInterface {
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
 
     fn make_borrow_callback(&mut self, token_amount: WBalance);
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance);
-    fn controller_decrease_borrows_callback(&mut self);
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
+    fn controller_decrease_borrows_fail(&mut self);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
@@ -115,7 +122,22 @@ trait InternalTokenInterface {
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
+    pub fn new_with_config(owner_id: AccountId, underlying_token_id: AccountId, controller_account_id: AccountId, initial_exchange_rate: U128) -> Self {
+        Self::new(
+            Config{
+                owner_id: owner_id,
+                underlying_token_id: underlying_token_id,
+                controller_account_id: controller_account_id,
+                initial_exchange_rate: initial_exchange_rate
+            }
+        )
+    }
+
+    /// Initializes the contract with the given config. Needs to be called once.
+    #[init]
     pub fn new(config: Config) -> Self {
+        require!(!env::state_exists(), "Already initialized");
+
         Self {
             initial_exchange_rate: u128::from(config.initial_exchange_rate),
             total_reserves: 0,
@@ -125,6 +147,7 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
+            model: InterestRateModel::default()
         }
     }
 }

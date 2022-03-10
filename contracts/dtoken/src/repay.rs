@@ -6,7 +6,7 @@ impl Contract {
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         let debt_amount = self.get_borrows_by_account(env::signer_account_id());
         assert!(Balance::from(token_amount) >= debt_amount*self.get_borrow_rate(), "repay amount {} is less than existing borrow {}", Balance::from(token_amount), debt_amount * self.get_borrow_rate());
-        controller::repay_borrows(
+        return controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
             U128(debt_amount),
@@ -16,10 +16,10 @@ impl Contract {
         )
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
-            env::current_account_id(),
+            env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(10),
-        )).into()
+        )).into();
     }
 
     pub fn controller_repay_borrows_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
@@ -29,7 +29,7 @@ impl Contract {
         } 
         let extra_balance = Balance::from(amount) - self.get_borrows_by_account(env::signer_account_id());
         self.decrease_borrows(env::signer_account_id(), U128(self.get_borrows_by_account(env::signer_account_id())));
-        PromiseOrValue::Value(U128(extra_balance))
+        return PromiseOrValue::Value(U128(extra_balance));
         
     }
 

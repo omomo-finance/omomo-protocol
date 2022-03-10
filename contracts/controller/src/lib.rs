@@ -5,6 +5,7 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
+use near_sdk::require;
 
 #[allow(unused_imports)]
 use general::*;
@@ -23,7 +24,6 @@ pub mod borrows_supplies;
 pub mod repay;
 mod healthfactor;
 mod admin;
-
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -106,7 +106,20 @@ pub trait OraclePriceHandlerHook {
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
+    pub fn new_with_config(owner_id: AccountId, oracle_account_id: AccountId) -> Self {
+        Self::new(
+            Config{
+                owner_id: owner_id,
+                oracle_account_id: oracle_account_id
+            }
+        )
+    }
+
+    /// Initializes the contract with the given config. Needs to be called once.
+    #[init]
     pub fn new(config: Config) -> Self {
+        require!(!env::state_exists(), "Already initialized");
+
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
             account_supplies: LookupMap::new(StorageKeys::Supplies),

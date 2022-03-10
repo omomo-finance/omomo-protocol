@@ -33,7 +33,7 @@ impl Contract {
         return token_amount;
     }
 
-    pub fn get_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
         let (accounts, _) = self.get_params_by_action(action);
@@ -152,7 +152,7 @@ impl Contract {
                 token_amount.clone(),
             ),
             true,
-            "Withdrawal operation is not allowed for account {} token_address {} tokens_amount` {}",
+            "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
             account_id,
             token_address,
             Balance::from(token_amount)
@@ -190,7 +190,7 @@ impl Contract {
                 token_amount.clone(),
             ),
             true,
-            "Borrow operation is not allowed for account {} token_address {} tokens_amount {}",
+            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
             account_id,
             token_address,
             Balance::from(token_amount)
