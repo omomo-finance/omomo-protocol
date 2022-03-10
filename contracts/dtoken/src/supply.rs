@@ -4,6 +4,14 @@ use crate::*;
 impl Contract {
     #[payable]
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
+        let user_profile = UserProfileDtoken::default();
+        let supply_amount = user_profile.get_profile(self.get_signer_address().clone()).supply_amount as u128;
+        if user_profile.is_exist(self.get_signer_address().clone()) &&
+            supply_amount > 0 {
+            log!("Failed supply, account is exist and supply amount is {}", supply_amount);
+            PromiseOrValue::Value(token_amount)
+        }
+
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
@@ -25,49 +33,43 @@ impl Contract {
             return PromiseOrValue::Value(token_amount);
         }
 
-        let user_profile = UserProfileDtoken::default();
-        if !user_profile.is_exist(self.get_signer_address().clone()) ||
-            user_profile.get_profile(self.get_signer_address().clone()).supply_amount == 0 {
-            let balance_of: Balance = match env::promise_result(0) {
-                PromiseResult::NotReady => 0,
-                PromiseResult::Failed => 0,
-                PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
-                    .unwrap()
-                    .into(),
-            };
-            let exchange_rate: Balance = self.get_exchange_rate(balance_of.into());
-            let dtoken_amount = Balance::from(token_amount) * exchange_rate;
+        let balance_of: Balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+        let exchange_rate: Balance = self.get_exchange_rate(balance_of.into());
+        let dtoken_amount = Balance::from(token_amount) * exchange_rate;
 
-            // Dtokens minting and adding them to the user account
-            self.mint(
-                &self.get_signer_address(),
-                dtoken_amount.into(),
-            );
-            log!(
+        // Dtokens minting and adding them to the user account
+        self.mint(
+            &self.get_signer_address(),
+            dtoken_amount.into(),
+        );
+        log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
             self.get_signer_address(),
             self.get_contract_address(),
             Balance::from(token_amount)
         );
 
-            controller::increase_supplies(
-                env::signer_account_id(),
-                self.get_contract_address(),
+        controller::increase_supplies(
+            env::signer_account_id(),
+            self.get_contract_address(),
+            token_amount,
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(20),
+        )
+            .then(ext_self::controller_increase_supplies_callback(
                 token_amount,
-                self.get_controller_address(),
+                U128(dtoken_amount),
+                env::current_account_id().clone(),
                 NO_DEPOSIT,
-                self.terra_gas(20),
-            )
-                .then(ext_self::controller_increase_supplies_callback(
-                    token_amount,
-                    U128(dtoken_amount),
-                    env::current_account_id().clone(),
-                    NO_DEPOSIT,
-                    self.terra_gas(10),
-                )).into()
-        }
-        log!("failed supply, profile is exist: {}", self.get_contract_address());
-        return PromiseOrValue::Value(token_amount);
+                self.terra_gas(10),
+            )).into()
     }
 
     #[allow(dead_code)]

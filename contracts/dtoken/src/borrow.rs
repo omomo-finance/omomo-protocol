@@ -1,9 +1,18 @@
+use near_sdk::PromiseOrValue::Promise;
 use crate::*;
 
 #[near_bindgen]
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
-        return controller::make_borrow(
+        let user_profile = UserProfileDtoken::default();
+        let borrow_amount = user_profile.get_profile(self.get_signer_address().clone()).borrow_amount as u128;
+        if user_profile.is_exist(self.get_signer_address().clone()) &&
+            borrow_amount > 0 {
+            log!("Failed borrow, account is exist and borrow amount is {}", borrow_amount);
+            Promise::new(());
+        }
+
+        controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
@@ -16,7 +25,7 @@ impl Contract {
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
                 self.terra_gas(150),
-            ));
+            ))
     }
 
     pub fn make_borrow_callback(
@@ -46,11 +55,7 @@ impl Contract {
         token_amount: WBalance,
     ) {
         if is_promise_success() {
-            let user_profile = UserProfileDtoken::default();
-            if !user_profile.is_exist(self.get_signer_address().clone()) ||
-                user_profile.get_profile(self.get_signer_address().clone()).borrow_amount == 0 {
-                self.increase_borrows(env::signer_account_id(), token_amount);
-            }
+            self.increase_borrows(env::signer_account_id(), token_amount);
         } else {
             log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
             controller::decrease_borrows(
