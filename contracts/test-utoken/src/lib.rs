@@ -159,7 +159,7 @@ mod tests {
     fn test_transfer() {
         let mut context = get_context(accounts(2));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(2).into(), TOTAL_SUPPLY.into());
+        let mut contract = Contract::new_default_meta(accounts(2), TOTAL_SUPPLY.into());
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(contract.storage_balance_bounds().min.into())

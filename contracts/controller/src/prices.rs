@@ -25,9 +25,12 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use assert_matches::assert_matches;
+    use near_sdk::AccountId;
     use near_sdk::test_utils::test_env::{alice, bob};
 
-    use super::*;
+    use general::Price;
+
+    use crate::{Config, Contract};
 
     pub fn init_test_env() -> (Contract, AccountId) {
         let (owner_account, oracle_account) = (alice(), bob());

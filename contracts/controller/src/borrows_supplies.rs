@@ -1,3 +1,5 @@
+use near_sdk::require;
+
 use crate::*;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
@@ -129,13 +131,11 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> bool {
-        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-
-        assert!(
+        require!(
             !self.is_action_paused.withdraw,
-            "Withdraw is paused, cant perform action"
+            "Withdraw is paused"
         );
-
+        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         existing_supplies >= Balance::from(token_amount)
     }
 
@@ -163,15 +163,14 @@ impl Contract {
 
     #[warn(dead_code)]
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _token_amount: WBalance) -> bool {
+        require!(
+            !self.is_action_paused.borrow,
+            "Withdraw is paused"
+        );
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         // TODO add check if allowed  (USD-estimated ACCOUNT SUPPLIES > USD-estimated ACCOUNT BORROWED  * ratio ? (or just 0.8) )
-
-        assert!(
-            !self.is_action_paused.borrow,
-            "Withdraw is paused, cant perform action"
-        );
 
 
         // FIXME mock-checking for now

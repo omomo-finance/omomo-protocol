@@ -59,6 +59,16 @@ pub struct Contract {
 
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
+
+    /// Health Factor
+    pub health_factor_threshold: Ratio,
+
+    /// Liquidation Incentive
+    pub liquidation_incentive: Ratio,
+
+    /// Reserve Factor
+    pub reserve_factor: Percent,
+
 }
 
 impl Default for Contract {
@@ -81,11 +91,11 @@ pub struct PriceJsonList {
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct ActionStatus {
-    pub withdraw: bool,
-    pub repay: bool,
-    pub supply: bool,
-    pub liquidate: bool,
-    pub borrow: bool,
+    supply: bool,
+    withdraw: bool,
+    borrow: bool,
+    repay: bool,
+    liquidate: bool,
 }
 
 pub trait OraclePriceHandlerHook {
@@ -111,6 +121,9 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
+            health_factor_threshold: 0,
+            liquidation_incentive: 0,
+            reserve_factor: 0,
         }
     }
 }
