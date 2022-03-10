@@ -44,7 +44,7 @@ impl FungibleTokenReceiver for Contract {
         let action: &str = msg["action"].as_str().unwrap();
         match action {
             "SUPPLY" => self.supply(amount),
-            "REPAY" => self.repay(amount),
+            "REPAY" => self.repay(amount, None),
             "LIQUIDATION" => {
                 let memo_data = msg["memo"].clone();
 

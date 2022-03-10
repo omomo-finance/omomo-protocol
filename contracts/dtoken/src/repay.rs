@@ -2,7 +2,8 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-    pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
+    // account_id: value for cases, when the one who pays the debt is another person (account). If leave this 'None', payer will be signer of the call
+    pub fn repay(&mut self, token_amount: WBalance, account_id: Option<AccountId>) -> PromiseOrValue<U128> {
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
@@ -11,13 +12,14 @@ impl Contract {
         )
         .then(ext_self::repay_balance_of_callback(
             token_amount,
+            account_id,
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(60),
         )).into()
     }
 
-    pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
+    pub fn repay_balance_of_callback(&mut self, token_amount: WBalance, account_id: Option<AccountId>) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
             return PromiseOrValue::Value(token_amount);
@@ -36,8 +38,13 @@ impl Contract {
         let borrow_with_rate_amount = borrow_amount * borrow_rate / RATIO_DECIMALS;
         assert!(Balance::from(token_amount) >= borrow_with_rate_amount);
 
+        let payer_account = match account_id {
+            None => { env::signer_account_id() }
+            Some(id) => { id }
+        };
+
         return controller::repay_borrows(
-            env::signer_account_id(),
+            payer_account,
             self.get_contract_address(),
             U128(borrow_amount),
             self.get_controller_address(),

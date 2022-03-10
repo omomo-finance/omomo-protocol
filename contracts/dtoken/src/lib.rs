@@ -96,8 +96,16 @@ trait ControllerInterface {
     fn decrease_supplies(&mut self, account_id: AccountId, amount: WBalance);
     fn repay_borrows(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
     fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance) -> Promise;
-    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance); 
-    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance); 
+    fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
+    fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance);
+    fn liquidation(
+        &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        _liquidator: AccountId,
+        _collateral_dtoken: AccountId,
+        liquidation_amount: WBalance,
+    );
 
 }
 
@@ -108,7 +116,7 @@ trait InternalTokenInterface {
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
 
     fn make_borrow_callback(&mut self, token_amount: WBalance);
-    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance, account_id: Option<AccountId>);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
     fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
     fn controller_decrease_borrows_fail(&mut self);
@@ -117,7 +125,7 @@ trait InternalTokenInterface {
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
 
-    fn liquidation_decrease_borrows_callback(&mut self);
+    fn liquidation_decrease_borrows_callback(&mut self, liquidator: AccountId, amount: WBalance);
 }
 
 #[near_bindgen]
