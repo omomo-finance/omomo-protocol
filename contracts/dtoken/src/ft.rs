@@ -45,6 +45,37 @@ impl FungibleTokenReceiver for Contract {
         match action {
             "SUPPLY" => self.supply(amount),
             "REPAY" => self.repay(amount),
+            "LIQUIDATION" => {
+                let memo_data = msg["memo"].clone();
+
+                let borrower =
+                    AccountId::new_unchecked(String::from(memo_data["borrower"].as_str().unwrap()));
+                let borrowing_dtoken = AccountId::new_unchecked(String::from(
+                    memo_data["borrowing_dtoken"].as_str().unwrap(),
+                ));
+                let liquidator = AccountId::new_unchecked(String::from(
+                    memo_data["liquidator"].as_str().unwrap(),
+                ));
+                let collateral_dtoken = AccountId::new_unchecked(String::from(
+                    memo_data["collateral_dtoken"].as_str().unwrap(),
+                ));
+                let liquidation_amount = WBalance::from(
+                    memo_data["liquidation_amount"]
+                        .as_str()
+                        .unwrap()
+                        .parse::<u128>()
+                        .unwrap(),
+                );
+
+                self.liquidation(
+                    borrower,
+                    borrowing_dtoken,
+                    liquidator,
+                    collateral_dtoken,
+                    liquidation_amount,
+                );
+                PromiseOrValue::Value(amount)
+            }
             _ => {
                 log!("Incorrect command in transfer: {}", action);
                 PromiseOrValue::Value(amount)

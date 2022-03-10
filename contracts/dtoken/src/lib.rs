@@ -4,6 +4,7 @@ mod config;
 mod ft;
 mod repay;
 mod supply;
+mod liquidation;
 mod withdraw;
 mod interest_model;
 mod interest_rate_model;
@@ -115,6 +116,8 @@ trait InternalTokenInterface {
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
+
+    fn liquidation_decrease_borrows_callback(&mut self);
 }
 
 #[near_bindgen]

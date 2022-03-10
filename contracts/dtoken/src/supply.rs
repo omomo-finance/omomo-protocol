@@ -47,7 +47,7 @@ impl Contract {
             self.get_contract_address(),
             Balance::from(token_amount)
         );
-        
+
         controller::increase_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -74,7 +74,7 @@ impl Contract {
                 dtoken_amount.into()
             );
             return PromiseOrValue::Value(amount);
-        } 
+        }
         PromiseOrValue::Value(U128(0))
     }
 
