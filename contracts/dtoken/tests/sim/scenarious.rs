@@ -29,7 +29,7 @@ fn initialize_utoken(root: &UserAccount) -> (UserAccount, ContractAccount<test_u
     );
     call!(
         uroot,
-        utoken.new_default_meta(uroot.account_id(), U128(10000)),
+        utoken.new_default_meta(uroot.account_id(), "name".to_string(), "symbol".to_string(), U128(10000)),
         deposit = 0
     )
         .assert_success();
