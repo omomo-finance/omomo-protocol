@@ -28,6 +28,7 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
+use near_sdk::require;
 
 pub type TokenAmount = u128;
 
@@ -123,7 +124,22 @@ trait InternalTokenInterface {
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
+    pub fn new_with_config(owner_id: AccountId, underlying_token_id: AccountId, controller_account_id: AccountId, initial_exchange_rate: U128) -> Self {
+        Self::new(
+            Config{
+                owner_id: owner_id,
+                underlying_token_id: underlying_token_id,
+                controller_account_id: controller_account_id,
+                initial_exchange_rate: initial_exchange_rate
+            }
+        )
+    }
+
+    /// Initializes the contract with the given config. Needs to be called once.
+    #[init]
     pub fn new(config: Config) -> Self {
+        require!(!env::state_exists(), "Already initialized");
+
         Self {
             initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
