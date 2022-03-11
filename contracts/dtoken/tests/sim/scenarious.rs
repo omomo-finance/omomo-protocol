@@ -29,7 +29,7 @@ fn initialize_utoken(root: &UserAccount) -> (UserAccount, ContractAccount<test_u
     );
     call!(
         uroot,
-        utoken.new_default_meta(uroot.account_id(), U128(10000)),
+        utoken.new_default_meta(uroot.account_id(), String::from("Mock Token"), String::from("MOCK"), U128(10000)),
         deposit = 0
     )
         .assert_success();
@@ -100,30 +100,6 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
      (dtoken, controller, utoken, d_user)
 }
 
-fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
-    let root = init_simulator(None);
-    //  Initialize
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
-
-    call!(
-        uroot,
-        utoken.mint(dtoken.account_id(), U128(20)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
-        0,
-        100000000000000
-    );
-
-    (dtoken, controller, utoken, d_user)
-}
-
 fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
     let (dtoken, controller, utoken, user) = base_fixture();
 
@@ -159,36 +135,6 @@ fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcc
 
 fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let (dtoken, controller, utoken, user) = base_fixture();
-
-    call!(
-        user,
-        dtoken.increase_borrows(user.account_id(),U128(10)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(
-            user.account_id()
-        )
-    ).unwrap_json();
-    assert_eq!(user_balance, 10, "Borrow balance on dtoken should be 10");
-
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id() ,U128(10)),
-        0,
-        100000000000000
-    ).assert_success();
-
-    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 10, "Borrow balance on controller should be 10");
-
-    (dtoken, controller, utoken, user)
-}
-
-fn repay2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
-    let (dtoken, controller, utoken, user) = base2_fixture();
 
     call!(
         user,
