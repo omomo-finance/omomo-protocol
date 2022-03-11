@@ -84,12 +84,12 @@ impl InterestRateModel{
         self.account_supply_interest.insert(&account, &interest);
     }
 
-    pub fn get_accrued_supply_interest(&mut self, account: AccountId, account_total_supply: Balance, supply_rate: Ratio) -> Ratio {
+    pub fn get_accrued_supply_interest(&mut self, account: AccountId, supply_rate: Ratio) -> Ratio {
         let current_block_height = block_height();
-        let accrued_rate = account_total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
-        self.set_supply_block_by_user(account, current_block_height);
+        let accrued_rate = supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128;
+        self.set_supply_block_by_user(account.clone(), current_block_height);
+        self.set_supply_interest_by_user(account, accrued_rate);
         accrued_rate
-
     }
 }
 
@@ -114,7 +114,6 @@ impl Default for InterestRateModel{
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use near_sdk::json_types::U128;
@@ -122,7 +121,7 @@ mod tests {
     use near_sdk::AccountId;
     use crate::{Config, Contract};
 
-    pub fn init_test_env() -> Contract {
+    pub fn init_test_env() -> (Contract, AccountId) {
         let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
     
         let contract = Contract::new(Config { 
@@ -132,10 +131,11 @@ mod tests {
             controller_account_id: controller_account.clone(), 
         });
     
-        return contract;
+        return (contract, user_account);
     }
 
     #[test]
     fn test_get_accrued_supply_rate(){
+        let (contract, user) = init_test_env();
     }
 }

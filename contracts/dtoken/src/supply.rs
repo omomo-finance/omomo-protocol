@@ -1,3 +1,5 @@
+use near_sdk::env::block_height;
+
 use crate::*;
 
 #[near_bindgen]
@@ -75,7 +77,12 @@ impl Contract {
             );
             return PromiseOrValue::Value(amount);
         } 
+        self.model.set_supply_block_by_user(env::signer_account_id(), block_height());
         PromiseOrValue::Value(U128(0))
+    }
+
+    pub fn get_user_supply(&self, account: AccountId) -> Balance{
+        20
     }
 
 }

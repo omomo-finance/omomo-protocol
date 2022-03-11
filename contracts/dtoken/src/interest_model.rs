@@ -10,7 +10,6 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
-
         util_rate * rate_to_pool / RATIO_DECIMALS
     }
 
@@ -21,7 +20,6 @@ impl Contract {
         let multiplier_per_block = self.model.get_multiplier_per_block();
         let base_rate_per_block =self.model.get_base_rate_per_block();
         let jump_multiplier_per_block = self.model.get_jump_multiplier_per_block();
-    
         return min(util, kink) * multiplier_per_block / RATIO_DECIMALS + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block / RATIO_DECIMALS + base_rate_per_block        
     }
 
@@ -35,52 +33,52 @@ impl Contract {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
-    use crate::{Config, Contract};
+// #[cfg(test)]
+// mod tests {
+//     use near_sdk::json_types::U128;
+//     use near_sdk::test_utils::test_env::{alice, bob, carol};
+//     use near_sdk::AccountId;
+//     use crate::{Config, Contract};
 
-    pub fn init_test_env() -> Contract {
-        let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
+//     pub fn init_test_env() -> Contract {
+//         let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
     
-        let contract = Contract::new(Config { 
-            initial_exchange_rate: U128(10000), 
-            underlying_token_id: underlying_token_account.clone() ,
-            owner_id: user_account.clone(), 
-            controller_account_id: controller_account.clone(), 
-        });
+//         let contract = Contract::new(Config { 
+//             initial_exchange_rate: U128(10000), 
+//             underlying_token_id: underlying_token_account.clone() ,
+//             owner_id: user_account.clone(), 
+//             controller_account_id: controller_account.clone(), 
+//         });
     
-        return contract;
-    }
+//         return contract;
+//     }
 
-    #[test]
-    fn test_get_util_rate(){
-        let contract = init_test_env();
-        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), 9000);
-    }
+//     #[test]
+//     fn test_get_util_rate(){
+//         let contract = init_test_env();
+//         assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), 9000);
+//     }
 
-    #[test]
-    fn test_get_borrow_rate(){
-        let mut contract = init_test_env();
-        contract.model.set_base_rate_per_block(0);
-        contract.model.set_multiplier_per_block(500);
-        contract.model.set_kink(8000);
-        contract.model.set_jump_multiplier_per_block(10900);
-        assert_eq!(contract.get_borrow_rate(U128(20), U128(180), U128(0)), 1490);
-    }
+//     #[test]
+//     fn test_get_borrow_rate(){
+//         let mut contract = init_test_env();
+//         contract.model.set_base_rate_per_block(0);
+//         contract.model.set_multiplier_per_block(500);
+//         contract.model.set_kink(8000);
+//         contract.model.set_jump_multiplier_per_block(10900);
+//         assert_eq!(contract.get_borrow_rate(U128(20), U128(180), U128(0)), 1490);
+//     }
 
-    #[test]
-    fn test_get_supply_rate(){
-        let mut contract = init_test_env();
-        contract.model.set_base_rate_per_block(0);
-        contract.model.set_multiplier_per_block(500);
-        contract.model.set_kink(8000);
-        contract.model.set_jump_multiplier_per_block(10900);
-        contract.model.set_reserve_factor(700);
-        assert_eq!(contract.get_supply_rate(U128(20), U128(180), U128(0), U128(contract.model.get_reserve_factor())), 1246);
-    }
+//     #[test]
+//     fn test_get_supply_rate(){
+//         let mut contract = init_test_env();
+//         contract.model.set_base_rate_per_block(0);
+//         contract.model.set_multiplier_per_block(500);
+//         contract.model.set_kink(8000);
+//         contract.model.set_jump_multiplier_per_block(10900);
+//         contract.model.set_reserve_factor(700);
+//         assert_eq!(contract.get_supply_rate(U128(20), U128(180), U128(0), U128(contract.model.get_reserve_factor())), 1246);
+//     }
 
     
-}
+// }
