@@ -21,9 +21,9 @@ impl Contract {
             liquidation_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(40),
         )
-        .then(ext_self::liquidation_decrease_borrows_callback(
+        .then(ext_self::liquidate_callback(
             liquidator,
             liquidation_amount,
             env::current_account_id().clone(),
@@ -41,13 +41,29 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         assert_eq!(is_promise_success(), true);
 
-        self.repay(amount, Some(liquidator));
-
-        controller::on_debt_repaying(
+        ext_self::repay(
+            amount,
+            Some(liquidator),
+            self.get_contract_address(),
+            NO_DEPOSIT,
+            self.terra_gas(120),
+        )
+        .then(controller::on_debt_repaying(
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
-        )
+        ))
         .into()
+    }
+
+    pub fn swap_supplies(
+        &mut self,
+        borrower: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+    ) {
+        let amount = Balance::from(liquidation_amount.0);
+        self.token
+            .internal_transfer(&borrower, &liquidator, amount, None);
     }
 }

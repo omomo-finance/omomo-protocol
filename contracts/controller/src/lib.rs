@@ -1,5 +1,5 @@
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::{env, near_bindgen, AccountId, Balance, BorshStorageKey, ext_contract};
 
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 #[allow(unused_imports)]
@@ -16,16 +16,15 @@ pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
 
-
+pub mod borrows_supplies;
 #[allow(unused_imports)]
 mod config;
+mod healthfactor;
+pub mod liquidation;
 mod oraclehook;
 mod prices;
-pub mod borrows_supplies;
 pub mod repay;
-pub mod liquidation;
 mod test_utils;
-mod healthfactor;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -61,6 +60,16 @@ impl Default for Contract {
     fn default() -> Self {
         env::panic_str("Controller contract should be initialized before usage")
     }
+}
+
+#[ext_contract(dtoken)]
+trait DtokenInterface {
+    fn swap_supplies(
+        &mut self,
+        borrower: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+    );
 }
 
 #[derive(Serialize, Deserialize)]

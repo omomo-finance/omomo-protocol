@@ -2,7 +2,6 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-
     fn is_repay_allowed(
         &self,
         _account: AccountId,
@@ -17,7 +16,7 @@ impl Contract {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
-    )-> Balance{
+    ) -> Balance {
         assert_eq!(
             self.is_repay_allowed(
                 account_id.clone(),
@@ -33,5 +32,4 @@ impl Contract {
 
         return self.decrease_borrows(account_id, token_address, token_amount);
     }
-
 }

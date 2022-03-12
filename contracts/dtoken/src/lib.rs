@@ -115,6 +115,7 @@ trait InternalTokenInterface {
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
 
+    fn repay(&mut self, token_amount: WBalance, account_id: Option<AccountId>);
     fn make_borrow_callback(&mut self, token_amount: WBalance);
     fn repay_balance_of_callback(&mut self, token_amount: WBalance, account_id: Option<AccountId>);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
@@ -125,7 +126,7 @@ trait InternalTokenInterface {
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
 
-    fn liquidation_decrease_borrows_callback(&mut self, liquidator: AccountId, amount: WBalance);
+    fn liquidate_callback(&mut self, liquidator: AccountId, amount: WBalance);
 }
 
 #[near_bindgen]

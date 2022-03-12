@@ -69,6 +69,5 @@ impl Contract {
         let extra_balance = Balance::from(amount) - Balance::from(borrow_amount);
         self.decrease_borrows(env::signer_account_id(), U128(self.get_borrows_by_account(env::signer_account_id())));
         return PromiseOrValue::Value(U128(extra_balance));
-        
     }
 }

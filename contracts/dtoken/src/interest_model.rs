@@ -27,7 +27,6 @@ impl Contract {
 mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
     use crate::{Config, Contract};
 
     pub fn init_test_env() -> Contract {
