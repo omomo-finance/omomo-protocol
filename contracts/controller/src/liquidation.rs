@@ -21,12 +21,16 @@ impl Contract {
         self.decrease_borrows(borrower, borrowing_dtoken, liquidation_amount);
     }
 
-    #[private]
     pub fn is_liquidation_allowed(
         &mut self,
         amount_for_liquidation: WBalance,
     ) -> Result<WBalance, Error> {
         // TBD
         return Ok(amount_for_liquidation);
+    }
+
+    pub fn on_debt_repaying(&mut self)
+    {
+        // TDB
     }
 }

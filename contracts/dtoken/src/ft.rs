@@ -67,14 +67,13 @@ impl FungibleTokenReceiver for Contract {
                         .unwrap(),
                 );
 
-                self.liquidation(
+                self.liquidate(
                     borrower,
                     borrowing_dtoken,
                     liquidator,
                     collateral_dtoken,
                     liquidation_amount,
-                );
-                PromiseOrValue::Value(amount)
+                )
             }
             _ => {
                 log!("Incorrect command in transfer: {}", action);

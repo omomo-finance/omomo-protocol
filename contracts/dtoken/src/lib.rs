@@ -98,6 +98,7 @@ trait ControllerInterface {
     fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance) -> Promise;
     fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
     fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance);
+    fn on_debt_repaying(&mut self);
     fn liquidation(
         &mut self,
         borrower: AccountId,
@@ -106,7 +107,6 @@ trait ControllerInterface {
         _collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
-
 }
 
 #[ext_contract(ext_self)]
