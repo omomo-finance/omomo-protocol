@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::PromiseOrValue;
 
 #[near_bindgen]
 impl Contract {
@@ -64,7 +65,7 @@ impl Contract {
         collateral_dtoken: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
-    ) {
+    ) -> PromiseOrValue<U128> {
         self.decrease_supplies(
             borrower.clone(),
             collateral_dtoken.clone(),
@@ -83,6 +84,7 @@ impl Contract {
             collateral_dtoken,
             NO_DEPOSIT,
             near_sdk::Gas::ONE_TERA * 10 as u64,
-        );
+        )
+        .into()
     }
 }

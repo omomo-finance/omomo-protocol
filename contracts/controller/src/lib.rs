@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{env, near_bindgen, AccountId, Balance, BorshStorageKey, ext_contract};
+use near_sdk::{env, ext_contract, near_bindgen, AccountId, Balance, BorshStorageKey};
 
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 #[allow(unused_imports)]
@@ -69,7 +69,7 @@ trait DtokenInterface {
         borrower: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
-    );
+    ) -> PromiseOrValue<U128>;
 }
 
 #[derive(Serialize, Deserialize)]

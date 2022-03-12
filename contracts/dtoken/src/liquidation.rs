@@ -61,9 +61,10 @@ impl Contract {
         borrower: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
-    ) {
+    ) -> PromiseOrValue<U128>{
         let amount = Balance::from(liquidation_amount.0);
         self.token
             .internal_transfer(&borrower, &liquidator, amount, None);
+        PromiseOrValue::Value(U128(0))
     }
 }
