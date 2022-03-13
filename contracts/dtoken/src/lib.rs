@@ -105,7 +105,7 @@ trait ControllerInterface {
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
-    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
+    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
     fn make_borrow_callback(&mut self, token_amount: WBalance);
     fn repay_balance_of_callback(&mut self, token_amount: WBalance);
@@ -114,8 +114,10 @@ trait InternalTokenInterface {
     fn controller_decrease_borrows_fail(&mut self);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
-    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance, token_return_amount: WBalance,);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance);
+
 }
 
 #[near_bindgen]
@@ -139,7 +141,7 @@ impl Contract {
         require!(!env::state_exists(), "Already initialized");
 
         Self {
-            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
+            initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),
