@@ -133,9 +133,4 @@ mod tests {
     
         return (contract, user_account);
     }
-
-    #[test]
-    fn test_get_accrued_supply_rate(){
-        let (contract, user) = init_test_env();
-    }
 }
