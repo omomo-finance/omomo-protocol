@@ -30,7 +30,7 @@ fn initialize_utoken(root: &UserAccount) -> (UserAccount, ContractAccount<test_u
     );
     call!(
         uroot,
-        utoken.new_default_meta(uroot.account_id(), U128(10000)),
+        utoken.new_default_meta(uroot.account_id(),"name".to_string(), "symbol".to_string(), U128(10000)),
         deposit = 0
     )
         .assert_success();
@@ -425,61 +425,61 @@ fn scenario_supply() {
     
 }
 
-// #[test]
-// fn scenario_withdraw_with_no_supply(){
-//     let (dtoken, _controller, _utoken, user) = base_fixture();
+#[test]
+fn scenario_withdraw_with_no_supply(){
+    let (dtoken, _controller, _utoken, user) = base_fixture();
 
-//     let result = call!(
-//         user,
-//         dtoken.withdraw(U128(20)),
-//         deposit = 0
-//     );
+    let result = call!(
+        user,
+        dtoken.withdraw(U128(20)),
+        deposit = 0
+    );
 
-//     assert_failure(result, "Cannot calculate utilization rate as denominator is equal 0");
-// }
+    assert_failure(result, "Cannot calculate utilization rate as denominator is equal 0");
+}
 
-// #[test]
-// fn scenario_withdraw_more(){
-//     let (dtoken, controller, _utoken, user) = withdraw_fixture();
+#[test]
+fn scenario_withdraw_more(){
+    let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
-//     let result = call!(
-//         user,
-//         dtoken.withdraw(U128(30)),
-//         deposit = 0
-//     );
+    let result = call!(
+        user,
+        dtoken.withdraw(U128(30)),
+        deposit = 0
+    );
 
-//     assert_failure(result, "Withdrawal operation is not allowed");
+    assert_failure(result, "Withdrawal operation is not allowed");
 
-//     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-//     assert_eq!(user_balance, 20, "Balance should be 20");
-// }
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
+}
 
-// #[test]
-// fn scenario_withdraw_less_same(){
-//     let (dtoken, controller, utoken, user) = withdraw_fixture();
+#[test]
+fn scenario_withdraw_less_same(){
+    let (dtoken, controller, utoken, user) = withdraw_fixture();
 
     
-//     // Withdraw less
-//     call!(
-//         user,
-//         dtoken.withdraw(U128(10)),
-//         deposit = 0
-//     ).assert_success();
+    // Withdraw less
+    call!(
+        user,
+        dtoken.withdraw(U128(10)),
+        deposit = 0
+    ).assert_success();
 
-//     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-//     assert_eq!(user_balance, 10, "Balance should be 10");
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 10, "Balance should be 10");
 
-//     // Withdraw same
-//     call!(
-//         user,
-//         dtoken.withdraw(U128(10)),
-//         deposit = 0
-//     ).assert_success();
+    // Withdraw same
+    call!(
+        user,
+        dtoken.withdraw(U128(10)),
+        deposit = 0
+    ).assert_success();
 
-//     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-//     assert_eq!(user_balance, 0, "Balance should be 0");
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Balance should be 0");
 
-// }
+}
 
 #[test]
 fn scenario_withdraw(){
@@ -532,19 +532,19 @@ fn scenario_withdraw(){
     assert_eq!(dtoken_balance, 30.to_string(), "After withdraw balance should be 30");
 }
 
-// #[test]
-// fn scenario_withdraw_error_transfer(){
-//     let (dtoken, controller, _utoken, user) = withdraw_less_dtoken_fixture();
+#[test]
+fn scenario_withdraw_error_transfer(){
+    let (dtoken, controller, _utoken, user) = withdraw_less_dtoken_fixture();
 
-//     call!(
-//         user,
-//         dtoken.withdraw(U128(10)),
-//         deposit = 0
-//     ).assert_success();
+    call!(
+        user,
+        dtoken.withdraw(U128(10)),
+        deposit = 0
+    ).assert_success();
 
-//     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-//     assert_eq!(user_balance, 20, "Balance should be 20");
-// }
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 20, "Balance should be 20");
+}
 
 #[test]
 fn scenario_repay_no_borrow(){
