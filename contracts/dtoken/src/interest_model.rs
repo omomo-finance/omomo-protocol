@@ -1,10 +1,12 @@
 use crate::*;
 use std::cmp::{min, max};
 
+const MAX_RESERVE_FACTOR_VALUE: Ratio = 1 * RATIO_DECIMALS;
+
 #[near_bindgen]
 impl Contract {
     pub fn get_supply_rate(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance, reserve_factor: WBalance) -> Ratio {
-        assert!(Balance::from(reserve_factor) <= 1 * RATIO_DECIMALS, "Reserve factor should be less 1 * 10^4" );
+        assert!(Balance::from(reserve_factor) <= MAX_RESERVE_FACTOR_VALUE, "Reserve factor should be less {}", MAX_RESERVE_FACTOR_VALUE);
         
         let rest_of_supply_factor = RATIO_DECIMALS - Balance::from(reserve_factor);
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
@@ -24,12 +26,12 @@ impl Contract {
     }
 
     fn get_util(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance) -> Ratio {
-        let sum_balance_borrows = Balance::from(underlying_balance).overflowing_add(Balance::from(total_borrows));
-        assert_eq!(sum_balance_borrows.1, false, "Overflowing occurs while adding undelying balance and total borrows");
-        let denominator = sum_balance_borrows.0.overflowing_sub(Balance::from(total_reserves));
-        assert_eq!(denominator.1, false, "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
-        assert_ne!(denominator.0, 0, "Cannot calculate utilization rate as denominator is equal 0");
-        return Balance::from(total_borrows) * RATIO_DECIMALS / (Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves));
+        let sum_balance_borrows = Balance::from(underlying_balance).checked_add(Balance::from(total_borrows));
+        assert!(sum_balance_borrows.is_some(), "Overflowing occurs while adding undelying balance and total borrows");
+        let denominator = sum_balance_borrows.unwrap().checked_sub(Balance::from(total_reserves));
+        assert!(denominator.is_some(), "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
+        assert_ne!(denominator.unwrap(), 0, "Cannot calculate utilization rate as denominator is equal 0");
+        return Balance::from(total_borrows) * RATIO_DECIMALS / denominator.unwrap();
     }
 }
 

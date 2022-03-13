@@ -38,8 +38,8 @@ pub fn init_no_macros(initial_balance: u128) -> (UserAccount, UserAccount, UserA
         "new_default_meta",
         &json!({
             "owner_id": root.valid_account_id(),
-            "name": "name",
-            "symbol": "symbol",
+            "name": "utoken_name",
+            "symbol": "utoken_symbol",
             "total_supply": U128::from(initial_balance),
         })
             .to_string()

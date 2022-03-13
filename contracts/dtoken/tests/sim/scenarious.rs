@@ -30,7 +30,7 @@ fn initialize_utoken(root: &UserAccount) -> (UserAccount, ContractAccount<test_u
     );
     call!(
         uroot,
-        utoken.new_default_meta(uroot.account_id(),"name".to_string(), "symbol".to_string(), U128(10000)),
+        utoken.new_default_meta(uroot.account_id(), String::from("Mock Token"), String::from("MOCK"), U128(10000)),
         deposit = 0
     )
         .assert_success();
@@ -102,7 +102,6 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
      (dtoken, controller, utoken, d_user)
 }
 
-
 fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
     let root = init_simulator(None);
 
@@ -130,6 +129,7 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
 
 fn base_more_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
     let root = init_simulator(None);
+
     // Initialize
     let (uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
@@ -484,7 +484,7 @@ fn scenario_withdraw_less_same(){
 #[test]
 fn scenario_withdraw(){
     let (dtoken, controller, utoken, user) = base2_fixture();
-    let (mut runtime, _, _) = init_runtime(None);
+   // let (mut runtime, _, _) = init_runtime(None);
 
     let json = r#"
        {
@@ -714,5 +714,3 @@ fn scenatio_borrow_more_than_on_dtoken(){
     ).unwrap_json();
     assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance on utoken should be 20");
 }
-
-
