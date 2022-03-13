@@ -33,7 +33,7 @@ impl Contract {
         let denominator = sum_balance_borrows.unwrap().checked_sub(Balance::from(total_reserves));
         assert!(denominator.is_some(), "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
         assert_ne!(denominator.unwrap(), 0, "Cannot calculate utilization rate as denominator is equal 0");
-        return Balance::from(total_borrows) * RATIO_DECIMALS / (Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves));
+        return Balance::from(total_borrows) * RATIO_DECIMALS / denominator.unwrap();
     }
 }
 
