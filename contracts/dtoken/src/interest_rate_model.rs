@@ -86,10 +86,14 @@ impl InterestRateModel{
 
     pub fn get_accrued_supply_interest(&mut self, account: AccountId, supply_rate: Ratio) -> Ratio {
         let current_block_height = block_height();
-        let accrued_rate = supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128;
-        self.set_supply_block_by_user(account.clone(), current_block_height);
-        self.set_supply_interest_by_user(account, accrued_rate);
-        accrued_rate
+        if current_block_height == self.get_supply_block_by_user(account.clone()){
+            self.get_supply_interest_by_user(account)
+        } else {
+            let accrued_rate = supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128;
+            self.set_supply_block_by_user(account.clone(), current_block_height);
+            self.set_supply_interest_by_user(account, accrued_rate);
+            accrued_rate
+        }
     }
 }
 
