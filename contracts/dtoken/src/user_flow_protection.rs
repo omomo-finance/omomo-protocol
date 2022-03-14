@@ -70,6 +70,7 @@ mod tests {
     use super::*;
     use near_sdk::{testing_env, VMContext};
     use near_sdk::test_utils::VMContextBuilder;
+    use std::convert::TryFrom;
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()

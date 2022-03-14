@@ -3,6 +3,10 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
+        if !self.mutex.try_lock(env::current_account_id()) {
+            return Promise::new(env::current_account_id());
+        }
+
         return controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -63,6 +67,7 @@ impl Contract {
         } 
         else {
             self.increase_borrows(env::signer_account_id(), token_amount);
+            self.mutex.unlock(env::signer_account_id());
         }
     }
 

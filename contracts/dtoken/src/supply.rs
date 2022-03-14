@@ -4,23 +4,26 @@ use crate::*;
 impl Contract {
     #[payable]
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-        underlying_token::ft_balance_of(
+        if !self.mutex.try_lock(env::current_account_id().clone()) {
+            return PromiseOrValue::Value(U128(0));
+        }
+
+        return underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
             self.terra_gas(40),
         )
-        .then(ext_self::supply_balance_of_callback(
-            token_amount,
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(60),
-        )).into()
+            .then(ext_self::supply_balance_of_callback(
+                token_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(60),
+            )).into();
     }
- 
+
     #[allow(dead_code)]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-
         if !is_promise_success() {
             log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
             return PromiseOrValue::Value(token_amount);
@@ -39,7 +42,7 @@ impl Contract {
         // Dtokens minting and adding them to the user account
         self.mint(
             &self.get_signer_address(),
-            dtoken_amount.into()
+            dtoken_amount.into(),
         );
         log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
@@ -47,7 +50,7 @@ impl Contract {
             self.get_contract_address(),
             Balance::from(token_amount)
         );
-        
+
         controller::increase_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -56,26 +59,26 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(20),
         )
-        .then(ext_self::controller_increase_supplies_callback(
-            token_amount,
-            U128(dtoken_amount),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        )).into()
+            .then(ext_self::controller_increase_supplies_callback(
+                token_amount,
+                U128(dtoken_amount),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            )).into()
     }
 
     #[allow(dead_code)]
     pub fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128> {
-        if !is_promise_success(){
+        if !is_promise_success() {
             log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
             self.burn(
                 &self.get_signer_address(),
-                dtoken_amount.into()
+                dtoken_amount.into(),
             );
             return PromiseOrValue::Value(amount);
-        } 
+        }
+        self.mutex.unlock(env::signer_account_id());
         PromiseOrValue::Value(U128(0))
     }
-
 }
