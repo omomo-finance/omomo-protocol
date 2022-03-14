@@ -29,6 +29,7 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
+use near_sdk::require;
 
 pub type TokenAmount = u128;
 
@@ -107,15 +108,17 @@ trait ControllerInterface {
         _collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
+
 }
 
 #[ext_contract(ext_self)]
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
-    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
+    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
     fn repay(&mut self, token_amount: WBalance, account_id: Option<AccountId>);
+
     fn make_borrow_callback(&mut self, token_amount: WBalance);
     fn repay_balance_of_callback(&mut self, token_amount: WBalance, account_id: Option<AccountId>);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
@@ -123,8 +126,9 @@ trait InternalTokenInterface {
     fn controller_decrease_borrows_fail(&mut self);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
-    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance, token_return_amount: WBalance,);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance);
 
     fn liquidate_callback(&mut self, liquidator: AccountId, amount: WBalance);
 }
@@ -133,9 +137,24 @@ trait InternalTokenInterface {
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
+    pub fn new_with_config(owner_id: AccountId, underlying_token_id: AccountId, controller_account_id: AccountId, initial_exchange_rate: U128) -> Self {
+        Self::new(
+            Config{
+                owner_id: owner_id,
+                underlying_token_id: underlying_token_id,
+                controller_account_id: controller_account_id,
+                initial_exchange_rate: initial_exchange_rate
+            }
+        )
+    }
+
+    /// Initializes the contract with the given config. Needs to be called once.
+    #[init]
     pub fn new(config: Config) -> Self {
+        require!(!env::state_exists(), "Already initialized");
+
         Self {
-            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
+            initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),
