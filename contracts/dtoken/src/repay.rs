@@ -32,8 +32,10 @@ impl Contract {
         };
 
         let borrow_rate: Balance = self.get_borrow_rate(U128(balance_of - Balance::from(token_amount)), U128(self.total_borrows), U128(self.total_reserves));
+        let accrued_rate = self.model.get_accrued_borrow_interest(env::signer_account_id(), borrow_rate);
         let borrow_amount = self.get_borrows_by_account(env::signer_account_id());
-        let borrow_with_rate_amount = borrow_amount * borrow_rate / RATIO_DECIMALS;
+        let borrow_with_rate_amount = borrow_amount + borrow_amount * accrued_rate / RATIO_DECIMALS;
+        
         assert!(Balance::from(token_amount) >= borrow_with_rate_amount);
 
         return controller::repay_borrows(

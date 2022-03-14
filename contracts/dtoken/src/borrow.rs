@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::env::block_height;
 
 #[near_bindgen]
 impl Contract {
@@ -63,6 +64,7 @@ impl Contract {
         } 
         else {
             self.increase_borrows(env::signer_account_id(), token_amount);
+            self.model.set_borrow_block_by_user(env::signer_account_id(), block_height());
         }
     }
 
@@ -84,7 +86,7 @@ impl Contract {
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         let new_borrows = self.total_borrows.overflowing_sub(Balance::from(token_amount));
-        assert_eq!(new_borrows.1, false, "Overflow occurs while decreasing total supply");
+        assert_eq!(new_borrows.1, false, "Overflow occurs while decreasing total borrow");
         self.total_borrows = new_borrows.0;
         
         return self.set_borrows(account.clone(), U128(decreased_borrows));
@@ -99,7 +101,7 @@ impl Contract {
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
         let new_borrows = self.total_borrows.overflowing_add(Balance::from(token_amount));
-        assert_eq!(new_borrows.1, false, "Overflow occurs while incresing total supply");
+        assert_eq!(new_borrows.1, false, "Overflow occurs while incresing total borrow");
         self.total_borrows = new_borrows.0;
         return self.set_borrows(account.clone(), U128(increased_borrows));
     }
