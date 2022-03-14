@@ -101,8 +101,7 @@ mod tests {
         let _contract_account = alice();
 
         // init the contract
-        let contract = Contract::new_default_meta(_contract_account.clone(), TOTAL_SUPPLY.into());
-
+        let contract = Contract::new_default_meta(_contract_account.clone(), String::from("Mock Token"), String::from("MOCK"), TOTAL_SUPPLY.into());
 
         (context, _contract_account, contract)
     }
@@ -160,7 +159,9 @@ mod tests {
     fn test_transfer() {
         let mut context = get_context(accounts(2));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(2), TOTAL_SUPPLY.into());
+
+        let mut contract = Contract::new_default_meta(accounts(2).into(), String::from("Mock Token"), String::from("MOCK"), TOTAL_SUPPLY.into());
+
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(contract.storage_balance_bounds().min.into())

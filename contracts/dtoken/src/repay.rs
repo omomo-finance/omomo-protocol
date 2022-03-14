@@ -22,7 +22,7 @@ impl Contract {
         )).into();
     }
 
-    pub fn controller_repay_borrows_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
+    pub fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             log!("failed to update user {} balance {}: user is not registered", env::signer_account_id(), Balance::from(amount));
             return PromiseOrValue::Value(amount);

@@ -34,7 +34,7 @@ impl Contract {
                 .into(),
         };
         let exchange_rate: Balance = self.get_exchange_rate(balance_of.into());
-        let dtoken_amount = Balance::from(token_amount) * exchange_rate;
+        let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
 
         // Dtokens minting and adding them to the user account
         self.mint(
