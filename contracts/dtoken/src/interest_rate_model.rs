@@ -87,11 +87,14 @@ impl InterestRateModel{
     #[private]
     pub fn get_accrued_borrow_interest(&mut self, account: AccountId, borrow_rate: Ratio) -> Ratio {
         let current_block_height = block_height();
-        // assert_eq!(2, 0 , "{} {}", self.get_borrow_block_by_user(account.clone()), current_block_height);
-        let accrued_rate = borrow_rate * (current_block_height - self.get_borrow_block_by_user(account.clone())) as u128;
-        self.set_borrow_block_by_user(account.clone(), current_block_height);
-        self.set_borrow_interest_by_user(account, accrued_rate);
-        accrued_rate
+        if current_block_height == self.get_borrow_block_by_user(account.clone()){
+            self.get_borrow_interest_by_user(account)
+        } else {
+            let accrued_rate = borrow_rate * (current_block_height - self.get_borrow_block_by_user(account.clone())) as u128;
+            self.set_borrow_block_by_user(account.clone(), current_block_height);
+            self.set_borrow_interest_by_user(account, accrued_rate);
+            accrued_rate
+        }
     }
 }
 
