@@ -46,6 +46,11 @@ impl FungibleTokenReceiver for Contract {
             "SUPPLY" => self.supply(amount),
             "REPAY" => self.repay(amount, None),
             "LIQUIDATION" => {
+
+                // PANIC
+                env::panic_str("Custom panic");
+                // PANIC
+
                 let memo_data = msg["memo"].clone();
 
                 let borrower =
