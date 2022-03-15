@@ -409,7 +409,6 @@ fn scenario_supply() {
         deposit = 1
     ).assert_success();
 
-
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
@@ -484,7 +483,6 @@ fn scenario_withdraw_less_same(){
 #[test]
 fn scenario_withdraw(){
     let (dtoken, controller, utoken, user) = base2_fixture();
-   // let (mut runtime, _, _) = init_runtime(None);
 
     let json = r#"
        {
@@ -529,7 +527,7 @@ fn scenario_withdraw(){
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 30.to_string(), "After withdraw balance should be 30");
+    assert_eq!(dtoken_balance, 27.to_string(), "After withdraw balance should be 27");
 }
 
 #[test]
@@ -714,3 +712,36 @@ fn scenatio_borrow_more_than_on_dtoken(){
     ).unwrap_json();
     assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance on utoken should be 20");
 }
+
+// #[test]
+// fn scenario_accrued_interest_resupply(){
+//     let (dtoken, controller, utoken, user) = repay_more_dtoken_fixture();
+
+//     let json = r#"
+//        {
+//           "action":"SUPPLY",
+//           "memo":{
+//              "borrower":"123",
+//              "borrowing_dtoken":"123",
+//              "liquidator":"123",
+//              "collateral_dtoken":"123",
+//              "liquidation_amount":"123"
+//           }
+//        }"#;
+
+//     call!(
+//         user,
+//         dtoken.supply(
+//             U128(5)
+//         ),
+//         deposit = 0
+//     ).assert_success();
+
+//     call!(
+//         user,
+//         dtoken.supply(
+//             U128(10)
+//         ),
+//         deposit = 0
+//     ).assert_success();
+// }

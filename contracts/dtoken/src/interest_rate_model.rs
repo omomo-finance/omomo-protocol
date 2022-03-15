@@ -16,7 +16,7 @@ pub struct InterestRateModel {
     jump_multiplier_per_block: Ratio,
     reserve_factor: Ratio,
     account_supply_block: LookupMap<AccountId, BlockHeight>,
-    account_supply_interest: LookupMap<AccountId, Ratio>
+    account_supply_interest: LookupMap<AccountId, Balance>
 }
 
 #[near_bindgen]
@@ -45,7 +45,7 @@ impl InterestRateModel{
         self.account_supply_block.get(&account).unwrap_or(0)
     }
 
-    pub fn get_supply_interest_by_user(&self, account: AccountId) -> Ratio{
+    pub fn get_supply_interest_by_user(&self, account: AccountId) -> Balance{
         self.account_supply_interest.get(&account).unwrap_or(0)
     }
 
@@ -74,25 +74,35 @@ impl InterestRateModel{
         self.reserve_factor = value;
     }
 
-    #[private]
-    pub fn set_supply_block_by_user(&mut self, account: AccountId, block_height: BlockHeight){
+    fn set_supply_block_by_user(&mut self, account: AccountId, block_height: BlockHeight){
         self.account_supply_block.insert(&account, &block_height);
     }
 
-    #[private]
-    pub fn set_supply_interest_by_user(&mut self, account: AccountId, interest: Ratio){
+    fn set_supply_interest_by_user(&mut self, account: AccountId, interest: Ratio){
         self.account_supply_interest.insert(&account, &interest);
     }
 
-    pub fn get_accrued_supply_interest(&mut self, account: AccountId, supply_rate: Ratio) -> Ratio {
+    pub fn calculate_interest_on_supply(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) {
         let current_block_height = block_height();
-        if current_block_height == self.get_supply_block_by_user(account.clone()){
-            self.get_supply_interest_by_user(account)
+        if self.get_supply_block_by_user(account.clone()) == 0 {
+            self.set_supply_block_by_user(account, current_block_height);
         } else {
-            let accrued_rate = supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128;
+            let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
             self.set_supply_block_by_user(account.clone(), current_block_height);
             self.set_supply_interest_by_user(account, accrued_rate);
-            accrued_rate
+        }
+    }
+
+    pub fn calculate_interest_on_withdraw(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) -> Balance {
+        let current_block_height = block_height();
+        if current_block_height == self.get_supply_block_by_user(account.clone()) {
+            self.get_supply_interest_by_user(account)
+        } else {
+            let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
+            let total_accrued_rate = self.get_supply_interest_by_user(account.clone()) + accrued_rate;
+            self.set_supply_block_by_user(account.clone(), current_block_height);
+            self.set_supply_interest_by_user(account, 0);
+            total_accrued_rate
         }
     }
 }
@@ -115,26 +125,5 @@ impl Default for InterestRateModel{
             account_supply_block: LookupMap::new(StorageKeys::SupplyBlock),
             account_supply_interest: LookupMap::new(StorageKeys::SupplyInterest),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
-    use crate::{Config, Contract};
-
-    pub fn init_test_env() -> (Contract, AccountId) {
-        let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
-    
-        let contract = Contract::new(Config { 
-            initial_exchange_rate: U128(10000), 
-            underlying_token_id: underlying_token_account.clone() ,
-            owner_id: user_account.clone(), 
-            controller_account_id: controller_account.clone(), 
-        });
-    
-        return (contract, user_account);
     }
 }
