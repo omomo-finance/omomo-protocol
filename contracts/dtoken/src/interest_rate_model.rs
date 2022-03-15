@@ -82,28 +82,12 @@ impl InterestRateModel{
         self.account_supply_interest.insert(&account, &interest);
     }
 
-    pub fn calculate_interest_on_supply(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) {
+    pub fn calculate_accrued_supply_interest(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) {
         let current_block_height = block_height();
-        if self.get_supply_block_by_user(account.clone()) == 0 {
-            self.set_supply_block_by_user(account, current_block_height);
-        } else {
-            let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
-            self.set_supply_block_by_user(account.clone(), current_block_height);
-            self.set_supply_interest_by_user(account, accrued_rate);
-        }
-    }
-
-    pub fn calculate_interest_on_withdraw(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) -> Balance {
-        let current_block_height = block_height();
-        if current_block_height == self.get_supply_block_by_user(account.clone()) {
-            self.get_supply_interest_by_user(account)
-        } else {
-            let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
-            let total_accrued_rate = self.get_supply_interest_by_user(account.clone()) + accrued_rate;
-            self.set_supply_block_by_user(account.clone(), current_block_height);
-            self.set_supply_interest_by_user(account, 0);
-            total_accrued_rate
-        }
+        let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
+        let total_accrued_rate = self.get_supply_interest_by_user(account.clone()) + accrued_rate;
+        self.set_supply_block_by_user(account.clone(), current_block_height);
+        self.set_supply_interest_by_user(account, total_accrued_rate);
     }
 }
 

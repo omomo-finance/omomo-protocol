@@ -527,7 +527,7 @@ fn scenario_withdraw(){
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 27.to_string(), "After withdraw balance should be 27");
+    assert_eq!(dtoken_balance, 52.to_string(), "After withdraw balance should be 52");
 }
 
 #[test]
