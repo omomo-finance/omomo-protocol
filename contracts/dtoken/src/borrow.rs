@@ -45,10 +45,7 @@ impl Contract {
         &mut self,
         token_amount: WBalance,
     ) {
-        if is_promise_success(){
-            self.increase_borrows(env::signer_account_id(), token_amount);
-        } 
-        else {
+        if !is_promise_success(){
             log!("Failed to transfer tokens from {} to user {} with token amount {}", self.get_contract_address(), env::signer_account_id(), Balance::from(token_amount));
             controller::decrease_borrows(
                 env::signer_account_id(),
@@ -58,15 +55,18 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(10),
             )
-            .then(ext_self::controller_decrease_borrows_callback(
+            .then(ext_self::controller_decrease_borrows_fail(
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
                 self.terra_gas(10),
             ));
+        } 
+        else {
+            self.increase_borrows(env::signer_account_id(), token_amount);
         }
     }
 
-    pub fn controller_decrease_borrows_callback(&mut self){
+    pub fn controller_decrease_borrows_fail(&mut self){
         if !is_promise_success(){
             log!("Failed to decrease borrows for {}", env::signer_account_id());
             // TODO Account should be marked
@@ -83,9 +83,9 @@ impl Contract {
         assert!(existing_borrows >= Balance::from(token_amount), "Repay amount is more than existing borrows");
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
-        let new_borrows = self.total_borrows.overflowing_sub(Balance::from(token_amount));
-        assert_eq!(new_borrows.1, false, "Overflow occurs while decreasing total supply");
-        self.total_borrows = new_borrows.0;
+        let new_total_borrows = self.total_borrows.checked_sub(Balance::from(token_amount));
+        assert!(new_total_borrows.is_some(), "Overflow occurs while decreasing total borrow");
+        self.total_borrows = new_total_borrows.unwrap();
         
         return self.set_borrows(account.clone(), U128(decreased_borrows));
     }
@@ -98,9 +98,9 @@ impl Contract {
         let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
-        let new_borrows = self.total_borrows.overflowing_add(Balance::from(token_amount));
-        assert_eq!(new_borrows.1, false, "Overflow occurs while incresing total supply");
-        self.total_borrows = new_borrows.0;
+        let new_total_borrows = self.total_borrows.checked_add(Balance::from(token_amount));
+        assert!(new_total_borrows.is_some(), "Overflow occurs while incresing total borrow");
+        self.total_borrows = new_total_borrows.unwrap();
         return self.set_borrows(account.clone(), U128(increased_borrows));
     }
 
