@@ -12,7 +12,7 @@ impl Contract {
         )
         .then(ext_self::supply_balance_of_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(60),
         )).into()
@@ -62,7 +62,7 @@ impl Contract {
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
             U128(dtoken_amount),
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(10),
         )).into()
@@ -74,7 +74,7 @@ impl Contract {
             log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
             self.burn(
                 &self.get_signer_address(),
-                dtoken_amount.into()
+                dtoken_amount
             );
             return PromiseOrValue::Value(amount);
         } 

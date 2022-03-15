@@ -6,7 +6,7 @@ use controller::ActionType;
 use controller::ActionType::{Supply, Borrow};
 use dtoken::Config as dConfig;
 use crate::utils::{init_controller, init_dtoken, init_utoken};
-use near_sdk_sim::runtime::init_runtime;
+
 
 
 fn assert_failure(outcome: ExecutionResult, error_message: &str) {
@@ -455,7 +455,7 @@ fn scenario_withdraw_more(){
 
 #[test]
 fn scenario_withdraw_less_same(){
-    let (dtoken, controller, utoken, user) = withdraw_fixture();
+    let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
     
     // Withdraw less

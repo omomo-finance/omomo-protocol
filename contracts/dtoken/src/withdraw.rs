@@ -40,6 +40,8 @@ impl Contract {
         self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_user_supply(env::signer_account_id()));
         let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
 
+        
+
         return controller::withdraw_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
