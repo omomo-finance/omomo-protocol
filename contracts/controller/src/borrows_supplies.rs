@@ -133,7 +133,7 @@ impl Contract {
     ) -> bool {
         require!(
             !self.is_action_paused.withdraw,
-            "Withdraw is paused"
+            "withdrawing is paused"
         );
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         existing_supplies >= Balance::from(token_amount)
@@ -165,7 +165,7 @@ impl Contract {
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _token_amount: WBalance) -> bool {
         require!(
             !self.is_action_paused.borrow,
-            "Withdraw is paused"
+            "borrowing is paused"
         );
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
