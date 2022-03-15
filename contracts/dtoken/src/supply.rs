@@ -33,6 +33,7 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
+
         let exchange_rate: Balance = self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
         let supply_rate: Ratio = self.get_supply_rate(U128(balance_of - Balance::from(token_amount)), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        

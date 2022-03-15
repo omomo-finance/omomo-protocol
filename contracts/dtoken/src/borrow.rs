@@ -84,7 +84,7 @@ impl Contract {
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         let new_total_borrows = self.total_borrows.checked_sub(Balance::from(token_amount));
-        assert!(new_total_borrows.is_some(), "Overflow occurs while decreasing total supply");
+        assert!(new_total_borrows.is_some(), "Overflow occurs while decreasing total borrow");
         self.total_borrows = new_total_borrows.unwrap();
         
         return self.set_borrows(account.clone(), U128(decreased_borrows));
@@ -99,7 +99,7 @@ impl Contract {
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
         let new_total_borrows = self.total_borrows.checked_add(Balance::from(token_amount));
-        assert!(new_total_borrows.is_some(), "Overflow occurs while incresing total supply");
+        assert!(new_total_borrows.is_some(), "Overflow occurs while incresing total borrow");
         self.total_borrows = new_total_borrows.unwrap();
         return self.set_borrows(account.clone(), U128(increased_borrows));
     }

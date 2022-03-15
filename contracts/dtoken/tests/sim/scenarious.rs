@@ -384,7 +384,7 @@ fn scenario_supply_not_enough_balance(){
 
 #[test]
 fn scenario_supply() {
-    let (dtoken, controller, utoken, user) = base_fixture();
+    let (dtoken, controller, utoken, user) = base2_fixture();
 
     let json = r#"
        {
@@ -417,7 +417,7 @@ fn scenario_supply() {
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance should be 20");
+    assert_eq!(dtoken_balance, 60.to_string(), "Dtoken balance should be 60");
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance on controller should be 20");
