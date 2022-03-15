@@ -64,7 +64,7 @@ impl Contract {
         } 
         else {
             self.increase_borrows(env::signer_account_id(), token_amount);
-            self.model.set_borrow_block_by_user(env::signer_account_id(), block_height());
+            // self.model.calculate_interest_on_borrow(env::signer_account_id(), block_height());
         }
     }
 
