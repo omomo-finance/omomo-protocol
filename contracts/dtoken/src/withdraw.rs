@@ -37,8 +37,8 @@ impl Contract {
 
         let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
         let supply_rate: Ratio = self.get_supply_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        
+        self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_user_supply(env::signer_account_id()));
         let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
-        let token_return_amount: Balance = token_amount + Balance::from(dtoken_amount) * supply_rate / RATIO_DECIMALS;
 
         return controller::withdraw_supplies(
             env::signer_account_id(),
@@ -52,7 +52,6 @@ impl Contract {
             env::signer_account_id(),
             token_amount.into(),
             dtoken_amount.into(),
-            token_return_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
             self.terra_gas(120),
@@ -64,7 +63,6 @@ impl Contract {
         user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
-        token_return_amount: WBalance,
     ) ->Promise {
         let promise_success: bool = is_promise_success();
 
@@ -73,8 +71,8 @@ impl Contract {
         // Cross-contract call to market token
         underlying_token::ft_transfer(
             user_account,
-            token_return_amount,
-            Some(format!("Withdraw with token_amount {}", Balance::from(token_return_amount))),
+            token_amount,
+            Some(format!("Withdraw with token_amount {}", Balance::from(token_amount))),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
             self.terra_gas(40),

@@ -31,8 +31,6 @@ impl Contract {
     pub fn terra_gas(&self, gas: u64) -> Gas {
         return TGAS * gas;
     }
-
-    
 }
 
 #[near_bindgen]
