@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn test_for_supply_and_borrow_getters() {
-        let (mut near_contract, token_address, user_account) = init_test_env();
+        let (near_contract, token_address, user_account) = init_test_env();
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 0);
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 0);
     }
