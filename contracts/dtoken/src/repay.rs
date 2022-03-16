@@ -51,7 +51,15 @@ impl Contract {
             U128(self.total_reserves),
         );
         let borrow_amount = self.get_borrows_by_account(env::signer_account_id());
-        let borrow_with_rate_amount = borrow_amount * borrow_rate / RATIO_DECIMALS;
+        self.model.calculate_accrued_borrow_interest(
+            env::signer_account_id(),
+            borrow_rate,
+            self.get_borrows_by_account(env::signer_account_id()),
+        );
+        let accrued_rate = self
+            .model
+            .get_borrow_interest_by_user(env::signer_account_id());
+        let borrow_with_rate_amount = borrow_amount + accrued_rate;
         assert!(Balance::from(token_amount) >= borrow_with_rate_amount);
 
         controller::repay_borrows(
@@ -93,6 +101,10 @@ impl Contract {
             env::signer_account_id(),
             U128(self.get_borrows_by_account(env::signer_account_id())),
         );
+        self.model
+            .set_borrow_block_by_user(env::signer_account_id(), 0);
+        self.model
+            .set_borrow_interest_by_user(env::signer_account_id(), 0);
 
         self.mutex.unlock(env::signer_account_id());
         PromiseOrValue::Value(U128(extra_balance))
