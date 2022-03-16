@@ -59,7 +59,7 @@ impl Contract {
         self.model.calculate_accrued_supply_interest(
             env::signer_account_id(),
             supply_rate,
-            self.get_user_supply(env::signer_account_id()),
+            self.get_supplies_by_account(env::signer_account_id()),
         );
 
         // Dtokens minting and adding them to the user account
@@ -111,7 +111,7 @@ impl Contract {
         PromiseOrValue::Value(U128(0))
     }
 
-    pub fn get_user_supply(&self, _account: AccountId) -> Balance {
-        20
+    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
+        self.token.accounts.get(&account).unwrap_or(0).into()
     }
 }
