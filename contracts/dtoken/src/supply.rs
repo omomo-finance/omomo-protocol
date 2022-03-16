@@ -82,6 +82,6 @@ impl Contract {
     }
 
     pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
-        self.token.internal_unwrap_balance_of(&account)
+        self.token.accounts.get(&account).unwrap_or(0).into()
     }
 }
