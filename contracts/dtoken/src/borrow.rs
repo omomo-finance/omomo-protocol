@@ -1,8 +1,40 @@
 use crate::*;
+use near_sdk::require;
 
 #[near_bindgen]
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
+        underlying_token::ft_balance_of(
+            env::current_account_id(),
+            self.get_underlying_contract_address(),
+            NO_DEPOSIT,
+            self.terra_gas(40),
+        )
+        .then(ext_self::borrow_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(200),
+        )).into()
+    }
+
+    pub fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> Promise {
+        require!(
+            is_promise_success(),
+            format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address())
+        );
+
+        let balance_of: Balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let borrow_rate: Balance = self.get_borrow_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves));
+        self.model.calculate_accrued_borrow_interest(env::signer_account_id(), borrow_rate, self.get_borrows_by_account(env::signer_account_id()));
+
         return controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -22,9 +54,8 @@ impl Contract {
     pub fn make_borrow_callback(
         &mut self,
         token_amount: WBalance,
-    ) ->Promise {
+    ) -> Promise {
         assert_eq!(is_promise_success(), true, "Failed to increase borrow for {} with token amount {}", env::signer_account_id(), Balance::from(token_amount));
-
         underlying_token::ft_transfer(
             env::signer_account_id(),
             token_amount,

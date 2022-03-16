@@ -15,7 +15,6 @@ impl Contract {
     }
 
     pub fn get_borrow_rate(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves: WBalance) -> Ratio {
-
         let util = self.get_util(underlying_balance, total_borrows, total_reserves);
         let kink = self.model.get_kink();
         let multiplier_per_block = self.model.get_multiplier_per_block();
