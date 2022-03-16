@@ -3,8 +3,9 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> Promise {
-        if !self.mutex.try_lock(env::current_account_id().clone()) {
-            return Promise::new(env::current_account_id().clone());
+        if !self.mutex.try_lock(env::current_account_id()) {
+            log!("Withdraw action for account: {} not allowed", env::current_account_id());
+            return Promise::new(env::current_account_id());
         }
 
         return underlying_token::ft_balance_of(
@@ -128,7 +129,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         if is_promise_success() {
-            log!("Token amount: {} was succesfully increased after transfer fail for account {}", Balance::from(token_amount), env::signer_account_id());
+            log!("Token amount: {} was successfully increased after transfer fail for account {}", Balance::from(token_amount), env::signer_account_id());
         } else {
             log!("Failed to increase supplies for {}", env::signer_account_id());
 

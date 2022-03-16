@@ -3,7 +3,8 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-        if !self.mutex.try_lock(env::current_account_id().clone()) {
+        if !self.mutex.try_lock(env::current_account_id()) {
+            log!("Repay action for account: {} not allowed", env::current_account_id());
             return PromiseOrValue::Value(U128(0));
         }
 
