@@ -29,7 +29,7 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance,
-               BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
+               BorshStorageKey, Gas, PromiseOrValue, PromiseResult, BlockHeight};
 use near_sdk::require;
 
 pub type TokenAmount = u128;
