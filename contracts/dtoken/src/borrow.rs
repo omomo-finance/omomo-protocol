@@ -1,9 +1,38 @@
 use crate::*;
-use near_sdk::env::block_height;
 
 #[near_bindgen]
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
+        underlying_token::ft_balance_of(
+            env::current_account_id(),
+            self.get_underlying_contract_address(),
+            NO_DEPOSIT,
+            self.terra_gas(40),
+        )
+        .then(ext_self::borrow_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(200),
+        )).into()
+    }
+
+    pub fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> Promise {
+        if !is_promise_success() {
+            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
+        }
+
+        let balance_of: Balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let borrow_rate: Balance = self.get_borrow_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves));
+        self.model.calculate_interest_on_borrow(env::signer_account_id(), borrow_rate, self.get_borrows_by_account(env::signer_account_id()));
+
         return controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
@@ -23,9 +52,8 @@ impl Contract {
     pub fn make_borrow_callback(
         &mut self,
         token_amount: WBalance,
-    ) ->Promise {
+    ) -> Promise {
         assert_eq!(is_promise_success(), true, "Failed to increase borrow for {} with token amount {}", env::signer_account_id(), Balance::from(token_amount));
-
         underlying_token::ft_transfer(
             env::signer_account_id(),
             token_amount,
@@ -64,7 +92,6 @@ impl Contract {
         } 
         else {
             self.increase_borrows(env::signer_account_id(), token_amount);
-            // self.model.calculate_interest_on_borrow(env::signer_account_id(), block_height());
         }
     }
 
@@ -85,9 +112,9 @@ impl Contract {
         assert!(existing_borrows >= Balance::from(token_amount), "Repay amount is more than existing borrows");
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
-        let new_borrows = self.total_borrows.overflowing_sub(Balance::from(token_amount));
-        assert_eq!(new_borrows.1, false, "Overflow occurs while decreasing total borrow");
-        self.total_borrows = new_borrows.0;
+        let new_total_borrows = self.total_borrows.checked_sub(Balance::from(token_amount));
+        assert!(new_total_borrows.is_some(), "Overflow occurs while decreasing total borrow");
+        self.total_borrows = new_total_borrows.unwrap();
         
         return self.set_borrows(account.clone(), U128(decreased_borrows));
     }
@@ -100,9 +127,9 @@ impl Contract {
         let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
-        let new_borrows = self.total_borrows.overflowing_add(Balance::from(token_amount));
-        assert_eq!(new_borrows.1, false, "Overflow occurs while incresing total borrow");
-        self.total_borrows = new_borrows.0;
+        let new_total_borrows = self.total_borrows.checked_add(Balance::from(token_amount));
+        assert!(new_total_borrows.is_some(), "Overflow occurs while incresing total borrow");
+        self.total_borrows = new_total_borrows.unwrap();
         return self.set_borrows(account.clone(), U128(increased_borrows));
     }
 

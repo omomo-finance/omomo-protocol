@@ -1,20 +1,18 @@
 use crate::*;
 
 impl Contract {
-
     pub fn get_price_sum(&self, map_raw: Option<UnorderedMap<AccountId, Balance>>) -> Balance {
         let mut result: Balance = 0;
         if let Some(map) = map_raw {
             for (asset, balance) in map.iter() {
                 let price = self.get_price(asset).unwrap();
-                result +=  Percentage::from(price.volatility).apply_to(price.value * balance);
+                result += Percentage::from(price.volatility).apply_to(price.value * balance);
             }
         }
-        return  result;
+        return result;
     }
 
     fn get_account_sum_per_action(&self, user_account: AccountId, action: ActionType) -> Balance {
-
         let map_raw: Option<UnorderedMap<AccountId, Balance>> = match action {
             ActionType::Supply => self.account_supplies.get(&user_account),
             ActionType::Borrow => self.account_borrows.get(&user_account),
@@ -23,7 +21,7 @@ impl Contract {
         return self.get_price_sum(map_raw);
     }
 
-    pub fn get_health_factor(&self, user_account: AccountId ) -> Ratio {
+    pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
         let mut ratio = RATIO_DECIMALS;
         let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
         let borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
@@ -34,16 +32,15 @@ impl Contract {
 
         return ratio;
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use near_sdk::test_utils::test_env::{alice, bob};
 
-    // use crate::borrows_supplies::ActionType::{Borrow, Supply};
-
     use super::*;
+
+// use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
     fn init() -> (Contract, AccountId, AccountId) {
         let (_owner_account, user_account) = (alice(), bob());
@@ -54,17 +51,17 @@ mod tests {
         prices.push(Price {
             asset_id: AccountId::new_unchecked("wnear.near".to_string()),
             value: 2,
-            volatility: 80
+            volatility: 80,
         });
         prices.push(Price {
             asset_id: AccountId::new_unchecked("weth.near".to_string()),
             value: 2,
-            volatility: 100
+            volatility: 100,
         });
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,
-            price_list: prices
+            price_list: prices,
         });
 
 
@@ -91,7 +88,6 @@ mod tests {
         raw_map.insert(&AccountId::new_unchecked("wnear.near".to_string()), &balance);
 
         assert_eq!(controller_contract.get_price_sum(Some(raw_map)), 160, "Test for None Option has been failed");
-
     }
 
     #[test]
@@ -105,18 +101,15 @@ mod tests {
         controller_contract.increase_supplies(
             user_account.clone(),
             AccountId::new_unchecked("wnear.near".to_string()),
-            WBalance::from(balance)
+            WBalance::from(balance),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
             AccountId::new_unchecked("weth.near".to_string()),
-            WBalance::from(balance)
+            WBalance::from(balance),
         );
 
-        assert_eq!(controller_contract.get_health_factor(user_account.clone()), (80 * RATIO_DECIMALS / 100) , "Health factor calculation has been failed");
-
+        assert_eq!(controller_contract.get_health_factor(user_account.clone()), (80 * RATIO_DECIMALS / 100), "Health factor calculation has been failed");
     }
-
-
 }

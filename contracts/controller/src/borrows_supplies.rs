@@ -1,3 +1,5 @@
+use near_sdk::require;
+
 use crate::*;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
@@ -19,10 +21,10 @@ impl Contract {
         let account_entry = accounts.get(&account);
 
         if let None = account_entry {
-                let mut account_map: UnorderedMap<AccountId, u128> =
-                    UnorderedMap::new(key_prefix);
-                account_map.insert(&token_address, &token_amount);
-                accounts.insert(&account, &account_map);
+            let mut account_map: UnorderedMap<AccountId, u128> =
+                UnorderedMap::new(key_prefix);
+            account_map.insert(&token_address, &token_amount);
+            accounts.insert(&account, &account_map);
         } else {
             account_entry
                 .unwrap()
@@ -129,9 +131,12 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> bool {
+        require!(
+            !self.is_action_paused.withdraw,
+            "withdrawing is paused"
+        );
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-
-        return existing_supplies >= Balance::from(token_amount);
+        existing_supplies >= Balance::from(token_amount)
     }
 
     pub fn withdraw_supplies(
@@ -158,10 +163,15 @@ impl Contract {
 
     #[warn(dead_code)]
     fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _token_amount: WBalance) -> bool {
+        require!(
+            !self.is_action_paused.borrow,
+            "borrowing is paused"
+        );
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         // TODO add check if allowed  (USD-estimated ACCOUNT SUPPLIES > USD-estimated ACCOUNT BORROWED  * ratio ? (or just 0.8) )
+
 
         // FIXME mock-checking for now
         return true;
@@ -185,29 +195,33 @@ impl Contract {
             token_address,
             Balance::from(token_amount)
         );
-       self.increase_borrows(account_id, token_address, token_amount);
+        self.increase_borrows(account_id, token_address, token_amount);
     }
 }
 
 
 #[cfg(test)]
 mod tests {
+    use near_sdk::AccountId;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
-    use crate::{Config, Contract};
 
+    use crate::{Config, Contract};
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-    
-        let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-    
+
+        let near_contract = Contract::new(Config {
+            owner_id: owner_account,
+            oracle_account_id: oracle_account,
+        });
+
         let token_address: AccountId = "near".parse().unwrap();
-    
-        return (eth_contract, token_address, user_account);
+
+        return (near_contract, token_address, user_account);
     }
+
 
     #[test]
     fn test_for_supply_and_borrow_getters() {

@@ -5,6 +5,8 @@ use near_sdk::env::block_height;
 pub enum StorageKeys {
     BorrowBlock,
     BorrowInterest,
+    SupplyBlock,
+    SupplyInterest
 }
 
 #[near_bindgen]
@@ -16,7 +18,9 @@ pub struct InterestRateModel {
     jump_multiplier_per_block: Ratio,
     reserve_factor: Ratio,
     account_borrow_block: LookupMap<AccountId, BlockHeight>,
-    account_borrow_interest: LookupMap<AccountId, Balance>
+    account_borrow_interest: LookupMap<AccountId, Balance>,
+    account_supply_block: LookupMap<AccountId, BlockHeight>,
+    account_supply_interest: LookupMap<AccountId, Balance>
 }
 
 #[near_bindgen]
@@ -47,6 +51,14 @@ impl InterestRateModel{
 
     pub fn get_borrow_interest_by_user(&self, account: AccountId) -> Balance{
         self.account_borrow_interest.get(&account).unwrap_or(0)
+    }
+
+    pub fn get_supply_block_by_user(&self, account: AccountId) -> BlockHeight{
+        self.account_supply_block.get(&account).unwrap_or(0)
+    }
+
+    pub fn get_supply_interest_by_user(&self, account: AccountId) -> Balance{
+        self.account_supply_interest.get(&account).unwrap_or(0)
     }
 
     #[private]
@@ -81,21 +93,15 @@ impl InterestRateModel{
     fn set_borrow_interest_by_user(&mut self, account: AccountId, interest: Balance){
         self.account_borrow_interest.insert(&account, &interest);
     }
-
-    #[private]
-    pub fn get_accrued_borrow_interest(&mut self, account: AccountId, borrow_rate: Ratio) -> Ratio {
-        let current_block_height = block_height();
-        if current_block_height == self.get_borrow_block_by_user(account.clone()){
-            self.get_borrow_interest_by_user(account)
-        } else {
-            let accrued_rate = borrow_rate * (current_block_height - self.get_borrow_block_by_user(account.clone())) as u128;
-            self.set_borrow_block_by_user(account.clone(), current_block_height);
-            self.set_borrow_interest_by_user(account, accrued_rate);
-            accrued_rate
-        }
+    
+    fn set_supply_block_by_user(&mut self, account: AccountId, block_height: BlockHeight){
+        self.account_supply_block.insert(&account, &block_height);
     }
 
-    #[private]
+    fn set_supply_interest_by_user(&mut self, account: AccountId, interest: Ratio){
+        self.account_supply_interest.insert(&account, &interest);
+    }
+
     pub fn calculate_interest_on_borrow(&mut self, account: AccountId, borrow_rate: Ratio, total_borrow: Balance) {
         let current_block_height = block_height();
         if self.get_borrow_block_by_user(account.clone()) == 0 {
@@ -107,18 +113,21 @@ impl InterestRateModel{
         }
     }
 
-    #[private]
     pub fn calculate_interest_on_repay(&mut self, account: AccountId, borrow_rate: Ratio, total_borrow: Balance) -> Balance {
         let current_block_height = block_height();
-        if current_block_height == self.get_borrow_block_by_user(account.clone()) {
-            self.get_borrow_interest_by_user(account)
-        } else {
-            let accrued_rate = total_borrow * borrow_rate * (current_block_height - self.get_borrow_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
-            let total_accrued_rate = self.get_borrow_interest_by_user(account.clone()) + accrued_rate;
-            self.set_borrow_block_by_user(account.clone(), current_block_height);
-            self.set_borrow_interest_by_user(account, 0);
-            total_accrued_rate
-        }
+        let accrued_rate = total_borrow * borrow_rate * (current_block_height - self.get_borrow_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
+        let total_accrued_rate = self.get_borrow_interest_by_user(account.clone()) + accrued_rate;
+        self.set_borrow_block_by_user(account.clone(), 0);
+        self.set_borrow_interest_by_user(account, 0);
+        total_accrued_rate
+    }
+
+    pub fn calculate_accrued_supply_interest(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) {
+        let current_block_height = block_height();
+        let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
+        let total_accrued_rate = self.get_supply_interest_by_user(account.clone()) + accrued_rate;
+        self.set_supply_block_by_user(account.clone(), current_block_height);
+        self.set_supply_interest_by_user(account, total_accrued_rate);
     }
 }
 
@@ -139,6 +148,8 @@ impl Default for InterestRateModel{
             reserve_factor: InterestRateModel::get_with_ratio_decimals(0.05),
             account_borrow_block: LookupMap::new(StorageKeys::BorrowBlock),
             account_borrow_interest: LookupMap::new(StorageKeys::BorrowInterest),
+            account_supply_block: LookupMap::new(StorageKeys::SupplyBlock),
+            account_supply_interest: LookupMap::new(StorageKeys::SupplyInterest),
         }
     }
 }
