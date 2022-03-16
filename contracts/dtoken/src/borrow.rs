@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::require;
 
 #[near_bindgen]
 impl Contract {
@@ -18,9 +19,10 @@ impl Contract {
     }
 
     pub fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> Promise {
-        if !is_promise_success() {
-            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
-        }
+        require!(
+            is_promise_success(),
+            format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address())
+        );
 
         let balance_of: Balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
@@ -31,7 +33,7 @@ impl Contract {
         };
 
         let borrow_rate: Balance = self.get_borrow_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves));
-        self.model.calculate_interest_on_borrow(env::signer_account_id(), borrow_rate, self.get_borrows_by_account(env::signer_account_id()));
+        self.model.calculate_accrued_borrow_interest(env::signer_account_id(), borrow_rate, self.get_borrows_by_account(env::signer_account_id()));
 
         return controller::make_borrow(
             env::signer_account_id(),
