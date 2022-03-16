@@ -5,8 +5,7 @@ impl Contract {
     #[payable]
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !self.mutex.try_lock(env::current_account_id()) {
-            log!("Supply action for account: {} not allowed", env::current_account_id());
-            return PromiseOrValue::Value(U128(0));
+            panic!("Supply action for account: {} not allowed", env::current_account_id());
         }
 
         return underlying_token::ft_balance_of(

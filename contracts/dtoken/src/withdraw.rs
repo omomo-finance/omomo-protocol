@@ -4,8 +4,7 @@ use crate::*;
 impl Contract {
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> Promise {
         if !self.mutex.try_lock(env::current_account_id()) {
-            log!("Withdraw action for account: {} not allowed", env::current_account_id());
-            return Promise::new(env::current_account_id());
+            panic!("Withdraw action for account: {} not allowed", env::current_account_id());
         }
 
         return underlying_token::ft_balance_of(
