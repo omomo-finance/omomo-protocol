@@ -36,9 +36,12 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
-        let exchange_rate: Balance = self.get_exchange_rate(balance_of.into());
-        let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
 
+        let exchange_rate: Balance = self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
+        let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
+        let supply_rate: Ratio = self.get_supply_rate(U128(balance_of - Balance::from(token_amount)), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        
+        self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_user_supply(env::signer_account_id()));
+        
         // Dtokens minting and adding them to the user account
         self.mint(
             &self.get_signer_address(),
@@ -59,13 +62,13 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(20),
         )
-            .then(ext_self::controller_increase_supplies_callback(
-                token_amount,
-                U128(dtoken_amount),
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            )).into()
+        .then(ext_self::controller_increase_supplies_callback(
+            token_amount,
+            U128(dtoken_amount),
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(10),
+        )).into()
     }
 
     #[allow(dead_code)]
@@ -74,11 +77,16 @@ impl Contract {
             log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
             self.burn(
                 &self.get_signer_address(),
-                dtoken_amount.into(),
+                dtoken_amount
             );
             return PromiseOrValue::Value(amount);
         }
         self.mutex.unlock(env::signer_account_id());
         PromiseOrValue::Value(U128(0))
     }
+
+    pub fn get_user_supply(&self, _account: AccountId) -> Balance{
+        20
+    }
+
 }

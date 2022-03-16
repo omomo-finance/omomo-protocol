@@ -7,12 +7,10 @@ const MAX_RESERVE_FACTOR_VALUE: Ratio = 1 * RATIO_DECIMALS;
 impl Contract {
     pub fn get_supply_rate(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance, reserve_factor: WBalance) -> Ratio {
         assert!(Balance::from(reserve_factor) <= MAX_RESERVE_FACTOR_VALUE, "Reserve factor should be less {}", MAX_RESERVE_FACTOR_VALUE);
-        
         let rest_of_supply_factor = RATIO_DECIMALS - Balance::from(reserve_factor);
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
-
         util_rate * rate_to_pool / RATIO_DECIMALS
     }
 
@@ -23,7 +21,6 @@ impl Contract {
         let multiplier_per_block = self.model.get_multiplier_per_block();
         let base_rate_per_block =self.model.get_base_rate_per_block();
         let jump_multiplier_per_block = self.model.get_jump_multiplier_per_block();
-    
         return min(util, kink) * multiplier_per_block / RATIO_DECIMALS + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block / RATIO_DECIMALS + base_rate_per_block        
     }
 
@@ -33,7 +30,7 @@ impl Contract {
         let denominator = sum_balance_borrows.unwrap().checked_sub(Balance::from(total_reserves));
         assert!(denominator.is_some(), "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
         assert_ne!(denominator.unwrap(), 0, "Cannot calculate utilization rate as denominator is equal 0");
-        return Balance::from(total_borrows) * RATIO_DECIMALS / (Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves));
+        return Balance::from(total_borrows) * RATIO_DECIMALS / denominator.unwrap();
     }
 }
 
@@ -41,7 +38,7 @@ impl Contract {
 mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use near_sdk::AccountId;
+    
     use crate::{Config, Contract};
 
     pub fn init_test_env() -> Contract {
