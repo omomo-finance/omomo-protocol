@@ -50,26 +50,16 @@ impl Contract {
         let exchange_rate: Balance =
             self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
-<<<<<<< feature/added_supplies_view_methods
-        let supply_rate: Ratio = self.get_supply_rate(U128(balance_of - Balance::from(token_amount)), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        
-        self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_supplies_by_account(env::signer_account_id()));
-        
-        // Dtokens minting and adding them to the user account
-        self.mint(
-            &self.get_signer_address(),
-            dtoken_amount.into()
-=======
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.total_borrows),
             U128(self.total_reserves),
             U128(self.model.get_reserve_factor()),
->>>>>>> master
         );
         self.model.calculate_accrued_supply_interest(
             env::signer_account_id(),
             supply_rate,
-            self.get_user_supply(env::signer_account_id()),
+            self.get_supplies_by_account(env::signer_account_id()),
         );
 
         // Dtokens minting and adding them to the user account
@@ -121,12 +111,7 @@ impl Contract {
         PromiseOrValue::Value(U128(0))
     }
 
-<<<<<<< feature/added_supplies_view_methods
     pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
         self.token.accounts.get(&account).unwrap_or(0).into()
-=======
-    pub fn get_user_supply(&self, _account: AccountId) -> Balance {
-        20
->>>>>>> master
     }
 }
