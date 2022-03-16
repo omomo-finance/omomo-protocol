@@ -154,7 +154,7 @@ impl Contract {
         }
     }
 
-    pub fn withdraw_increase_supplies_callback(&mut self, _token_amount: WBalance) {
+    pub fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>{
         if !is_promise_success() {
             log!(
                 "failed to revert state for {}",
@@ -162,8 +162,10 @@ impl Contract {
             );
 
             // TODO Account should be marked
+            return PromiseOrValue::Value(token_amount);
         }
 
         self.mutex.unlock(env::signer_account_id());
+        return PromiseOrValue::Value(token_amount);
     }
 }

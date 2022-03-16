@@ -441,13 +441,11 @@ fn scenario_withdraw_with_no_supply(){
 fn scenario_withdraw_more(){
     let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
-    let result = call!(
+    call!(
         user,
         dtoken.withdraw(U128(30)),
         deposit = 0
-    );
-
-    assert_failure(result, "Withdrawal operation is not allowed");
+    ).assert_success();
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
@@ -455,10 +453,9 @@ fn scenario_withdraw_more(){
 
 #[test]
 fn scenario_withdraw_less_same(){
+    todo!("scenario is broken because action mutex does not allow two actions in a row");
     let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
-    //TODO: scenario not work because action mutex not allowed 2 action
-    // Withdraw less
     call!(
         user,
         dtoken.withdraw(U128(10)),
@@ -477,13 +474,13 @@ fn scenario_withdraw_less_same(){
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Balance should be 0");
-
 }
 
 #[test]
 fn scenario_withdraw(){
+    todo!("scenario is broken because action mutex does not allow two actions in a row");
     let (dtoken, controller, utoken, user) = base2_fixture();
-    //TODO: scenario not work because action mutex not allowed 2 action
+
     let json = r#"
        {
           "action":"SUPPLY",
