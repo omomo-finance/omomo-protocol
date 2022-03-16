@@ -27,5 +27,8 @@ pub struct Price {
     pub value: Balance,
 
     /// Asset volatility value
-    pub volatility: Percent // 0..100%
+    pub volatility: Percent, // 0..100%
+
+    /// Asset precision digits number
+    pub fraction_digits: u32
 }
