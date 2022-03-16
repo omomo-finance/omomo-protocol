@@ -55,8 +55,8 @@ impl Contract {
         self.liquidation_incentive
     }
 
-    pub fn get_health_factor_threshold(self) -> Ratio {
-        require!(self.is_valid_admin_call(), "this functionality is allowed to be called by admin or contract only");
+    pub fn get_health_factor_threshold(&self) -> Ratio {
+        //require!(self.is_valid_admin_call(), "this functionality is allowed to be called by admin or contract only");
 
         self.health_factor_threshold
     }
