@@ -4,7 +4,7 @@ use crate::*;
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> Promise {
         if !self.mutex.try_lock(env::current_account_id()) {
-            panic!("Borrow action for account: {} not allowed", env::current_account_id());
+            panic!("failed to acquire action mutex for account {}", env::current_account_id());
         }
 
         return controller::make_borrow(

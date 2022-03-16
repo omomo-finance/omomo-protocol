@@ -4,7 +4,7 @@ use crate::*;
 impl Contract {
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !self.mutex.try_lock(env::current_account_id()) {
-            panic!("Repay action for account: {} not allowed", env::current_account_id());
+            panic!("failed to acquire action mutex for account {}", env::current_account_id());
         }
 
         return underlying_token::ft_balance_of(
