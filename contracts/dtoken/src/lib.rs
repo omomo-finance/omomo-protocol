@@ -110,16 +110,16 @@ trait InternalTokenInterface {
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
-    fn make_borrow_callback(&mut self, token_amount: WBalance);
-    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
-    fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
-    fn controller_decrease_borrows_fail(&mut self);
+    fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn controller_decrease_borrows_fail(&mut self) -> PromiseOrValue<WBalance>;
 
-    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
-    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
-    fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
-    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance);
+    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> PromiseOrValue<WBalance>;
+    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
 
 }
 
