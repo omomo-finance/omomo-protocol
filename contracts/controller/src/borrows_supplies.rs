@@ -197,6 +197,48 @@ impl Contract {
         );
         self.increase_borrows(account_id, token_address, token_amount);
     }
+
+    pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
+        let mut balance: Balance = 0;
+
+        let account_entry = self.account_borrows.get(&account);
+
+        if let None = account_entry {
+            return U128(balance);
+        }
+
+        let account_borrow = account_entry.unwrap();
+
+        for (asset, asset_amount) in account_borrow.iter() {
+            let asset_price = self.get_price(asset.clone()).unwrap().value;
+
+            balance += asset_price * asset_amount;
+        }
+
+        U128(balance)
+    }
+
+    pub fn get_total_supplies(&self, account: AccountId) -> WBalance {
+        let mut balance: Balance = 0;
+
+        let account_entry = self.account_supplies.get(&account);
+
+        if let None = account_entry {
+            return U128(balance);
+        }
+
+        let account_supply = account_entry.unwrap();
+
+        for (asset, asset_amount) in account_supply.iter() {
+            let asset_price = self.get_price(asset.clone()).unwrap().value;
+
+            balance += asset_price * asset_amount;
+        }
+
+        U128(balance)
+    }
+
+
 }
 
 

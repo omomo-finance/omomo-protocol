@@ -1,4 +1,4 @@
-use near_sdk::AccountId;
+use near_sdk::{AccountId, Balance};
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 use controller::{Config as cConfig};
@@ -82,14 +82,14 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
      let (uroot, utoken, _u_user) = initialize_utoken(&root);
      let (_croot, controller, _c_user) = initialize_controller(&root);
      let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
- 
+
      call!(
          uroot,
          utoken.mint(dtoken.account_id(), U128(0)),
          0,
          100000000000000
      );
- 
+
      call!(
          uroot,
          utoken.mint(d_user.account_id(), U128(20)),
@@ -248,7 +248,7 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
 
 fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
-              
+
     let (uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
@@ -354,6 +354,13 @@ fn scenario_supply_not_enough_balance(){
 fn scenario_supply() {
     let (dtoken, controller, utoken, user) = base2_fixture();
 
+    // checking by implemented getter
+    let init_dtoken_total_supplies: Balance = view!(
+        dtoken.get_total_supplies()
+    ).unwrap_json();
+
+    assert_eq!(init_dtoken_total_supplies, 0, "dtoken total supplies should be 40");
+
     let json = r#"
        {
           "action":"SUPPLY",
@@ -382,6 +389,13 @@ fn scenario_supply() {
     ).unwrap_json();
     assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
 
+    // checking by implemented getter after supplying
+    let dtoken_total_supplies: Balance = view!(
+        dtoken.get_total_supplies()
+    ).unwrap_json();
+
+    assert_eq!(dtoken_total_supplies, 20, "dtoken total supplies should be 40");
+
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
@@ -389,7 +403,7 @@ fn scenario_supply() {
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance on controller should be 20");
-    
+
 }
 
 #[test]
@@ -561,7 +575,7 @@ fn scenario_repay(){
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 23.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 2723");
-    
+
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
             user.account_id()
@@ -604,7 +618,7 @@ fn scenario_repay_more_than_borrow(){
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 23.to_string(), "As it was borrowed 10 tokens and repayed 13 tokens (rate 1.3333), balance should be 7");
-    
+
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
             user.account_id()
