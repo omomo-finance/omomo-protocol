@@ -20,16 +20,21 @@ impl Contract {
         // Update & insert operation
         self.prices.insert(&price.asset_id, &price);
     }
+
+    pub fn get_markets(&self) -> LookupMap<AccountId, AccountId> {
+        self.markets.clone()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-
+    use assert_matches::assert_matches;
     use near_sdk::AccountId;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use assert_matches::assert_matches;
 
     use crate::{Config, Contract};
+
+    use super::*;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
@@ -41,8 +46,6 @@ mod tests {
         return (eth_contract, token_address, user_account);
     }
 
-    use super::*;
-
     #[test]
     fn test_add_get_price() {
         let (mut near_contract, token_address, _user_account) = init_test_env();
@@ -51,7 +54,7 @@ mod tests {
             // adding price of Near
             asset_id: token_address.clone(),
             value: 20,
-            volatility: 100
+            volatility: 100,
         };
 
         near_contract.upsert_price(&price);
@@ -59,7 +62,7 @@ mod tests {
         let gotten_price = near_contract.get_price(token_address).unwrap();
         assert_matches!(&gotten_price, _price, "Get price format check has been failed");
         assert_eq!(&gotten_price.value, &price.value, "Get price values check has been failed");
-        assert_eq!(&gotten_price.volatility, &price.volatility,  "Get price volatility check has been failed");
+        assert_eq!(&gotten_price.volatility, &price.volatility, "Get price volatility check has been failed");
         assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");
     }
 }
