@@ -20,9 +20,11 @@ impl Contract {
  
     #[allow(dead_code)]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-
         if !is_promise_success() {
-            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "supply_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,  
+                env::signer_account_id(), Balance::from(token_amount), self.get_contract_address(), self.get_underlying_contract_address()
+            );
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -71,13 +73,19 @@ impl Contract {
     #[allow(dead_code)]
     pub fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success(){
-            log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "supply_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} supply balance of {} on controller"}}}}"#,  
+                env::signer_account_id(), Balance::from(amount), env::signer_account_id(), self.get_contract_address()
+            );
             self.burn(
                 &self.get_signer_address(),
                 dtoken_amount
             );
             return PromiseOrValue::Value(amount);
         } 
+        log!(
+            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "supply_success", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  env::signer_account_id(), Balance::from(amount)
+        );
         PromiseOrValue::Value(U128(0))
     }
 

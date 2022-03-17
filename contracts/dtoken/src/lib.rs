@@ -111,7 +111,7 @@ trait InternalTokenInterface {
     fn repay_balance_of_callback(&mut self, token_amount: WBalance);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
     fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
-    fn controller_decrease_borrows_fail(&mut self);
+    fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance,);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);

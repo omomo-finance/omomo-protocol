@@ -19,7 +19,10 @@ impl Contract {
 
     pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "repay_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,  
+                env::signer_account_id(), Balance::from(token_amount), self.get_contract_address(), self.get_underlying_contract_address()
+            );
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -55,11 +58,17 @@ impl Contract {
 
     pub fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            log!("failed to update user {} balance {}: user is not registered", env::signer_account_id(), Balance::from(amount));
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "repay_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to update user {} balance {}: user is not registered"}}}}"#,  
+                env::signer_account_id(), Balance::from(borrow_amount), env::signer_account_id(), Balance::from(borrow_amount)
+            );
             return PromiseOrValue::Value(amount);
         } 
         let extra_balance = Balance::from(amount) - Balance::from(borrow_amount);
         self.decrease_borrows(env::signer_account_id(), U128(self.get_borrows_by_account(env::signer_account_id())));
+        log!(
+            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "repay_success", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  env::signer_account_id(), Balance::from(borrow_amount)
+        );
         return PromiseOrValue::Value(U128(extra_balance));
         
     }

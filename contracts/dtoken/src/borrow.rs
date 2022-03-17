@@ -23,7 +23,13 @@ impl Contract {
         &mut self,
         token_amount: WBalance,
     ) ->Promise {
-        assert_eq!(is_promise_success(), true, "Failed to increase borrow for {} with token amount {}", env::signer_account_id(), Balance::from(token_amount));
+        if !is_promise_success() {
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "borrow_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to make borrow for {} on {} token amount"}}}}"#,  
+                env::signer_account_id(), Balance::from(token_amount), env::signer_account_id(), Balance::from(token_amount)
+            ); 
+            panic!(); 
+        } 
 
         underlying_token::ft_transfer(
             env::signer_account_id(),
@@ -56,6 +62,7 @@ impl Contract {
                 self.terra_gas(10),
             )
             .then(ext_self::controller_decrease_borrows_fail(
+                token_amount,
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
                 self.terra_gas(10),
@@ -63,12 +70,18 @@ impl Contract {
         } 
         else {
             self.increase_borrows(env::signer_account_id(), token_amount);
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "borrow_success", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  env::signer_account_id(), Balance::from(token_amount)
+            );
         }
     }
 
-    pub fn controller_decrease_borrows_fail(&mut self){
+    pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance,){
         if !is_promise_success(){
-            log!("Failed to decrease borrows for {}", env::signer_account_id());
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "borrow_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to decrease borrow for {} on {} token amount after transfer fail"}}}}"#,  
+                env::signer_account_id(), Balance::from(token_amount), env::signer_account_id(), Balance::from(token_amount)
+            );
             // TODO Account should be marked
         }
     }

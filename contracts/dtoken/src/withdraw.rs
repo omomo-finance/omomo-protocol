@@ -19,14 +19,14 @@ impl Contract {
     }
 
     pub fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> Promise {
-        let promise_success: bool = is_promise_success();
-        assert_eq!(
-            promise_success,
-            true,
-            "Withdraw has failed on receiving UToken balance_of: Account {} token {}",
-            env::signer_account_id(),
-            self.get_underlying_contract_address()
-        );
+        if !is_promise_success() {
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "withdraw_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,  
+                env::signer_account_id(), Balance::from(dtoken_amount), self.get_contract_address(), self.get_underlying_contract_address()
+            );
+            panic!();
+        }
+
         let balance_of: Balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
@@ -39,8 +39,6 @@ impl Contract {
         let supply_rate: Ratio = self.get_supply_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        
         self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_user_supply(env::signer_account_id()));
         let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
-
-        
 
         return controller::withdraw_supplies(
             env::signer_account_id(),
@@ -66,9 +64,13 @@ impl Contract {
         token_amount: WBalance,
         dtoken_amount: WBalance,
     ) ->Promise {
-        let promise_success: bool = is_promise_success();
-
-        assert_eq!(promise_success, true, "Withdraw supplies has been failed");
+        if !is_promise_success(){
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "withdraw_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to decrease {} supply balance of {} on controller"}}}}"#,  
+                env::signer_account_id(), Balance::from(token_amount), env::signer_account_id(), self.get_contract_address()
+            );
+            panic!();
+        } 
 
         // Cross-contract call to market token
         underlying_token::ft_transfer(
@@ -126,11 +128,15 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         if is_promise_success(){
-            log!("Token amount: {} was succesfully increased after transfer fail for account {}", Balance::from(token_amount), env::signer_account_id());
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "withdraw_success", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  env::signer_account_id(), Balance::from(token_amount)
+            );
         } 
         else {
-            log!("Failed to increase supplies for {}", env::signer_account_id());
-
+            log!(
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "withdraw_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} supply balance of {} on controller after ft_transfer fail"}}}}"#,  
+                env::signer_account_id(), Balance::from(token_amount), env::signer_account_id(), self.get_contract_address()
+            );
             // Account should be marked
         }
 
