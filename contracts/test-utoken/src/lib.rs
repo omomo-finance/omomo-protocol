@@ -6,6 +6,7 @@ use near_sdk::{AccountId, near_bindgen, PanicOnDefault, PromiseOrValue, env};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
+use near_sdk::require;
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
@@ -21,15 +22,14 @@ const DATA_IMAGE_SVG_NEAR_ICON: &str = "data:image/svg+xml,%3Csvg xmlns='http://
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new_default_meta(owner_id: AccountId, total_supply: U128) -> Self {
+    pub fn new_default_meta(owner_id: AccountId, name: String, symbol: String, total_supply: U128) -> Self {
         Self::new(
             owner_id,
             total_supply,
             FungibleTokenMetadata {
                 spec: FT_METADATA_SPEC.to_string(),
-                // FIXME rename the symbol and name field
-                name: "dmytro".to_string(),
-                symbol: "DMTR".to_string(),
+                name: name,
+                symbol: symbol,
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
                 reference: None,
                 reference_hash: None,
@@ -45,7 +45,8 @@ impl Contract {
         total_supply: U128,
         metadata: FungibleTokenMetadata,
     ) -> Self {
-        assert!(!env::state_exists(), "Already initialized");
+        require!(!env::state_exists(), "Already initialized");
+
         metadata.assert_valid();
         let mut this = Self {
             token: FungibleToken::new(b"a".to_vec()),
@@ -100,8 +101,8 @@ mod tests {
         let _contract_account = alice();
 
         // init the contract
-        let contract = Contract::new_default_meta(_contract_account.clone(), TOTAL_SUPPLY.into());
 
+        let contract = Contract::new_default_meta(_contract_account.clone(), String::from("Mock Token"), String::from("MOCK"), TOTAL_SUPPLY.into());
 
         (context, _contract_account, contract)
     }
@@ -159,7 +160,9 @@ mod tests {
     fn test_transfer() {
         let mut context = get_context(accounts(2));
         testing_env!(context.build());
-        let mut contract = Contract::new_default_meta(accounts(2).into(), TOTAL_SUPPLY.into());
+
+        let mut contract = Contract::new_default_meta(accounts(2).into(), String::from("Mock Token"), String::from("MOCK"), TOTAL_SUPPLY.into());
+
         testing_env!(context
             .storage_usage(env::storage_usage())
             .attached_deposit(contract.storage_balance_bounds().min.into())

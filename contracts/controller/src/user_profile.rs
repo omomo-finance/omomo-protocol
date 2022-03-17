@@ -1,6 +1,8 @@
-#[near_bindgen]
+use near_sdk::collections::UnorderedMap;
+use crate::*;
+
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct UserProfile {
+pub struct UserProfileControllerStorage {
     /// User Account ID -> Dtoken address -> Supplies balance
     pub account_supplies: UnorderedMap<AccountId, Balance>,
 
@@ -8,10 +10,9 @@ pub struct UserProfile {
     pub account_borrows: UnorderedMap<AccountId, Balance>,
 }
 
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserProfileController {
-    user_profiles: LookupMap<AccountId, UserProfile>,
+    user_profiles: LookupMap<AccountId, UserProfileControllerStorage>,
 }
 
 impl Default for UserProfileController {
@@ -22,21 +23,20 @@ impl Default for UserProfileController {
     }
 }
 
-#[near_bindgen]
 impl UserProfileController {
     pub fn store_supply_amount(&mut self, account_id: AccountId, amount: Balance) {
         if self.is_exist(account_id.clone()) {
             let mut profile = self.get_user_profile(account_id.clone());
             profile.account_supplies.insert(&account_id, &amount);
         } else {
-            let mut profile = UserProfile {
+            let mut profile = UserProfileControllerStorage {
                 account_supplies: UnorderedMap::new(b"s".to_vec()),
                 account_borrows: UnorderedMap::new(b"s".to_vec()),
             };
             profile.account_supplies.insert(&account_id, &amount);
             self.user_profiles.insert(&account_id, &profile);
         }
-        log!("Stored supply amount: {} for account: {}",amount,account_id);
+        log!("Stored supply amount: {} for account: {}", amount, account_id);
     }
 
     pub fn store_borrow_amount(&mut self, account_id: AccountId, amount: Balance) {
@@ -44,14 +44,14 @@ impl UserProfileController {
             let mut profile = self.get_user_profile(account_id.clone());
             profile.account_borrows.insert(&account_id, &amount);
         } else {
-            let mut profile = UserProfile {
+            let mut profile = UserProfileControllerStorage {
                 account_supplies: UnorderedMap::new(b"s".to_vec()),
                 account_borrows: UnorderedMap::new(b"s".to_vec()),
             };
             profile.account_borrows.insert(&account_id.clone(), &amount);
             self.user_profiles.insert(&account_id, &profile);
         }
-        log!("Stored borrow amount: {} for account: {}",amount,account_id);
+        log!("Stored borrow amount: {} for account: {}", amount, account_id);
     }
 
     pub fn remove(&mut self, account_id: AccountId) {
@@ -60,7 +60,7 @@ impl UserProfileController {
         }
     }
 
-    pub fn get_user_profile(&self, account_id: AccountId) -> UserProfile {
+    pub fn get_user_profile(&self, account_id: AccountId) -> UserProfileControllerStorage {
         self.user_profiles.get(&account_id).unwrap()
     }
 
@@ -78,7 +78,7 @@ mod tests {
     use std::convert::TryFrom;
     use super::*;
     use near_sdk::{testing_env, VMContext};
-    use near_sdk::test_utils::{ VMContextBuilder};
+    use near_sdk::test_utils::{VMContextBuilder};
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()

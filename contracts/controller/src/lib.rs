@@ -1,11 +1,11 @@
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen, log};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
+use near_sdk::require;
 
 #[allow(unused_imports)]
 use general::*;
@@ -15,7 +15,7 @@ pub use crate::config::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
-
+pub use crate::user_profile::*;
 
 #[allow(unused_imports)]
 mod config;
@@ -23,10 +23,9 @@ mod oraclehook;
 mod prices;
 pub mod borrows_supplies;
 pub mod repay;
-mod test_utils;
 mod healthfactor;
-
-
+mod admin;
+pub mod user_profile;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -56,6 +55,25 @@ pub struct Contract {
 
     /// Contract configuration object
     pub config: LazyOption<Config>,
+
+    /// Contract admin account (controller itself by default)
+    pub admin: AccountId,
+
+    /// Configuration for pausing/proceeding controller processes (false by default)
+    pub is_action_paused: ActionStatus,
+
+    /// Health Factor
+    pub health_factor_threshold: Ratio,
+
+    /// Liquidation Incentive
+    pub liquidation_incentive: Ratio,
+
+    /// Reserve Factor
+    pub reserve_factor: Percent,
+
+    ///Controller User Profile
+    pub user_profile: UserProfileController
+
 }
 
 impl Default for Contract {
@@ -74,6 +92,17 @@ pub struct PriceJsonList {
     pub price_list: Vec<Price>,
 }
 
+
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ActionStatus {
+    supply: bool,
+    withdraw: bool,
+    borrow: bool,
+    repay: bool,
+    liquidate: bool,
+}
+
 pub trait OraclePriceHandlerHook {
     fn oracle_on_data(&mut self, price_data: PriceJsonList);
 }
@@ -82,13 +111,38 @@ pub trait OraclePriceHandlerHook {
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
+    pub fn new_with_config(owner_id: AccountId, oracle_account_id: AccountId) -> Self {
+        Self::new(
+            Config{
+                owner_id: owner_id,
+                oracle_account_id: oracle_account_id
+            }
+        )
+    }
+
+    /// Initializes the contract with the given config. Needs to be called once.
+    #[init]
     pub fn new(config: Config) -> Self {
+        require!(!env::state_exists(), "Already initialized");
+
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
             account_supplies: LookupMap::new(StorageKeys::Supplies),
             account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
+            admin: config.owner_id,
+            is_action_paused: ActionStatus {
+                withdraw: false,
+                repay: false,
+                supply: false,
+                liquidate: false,
+                borrow: false,
+            },
+            health_factor_threshold: 0,
+            liquidation_incentive: 0,
+            reserve_factor: 0,
+            user_profile: UserProfileController::default()
         }
     }
 }

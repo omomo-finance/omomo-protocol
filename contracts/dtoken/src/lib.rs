@@ -6,6 +6,7 @@ mod repay;
 mod supply;
 mod withdraw;
 mod interest_model;
+mod interest_rate_model;
 mod user_profile;
 
 pub use crate::borrow::*;
@@ -16,6 +17,7 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::withdraw::*;
 pub use crate::interest_model::*;
+pub use crate::interest_rate_model::*;
 pub use crate::user_profile::*;
 
 
@@ -29,6 +31,7 @@ use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance,
                BorshStorageKey, Gas, Promise, PromiseOrValue, PromiseResult, BlockHeight};
+use near_sdk::require;
 
 pub type TokenAmount = u128;
 
@@ -65,6 +68,11 @@ pub struct Contract {
 
     /// BlockHeight of last action user produced
     actions: LookupMap<AccountId, BlockHeight>,
+
+    model: InterestRateModel,
+
+    ///Dtoken user profile
+    user_profile: UserProfileDtoken
 }
 
 impl Default for Contract {
@@ -101,25 +109,43 @@ trait ControllerInterface {
 trait InternalTokenInterface {
     fn supply_balance_of_callback(&mut self, token_amount: WBalance);
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
-    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<U128>;
+    fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
     fn make_borrow_callback(&mut self, token_amount: WBalance);
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance);
-    fn controller_decrease_borrows_callback(&mut self);
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
+    fn controller_decrease_borrows_fail(&mut self);
 
     fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
+    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance);
+
 }
 
 #[near_bindgen]
 impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
+    pub fn new_with_config(owner_id: AccountId, underlying_token_id: AccountId, controller_account_id: AccountId, initial_exchange_rate: U128) -> Self {
+        Self::new(
+            Config{
+                owner_id: owner_id,
+                underlying_token_id: underlying_token_id,
+                controller_account_id: controller_account_id,
+                initial_exchange_rate: initial_exchange_rate
+            }
+        )
+    }
+
+    /// Initializes the contract with the given config. Needs to be called once.
+    #[init]
     pub fn new(config: Config) -> Self {
+        require!(!env::state_exists(), "Already initialized");
+
         Self {
-            initial_exchange_rate: u128::from(config.initial_exchange_rate.clone()),
+            initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
             total_borrows: 0,
             borrows: UnorderedMap::new(StorageKeys::Borrows),
@@ -127,6 +153,8 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
+            model: InterestRateModel::default(),
+            user_profile: UserProfileDtoken::default()
         }
     }
 }

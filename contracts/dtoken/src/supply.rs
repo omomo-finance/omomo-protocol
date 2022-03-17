@@ -4,14 +4,6 @@ use crate::*;
 impl Contract {
     #[payable]
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-        let user_profile = UserProfileDtoken::default();
-        let supply_amount = user_profile.get_profile(self.get_signer_address().clone()).supply_amount as u128;
-        if user_profile.is_exist(self.get_signer_address().clone()) &&
-            supply_amount > 0 {
-            log!("Failed supply, account is exist and supply amount is {}", supply_amount);
-            PromiseOrValue::Value(token_amount)
-        }
-
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
@@ -20,7 +12,7 @@ impl Contract {
         )
             .then(ext_self::supply_balance_of_callback(
                 token_amount,
-                env::current_account_id().clone(),
+                env::current_account_id(),
                 NO_DEPOSIT,
                 self.terra_gas(60),
             )).into()
@@ -40,8 +32,10 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
-        let exchange_rate: Balance = self.get_exchange_rate(balance_of.into());
-        let dtoken_amount = Balance::from(token_amount) * exchange_rate;
+        let exchange_rate: Balance = self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
+        let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
+        let supply_rate: Ratio = self.get_supply_rate(U128(balance_of - Balance::from(token_amount)), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));
+        self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_user_supply(env::signer_account_id()));
 
         // Dtokens minting and adding them to the user account
         self.mint(
@@ -66,7 +60,7 @@ impl Contract {
             .then(ext_self::controller_increase_supplies_callback(
                 token_amount,
                 U128(dtoken_amount),
-                env::current_account_id().clone(),
+                env::current_account_id(),
                 NO_DEPOSIT,
                 self.terra_gas(10),
             )).into()
@@ -78,10 +72,19 @@ impl Contract {
             log!("failed to increase supply {} balance of {} on controller", env::signer_account_id(), self.get_contract_address());
             self.burn(
                 &self.get_signer_address(),
-                dtoken_amount.into(),
+                dtoken_amount,
             );
             return PromiseOrValue::Value(amount);
         }
+
+        if !self.user_profile.is_exist(env::signer_account_id()) {
+            self.user_profile.set_supply_amount(env::signer_account_id(), amount);
+        }
+
         PromiseOrValue::Value(U128(0))
+    }
+
+    pub fn get_user_supply(&self, _account: AccountId) -> Balance {
+        20
     }
 }

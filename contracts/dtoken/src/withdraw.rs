@@ -1,44 +1,24 @@
-use near_sdk::PromiseOrValue::Promise;
 use crate::*;
-
-impl Contract {
-    pub fn withdraw_ft_transfer_fallback(
-        &mut self,
-        user_account: AccountId,
-        token_amount: WBalance,
-        dtoken_amount: WBalance,
-    ) {
-        log!(
-            "withdraw_ft_transfer_fallback - user {}, tokens {}, dtokens {}",
-            user_account,
-            Balance::from(token_amount),
-            Balance::from(dtoken_amount)
-        );
-        //TODO: implement fallback method
-    }
-}
 
 #[near_bindgen]
 impl Contract {
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> Promise {
-        let user_profile = UserProfileDtoken::default();
-        if !user_profile.is_exist(self.get_signer_address().clone()) {
-            log!("failed withdraw, uer profile is not exist: {}", self.get_contract_address());
-            Promise::new(())
+        if !self.user_profile.is_exist(env::current_account_id()) {
+            panic!("failed withdraw, user profile is not exist: {}", env::current_account_id());
         }
 
-        underlying_token::ft_balance_of(
+        return underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-            .then(ext_self::withdraw_balance_of_callback(
-                Balance::from(dtoken_amount),
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(140),
-            ))
+        .then(ext_self::withdraw_balance_of_callback(
+            Balance::from(dtoken_amount),
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(160),
+        ));
     }
 
     pub fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> Promise {
@@ -59,8 +39,12 @@ impl Contract {
                 .into(),
         };
 
-        let exchange_rate: Balance = self.get_exchange_rate(WBalance::from(balance_of));
-        let token_amount: Balance = Balance::from(dtoken_amount) / exchange_rate;
+        let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
+        let supply_rate: Ratio = self.get_supply_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves), U128(self.model.get_reserve_factor()));        
+        self.model.calculate_accrued_supply_interest(env::signer_account_id(), supply_rate, self.get_user_supply(env::signer_account_id()));
+        let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
+
+        
 
         return controller::withdraw_supplies(
             env::signer_account_id(),
@@ -70,14 +54,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-            .then(ext_self::withdraw_supplies_callback(
-                env::signer_account_id(),
-                token_amount.into(),
-                dtoken_amount.into(),
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(70),
-            ));
+        .then(ext_self::withdraw_supplies_callback(
+            env::signer_account_id(),
+            token_amount.into(),
+            dtoken_amount.into(),
+            env::current_account_id().clone(),
+            NO_DEPOSIT,
+            self.terra_gas(120),
+        ));
     }
 
     pub fn withdraw_supplies_callback(
@@ -87,9 +71,7 @@ impl Contract {
         dtoken_amount: WBalance,
     ) -> Promise {
         let promise_success: bool = is_promise_success();
-
         assert_eq!(promise_success, true, "Withdraw supplies has been failed");
-        let user_profile = UserProfileDtoken::default();
 
         // Cross-contract call to market token
         underlying_token::ft_transfer(
@@ -100,31 +82,62 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(40),
         )
-            .then(ext_self::withdraw_ft_transfer_call_callback(
-                dtoken_amount.into(),
-                token_amount.into(),
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            ))
+        .then(ext_self::withdraw_ft_transfer_call_callback(
+            token_amount.into(),
+            dtoken_amount.into(),
+            env::current_account_id().clone(),
+            NO_DEPOSIT,
+            self.terra_gas(50),
+        ))
     }
 
     pub fn withdraw_ft_transfer_call_callback(
         &mut self,
         token_amount: WBalance,
         dtoken_amount: WBalance,
-    ) -> bool {
-        let promise_success: bool = is_promise_success();
-
-        if promise_success {
+    )  {
+        if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
         } else {
-            self.withdraw_ft_transfer_fallback(
+
+            log!(
+                "withdraw_ft_transfer_fallback - user {}, tokens {}, dtokens {}",
                 env::signer_account_id(),
-                token_amount,
-                dtoken_amount,
+                Balance::from(token_amount),
+                Balance::from(dtoken_amount)
             );
+    
+            controller::increase_supplies(
+                env::signer_account_id(),
+                self.get_contract_address(),
+                token_amount,
+                self.get_controller_address(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            )
+            .then(ext_self::withdraw_increase_supplies_callback(
+                token_amount,
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ));
         }
-        return promise_success;
+    }
+
+    pub fn withdraw_increase_supplies_callback(
+        &mut self,
+        token_amount: WBalance,
+    ) -> bool {
+        if is_promise_success(){
+            log!("Token amount: {} was succesfully increased after transfer fail for account {}", Balance::from(token_amount), env::signer_account_id());
+        } 
+        else {
+            log!("Failed to increase supplies for {}", env::signer_account_id());
+
+            // Account should be marked
+        }
+
+        return is_promise_success();
     }
 }
+

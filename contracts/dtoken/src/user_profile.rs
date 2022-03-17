@@ -7,20 +7,18 @@ pub enum Action {
     Borrow,
 }
 
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct UserProfile {
+pub struct UserProfileStorage {
     ///  Supply user amount
-    pub(crate) supply_amount: WBalance,
+    supply_amount: WBalance,
 
     ///  Borrow user amount
-    pub(crate) borrow_amount: WBalance,
+    borrow_amount: WBalance,
 }
 
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserProfileDtoken {
-    user_profile_list: LookupMap<AccountId, UserProfile>,
+    user_profile_list: LookupMap<AccountId, UserProfileStorage>,
 }
 
 impl Default for UserProfileDtoken {
@@ -31,12 +29,11 @@ impl Default for UserProfileDtoken {
     }
 }
 
-#[near_bindgen]
 impl UserProfileDtoken {
     pub fn set_supply_amount(&mut self, account_id: AccountId, amount: WBalance) {
-        log!("Set supply amount: {} for account: {}", amount as u128, account_id);
+        log!("Set supply amount: {} for account: {}", u128::from(amount), account_id);
         if !self.is_exist(account_id.clone()) {
-            let user_profile = UserProfile { supply_amount: amount, borrow_amount: 0 as WBalance };
+            let user_profile = UserProfileStorage { supply_amount: amount, borrow_amount: U128::from(0) };
             self.user_profile_list.insert(&account_id, &user_profile);
         } else {
             let mut user_profile = self.user_profile_list.get(&account_id).unwrap();
@@ -47,9 +44,9 @@ impl UserProfileDtoken {
     }
 
     pub fn set_borrow_amount(&mut self, account_id: AccountId, amount: WBalance) {
-        log!("Set borrow amount: {} for account: {}", amount as u128, account_id);
+        log!("Set borrow amount: {} for account: {}", u128::from(amount), account_id);
         if !self.is_exist(account_id.clone()) {
-            let user_profile = UserProfile { supply_amount: 0 as WBalance, borrow_amount: amount };
+            let user_profile = UserProfileStorage { supply_amount: U128::from(0), borrow_amount: amount };
             self.user_profile_list.insert(&account_id, &user_profile);
         } else {
             let mut user_profile = self.user_profile_list.get(&account_id).unwrap();
@@ -65,7 +62,7 @@ impl UserProfileDtoken {
         }
     }
 
-    pub fn get_profile(&self, account_id: AccountId) -> UserProfile {
+    pub fn get_profile(&self, account_id: AccountId) -> UserProfileStorage {
         self.user_profile_list.get(&account_id).unwrap()
     }
 }
@@ -94,7 +91,7 @@ mod tests {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = UserProfileDtoken::default();
-        contract.set_supply_amount(AccountId::try_from("alice_near".to_string()).unwrap(), 200 as WBalance);
+        contract.set_supply_amount(AccountId::try_from("alice_near".to_string()).unwrap(), U128::from(200));
         assert!(contract.is_exist(AccountId::try_from("alice_near".to_string()).unwrap()));
     }
 
@@ -103,7 +100,7 @@ mod tests {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = UserProfileDtoken::default();
-        contract.set_borrow_amount(AccountId::try_from("alice_near".to_string()).unwrap(), 200 as WBalance);
+        contract.set_borrow_amount(AccountId::try_from("alice_near".to_string()).unwrap(), U128::from(200));
         assert!(contract.is_exist(AccountId::try_from("alice_near".to_string()).unwrap()));
     }
 
@@ -112,9 +109,9 @@ mod tests {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = UserProfileDtoken::default();
-        contract.set_supply_amount(AccountId::try_from("alice_near".to_string()).unwrap(), 200 as WBalance);
-        contract.set_supply_amount(AccountId::try_from("bob_near".to_string()).unwrap(), 400 as WBalance);
-        contract.set_supply_amount(AccountId::try_from("marly_near".to_string()).unwrap(), 400 as WBalance);
+        contract.set_supply_amount(AccountId::try_from("alice_near".to_string()).unwrap(), U128::from(200));
+        contract.set_supply_amount(AccountId::try_from("bob_near".to_string()).unwrap(), U128::from(400));
+        contract.set_supply_amount(AccountId::try_from("marly_near".to_string()).unwrap(), U128::from(400));
         assert!(contract.is_exist(AccountId::try_from("bob_near".to_string()).unwrap()));
     }
 
@@ -123,8 +120,8 @@ mod tests {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = UserProfileDtoken::default();
-        contract.set_supply_amount(AccountId::try_from("alice_near".to_string()).unwrap(), 200 as WBalance);
-        contract.set_supply_amount(AccountId::try_from("bob_near".to_string()).unwrap(), 400 as WBalance);
+        contract.set_supply_amount(AccountId::try_from("alice_near".to_string()).unwrap(), U128::from(200));
+        contract.set_supply_amount(AccountId::try_from("bob_near".to_string()).unwrap(), U128::from(400));
         assert!(!contract.is_exist(AccountId::try_from("marly_near".to_string()).unwrap()));
     }
 }
