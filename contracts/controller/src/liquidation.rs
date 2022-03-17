@@ -1,6 +1,5 @@
 use crate::*;
 use near_sdk::PromiseOrValue;
-use near_sdk::{log};
 
 #[near_bindgen]
 impl Contract {

@@ -1,8 +1,7 @@
-use std::time::Duration;
 use near_sdk::AccountId;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view, to_yocto};
+use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 use controller::{Config as cConfig};
 use controller::ActionType;
 use controller::ActionType::{Supply, Borrow};
@@ -417,7 +416,7 @@ fn scenario_withdraw_more(){
 
 #[test]
 fn scenario_withdraw_less_same(){
-    let (dtoken, controller, utoken, user) = withdraw_fixture();
+    let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
     // Withdraw less
     call!(
@@ -568,14 +567,7 @@ fn scenario_repay_more_than_borrow(){
 
     let json = r#"
        {
-          "action":"REPAY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
+          "action":"REPAY"
        }"#;
 
      call!(
@@ -686,14 +678,14 @@ fn scenario_liquidation_success()
             String::from(json)
         ),
         deposit = 1
-    ).logs());
+    ).outcome());
 
     let json = json!({
         "action": "LIQUIDATION",
         "memo": {
             "borrower": user.account_id.as_str(),
             "borrowing_dtoken": dtoken.account_id().as_str(),
-            "liquidator": "HfYFjMKNZygfMC8LsQ8LtpPsPxEJoXJx4M6tqi75Hajo",
+            "liquidator": "test.testnet",
             "collateral_dtoken": dtoken.account_id().as_str(),
             "liquidation_amount": U128(10)
         }
@@ -703,12 +695,12 @@ fn scenario_liquidation_success()
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(1),
+            U128(10),
             None,
             json.to_string()
         ),
         deposit = 1
-    ));
+    ).outcome());
 
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(

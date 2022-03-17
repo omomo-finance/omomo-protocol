@@ -16,6 +16,9 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
+
+        assert!(true, "Custom assert");
+
         assert_eq!(
             env::predecessor_account_id(),
             self.underlying_token,
@@ -43,14 +46,9 @@ impl FungibleTokenReceiver for Contract {
         // TODO: In future make action not a single one, but array in JSON message
         let action: &str = msg["action"].as_str().unwrap();
         match action {
-            "SUPPLY" => self.supply(amount),
+            "SUPPLY" =>  env::panic_str("Custom panic"), //PromiseOrValue::Value(U128(0)), //self.supply(amount),
             "REPAY" => self.repay(amount, None),
             "LIQUIDATION" => {
-
-                // PANIC
-                env::panic_str("Custom panic");
-                // PANIC
-
                 let memo_data = msg["memo"].clone();
 
                 let borrower =
