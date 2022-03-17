@@ -10,8 +10,8 @@ impl Contract {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(self.get_contract_address(), borrowing_dtoken);
-        assert_eq!(self.get_borrows_by_account(borrower.clone()), 0);
+        //assert_eq!(self.get_contract_address(), borrowing_dtoken);
+        //assert_eq!(self.get_borrows_by_account(borrower.clone()), 0);
 
         controller::liquidation(
             borrower,
@@ -21,14 +21,14 @@ impl Contract {
             liquidation_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            self.terra_gas(30),
         )
         .then(ext_self::liquidate_callback(
             liquidator,
             liquidation_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(130),
+            self.terra_gas(30),
         ))
         .into()
     }
@@ -40,18 +40,18 @@ impl Contract {
         amount: WBalance,
     ) -> PromiseOrValue<U128> {
         assert_eq!(is_promise_success(), true);
-
+        log!("Info, dtoken::liquidate_callback");
         ext_self::repay(
             amount,
             Some(liquidator),
             self.get_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(120),
+            self.terra_gas(40),
         )
         .then(controller::on_debt_repaying(
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(20),
         ))
         .into()
     }

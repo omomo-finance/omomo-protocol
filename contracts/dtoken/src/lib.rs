@@ -105,7 +105,7 @@ trait ControllerInterface {
         borrower: AccountId,
         borrowing_dtoken: AccountId,
         _liquidator: AccountId,
-        _collateral_dtoken: AccountId,
+        collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
 

@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::PromiseOrValue;
+use near_sdk::{PromiseOrValue, log};
 
 #[near_bindgen]
 impl Contract {
@@ -21,8 +21,8 @@ impl Contract {
             panic!("{}", res.unwrap_err());
         }
 
-        //let borrow = self.account_borrows.get(&borrower).unwrap().get(&borrowing_dtoken).unwrap();
         self.decrease_borrows(borrower, borrowing_dtoken, liquidation_amount);
+        log!("Info, controller::liquidation");
     }
 
     pub fn is_liquidation_allowed(

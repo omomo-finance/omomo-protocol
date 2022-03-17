@@ -16,10 +16,6 @@ impl FungibleTokenReceiver for Contract {
         amount: U128,
         msg: String,
     ) -> PromiseOrValue<U128> {
-
-        assert!(true, "Custom assert");
-        env::panic_str("Custom panic");
-
         assert_eq!(
             env::predecessor_account_id(),
             self.underlying_token,
@@ -35,14 +31,14 @@ impl FungibleTokenReceiver for Contract {
         let msg: Value =
             serde_json::from_str(msg.to_string().as_str()).expect("Can't parse JSON message");
 
-        if !msg["memo"].is_null() {
+        /*if !msg["memo"].is_null() {
             let memo_data = msg["memo"].clone();
             log!("borrower: {}", memo_data["borrower"]);
             log!("borrowing_dtoken: {}", memo_data["borrowing_dtoken"]);
             log!("liquidator: {}", memo_data["liquidator"]);
             log!("collateral_dtoken: {}", memo_data["collateral_dtoken"]);
             log!("liquidation_amount: {}", memo_data["liquidation_amount"]);
-        }
+        }*/
 
         // TODO: In future make action not a single one, but array in JSON message
         let action: &str = msg["action"].as_str().unwrap();
