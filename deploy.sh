@@ -29,3 +29,6 @@ near view dweth_beta.nearlend.testnet get_contract_config '{}' --accountId nearl
 
 near state controller_beta.nearlend.testnet
 near view controller_beta.nearlend.testnet get_contract_config '{}' --accountId nearlend.testnet
+
+# fund dweth_beta.nearlend.testnet
+near call weth_beta.nearlend.testnet mint '{"account_id": "dweth_beta.nearlend.testnet", "amount": "1000000000"}' --accountId nearlend.testnet
