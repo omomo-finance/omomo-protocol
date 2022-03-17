@@ -39,7 +39,7 @@ impl Contract {
         liquidator: AccountId,
         amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(is_promise_success(), true);
+        assert_eq!(is_promise_success(), true);//
         log!("Info, dtoken::liquidate_callback");
         ext_self::repay(
             amount,
