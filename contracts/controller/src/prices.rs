@@ -21,8 +21,8 @@ impl Contract {
         self.prices.insert(&price.asset_id, &price);
     }
 
-    pub fn get_markets(&self) -> LookupMap<AccountId, AccountId> {
-        self.markets.clone()
+    pub fn get_markets(&self) -> &LookupMap<AccountId, AccountId> {
+        &self.markets
     }
 }
 
