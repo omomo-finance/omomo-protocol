@@ -12,23 +12,27 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         //assert_eq!(self.get_contract_address(), borrowing_dtoken);
         //assert_eq!(self.get_borrows_by_account(borrower.clone()), 0);
+        // TODO: add checks here
 
         controller::liquidation(
-            borrower,
-            borrowing_dtoken,
+            borrower.clone(),
+            borrowing_dtoken.clone(),
             liquidator.clone(),
-            collateral_dtoken,
+            collateral_dtoken.clone(),
             liquidation_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(30),
         )
         .then(ext_self::liquidate_callback(
+            borrower,
+            borrowing_dtoken,
             liquidator,
+            collateral_dtoken,
             liquidation_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(30),
+            self.terra_gas(140),
         ))
         .into()
     }
@@ -36,22 +40,42 @@ impl Contract {
     #[private]
     pub fn liquidate_callback(
         &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
         liquidator: AccountId,
-        amount: WBalance,
+        liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(is_promise_success(), true);//
+        assert_eq!(is_promise_success(), true);
         log!("Info, dtoken::liquidate_callback");
-        ext_self::repay(
-            amount,
-            Some(liquidator),
-            self.get_contract_address(),
-            NO_DEPOSIT,
-            self.terra_gas(40),
-        )
-        .then(controller::on_debt_repaying(
+
+        /*let result = self.repay(liquidation_amount, Some(liquidator.clone()));
+        controller::on_debt_repaying(
+            borrower,
+            borrowing_dtoken,
+            collateral_dtoken,
+            liquidator,
+            liquidation_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(20),
+            self.terra_gas(30))*/
+
+        ext_self::repay(
+            liquidation_amount,
+            Some(liquidator.clone()),
+            self.get_contract_address(),
+            NO_DEPOSIT,
+            self.terra_gas(110),
+        )
+        .then(controller::on_debt_repaying(
+            borrower,
+            borrowing_dtoken,
+            collateral_dtoken,
+            liquidator,
+            liquidation_amount,
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(30),
         ))
         .into()
     }

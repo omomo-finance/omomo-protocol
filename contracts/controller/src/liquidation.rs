@@ -44,6 +44,10 @@ impl Contract {
             return Err(String::from("Borrow bigger than liquidation amount"));
         }
 
+        log!("Res: {:?}", self.account_supplies
+                .get(&borrower).unwrap().to_vec());
+        log!("Collateral: {}", collateral_dtoken.clone());
+
         let balance_of_borrower_collateral = WBalance::from(
             self.account_supplies
                 .get(&borrower)
@@ -67,6 +71,7 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
+        log!("Info, controller::on_debt_repaying");
         self.decrease_supplies(
             borrower.clone(),
             collateral_dtoken.clone(),
