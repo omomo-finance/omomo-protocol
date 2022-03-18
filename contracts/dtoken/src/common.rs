@@ -30,6 +30,20 @@ impl Contract {
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas
     }
+
+    pub fn mutex_account_lock(&mut self, action: String) {
+        if !self.mutex.try_lock(env::current_account_id()) {
+            panic!(
+                "failed to acquire {} action mutex for account {}",
+                action,
+                env::current_account_id()
+            );
+        }
+    }
+
+    pub fn mutex_account_unlock(&mut self) {
+        self.mutex.unlock(env::signer_account_id());
+    }
 }
 
 #[near_bindgen]

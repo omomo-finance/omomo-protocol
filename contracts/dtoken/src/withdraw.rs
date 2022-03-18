@@ -2,13 +2,9 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
-        if !self.mutex.try_lock(env::current_account_id()) {
-            panic!(
-                "failed to acquire action mutex for account {}",
-                env::current_account_id()
-            );
-        }
+        self.mutex_account_lock(String::from("withdraw"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -16,14 +12,17 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-        .then(ext_self::withdraw_balance_of_callback(
-            Balance::from(dtoken_amount),
-            env::current_account_id().clone(),
-            NO_DEPOSIT,
-            self.terra_gas(160),
-        ))
-        .into()
+            .then(ext_self::withdraw_balance_of_callback(
+                Balance::from(dtoken_amount),
+                env::current_account_id().clone(),
+                NO_DEPOSIT,
+                self.terra_gas(160),
+            ))
+            .into()
     }
+}
+
+impl Contract {
 
     pub fn withdraw_balance_of_callback(
         &mut self,
@@ -36,7 +35,7 @@ impl Contract {
                 self.get_contract_address()
             );
 
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
 
@@ -80,7 +79,7 @@ impl Contract {
         ))
         .into()
     }
-
+    
     pub fn withdraw_supplies_callback(
         &mut self,
         user_account: AccountId,
@@ -92,7 +91,7 @@ impl Contract {
                 "failed to withdraw supplies for account {}",
                 env::signer_account_id()
             );
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
 
@@ -126,7 +125,7 @@ impl Contract {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
 
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(dtoken_amount);
         } else {
             log!(
@@ -165,7 +164,7 @@ impl Contract {
             return PromiseOrValue::Value(token_amount);
         }
 
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
         return PromiseOrValue::Value(token_amount);
     }
 }

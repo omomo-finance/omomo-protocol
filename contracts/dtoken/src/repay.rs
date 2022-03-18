@@ -3,12 +3,7 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-        if !self.mutex.try_lock(env::current_account_id()) {
-            panic!(
-                "failed to acquire action mutex for account {}",
-                env::current_account_id()
-            );
-        }
+        self.mutex_account_lock(String::from("repay"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -33,7 +28,7 @@ impl Contract {
                 self.get_underlying_contract_address()
             );
 
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -92,7 +87,7 @@ impl Contract {
                 Balance::from(amount)
             );
 
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
         }
 
@@ -106,7 +101,7 @@ impl Contract {
         self.model
             .set_borrow_interest_by_user(env::signer_account_id(), 0);
 
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
         PromiseOrValue::Value(U128(extra_balance))
     }
 }
