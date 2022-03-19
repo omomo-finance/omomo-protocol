@@ -38,7 +38,6 @@ pub type TokenAmount = u128;
 enum StorageKeys {
     Borrows,
     Config,
-    Actions,
 }
 
 #[near_bindgen]
@@ -64,9 +63,6 @@ pub struct Contract {
 
     /// Contract configuration object
     config: LazyOption<Config>,
-
-    /// BlockHeight of last action user produced
-    actions: LookupMap<AccountId, BlockHeight>,
 
     model: InterestRateModel,
 
@@ -152,7 +148,6 @@ impl Contract {
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
-            actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel::default(),
             mutex: ActionMutex::default(),
         }
