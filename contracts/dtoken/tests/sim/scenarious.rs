@@ -1,10 +1,12 @@
 use near_sdk::AccountId;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
-use controller::{Config as cConfig};
+
+use controller::Config as cConfig;
 use controller::ActionType;
-use controller::ActionType::{Supply, Borrow};
+use controller::ActionType::{Borrow, Supply};
 use dtoken::Config as dConfig;
+
 use crate::utils::{init_controller, init_dtoken, init_utoken};
 
 fn assert_failure(outcome: ExecutionResult, error_message: &str) {
@@ -14,7 +16,7 @@ fn assert_failure(outcome: ExecutionResult, error_message: &str) {
     assert!(exe_status.contains(error_message));
 }
 
-fn view_balance(contract: &ContractAccount<controller::ContractContract>, action: ActionType, user_account: AccountId, dtoken_account: AccountId) -> u128{
+fn view_balance(contract: &ContractAccount<controller::ContractContract>, action: ActionType, user_account: AccountId, dtoken_account: AccountId) -> u128 {
     view!(
         contract.get_entity_by_token(action, user_account, dtoken_account)
     ).unwrap_json()
@@ -75,32 +77,32 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
     (droot, dtoken, d_user)
 }
 
-fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
-     let root = init_simulator(None);
+fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
+    let root = init_simulator(None);
 
-     // Initialize
-     let (uroot, utoken, _u_user) = initialize_utoken(&root);
-     let (_croot, controller, _c_user) = initialize_controller(&root);
-     let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
- 
-     call!(
+    // Initialize
+    let (uroot, utoken, _u_user) = initialize_utoken(&root);
+    let (_croot, controller, _c_user) = initialize_controller(&root);
+    let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+
+    call!(
          uroot,
          utoken.mint(dtoken.account_id(), U128(0)),
          0,
          100000000000000
      );
- 
-     call!(
+
+    call!(
          uroot,
          utoken.mint(d_user.account_id(), U128(20)),
          0,
          100000000000000
      );
 
-     (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, d_user)
 }
 
-fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
 
     // Initialize
@@ -125,7 +127,7 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     (dtoken, controller, utoken, d_user)
 }
 
-fn base_repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+fn base_repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
 
     // Initialize
@@ -150,12 +152,12 @@ fn base_repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractA
     (dtoken, controller, utoken, d_user)
 }
 
-fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let (dtoken, controller, utoken, user) = base_fixture();
 
     call!(
         user,
-        dtoken.mint(&user.account_id(), U128(20)),
+        dtoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     ).assert_success();
@@ -183,12 +185,26 @@ fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcc
     (dtoken, controller, utoken, user)
 }
 
-fn withdraw_less_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount){
+fn withdraw_less_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let (dtoken, controller, utoken, user) = base_fixture();
 
     call!(
         user,
-        dtoken.mint(&user.account_id(), U128(20)),
+        dtoken.mint(user.account_id(), U128(3)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        user,
+        dtoken.mint(user.account_id(), U128(7)),
+        0,
+        100000000000000
+    ).assert_success();
+
+    call!(
+        user,
+        dtoken.mint(user.account_id(), U128(10)),
         0,
         100000000000000
     ).assert_success();
@@ -248,17 +264,26 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
 
 fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
-              
+
     let (uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
-        utoken.mint(dtoken.account_id(), U128(20)),
+        utoken.mint(dtoken.account_id(), U128(15)),
         0,
         100000000000000
     );
+
+
+    call!(
+        uroot,
+        utoken.mint(dtoken.account_id(), U128(5)),
+        0,
+        100000000000000
+    );
+
 
     call!(
         uroot,
@@ -267,11 +292,10 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
         100000000000000
     );
     (dtoken, controller, utoken, d_user)
-
 }
 
 #[test]
-fn scenario_supply_error_command(){
+fn scenario_supply_error_command() {
     let (dtoken, _controller, utoken, user) = base_fixture();
     call!(
         user,
@@ -291,7 +315,7 @@ fn scenario_supply_error_command(){
 }
 
 #[test]
-fn scenario_supply_zero_tokens(){
+fn scenario_supply_zero_tokens() {
     let (dtoken, _controller, utoken, user) = base_fixture();
     let result = call!(
         user,
@@ -307,7 +331,7 @@ fn scenario_supply_zero_tokens(){
 }
 
 #[test]
-fn scenario_supply_error_contract(){
+fn scenario_supply_error_contract() {
     let (dtoken, _controller, _utoken, user) = base_fixture();
 
     let json = r#"
@@ -335,7 +359,7 @@ fn scenario_supply_error_contract(){
 }
 
 #[test]
-fn scenario_supply_not_enough_balance(){
+fn scenario_supply_not_enough_balance() {
     let (dtoken, _controller, utoken, user) = base_fixture();
     let result = call!(
         user,
@@ -389,11 +413,10 @@ fn scenario_supply() {
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance on controller should be 20");
-    
 }
 
 #[test]
-fn scenario_withdraw_with_no_supply(){
+fn scenario_withdraw_with_no_supply() {
     let (dtoken, _controller, _utoken, user) = base_fixture();
 
     let result = call!(
@@ -406,7 +429,7 @@ fn scenario_withdraw_with_no_supply(){
 }
 
 #[test]
-fn scenario_withdraw_more(){
+fn scenario_withdraw_more() {
     let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
     call!(
@@ -420,7 +443,7 @@ fn scenario_withdraw_more(){
 }
 
 #[test]
-fn scenario_withdraw_less_same(){
+fn scenario_withdraw_less_same() {
     todo!("scenario is broken because action mutex does not allow two actions in a row");
     let (dtoken, controller, _utoken, user) = withdraw_fixture();
 
@@ -445,7 +468,7 @@ fn scenario_withdraw_less_same(){
 }
 
 #[test]
-fn scenario_withdraw(){
+fn scenario_withdraw() {
     todo!("scenario is broken because action mutex does not allow two actions in a row");
     let (dtoken, controller, utoken, user) = base2_fixture();
 
@@ -496,7 +519,7 @@ fn scenario_withdraw(){
 }
 
 #[test]
-fn scenario_withdraw_error_transfer(){
+fn scenario_withdraw_error_transfer() {
     let (dtoken, controller, _utoken, user) = withdraw_less_dtoken_fixture();
 
     call!(
@@ -510,7 +533,7 @@ fn scenario_withdraw_error_transfer(){
 }
 
 #[test]
-fn scenario_repay_no_borrow(){
+fn scenario_repay_no_borrow() {
     let (dtoken, _controller, utoken, user) = base_fixture();
 
     call!(
@@ -531,7 +554,7 @@ fn scenario_repay_no_borrow(){
 }
 
 #[test]
-fn scenario_repay(){
+fn scenario_repay() {
     let (dtoken, controller, utoken, user) = repay_fixture();
 
     let json = r#"
@@ -546,7 +569,7 @@ fn scenario_repay(){
           }
        }"#;
 
-     call!(
+    call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
@@ -561,7 +584,7 @@ fn scenario_repay(){
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 23.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 2723");
-    
+
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
             user.account_id()
@@ -574,7 +597,7 @@ fn scenario_repay(){
 }
 
 #[test]
-fn scenario_repay_more_than_borrow(){
+fn scenario_repay_more_than_borrow() {
     let (dtoken, controller, utoken, user) = repay_fixture();
 
     let json = r#"
@@ -589,7 +612,7 @@ fn scenario_repay_more_than_borrow(){
           }
        }"#;
 
-     call!(
+    call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
@@ -604,7 +627,7 @@ fn scenario_repay_more_than_borrow(){
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 23.to_string(), "As it was borrowed 10 tokens and repayed 13 tokens (rate 1.3333), balance should be 7");
-    
+
     let user_balance: u128 = view!(
         dtoken.get_borrows_by_account(
             user.account_id()
@@ -617,7 +640,7 @@ fn scenario_repay_more_than_borrow(){
 }
 
 #[test]
-fn scenario_borrow(){
+fn scenario_borrow() {
     let (dtoken, controller, utoken, user) = base2_fixture();
 
     call!(
@@ -648,7 +671,7 @@ fn scenario_borrow(){
 }
 
 #[test]
-fn scenatio_borrow_more_than_on_dtoken(){
+fn scenatio_borrow_more_than_on_dtoken() {
     let (dtoken, controller, utoken, user) = borrow_fixture();
 
     call!(

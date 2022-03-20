@@ -72,11 +72,11 @@ impl Contract {
         self.get_total_borrows()
     }
 
-    pub fn mint(&mut self, account_id: &AccountId, amount: WBalance) {
-        if !self.token.accounts.contains_key(&account_id.clone()) {
-            self.token.internal_register_account(&account_id.clone());
-        }
-        self.token.internal_deposit(account_id, amount.into());
+    pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
+        if self.token.accounts.get(&account_id).is_none() {
+            self.token.internal_register_account(&account_id);
+        };
+        self.token.internal_deposit(&account_id, amount.into());
     }
 
     pub fn burn(&mut self, account_id: &AccountId, amount: WBalance) {
