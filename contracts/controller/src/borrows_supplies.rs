@@ -170,11 +170,8 @@ impl Contract {
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-        // TODO add check if allowed  (USD-estimated ACCOUNT SUPPLIES > USD-estimated ACCOUNT BORROWED  * ratio ? (or just 0.8) )
-
-
-        // FIXME mock-checking for now
-        return true;
+        
+        return self.get_health_factor(account.clone()) > self.get_health_factor_threshold() 
     }
 
     pub fn make_borrow(
