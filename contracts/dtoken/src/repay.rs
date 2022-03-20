@@ -4,10 +4,8 @@ use crate::*;
 impl Contract {
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !self.mutex.try_lock(env::current_account_id()) {
-            panic!(
-                "failed to acquire action mutex for account {}",
-                env::current_account_id()
-            );
+            Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
+            panic!();
         }
 
         underlying_token::ft_balance_of(
@@ -27,12 +25,9 @@ impl Contract {
 
     pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            log!(
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "repay_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,  
-                env::signer_account_id(), Balance::from(token_amount), self.get_contract_address(), self.get_underlying_contract_address()
-            );
+            Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex.unlock(env::signer_account_id());
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount); 
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -84,11 +79,7 @@ impl Contract {
         borrow_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            log!(
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "repay_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to update user {} balance {}: user is not registered"}}}}"#,  
-                env::signer_account_id(), Balance::from(borrow_amount), env::signer_account_id(), Balance::from(borrow_amount)
-            );
-
+            Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(borrow_amount), format!("failed to update user {} balance {}: user is not registered", env::signer_account_id(), Balance::from(borrow_amount)));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(amount);
         }
@@ -104,9 +95,7 @@ impl Contract {
             .set_borrow_interest_by_user(env::signer_account_id(), 0);
 
         self.mutex.unlock(env::signer_account_id());
-        log!(
-            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "repay_success", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  env::signer_account_id(), Balance::from(borrow_amount)
-        );
+        Contract::custom_success_log(String::from("repay_success"), env::signer_account_id(), Balance::from(borrow_amount));
         PromiseOrValue::Value(U128(extra_balance))
     }
 }

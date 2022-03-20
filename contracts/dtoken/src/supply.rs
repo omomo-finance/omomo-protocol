@@ -5,10 +5,8 @@ impl Contract {
     #[payable]
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !self.mutex.try_lock(env::current_account_id()) {
-            panic!(
-                "failed to acquire action mutex for account {}",
-                env::current_account_id()
-            );
+            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
+            panic!();
         }
 
         underlying_token::ft_balance_of(
@@ -29,11 +27,7 @@ impl Contract {
     #[allow(dead_code)]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!(
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "supply_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,  
-                env::signer_account_id(), Balance::from(token_amount), self.get_contract_address(), self.get_underlying_contract_address()
-            );
-
+            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(token_amount);
         }
@@ -95,19 +89,13 @@ impl Contract {
         dtoken_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            log!(
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "supply_fail", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} supply balance of {} on controller"}}}}"#,  
-                env::signer_account_id(), Balance::from(amount), env::signer_account_id(), self.get_contract_address()
-            );
+            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(amount), format!("failed to increase {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.burn(&self.get_signer_address(), dtoken_amount);
 
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex.unlock(env::signer_account_id()); 
             return PromiseOrValue::Value(amount);
         } 
-        log!(
-            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "supply_success", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  env::signer_account_id(), Balance::from(amount)
-        );
-
+        Contract::custom_success_log(String::from("supply_success"), env::signer_account_id(), Balance::from(amount));
         self.mutex.unlock(env::signer_account_id());
         PromiseOrValue::Value(U128(0))
     }
