@@ -170,8 +170,8 @@ impl Contract {
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-        
-        return self.get_health_factor(account.clone()) > self.get_health_factor_threshold() 
+
+        return self.get_health_factor(account.clone()) > self.get_health_factor_threshold();
     }
 
     pub fn make_borrow(
@@ -194,48 +194,29 @@ impl Contract {
         );
         self.increase_borrows(account_id, token_address, token_amount);
     }
-
-    pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
+    fn get_account_balance(&self, account_entry: Option<UnorderedMap<AccountId, Balance>>) -> WBalance {
         let mut balance: Balance = 0;
 
-        let account_entry = self.account_borrows.get(&account);
+        if account_entry.is_some() {
+            let account_borrow = account_entry.unwrap();
 
-        if let None = account_entry {
-            return U128(balance);
-        }
+            for (asset, asset_amount) in account_borrow.iter() {
+                let asset_price: Balance = self.get_price(asset.clone()).unwrap().value.0;
 
-        let account_borrow = account_entry.unwrap();
-
-        for (asset, asset_amount) in account_borrow.iter() {
-            let asset_price = self.get_price(asset.clone()).unwrap().value;
-
-            balance += asset_price * asset_amount;
+                balance += asset_price * asset_amount;
+            }
         }
 
         U128(balance)
+    }
+
+    pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
+        return self.get_account_balance(self.account_borrows.get(&account));
     }
 
     pub fn get_total_supplies(&self, account: AccountId) -> WBalance {
-        let mut balance: Balance = 0;
-
-        let account_entry = self.account_supplies.get(&account);
-
-        if let None = account_entry {
-            return U128(balance);
-        }
-
-        let account_supply = account_entry.unwrap();
-
-        for (asset, asset_amount) in account_supply.iter() {
-            let asset_price = self.get_price(asset.clone()).unwrap().value;
-
-            balance += asset_price * asset_amount;
-        }
-
-        U128(balance)
+        return self.get_account_balance(self.account_supplies.get(&account));
     }
-
-
 }
 
 
