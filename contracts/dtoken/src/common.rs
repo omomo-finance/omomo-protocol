@@ -34,6 +34,10 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
+    pub fn get_total_supplies(&self) -> Balance {
+        self.token.total_supply
+    }
+
     pub fn get_total_borrows(&self) -> Balance {
         self.total_borrows
     }
