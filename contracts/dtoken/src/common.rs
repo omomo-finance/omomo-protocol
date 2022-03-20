@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::env::block_height;
 
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
@@ -70,5 +71,15 @@ impl Contract {
             panic!("User with account {} wasn't found", account_id.clone());
         }
         self.token.internal_withdraw(account_id, amount.into());
+    }
+    
+    #[private]
+    pub fn add_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.insert(&account, &block_height());
+    }
+
+    #[private]
+    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.remove(&account);
     }
 }

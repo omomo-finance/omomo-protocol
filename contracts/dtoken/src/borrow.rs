@@ -1,6 +1,5 @@
 use crate::*;
 
-
 #[near_bindgen]
 impl Contract {
     pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
@@ -128,10 +127,8 @@ impl Contract {
     pub fn controller_decrease_borrows_fail(&mut self) {
         if !is_promise_success() {
             log!("failed to revert state for {}", env::signer_account_id());
-
-            // TODO Account should be marked
+            self.add_inconsistent_account(env::signer_account_id());
         }
-
         self.mutex.unlock(env::signer_account_id());
     }
 

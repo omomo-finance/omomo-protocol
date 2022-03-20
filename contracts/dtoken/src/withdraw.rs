@@ -160,8 +160,7 @@ impl Contract {
                 "failed to revert state for {}",
                 env::signer_account_id()
             );
-
-            // TODO Account should be marked
+            self.add_inconsistent_account(env::signer_account_id());
             return PromiseOrValue::Value(token_amount);
         }
 
