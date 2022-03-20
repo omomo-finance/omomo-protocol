@@ -63,7 +63,7 @@ impl Contract {
         );
 
         // Dtokens minting and adding them to the user account
-        self.mint(&self.get_signer_address(), dtoken_amount.into());
+        self.mint(self.get_signer_address(), dtoken_amount.into());
         log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
             self.get_signer_address(),

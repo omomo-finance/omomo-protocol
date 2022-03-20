@@ -1,8 +1,8 @@
 use near_contract_standards::fungible_token::FungibleToken;
 use near_contract_standards::fungible_token::metadata::{
-    FungibleTokenMetadata, FungibleTokenMetadataProvider, FT_METADATA_SPEC,
+    FT_METADATA_SPEC, FungibleTokenMetadata, FungibleTokenMetadataProvider,
 };
-use near_sdk::{AccountId, near_bindgen, PanicOnDefault, PromiseOrValue, env};
+use near_sdk::{AccountId, env, near_bindgen, PanicOnDefault, PromiseOrValue};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LazyOption;
 use near_sdk::json_types::U128;
@@ -59,9 +59,10 @@ impl Contract {
 
 
     pub fn mint(&mut self, account_id: AccountId, amount: U128) {
-        self.token.internal_register_account(&account_id);
-        self.token
-            .internal_deposit(&account_id, amount.into());
+        if self.token.accounts.get(&account_id).is_none() {
+            self.token.internal_register_account(&account_id);
+        };
+        self.token.internal_deposit(&account_id, amount.into());
     }
 
     pub fn burn(&mut self, account_id: AccountId, amount: U128) {
@@ -84,7 +85,7 @@ impl FungibleTokenMetadataProvider for Contract {
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::{env, testing_env, Balance};
+    use near_sdk::{Balance, env, testing_env};
     use near_sdk::test_utils::{accounts, VMContextBuilder};
     use near_sdk::test_utils::test_env::{alice, bob};
 
@@ -120,7 +121,7 @@ mod tests {
 
     #[test]
     fn check_total_supply() {
-        let ( context, _contract_account,  contract) = init();
+        let (context, _contract_account, contract) = init();
 
         testing_env!(context.build());
 
@@ -193,5 +194,4 @@ mod tests {
         assert_eq!(contract.ft_balance_of(accounts(2)).0, (TOTAL_SUPPLY - transferred_tokens));
         assert_eq!(contract.ft_balance_of(accounts(1)).0, transferred_tokens);
     }
-
 }
