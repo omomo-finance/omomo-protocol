@@ -42,7 +42,6 @@ impl Contract {
         self.markets.remove(&key);
     }
 
-
     pub fn get_reserve_factor(self) -> Percent {
         require!(self.is_valid_admin_call(), "this functionality is allowed to be called by admin or contract only");
 
@@ -55,9 +54,7 @@ impl Contract {
         self.liquidation_incentive
     }
 
-    pub fn get_health_factor_threshold(self) -> Ratio {
-        require!(self.is_valid_admin_call(), "this functionality is allowed to be called by admin or contract only");
-
+    pub fn get_health_factor_threshold(&self) -> Ratio {
         self.health_factor_threshold
     }
 
@@ -66,7 +63,6 @@ impl Contract {
 
         self.health_factor_threshold = value;
     }
-
 
     pub fn set_liquidation_incentive(mut self, value: Ratio) {
         require!(self.is_valid_admin_call(), "this functionality is allowed to be called by admin or contract only");

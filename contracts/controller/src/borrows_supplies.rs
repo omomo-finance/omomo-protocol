@@ -170,11 +170,8 @@ impl Contract {
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-        // TODO add check if allowed  (USD-estimated ACCOUNT SUPPLIES > USD-estimated ACCOUNT BORROWED  * ratio ? (or just 0.8) )
 
-
-        // FIXME mock-checking for now
-        return true;
+        return self.get_health_factor(account.clone()) > self.get_health_factor_threshold();
     }
 
     pub fn make_borrow(
@@ -196,6 +193,29 @@ impl Contract {
             Balance::from(token_amount)
         );
         self.increase_borrows(account_id, token_address, token_amount);
+    }
+    fn get_account_balance(&self, account_entry: Option<UnorderedMap<AccountId, Balance>>) -> WBalance {
+        let mut balance: Balance = 0;
+
+        if account_entry.is_some() {
+            let account_borrow = account_entry.unwrap();
+
+            for (asset, asset_amount) in account_borrow.iter() {
+                let asset_price: Balance = self.get_price(asset.clone()).unwrap().value.0;
+
+                balance += asset_price * asset_amount;
+            }
+        }
+
+        U128(balance)
+    }
+
+    pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
+        return self.get_account_balance(self.account_borrows.get(&account));
+    }
+
+    pub fn get_total_supplies(&self, account: AccountId) -> WBalance {
+        return self.get_account_balance(self.account_supplies.get(&account));
     }
 }
 

@@ -2,12 +2,10 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> { 
         if !self.mutex.try_lock(env::current_account_id()) {
-            panic!(
-                "failed to acquire action mutex for account {}",
-                env::current_account_id()
-            );
+            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
+            panic!();
         }
 
         underlying_token::ft_balance_of(
@@ -30,12 +28,7 @@ impl Contract {
         dtoken_amount: Balance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!(
-                "failed to receive {}::balance_of for account {}",
-                self.get_underlying_contract_address(),
-                self.get_contract_address()
-            );
-
+            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
@@ -88,10 +81,7 @@ impl Contract {
         dtoken_amount: WBalance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!(
-                "failed to withdraw supplies for account {}",
-                env::signer_account_id()
-            );
+            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to decrease {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
@@ -125,17 +115,10 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
-
+            Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(dtoken_amount));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(dtoken_amount);
         } else {
-            log!(
-                "failed to transfer {} tokens from {} to account {}",
-                Balance::from(token_amount),
-                self.get_contract_address(),
-                env::signer_account_id()
-            );
-
             controller::increase_supplies(
                 env::signer_account_id(),
                 self.get_contract_address(),
@@ -156,14 +139,11 @@ impl Contract {
 
     pub fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>{
         if !is_promise_success() {
-            log!(
-                "failed to revert state for {}",
-                env::signer_account_id()
-            );
+            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to revert state for {}", env::signer_account_id()));
             self.add_inconsistent_account(env::signer_account_id());
             return PromiseOrValue::Value(token_amount);
         }
-
+        Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(token_amount));
         self.mutex.unlock(env::signer_account_id());
         return PromiseOrValue::Value(token_amount);
     }

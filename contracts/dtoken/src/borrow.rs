@@ -27,8 +27,7 @@ impl Contract {
 
     pub fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address());
-
+            Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(WBalance::from(token_amount));
         }
@@ -63,12 +62,7 @@ impl Contract {
 
     pub fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!(
-                "failed to borrow {} for account {}",
-                token_amount.0,
-                env::signer_account_id()
-            );
-
+            Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to make borrow for {} on {} token amount", env::signer_account_id(), Balance::from(token_amount)));
             self.mutex.unlock(env::signer_account_id());
             return PromiseOrValue::Value(WBalance::from(token_amount));
         }
@@ -96,17 +90,10 @@ impl Contract {
     pub fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.increase_borrows(env::signer_account_id(), token_amount);
-
             self.mutex.unlock(env::signer_account_id());
+            Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
             return PromiseOrValue::Value(WBalance::from(token_amount));
         } else {
-            log!(
-                "failed to transfer {} tokens from {} to account {}",
-                Balance::from(token_amount),
-                self.get_contract_address(),
-                env::signer_account_id()
-            );
-
             controller::decrease_borrows(
                 env::signer_account_id(),
                 self.get_contract_address(),
@@ -116,6 +103,7 @@ impl Contract {
                 self.terra_gas(10),
             )
             .then(ext_self::controller_decrease_borrows_fail(
+                token_amount,
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
                 self.terra_gas(10),
@@ -124,12 +112,13 @@ impl Contract {
         }
     }
 
-    pub fn controller_decrease_borrows_fail(&mut self) {
-        if !is_promise_success() {
-            log!("failed to revert state for {}", env::signer_account_id());
+    pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance){
+        if !is_promise_success(){
+            Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to revert state for {}", env::signer_account_id()));
             self.add_inconsistent_account(env::signer_account_id());
         }
         self.mutex.unlock(env::signer_account_id());
+        Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
     }
 
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
