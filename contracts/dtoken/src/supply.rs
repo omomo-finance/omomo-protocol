@@ -31,12 +31,7 @@ impl Contract {
     #[allow(dead_code)]
     fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!(
-                "failed to get {} balance on {}",
-                self.get_contract_address(),
-                self.get_underlying_contract_address()
-            );
-
+            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
         }
@@ -65,7 +60,7 @@ impl Contract {
         );
 
         // Dtokens minting and adding them to the user account
-        self.mint(&self.get_signer_address(), dtoken_amount.into());
+        self.mint(self.get_signer_address(), dtoken_amount.into());
         log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
             self.get_signer_address(),
@@ -99,16 +94,13 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         let mut out_amount = U128(0);
         if !is_promise_success() {
-            log!(
-                "failed to increase supply {} balance of {} on controller",
-                env::signer_account_id(),
-                self.get_contract_address()
-            );
+            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(amount), format!("failed to increase {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.burn(&self.get_signer_address(), dtoken_amount);
 
             out_amount = amount;
+        } else {
+            Contract::custom_success_log(String::from("supply_success"), env::signer_account_id(), Balance::from(amount));
         }
-
         self.mutex_account_unlock();
         PromiseOrValue::Value(out_amount)
     }

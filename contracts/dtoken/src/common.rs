@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::env::block_height;
 
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
@@ -44,6 +45,28 @@ impl Contract {
     pub fn mutex_account_unlock(&mut self) {
         self.mutex.unlock(env::signer_account_id());
     }
+        
+    pub fn add_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.insert(&account, &block_height());
+    }
+
+    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.remove(&account);
+    }
+
+    pub fn custom_fail_log(event: String, account: AccountId, amount: Balance, reason: String) {
+        log!(
+            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}", "reason": "{}"}}}}"#,  
+            event, account, amount, reason
+        ); 
+    }
+
+    pub fn custom_success_log(event: String, account: AccountId, amount: Balance) {
+        log!(
+            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  
+            event, account, amount
+        );
+    }
 }
 
 #[near_bindgen]
@@ -72,11 +95,11 @@ impl Contract {
         self.get_total_borrows()
     }
 
-    pub fn mint(&mut self, account_id: &AccountId, amount: WBalance) {
-        if !self.token.accounts.contains_key(&account_id.clone()) {
-            self.token.internal_register_account(&account_id.clone());
-        }
-        self.token.internal_deposit(account_id, amount.into());
+    pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
+        if self.token.accounts.get(&account_id).is_none() {
+            self.token.internal_register_account(&account_id);
+        };
+        self.token.internal_deposit(&account_id, amount.into());
     }
 
     pub fn burn(&mut self, account_id: &AccountId, amount: WBalance) {
