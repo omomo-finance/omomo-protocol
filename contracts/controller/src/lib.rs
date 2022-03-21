@@ -15,6 +15,7 @@ pub use crate::config::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
+pub use crate::liquidation::*;
 
 #[allow(unused_imports)]
 mod config;
@@ -24,6 +25,7 @@ pub mod borrows_supplies;
 pub mod repay;
 mod healthfactor;
 mod admin;
+mod liquidation;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {

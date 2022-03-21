@@ -10,7 +10,7 @@ use controller::ContractContract as Controller;
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     DTOKEN_WASM_BYTES => "../../res/dtoken.wasm",
     UTOKEN_WASM_BYTES => "../../res/test_utoken.wasm",
-    CONTROLLER_WASM_BYTES => "../../res/controller.wasm",
+    CONTROLLER_WASM_BYTES => "../../res/controller.wasm", 
 }
 
 pub fn init_dtoken(
