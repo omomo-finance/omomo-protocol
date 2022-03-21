@@ -31,6 +31,14 @@ impl Contract {
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas
     }
+        
+    pub fn add_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.insert(&account, &block_height());
+    }
+
+    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.remove(&account);
+    }
 }
 
 #[near_bindgen]
@@ -71,15 +79,5 @@ impl Contract {
             panic!("User with account {} wasn't found", account_id.clone());
         }
         self.token.internal_withdraw(account_id, amount.into());
-    }
-    
-    #[private]
-    pub fn add_inconsistent_account(&mut self, account: AccountId) {
-        self.inconsistent_accounts.insert(&account, &block_height());
-    }
-
-    #[private]
-    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
-        self.inconsistent_accounts.remove(&account);
     }
 }
