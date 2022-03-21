@@ -32,7 +32,7 @@ impl Contract {
             liquidation_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(140),
+            self.terra_gas(60), //120
         ))
         .into()
     }
@@ -49,23 +49,13 @@ impl Contract {
         assert_eq!(is_promise_success(), true);
         log!("Info, dtoken::liquidate_callback");
 
-        /*let result = self.repay(liquidation_amount, Some(liquidator.clone()));
-        controller::on_debt_repaying(
-            borrower,
-            borrowing_dtoken,
-            collateral_dtoken,
-            liquidator,
-            liquidation_amount,
+        controller::repay_borrows(
+            borrower.clone(),
+            self.get_contract_address(),
+            U128(liquidation_amount.0),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(30))*/
-
-        ext_self::repay(
-            liquidation_amount,
-            Some(liquidator.clone()),
-            self.get_contract_address(),
-            NO_DEPOSIT,
-            self.terra_gas(110),
+            self.terra_gas(20),
         )
         .then(controller::on_debt_repaying(
             borrower,
@@ -75,7 +65,7 @@ impl Contract {
             liquidation_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(30),
+            self.terra_gas(20),
         ))
         .into()
     }
@@ -94,6 +84,7 @@ impl Contract {
 
         self.token
             .internal_transfer(&borrower, &liquidator, amount, None);
+        log!("swap_supplies end here");
         PromiseOrValue::Value(U128(13))
     }
 }

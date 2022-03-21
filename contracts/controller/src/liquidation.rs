@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{PromiseOrValue, log};
+use near_sdk::{log, PromiseOrValue};
 
 #[near_bindgen]
 impl Contract {
@@ -21,8 +21,7 @@ impl Contract {
             panic!("{}", res.unwrap_err());
         }
 
-        self.decrease_borrows(borrower, borrowing_dtoken, liquidation_amount);
-        log!("Info, controller::liquidation");
+        //self.decrease_borrows(borrower, borrowing_dtoken, liquidation_amount);
     }
 
     pub fn is_liquidation_allowed(
@@ -32,31 +31,23 @@ impl Contract {
         collateral_dtoken: AccountId,
         amount_for_liquidation: WBalance,
     ) -> Result<WBalance, String> {
-        let borrow_amount = WBalance::from(
-            self.account_borrows
-                .get(&borrower)
-                .unwrap()
-                .get(&borrowing_dtoken)
-                .unwrap(),
+        let borrow_amount = self.get_entity_by_token(
+            ActionType::Borrow,
+            borrower.clone(),
+            borrowing_dtoken.clone(),
         );
 
-        if borrow_amount.0 > amount_for_liquidation.0 {
+        if borrow_amount > amount_for_liquidation.0 {
             return Err(String::from("Borrow bigger than liquidation amount"));
         }
 
-        log!("Res: {:?}", self.account_supplies
-                .get(&borrower).unwrap().to_vec());
-        log!("Collateral: {}", collateral_dtoken.clone());
-
-        let balance_of_borrower_collateral = WBalance::from(
-            self.account_supplies
-                .get(&borrower)
-                .unwrap()
-                .get(&collateral_dtoken)
-                .unwrap(),
+        let balance_of_borrower_collateral = self.get_entity_by_token(
+            ActionType::Supply,
+            borrower.clone(),
+            collateral_dtoken.clone(),
         );
 
-        if balance_of_borrower_collateral.0 < amount_for_liquidation.0 {
+        if balance_of_borrower_collateral < amount_for_liquidation.0 {
             return Err(String::from("Borrower collateral balance is too low"));
         }
 
@@ -71,18 +62,20 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        log!("Info, controller::on_debt_repaying");
+        log!("Info, controller::on_debt_repaying 1 call");
         self.decrease_supplies(
             borrower.clone(),
             collateral_dtoken.clone(),
             liquidation_amount.clone(),
         );
+        log!("Info, controller::on_debt_repaying 2 call");
         self.increase_supplies(
             liquidator.clone(),
             collateral_dtoken.clone(),
             liquidation_amount.clone(),
         );
 
+        log!("Info, controller::on_debt_repaying 3 call");
         dtoken::swap_supplies(
             borrower,
             liquidator,

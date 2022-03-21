@@ -1,3 +1,4 @@
+use near_sdk::log;
 use crate::*;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
@@ -17,11 +18,15 @@ impl Contract {
 
         let (accounts, key_prefix) = self.get_params_by_action_mut(action);
         let account_entry = accounts.get(&account);
+        //log!("set_entity_by_token 1");
 
         if let None = account_entry {
+            //log!("set_entity_by_token None");
                 let mut account_map: UnorderedMap<AccountId, u128> =
                     UnorderedMap::new(key_prefix);
+            //log!("set_entity_by_token None insert 1");
                 account_map.insert(&token_address, &token_amount);
+            //log!("set_entity_by_token None insert 2");
                 accounts.insert(&account, &account_map);
         } else {
             account_entry
@@ -201,11 +206,11 @@ mod tests {
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
-    
+
         let eth_contract = Contract::new(Config { owner_id: owner_account, oracle_account_id: oracle_account });
-    
+
         let token_address: AccountId = "near".parse().unwrap();
-    
+
         return (eth_contract, token_address, user_account);
     }
 
@@ -222,9 +227,23 @@ mod tests {
         near_contract.set_entity_by_token(Supply, user_account.clone(), token_address.clone(), 100);
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 100);
 
-
         near_contract.set_entity_by_token(Borrow, user_account.clone(), token_address.clone(), 50);
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 50);
+
+        near_contract.set_entity_by_token(
+            Supply,
+            AccountId::new_unchecked("test.near.testnet".to_string()),
+            token_address.clone(),
+            50,
+        );
+        assert_eq!(
+            near_contract.get_entity_by_token(
+                Supply,
+                AccountId::new_unchecked("test.near.testnet".to_string()),
+                token_address.clone()
+            ),
+            50
+        );
     }
 
     #[test]
