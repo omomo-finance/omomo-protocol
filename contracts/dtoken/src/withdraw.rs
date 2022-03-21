@@ -140,7 +140,7 @@ impl Contract {
     pub fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>{
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to revert state for {}", env::signer_account_id()));
-            // TODO Account should be marked
+            self.add_inconsistent_account(env::signer_account_id());
             return PromiseOrValue::Value(token_amount);
         }
         Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(token_amount));

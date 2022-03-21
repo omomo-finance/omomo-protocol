@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::env::block_height;
 
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
@@ -29,6 +30,14 @@ impl Contract {
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas
+    }
+        
+    pub fn add_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.insert(&account, &block_height());
+    }
+
+    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
+        self.inconsistent_accounts.remove(&account);
     }
 
     pub fn custom_fail_log(event: String, account: AccountId, amount: Balance, reason: String) {
