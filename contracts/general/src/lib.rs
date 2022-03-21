@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::json_types::U128;
+use near_sdk::json_types::{U64, U128};
 use near_sdk::{AccountId, Balance, Gas};
 use near_sdk::near_bindgen;
 
@@ -17,6 +17,9 @@ pub type WRatio = U128;
 pub type Percent = u128;
 pub type WPercent = U128;
 
+pub type Digits = u32;
+
+
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -29,5 +32,8 @@ pub struct Price {
     pub value: WBalance,
 
     /// Asset volatility value
-    pub volatility: WPercent // 0..100%
+    pub volatility: WPercent, // 0..100%
+
+    /// Asset precision digits number
+    pub fraction_digits: Digits
 }
