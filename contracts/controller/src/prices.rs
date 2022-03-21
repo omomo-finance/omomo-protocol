@@ -1,12 +1,14 @@
 use crate::*;
+use std::collections::HashMap;
 
+#[near_bindgen]
 impl Contract {
-    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> LookupMap<AccountId, Balance> {
-        let mut result = LookupMap::new(b"t".to_vec());
+    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Balance> {
+        let mut result = HashMap::new();
         for asset in assets {
             if self.prices.contains_key(&asset) {
                 let price = self.get_price(asset).unwrap();
-                result.insert(&price.asset_id, &price.value);
+                result.insert(price.asset_id, Balance::from(price.value));
             }
         }
         return result;
@@ -50,8 +52,8 @@ mod tests {
         let price = Price {
             // adding price of Near
             asset_id: token_address.clone(),
-            value: 20,
-            volatility: 100,
+            value: U128(20),
+            volatility: U128(100),
             fraction_digits: 4
         };
 
