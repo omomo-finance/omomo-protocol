@@ -53,7 +53,8 @@ mod tests {
             // adding price of Near
             asset_id: token_address.clone(),
             value: U128(20),
-            volatility: U128(100)
+            volatility: U128(100),
+            fraction_digits: 4
         };
 
         near_contract.upsert_price(&price);
@@ -63,5 +64,6 @@ mod tests {
         assert_eq!(&gotten_price.value, &price.value, "Get price values check has been failed");
         assert_eq!(&gotten_price.volatility, &price.volatility,  "Get price volatility check has been failed");
         assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");
+        assert_eq!(&gotten_price.fraction_digits, &price.fraction_digits, "Get fraction digits check has been failed");
     }
 }

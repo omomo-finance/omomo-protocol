@@ -130,7 +130,8 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
             &Price {
                 asset_id: dtoken.account_id(),
                 value: U128(20),
-                volatility: U128(100)
+                volatility: U128(100),
+                fraction_digits: 4
             }
         ),
         deposit = 0
@@ -332,7 +333,8 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
             &Price {
                 asset_id: dtoken.account_id(),
                 value: U128(20),
-                volatility: U128(100)
+                volatility: U128(100),
+                fraction_digits: 4
             }
         ),
         deposit = 0
