@@ -5,8 +5,8 @@ impl Contract{
     pub fn is_liquidation_allowed(
         &self,
         borrower: AccountId,
-        borrowing_dtoken: AccountId,
-        collateral_dtoken: AccountId,
+        _borrowing_dtoken: AccountId,
+        _collateral_dtoken: AccountId,
         amount_for_liquidation: WBalance,
     ) -> Result<WBalance, String> {
         if self.get_health_factor(borrower.clone()) > self.get_health_factor_threshold() {
