@@ -25,7 +25,7 @@ impl Contract {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(WBalance::from(token_amount));
+            return PromiseOrValue::Value(token_amount);
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -60,7 +60,8 @@ impl Contract {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to make borrow for {} on {} token amount", env::signer_account_id(), Balance::from(token_amount)));
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(WBalance::from(token_amount));
+            return PromiseOrValue::Value(token_amount);
+            // TODO: what about accrued interests changes ????
         }
 
         underlying_token::ft_transfer(
@@ -88,7 +89,7 @@ impl Contract {
             self.increase_borrows(env::signer_account_id(), token_amount);
             self.mutex_account_unlock();
             Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
-            return PromiseOrValue::Value(WBalance::from(token_amount));
+            return PromiseOrValue::Value(token_amount);
         } else {
             controller::decrease_borrows(
                 env::signer_account_id(),
@@ -114,6 +115,7 @@ impl Contract {
             self.add_inconsistent_account(env::signer_account_id());
         }
         self.mutex_account_unlock();
+        // TODO: does it really success ???? Perhaps borrow fallback was successfully finished ???
         Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
     }
 

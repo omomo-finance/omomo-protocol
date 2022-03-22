@@ -1,7 +1,7 @@
 use crate::*;
 
-#[near_bindgen]
 impl Contract {
+
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         self.mutex_account_lock(String::from("repay"));
 
