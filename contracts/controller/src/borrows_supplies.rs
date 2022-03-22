@@ -1,4 +1,3 @@
-use near_sdk::log;
 use crate::*;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
@@ -229,21 +228,6 @@ mod tests {
 
         near_contract.set_entity_by_token(Borrow, user_account.clone(), token_address.clone(), 50);
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 50);
-
-        near_contract.set_entity_by_token(
-            Supply,
-            AccountId::new_unchecked("test.near.testnet".to_string()),
-            token_address.clone(),
-            50,
-        );
-        assert_eq!(
-            near_contract.get_entity_by_token(
-                Supply,
-                AccountId::new_unchecked("test.near.testnet".to_string()),
-                token_address.clone()
-            ),
-            50
-        );
     }
 
     #[test]

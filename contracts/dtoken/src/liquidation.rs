@@ -46,9 +46,14 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(is_promise_success(), true);
-        log!("Info, dtoken::liquidate_callback");
+        if !is_promise_success() {
+            panic!(
+                "Liquidation failed, while tried to call controller ({:?})",
+                self.get_controller_address()
+            )
+        }
 
+        log!("liquidate_callback");
         controller::repay_borrows(
             borrower.clone(),
             self.get_contract_address(),
@@ -57,7 +62,7 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(20),
         )
-        .then(controller::on_debt_repaying(
+        .then(controller::on_debt_repaying_callback(
             borrower,
             borrowing_dtoken,
             collateral_dtoken,
@@ -67,6 +72,28 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(20),
         ))
+        .into()
+    }
+
+    pub fn liquidation_repay_borrows_callback(
+        &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+    ) -> PromiseOrValue<U128> {
+        log!("liquidation_repay_borrows_callback");
+        controller::on_debt_repaying_callback(
+            borrower,
+            borrowing_dtoken,
+            collateral_dtoken,
+            liquidator,
+            liquidation_amount,
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(15),
+        )
         .into()
     }
 
@@ -84,7 +111,6 @@ impl Contract {
 
         self.token
             .internal_transfer(&borrower, &liquidator, amount, None);
-        log!("swap_supplies end here");
-        PromiseOrValue::Value(U128(13))
+        PromiseOrValue::Value(U128(0))
     }
 }

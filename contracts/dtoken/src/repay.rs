@@ -4,20 +4,18 @@ use crate::*;
 impl Contract {
     // account_id: value for cases, when the one who pays the debt is another person (account). If leave this 'None', payer will be signer of the call
     pub fn repay(&mut self, token_amount: WBalance, account_id: Option<AccountId>) -> PromiseOrValue<U128> {
-        log!("dtoken::repay start");
-
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(15),//20
+            self.terra_gas(40),
         )
         .then(ext_self::repay_balance_of_callback(
             token_amount,
             account_id,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(10),//30 // 5
+            self.terra_gas(60),
         )).into()
     }
 
@@ -53,19 +51,17 @@ impl Contract {
             U128(borrow_amount),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(2),
-        ).into()
-        /*.then(ext_self::controller_repay_borrows_callback(
+            self.terra_gas(10),
+        ).then(ext_self::controller_repay_borrows_callback(
             token_amount,
             U128(borrow_with_rate_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(1),
-        )).into();*/
+            self.terra_gas(10),
+        )).into();
     }
 
     pub fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance) -> PromiseOrValue<U128> {
-        log!("dtoken::controller_repay_borrows_callback start");
         if !is_promise_success() {
             log!("failed to update user {} balance {}: user is not registered", env::signer_account_id(), Balance::from(amount));
             return PromiseOrValue::Value(amount);

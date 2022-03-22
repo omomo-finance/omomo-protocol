@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{log, PromiseOrValue};
+use near_sdk::{is_promise_success, PromiseOrValue};
 
 #[near_bindgen]
 impl Contract {
@@ -18,10 +18,8 @@ impl Contract {
             liquidation_amount,
         );
         if res.is_err() {
-            panic!("{}", res.unwrap_err());
+            panic!("Liquidation failed on controller, {}", res.unwrap_err());
         }
-
-        //self.decrease_borrows(borrower, borrowing_dtoken, liquidation_amount);
     }
 
     pub fn is_liquidation_allowed(
@@ -54,7 +52,7 @@ impl Contract {
         Ok(amount_for_liquidation)
     }
 
-    pub fn on_debt_repaying(
+    pub fn on_debt_repaying_callback(
         &mut self,
         borrower: AccountId,
         _borrowing_dtoken: AccountId,
@@ -62,20 +60,27 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        log!("Info, controller::on_debt_repaying 1 call");
+
+        if !is_promise_success()
+        {
+            panic!(
+                "Liquidation failed on borrow_repay call"
+            )
+        }
+
         self.decrease_supplies(
             borrower.clone(),
             collateral_dtoken.clone(),
             liquidation_amount.clone(),
         );
-        log!("Info, controller::on_debt_repaying 2 call");
-        self.increase_supplies(
+
+        // Need to resolve bug with double 'insert' in NEAR map
+        /*self.increase_supplies(
             liquidator.clone(),
             collateral_dtoken.clone(),
             liquidation_amount.clone(),
-        );
+        );*/
 
-        log!("Info, controller::on_debt_repaying 3 call");
         dtoken::swap_supplies(
             borrower,
             liquidator,

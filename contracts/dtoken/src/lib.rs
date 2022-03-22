@@ -99,7 +99,7 @@ trait ControllerInterface {
     fn withdraw_supplies(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance) -> Promise;
     fn make_borrow(&mut self, account_id: AccountId, token_address: AccountId, token_amount: WBalance);
     fn decrease_borrows(&mut self, account: AccountId, token_address: AccountId, token_amount: WBalance);
-    fn on_debt_repaying(&mut self, borrower: AccountId,
+    fn on_debt_repaying_callback(&mut self, borrower: AccountId,
                         _borrowing_dtoken: AccountId,
                         collateral_dtoken: AccountId,
                         liquidator: AccountId,
@@ -139,6 +139,11 @@ trait InternalTokenInterface {
                           liquidator: AccountId,
                           collateral_dtoken: AccountId,
                           liquidation_amount: WBalance);
+    fn liquidation_repay_borrows_callback(&mut self, borrower: AccountId,
+                                          borrowing_dtoken: AccountId,
+                                          collateral_dtoken: AccountId,
+                                          liquidator: AccountId,
+                                          liquidation_amount: WBalance);
 }
 
 #[near_bindgen]
