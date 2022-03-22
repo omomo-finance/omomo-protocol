@@ -17,26 +17,33 @@ impl Contract {
         // Receive ActionType whether its Supply or Borrow so that
         // it will be doing respective variable configuration
 
-        let (accounts, key_prefix) = self.get_params_by_action_mut(action);
+        let accounts = self.get_params_by_action_mut(action);
         let account_entry = accounts.get(&account);
-
         if let None = account_entry {
-            let mut account_map: UnorderedMap<AccountId, u128> =
-                UnorderedMap::new(key_prefix);
-            account_map.insert(&token_address, &token_amount);
+            let mut account_map: HashMap<AccountId, u128> =
+            HashMap::new();
+            account_map.insert(token_address, token_amount);
             accounts.insert(&account, &account_map);
         } else {
-            account_entry
-                .unwrap()
-                .insert(&token_address, &token_amount);
+            // For some reason this operation doesn't update HashMap state. Uncomment this part and comment next to see the mistake
+            // account_entry
+            // .unwrap()
+            // .insert(token_address, token_amount);
+
+            // New part
+            let mut account_map: HashMap<AccountId, u128> =
+                account_entry.unwrap();
+            account_map.insert(token_address, token_amount);
+            accounts.insert(&account, &account_map);
         }
+
         return token_amount;
     }
 
     pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
         let balance: Balance = 0;
 
-        let (accounts, _) = self.get_params_by_action(action);
+        let accounts = self.get_params_by_action(action);
 
         let account_entry = accounts.get(&account);
 
@@ -46,22 +53,22 @@ impl Contract {
 
         let accounts_map = account_entry.unwrap();
 
-        accounts_map.get(&token_address).unwrap_or(balance)
+        *accounts_map.get(&token_address).unwrap_or(&balance)
     }
 
-    fn get_params_by_action(&self, action: ActionType) -> (&LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action(&self, action: ActionType) -> &LookupMap<AccountId, HashMap<AccountId, Balance>> {
         // return parameters respective to ActionType
         match action {
-            ActionType::Supply => (&self.account_supplies, StorageKeys::SuppliesToken),
-            ActionType::Borrow => (&self.account_borrows, StorageKeys::BorrowsToken)
+            ActionType::Supply => &self.account_supplies, 
+            ActionType::Borrow => &self.account_borrows
         }
     }
 
-    fn get_params_by_action_mut(&mut self, action: ActionType) -> (&mut LookupMap<AccountId, UnorderedMap<AccountId, Balance>>, StorageKeys) {
+    fn get_params_by_action_mut(&mut self, action: ActionType) -> &mut LookupMap<AccountId, HashMap<AccountId, Balance>> {
         // return parameters respective to ActionType
         match action {
-            ActionType::Supply => (&mut self.account_supplies, StorageKeys::SuppliesToken),
-            ActionType::Borrow => (&mut self.account_borrows, StorageKeys::BorrowsToken)
+            ActionType::Supply => &mut self.account_supplies,
+            ActionType::Borrow => &mut self.account_borrows,
         }
     }
 
@@ -194,7 +201,7 @@ impl Contract {
         );
         self.increase_borrows(account_id, token_address, token_amount);
     }
-    fn get_account_balance(&self, account_entry: Option<UnorderedMap<AccountId, Balance>>) -> WBalance {
+    fn get_account_balance(&self, account_entry: Option<HashMap<AccountId, Balance>>) -> WBalance {
         let mut balance: Balance = 0;
 
         if account_entry.is_some() {
@@ -242,7 +249,6 @@ mod tests {
         return (near_contract, token_address, user_account);
     }
 
-
     #[test]
     fn test_for_supply_and_borrow_getters() {
         let (near_contract, token_address, user_account) = init_test_env();
@@ -256,7 +262,6 @@ mod tests {
         near_contract.set_entity_by_token(Supply, user_account.clone(), token_address.clone(), 100);
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 100);
 
-
         near_contract.set_entity_by_token(Borrow, user_account.clone(), token_address.clone(), 50);
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 50);
     }
@@ -266,12 +271,16 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(20));
 
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 10);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 20);
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2));
+        near_contract.decrease_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
 
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 8);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 18);
     }
 
     #[test]
@@ -279,12 +288,16 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_supplies(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(20));
 
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 10);
+        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 20);
 
         near_contract.decrease_supplies(user_account.clone(), token_address.clone(), U128(2));
+        near_contract.decrease_supplies(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
 
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 8);
+        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 18);
     }
 
     #[test]
