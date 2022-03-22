@@ -39,6 +39,7 @@ enum StorageKeys {
     Borrows,
     Config,
     Actions,
+    InconsistentAccounts
 }
 
 #[near_bindgen]
@@ -72,6 +73,8 @@ pub struct Contract {
 
     ///User action protection
     mutex: ActionMutex,
+
+    inconsistent_accounts: LookupMap<AccountId, BlockHeight>
 }
 
 impl Default for Contract {
@@ -121,7 +124,6 @@ trait InternalTokenInterface {
     fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
-
 }
 
 #[near_bindgen]
@@ -155,6 +157,7 @@ impl Contract {
             actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel::default(),
             mutex: ActionMutex::default(),
+            inconsistent_accounts: LookupMap::new(StorageKeys::InconsistentAccounts)
         }
     }
 }

@@ -131,7 +131,7 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> bool {
-        require!(
+        require!( 
             !self.is_action_paused.withdraw,
             "withdrawing is paused"
         );

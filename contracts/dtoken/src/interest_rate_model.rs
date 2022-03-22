@@ -6,11 +6,11 @@ pub enum StorageKeys {
     BorrowBlock,
     BorrowInterest,
     SupplyBlock,
-    SupplyInterest
+    SupplyInterest,
 }
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)] 
 pub struct InterestRateModel {
     kink: Ratio,
     multiplier_per_block: Ratio,
@@ -26,7 +26,7 @@ pub struct InterestRateModel {
 #[near_bindgen]
 impl InterestRateModel{
     pub fn get_kink(&self) -> Ratio{
-        return self.kink;
+        return self.kink; 
     }
 
     pub fn get_multiplier_per_block(&self) -> Ratio{
