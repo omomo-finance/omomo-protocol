@@ -32,8 +32,6 @@ mod liquidation;
 pub enum StorageKeys {
     Markets,
     Supplies,
-    SuppliesToken,
-    BorrowsToken,
     Prices,
     Config,
     Borrows,
