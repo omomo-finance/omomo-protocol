@@ -7,6 +7,7 @@ mod supply;
 mod withdraw;
 mod interest_model;
 mod interest_rate_model;
+mod user_flow_protection;
 mod user_profile;
 
 pub use crate::borrow::*;
@@ -19,7 +20,7 @@ pub use crate::withdraw::*;
 pub use crate::interest_model::*;
 pub use crate::interest_rate_model::*;
 pub use crate::user_profile::*;
-
+pub use crate::user_flow_protection::*;
 
 #[allow(unused_imports)]
 use general::*;
@@ -71,8 +72,11 @@ pub struct Contract {
 
     model: InterestRateModel,
 
+    ///User action protection
+    mutex: ActionMutex,
+
     ///Dtoken user profile
-    user_profile: UserProfileDtoken
+    user_profile: UserProfileDtoken,
 }
 
 impl Default for Contract {
@@ -111,17 +115,17 @@ trait InternalTokenInterface {
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
-    fn make_borrow_callback(&mut self, token_amount: WBalance);
-    fn repay_balance_of_callback(&mut self, token_amount: WBalance);
-    fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance);
-    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance);
-    fn controller_decrease_borrows_fail(&mut self);
+    fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn controller_repay_borrows_callback(&mut self, amount: WBalance, borrow_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn controller_decrease_borrows_fail(&mut self) -> PromiseOrValue<WBalance>;
 
-    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance);
-    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance);
-    fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance);
-    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance);
-
+    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> PromiseOrValue<WBalance>;
+    fn withdraw_supplies_callback(&mut self, user_account: AccountId, token_amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn withdraw_ft_transfer_call_callback(&mut self, token_amount: WBalance, dtoken_amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
 }
 
 #[near_bindgen]
@@ -130,11 +134,11 @@ impl Contract {
     #[init]
     pub fn new_with_config(owner_id: AccountId, underlying_token_id: AccountId, controller_account_id: AccountId, initial_exchange_rate: U128) -> Self {
         Self::new(
-            Config{
+            Config {
                 owner_id: owner_id,
                 underlying_token_id: underlying_token_id,
                 controller_account_id: controller_account_id,
-                initial_exchange_rate: initial_exchange_rate
+                initial_exchange_rate: initial_exchange_rate,
             }
         )
     }
@@ -154,7 +158,8 @@ impl Contract {
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel::default(),
-            user_profile: UserProfileDtoken::default()
+            mutex: ActionMutex::default(),
+            user_profile: UserProfileDtoken::default(),
         }
     }
 }

@@ -72,8 +72,7 @@ pub struct Contract {
     pub reserve_factor: Percent,
 
     ///Controller User Profile
-    pub user_profile: UserProfileController
-
+    pub user_profile: UserProfileController,
 }
 
 impl Default for Contract {
@@ -113,9 +112,9 @@ impl Contract {
     #[init]
     pub fn new_with_config(owner_id: AccountId, oracle_account_id: AccountId) -> Self {
         Self::new(
-            Config{
+            Config {
                 owner_id: owner_id,
-                oracle_account_id: oracle_account_id
+                oracle_account_id: oracle_account_id,
             }
         )
     }
@@ -142,7 +141,7 @@ impl Contract {
             health_factor_threshold: 0,
             liquidation_incentive: 0,
             reserve_factor: 0,
-            user_profile: UserProfileController::default()
+            user_profile: UserProfileController::default(),
         }
     }
 }

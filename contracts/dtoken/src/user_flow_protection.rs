@@ -41,7 +41,7 @@ impl ActionMutex {
         let mut is_locked: bool = true;
         let current_block_height = block_height();
         let blocked_index = self.get_last_block_index(account_id.clone());
-        if blocked_index > 0 || current_block_height - blocked_index <= BLOCKS_TO_NEXT_OPERATION {
+        if blocked_index > 0 && current_block_height - blocked_index <= BLOCKS_TO_NEXT_OPERATION {
             is_locked = false;
         } else {
             self.blocked_accounts.insert(&account_id, &current_block_height);
@@ -70,6 +70,7 @@ mod tests {
     use super::*;
     use near_sdk::{testing_env, VMContext};
     use near_sdk::test_utils::VMContextBuilder;
+    use std::convert::TryFrom;
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()

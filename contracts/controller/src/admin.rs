@@ -12,7 +12,6 @@ pub enum MethodType {
     Borrow,
 }
 
-
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
         return self.admin.clone();
