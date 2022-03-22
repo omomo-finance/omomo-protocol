@@ -1,6 +1,7 @@
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
+use near_sdk::collections::{LazyOption, LookupMap};
+use std::collections::HashMap;
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -45,10 +46,10 @@ pub struct Contract {
     pub markets: LookupMap<AccountId, AccountId>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
-    pub account_supplies: LookupMap<AccountId, UnorderedMap<AccountId, Balance>>,
+    pub account_supplies: LookupMap<AccountId, HashMap<AccountId, Balance>>,
 
     /// User Account ID -> Dtoken address -> Borrow balance
-    pub account_borrows: LookupMap<AccountId, UnorderedMap<AccountId, Balance>>,
+    pub account_borrows: LookupMap<AccountId, HashMap<AccountId, Balance>>,
 
     /// Asset ID -> Price value
     pub prices: LookupMap<AccountId, Price>,

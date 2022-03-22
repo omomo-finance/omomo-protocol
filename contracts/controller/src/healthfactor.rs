@@ -1,11 +1,11 @@
 use crate::*;
 
 impl Contract {
-    pub fn get_price_sum(&self, map_raw: Option<UnorderedMap<AccountId, Balance>>) -> Balance {
+    pub fn get_price_sum(&self, map_raw: Option<HashMap<AccountId, Balance>>) -> Balance {
         let mut result: Balance = 0;
         if let Some(map) = map_raw {
             for (asset, balance) in map.iter() {
-                let price = self.get_price(asset).unwrap();
+                let price = self.get_price(asset.clone()).unwrap();
                 result += Percentage::from(Percent::from(price.volatility))
                     .apply_to(Balance::from(price.value) * balance / Balance::from(10u128.pow(price.fraction_digits)));
             }
@@ -14,7 +14,7 @@ impl Contract {
     }
 
     fn get_account_sum_per_action(&self, user_account: AccountId, action: ActionType) -> Balance {
-        let map_raw: Option<UnorderedMap<AccountId, Balance>> = match action {
+        let map_raw: Option<HashMap<AccountId, Balance>> = match action {
             ActionType::Supply => self.account_supplies.get(&user_account),
             ActionType::Borrow => self.account_borrows.get(&user_account),
         };
@@ -84,8 +84,8 @@ mod tests {
 
         let balance: Balance = 100;
 
-        let raw_map_empty: UnorderedMap<AccountId, Balance> = UnorderedMap::new(b"t");
-        let mut raw_map: UnorderedMap<AccountId, Balance> = UnorderedMap::new(b"t");
+        let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
+        let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
 
         assert_eq!(
             controller_contract.get_price_sum(None),
@@ -100,8 +100,8 @@ mod tests {
         );
 
         raw_map.insert(
-            &AccountId::new_unchecked("wnear.near".to_string()),
-            &balance,
+            AccountId::new_unchecked("wnear.near".to_string()),
+            balance,
         );
 
         assert_eq!(
