@@ -1,12 +1,9 @@
 use crate::*;
 
-#[near_bindgen]
 impl Contract {
+
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
-        if !self.mutex.try_lock(env::current_account_id()) {
-            Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
-            panic!();
-        }
+        self.mutex_account_lock(String::from("repay"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -26,8 +23,8 @@ impl Contract {
     pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
-            self.mutex.unlock(env::signer_account_id());
-            return PromiseOrValue::Value(token_amount); 
+            self.mutex_account_unlock();
+            return PromiseOrValue::Value(token_amount);
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -80,7 +77,7 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(borrow_amount), format!("failed to update user {} balance {}: user is not registered", env::signer_account_id(), Balance::from(borrow_amount)));
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
         }
 
@@ -94,7 +91,7 @@ impl Contract {
         self.model
             .set_borrow_interest_by_user(env::signer_account_id(), 0);
 
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
         Contract::custom_success_log(String::from("repay_success"), env::signer_account_id(), Balance::from(borrow_amount));
         PromiseOrValue::Value(U128(extra_balance))
     }

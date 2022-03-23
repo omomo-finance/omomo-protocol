@@ -2,11 +2,9 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> { 
-        if !self.mutex.try_lock(env::current_account_id()) {
-            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
-            panic!();
-        }
+
+    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+        self.mutex_account_lock(String::from("withdraw"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -22,6 +20,9 @@ impl Contract {
         ))
         .into()
     }
+}
+
+impl Contract {
 
     pub fn withdraw_balance_of_callback(
         &mut self,
@@ -29,7 +30,7 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
 
@@ -73,7 +74,7 @@ impl Contract {
         ))
         .into()
     }
-
+    
     pub fn withdraw_supplies_callback(
         &mut self,
         user_account: AccountId,
@@ -82,8 +83,8 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to decrease {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
-            self.mutex.unlock(env::signer_account_id());
-            return PromiseOrValue::Value(WBalance::from(dtoken_amount));
+            self.mutex_account_unlock();
+            return PromiseOrValue::Value(dtoken_amount);
         }
 
         // Cross-contract call to market token
@@ -116,7 +117,7 @@ impl Contract {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
             Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(dtoken_amount));
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(dtoken_amount);
         } else {
             controller::increase_supplies(
@@ -144,7 +145,7 @@ impl Contract {
             return PromiseOrValue::Value(token_amount);
         }
         Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(token_amount));
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
         return PromiseOrValue::Value(token_amount);
     }
 }
