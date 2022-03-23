@@ -61,7 +61,6 @@ impl Contract {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to make borrow for {} on {} token amount", env::signer_account_id(), Balance::from(token_amount)));
             self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
-            // TODO: what about accrued interests changes ????
         }
 
         underlying_token::ft_transfer(
@@ -116,6 +115,7 @@ impl Contract {
         }
         self.mutex_account_unlock();
         // TODO: does it really success ???? Perhaps borrow fallback was successfully finished ???
+        // TODO: Change string messages into Enum type
         Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
     }
 

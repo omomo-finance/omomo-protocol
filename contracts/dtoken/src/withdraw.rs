@@ -12,13 +12,13 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-            .then(ext_self::withdraw_balance_of_callback(
-                Balance::from(dtoken_amount),
-                env::current_account_id().clone(),
-                NO_DEPOSIT,
-                self.terra_gas(160),
-            ))
-            .into()
+        .then(ext_self::withdraw_balance_of_callback(
+            Balance::from(dtoken_amount),
+            env::current_account_id().clone(),
+            NO_DEPOSIT,
+            self.terra_gas(160),
+        ))
+        .into()
     }
 }
 
@@ -84,7 +84,7 @@ impl Contract {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to decrease {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(WBalance::from(dtoken_amount));
+            return PromiseOrValue::Value(dtoken_amount);
         }
 
         // Cross-contract call to market token
