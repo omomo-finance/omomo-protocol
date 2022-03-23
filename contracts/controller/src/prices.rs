@@ -22,6 +22,10 @@ impl Contract {
         // Update & insert operation
         self.prices.insert(&price.asset_id, &price);
     }
+
+    pub fn get_markets(&self) -> &LookupMap<AccountId, AccountId> {
+        &self.markets
+    }
 }
 
 #[cfg(test)]
