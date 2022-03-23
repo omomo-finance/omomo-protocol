@@ -1,17 +1,15 @@
 # login
-near login
+# near login
 
 # clean up previuos deployment
 near delete weth_beta.nearlend.testnet nearlend.testnet
 near delete dweth_beta.nearlend.testnet nearlend.testnet
 near delete controller_beta.nearlend.testnet nearlend.testnet
-near delete oracle_beta.nearlend.testnet nearlend.testnet
 
 # create corresponding accoutns
-near create-account weth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5
-near create-account dweth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5
-near create-account controller_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5
-near create-account oracle_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5
+near create-account weth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 10
+near create-account dweth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 10
+near create-account controller_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 10
 
 # redeploy contracts
 near deploy weth_beta.nearlend.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm --initFunction 'new_default_meta' --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Ethereum", "symbol": "WETH", "total_supply": "1000000000"}'
