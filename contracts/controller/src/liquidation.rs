@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{is_promise_success, PromiseOrValue};
+use near_sdk::{is_promise_success, log, PromiseOrValue};
 
 #[near_bindgen]
 impl Contract {
@@ -60,35 +60,32 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
+        if !is_promise_success() {
+            self.increase_borrows(borrower.clone(), _borrowing_dtoken, liquidation_amount);
+            log!("Liquidation failed on borrow_repay call, revert changes...");
+            PromiseOrValue::Value(U128(liquidation_amount.0))
+        } else {
+            self.decrease_supplies(
+                borrower.clone(),
+                collateral_dtoken.clone(),
+                liquidation_amount.clone(),
+            );
 
-        if !is_promise_success()
-        {
-            panic!(
-                "Liquidation failed on borrow_repay call"
-            )
+            // Need to resolve bug with double 'insert' in NEAR map
+            self.increase_supplies(
+                liquidator.clone(),
+                collateral_dtoken.clone(),
+                liquidation_amount.clone(),
+            );
+            
+            dtoken::swap_supplies(
+                borrower.clone(),
+                liquidator.clone(),
+                liquidation_amount.clone(),
+                collateral_dtoken.clone(),
+                NO_DEPOSIT,
+                near_sdk::Gas::ONE_TERA * 8 as u64,
+            ).into()
         }
-
-        self.decrease_supplies(
-            borrower.clone(),
-            collateral_dtoken.clone(),
-            liquidation_amount.clone(),
-        );
-
-        // Need to resolve bug with double 'insert' in NEAR map
-        /*self.increase_supplies(
-            liquidator.clone(),
-            collateral_dtoken.clone(),
-            liquidation_amount.clone(),
-        );*/
-
-        dtoken::swap_supplies(
-            borrower,
-            liquidator,
-            liquidation_amount,
-            collateral_dtoken,
-            NO_DEPOSIT,
-            near_sdk::Gas::ONE_TERA * 10 as u64,
-        )
-        .into()
     }
 }

@@ -32,7 +32,7 @@ impl Contract {
             liquidation_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(60), //120
+            self.terra_gas(60),
         ))
         .into()
     }
@@ -53,7 +53,6 @@ impl Contract {
             )
         }
 
-        log!("liquidate_callback");
         controller::repay_borrows(
             borrower.clone(),
             self.get_contract_address(),
@@ -83,7 +82,6 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        log!("liquidation_repay_borrows_callback");
         controller::on_debt_repaying_callback(
             borrower,
             borrowing_dtoken,
