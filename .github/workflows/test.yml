@@ -20,3 +20,4 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
       - run: ./build.sh
+      - run: ./test.sh
