@@ -22,7 +22,9 @@ pub struct Config {
 
 #[near_bindgen]
 impl Contract {
+
     pub fn get_contract_config(&self) -> Config {
         self.config.get().unwrap()
     }
+
 }
