@@ -49,7 +49,7 @@ impl ActionMutex {
         is_locked
     }
 
-    fn is_user_can_perform_operation(&mut self, account_id: AccountId) -> bool {
+    pub fn is_user_can_perform_operation(&mut self, account_id: AccountId) -> bool {
         log!("Account: {}  can do action", account_id);
         let mut access: bool = false;
         let current_block_height = block_height();

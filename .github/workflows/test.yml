@@ -4,9 +4,8 @@ on:
   push:
     branches: [master]
   pull_request:
-    branches: [master]
   workflow_dispatch:
-  
+
 concurrency: nearlend
 jobs:
   test:
@@ -20,3 +19,4 @@ jobs:
           toolchain: stable
           target: wasm32-unknown-unknown
       - run: ./build.sh
+      - run: ./test.sh
