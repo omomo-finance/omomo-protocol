@@ -24,13 +24,8 @@ impl Contract {
         self.prices.insert(&price.asset_id, &price);
     }
 
-    pub fn get_markets(&self) -> HashMap<AccountId, AccountId> {
-        let mut result: HashMap<AccountId, AccountId> = HashMap::new();
-        for (asset, asset_contract) in self.markets.iter() {
-            result.insert(asset, asset_contract);
-        }
-
-        result
+    pub fn get_markets(&self) -> Vec<(AccountId, AccountId)> {
+        self.markets.to_vec()
     }
 }
 
@@ -58,20 +53,6 @@ mod tests {
     fn test_add_get_price() {
         let (mut near_contract, token_address, _user_account) = init_test_env();
 
-        let asset: AccountId = "weth".parse().unwrap();
-        let asset_contract: AccountId = "weth.beta.testnet".parse().unwrap();
-
-
-        let asset_2: AccountId = "near".parse().unwrap();
-        let asset_contract_2: AccountId = "near.beta.testnet".parse().unwrap();
-
-
-        near_contract.markets.insert(&asset, &asset_contract);
-        near_contract.markets.insert(&asset_2, &asset_contract_2);
-
-        dbg!(near_contract.get_markets());
-
-
         let price = Price {
             // adding price of Near
             asset_id: token_address.clone(),
@@ -89,4 +70,27 @@ mod tests {
         assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");
         assert_eq!(&gotten_price.fraction_digits, &price.fraction_digits, "Get fraction digits check has been failed");
     }
+
+
+    #[test]
+    fn test_get_markets_outcome() {
+
+        let (mut near_contract, _, _user_account) = init_test_env();
+
+        let asset: AccountId = "weth".parse().unwrap();
+        let asset_contract: AccountId = "weth.beta.testnet".parse().unwrap();
+
+
+        let asset_2: AccountId = "near".parse().unwrap();
+        let asset_contract_2: AccountId = "near.beta.testnet".parse().unwrap();
+
+
+        near_contract.markets.insert(&asset, &asset_contract);
+        near_contract.markets.insert(&asset_2, &asset_contract_2);
+
+        dbg!(near_contract.get_markets());
+
+    }
+
+
 }
