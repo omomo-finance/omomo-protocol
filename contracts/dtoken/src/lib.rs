@@ -1,3 +1,26 @@
+use near_contract_standards::fungible_token::FungibleToken;
+use near_sdk::{AccountId, Balance, BlockHeight, BorshStorageKey, env, ext_contract, Gas,
+               is_promise_success, log, near_bindgen, PromiseOrValue, PromiseResult};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
+use near_sdk::json_types::U128;
+use near_sdk::require;
+use near_sdk::serde::{Deserialize, Serialize};
+
+#[allow(unused_imports)]
+use general::*;
+
+pub use crate::borrow::*;
+pub use crate::common::*;
+pub use crate::config::*;
+pub use crate::ft::*;
+pub use crate::interest_model::*;
+pub use crate::interest_rate_model::*;
+pub use crate::repay::*;
+pub use crate::supply::*;
+pub use crate::user_flow_protection::*;
+pub use crate::withdraw::*;
+
 mod borrow;
 mod common;
 mod config;
@@ -8,29 +31,7 @@ mod withdraw;
 mod interest_model;
 mod interest_rate_model;
 mod user_flow_protection;
-
-pub use crate::borrow::*;
-pub use crate::common::*;
-pub use crate::config::*;
-pub use crate::ft::*;
-pub use crate::repay::*;
-pub use crate::supply::*;
-pub use crate::withdraw::*;
-pub use crate::interest_model::*;
-pub use crate::interest_rate_model::*;
-pub use crate::user_flow_protection::*;
-
-#[allow(unused_imports)]
-use general::*;
-
-use near_contract_standards::fungible_token::FungibleToken;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
-use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance,
-               BorshStorageKey, Gas, PromiseOrValue, PromiseResult, BlockHeight};
-use near_sdk::require;
+mod admin;
 
 pub type TokenAmount = u128;
 
@@ -39,7 +40,7 @@ enum StorageKeys {
     Borrows,
     Config,
     Actions,
-    InconsistentAccounts
+    InconsistentAccounts,
 }
 
 #[near_bindgen]
@@ -74,7 +75,10 @@ pub struct Contract {
     ///User action protection
     mutex: ActionMutex,
 
-    inconsistent_accounts: LookupMap<AccountId, BlockHeight>
+    /// Contract admin account (dtoken itself by default)
+    pub admin: AccountId,
+
+    inconsistent_accounts: LookupMap<AccountId, BlockHeight>,
 }
 
 impl Default for Contract {
@@ -157,7 +161,8 @@ impl Contract {
             actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel::default(),
             mutex: ActionMutex::default(),
-            inconsistent_accounts: LookupMap::new(StorageKeys::InconsistentAccounts)
+            admin: config.owner_id,
+            inconsistent_accounts: LookupMap::new(StorageKeys::InconsistentAccounts),
         }
     }
 }
