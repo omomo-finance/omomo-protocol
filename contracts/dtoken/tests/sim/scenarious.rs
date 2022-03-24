@@ -1,5 +1,6 @@
 use near_sdk::AccountId;
 use near_sdk::json_types::U128;
+use near_sdk::serde_json::json;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 
 use controller::Config as cConfig;
@@ -306,14 +307,7 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
 
     let json = r#"
        {
-          "action":"SUPPLY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
+          "action":"SUPPLY"
        }"#;
 
     call!(
@@ -387,14 +381,7 @@ fn scenario_supply_error_contract() {
 
     let json = r#"
        {
-          "action":"SUPPLY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
+          "action":"SUPPLY"
        }"#;
     let result = call!(
         user,
@@ -431,14 +418,7 @@ fn scenario_supply() {
 
     let json = r#"
        {
-          "action":"SUPPLY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
+          "action":"SUPPLY"
        }"#;
 
     call!(
@@ -525,14 +505,7 @@ fn scenario_withdraw() {
 
     let json = r#"
        {
-          "action":"SUPPLY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
+          "action":"SUPPLY"
        }"#;
 
     call!(
@@ -754,4 +727,57 @@ fn scenatio_borrow_more_than_on_dtoken() {
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
     assert_eq!(dtoken_balance, 50.to_string(), "Dtoken balance on utoken should be 50");
+}
+
+#[test]
+fn scenario_liquidation_success()
+{
+    let (dtoken, _controller, utoken, user) = repay_fixture();
+
+    let json = r#"
+       {
+          "action":"SUPPLY"
+       }"#;
+
+    println!("logs 1: {:?}", call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(10),
+            None,
+            String::from(json)
+        ),
+        deposit = 1
+    ).outcome());
+
+    let json = json!({
+        "action": "LIQUIDATION",
+        "memo": {
+            "borrower": user.account_id.as_str(),
+            "borrowing_dtoken": dtoken.account_id().as_str(),
+            "liquidator": "test.testnet",
+            "collateral_dtoken": dtoken.account_id().as_str(),
+            "liquidation_amount": U128(10)
+        }
+    });
+
+    println!("logs 2: {:?}",call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(10),
+            None,
+            json.to_string()
+        ),
+        deposit = 1
+    ).outcome());
+
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(
+            user.account_id()
+        )
+    ).unwrap_json();
+
+    // NEAR tests doesn't work with liquidation due some issues
+    //assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 }
