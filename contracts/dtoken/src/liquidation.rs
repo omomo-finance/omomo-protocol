@@ -48,7 +48,7 @@ impl Contract {
             Contract::custom_fail_log(
                 String::from("withdraw_fail"),
                 env::signer_account_id(),
-                Balance::from(dtoken_amount),
+                Balance::from(liquidation_amount.0),
                 format!(
                     "Liquidation failed, while tried to call controller ({:?})",
                     self.get_controller_address()
