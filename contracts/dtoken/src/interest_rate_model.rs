@@ -92,7 +92,7 @@ impl InterestRateModel{
     }
 
     #[private]
-    pub fn set_borrow_interest_by_user(&mut self, account: AccountId, interest: Balance){
+    pub fn set_borrow_interest_by_user(&mut self, account: AccountId, interest: Balance) {
         self.account_borrow_interest.insert(&account, &interest);
     }
     
