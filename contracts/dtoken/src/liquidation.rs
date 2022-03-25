@@ -10,9 +10,7 @@ impl Contract {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        //assert_eq!(self.get_contract_address(), borrowing_dtoken);
-        //assert_eq!(self.get_borrows_by_account(borrower.clone()), 0);
-        // TODO: add checks here
+        assert_eq!(self.get_contract_address(), borrowing_dtoken);
 
         controller::liquidation(
             borrower.clone(),
@@ -47,10 +45,16 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            panic!(
-                "Liquidation failed, while tried to call controller ({:?})",
-                self.get_controller_address()
-            )
+            Contract::custom_fail_log(
+                String::from("withdraw_fail"),
+                env::signer_account_id(),
+                Balance::from(dtoken_amount),
+                format!(
+                    "Liquidation failed, while tried to call controller ({:?})",
+                    self.get_controller_address()
+                ),
+            );
+            env::panic_str("");
         }
 
         controller::repay_borrows(
@@ -74,6 +78,7 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn liquidation_repay_borrows_callback(
         &mut self,
         borrower: AccountId,
@@ -101,6 +106,8 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
+        assert_eq!(env::predecessor_account_id(), self.get_controller_address());
+
         let amount = Balance::from(liquidation_amount.0);
 
         if !self.token.accounts.contains_key(&liquidator) {
@@ -109,6 +116,11 @@ impl Contract {
 
         self.token
             .internal_transfer(&borrower, &liquidator, amount, None);
+        Contract::custom_success_log(
+            String::from("liquidation_success"),
+            env::signer_account_id(),
+            Balance::from(liquidation_amount.0),
+        );
         PromiseOrValue::Value(U128(0))
     }
 }

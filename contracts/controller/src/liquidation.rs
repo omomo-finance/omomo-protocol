@@ -11,6 +11,8 @@ impl Contract {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     ) {
+        // TODO: Add check that this function was called by real Dtoken that we store somewhere in self.markets
+
         let res = self.is_liquidation_allowed(
             borrower.clone(),
             borrowing_dtoken.clone(),
@@ -52,6 +54,7 @@ impl Contract {
         Ok(amount_for_liquidation)
     }
 
+    #[private]
     pub fn on_debt_repaying_callback(
         &mut self,
         borrower: AccountId,
@@ -71,7 +74,6 @@ impl Contract {
                 liquidation_amount.clone(),
             );
 
-            // Need to resolve bug with double 'insert' in NEAR map
             self.increase_supplies(
                 liquidator.clone(),
                 collateral_dtoken.clone(),
