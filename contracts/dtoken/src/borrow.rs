@@ -1,14 +1,11 @@
 use crate::*;
 
+
 #[near_bindgen]
 impl Contract {
+
     pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
-        if !self.mutex.try_lock(env::current_account_id()) {
-            panic!(
-                "failed to acquire action mutex for account {}",
-                env::current_account_id()
-            );
-        }
+        self.mutex_account_lock(String::from("borrow"));
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
@@ -25,11 +22,12 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
-            self.mutex.unlock(env::signer_account_id());
-            return PromiseOrValue::Value(WBalance::from(token_amount));
+            self.mutex_account_unlock();
+            return PromiseOrValue::Value(token_amount);
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -60,11 +58,12 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to make borrow for {} on {} token amount", env::signer_account_id(), Balance::from(token_amount)));
-            self.mutex.unlock(env::signer_account_id());
-            return PromiseOrValue::Value(WBalance::from(token_amount));
+            self.mutex_account_unlock();
+            return PromiseOrValue::Value(token_amount);
         }
 
         underlying_token::ft_transfer(
@@ -87,12 +86,13 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.increase_borrows(env::signer_account_id(), token_amount);
-            self.mutex.unlock(env::signer_account_id());
+            self.mutex_account_unlock();
             Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
-            return PromiseOrValue::Value(WBalance::from(token_amount));
+            return PromiseOrValue::Value(token_amount);
         } else {
             controller::decrease_borrows(
                 env::signer_account_id(),
@@ -112,14 +112,18 @@ impl Contract {
         }
     }
 
+    #[private]
     pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance){
         if !is_promise_success(){
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to revert state for {}", env::signer_account_id()));
             self.add_inconsistent_account(env::signer_account_id());
         }
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
+        // TODO: does it really success ???? Perhaps borrow fallback was successfully finished ???
+        // TODO: Change string messages into Enum type
         Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
     }
+
 
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
@@ -152,7 +156,6 @@ impl Contract {
         return self.set_borrows(account.clone(), U128(increased_borrows));
     }
 
-    #[private]
     pub fn set_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         self.borrows.insert(&account, &Balance::from(token_amount));
         return Balance::from(token_amount);
