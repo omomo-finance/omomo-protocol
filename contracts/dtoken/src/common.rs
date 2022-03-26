@@ -31,6 +31,20 @@ impl Contract {
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas
     }
+
+    pub fn mutex_account_lock(&mut self, action: String) {
+        if !self.mutex.try_lock(env::current_account_id()) {
+            panic!(
+                "failed to acquire {} action mutex for account {}",
+                action,
+                env::current_account_id()
+            );
+        }
+    }
+
+    pub fn mutex_account_unlock(&mut self) {
+        self.mutex.unlock(env::signer_account_id());
+    }
         
     pub fn add_inconsistent_account(&mut self, account: AccountId) {
         self.inconsistent_accounts.insert(&account, &block_height());
@@ -53,6 +67,16 @@ impl Contract {
             event, account, amount
         );
     }
+
+    pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
+        self.total_reserves = amount;
+        self.get_total_reserves()
+    }
+
+    pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
+        self.total_borrows = amount;
+        self.get_total_borrows()
+    }
 }
 
 #[near_bindgen]
@@ -69,18 +93,7 @@ impl Contract {
         self.total_reserves
     }
 
-    #[private]
-    pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
-        self.total_reserves = amount;
-        self.get_total_reserves()
-    }
-
-    #[private]
-    pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
-        self.total_borrows = amount;
-        self.get_total_borrows()
-    }
-
+    // TODO: this method should be private. Please move it and fix tests
     pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
         if self.token.accounts.get(&account_id).is_none() {
             self.token.internal_register_account(&account_id);
@@ -88,6 +101,7 @@ impl Contract {
         self.token.internal_deposit(&account_id, amount.into());
     }
 
+    // TODO: this method should be private. Please move it and fix tests
     pub fn burn(&mut self, account_id: &AccountId, amount: WBalance) {
         if !self.token.accounts.contains_key(&account_id.clone()) {
             panic!("User with account {} wasn't found", account_id.clone());

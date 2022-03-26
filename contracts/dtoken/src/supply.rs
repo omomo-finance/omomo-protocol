@@ -1,13 +1,9 @@
 use crate::*;
 
-#[near_bindgen]
 impl Contract {
-    #[payable]
+
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
-        if !self.mutex.try_lock(env::current_account_id()) {
-            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
-            panic!();
-        }
+        self.mutex_account_lock(String::from("supply"));
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
@@ -24,11 +20,21 @@ impl Contract {
         .into()
     }
 
+    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
+        self.token.accounts.get(&account).unwrap_or(0).into()
+    }
+
+}
+
+#[near_bindgen]
+impl Contract {
+
     #[allow(dead_code)]
+    #[private]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
-            self.mutex.unlock(env::signer_account_id());
+           self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -83,6 +89,7 @@ impl Contract {
     }
 
     #[allow(dead_code)]
+    #[private]
     pub fn controller_increase_supplies_callback(
         &mut self,
         amount: WBalance,
@@ -92,15 +99,11 @@ impl Contract {
             Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(amount), format!("failed to increase {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.burn(&self.get_signer_address(), dtoken_amount);
 
-            self.mutex.unlock(env::signer_account_id()); 
+           self.mutex_account_unlock(); 
             return PromiseOrValue::Value(amount);
         } 
         Contract::custom_success_log(String::from("supply_success"), env::signer_account_id(), Balance::from(amount));
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
         PromiseOrValue::Value(U128(0))
-    }
-
-    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
-        self.token.accounts.get(&account).unwrap_or(0).into()
     }
 }
