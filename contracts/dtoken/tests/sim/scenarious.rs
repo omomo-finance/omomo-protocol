@@ -255,7 +255,7 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     ).assert_success();
 
     let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(
+        dtoken.get_account_borrows(
             user.account_id()
         )
     ).unwrap_json();
@@ -641,7 +641,7 @@ fn scenario_repay() {
     assert_eq!(user_balance, 23.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 2723");
 
     let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(
+        dtoken.get_account_borrows(
             user.account_id()
         )
     ).unwrap_json();
@@ -684,7 +684,7 @@ fn scenario_repay_more_than_borrow() {
     assert_eq!(user_balance, 23.to_string(), "As it was borrowed 10 tokens and repayed 13 tokens (rate 1.3333), balance should be 7");
 
     let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(
+        dtoken.get_account_borrows(
             user.account_id()
         )
     ).unwrap_json();
@@ -710,7 +710,7 @@ fn scenario_borrow() {
     assert_eq!(user_balance, 20, "User borrow balance on controller should be 20");
 
     let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(user.account_id())
+        dtoken.get_account_borrows(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 20, "User borrow balance on dtoken should be 20");
 
@@ -741,7 +741,7 @@ fn scenatio_borrow_more_than_on_dtoken() {
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 
     let user_balance: u128 = view!(
-        dtoken.get_borrows_by_account(user.account_id())
+        dtoken.get_account_borrows(user.account_id())
     ).unwrap_json();
     assert_eq!(user_balance, 0, "User borrow balance on dtoken should be 0");
 

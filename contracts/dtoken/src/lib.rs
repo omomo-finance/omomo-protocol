@@ -33,14 +33,30 @@ mod interest_rate_model;
 mod user_flow_protection;
 mod admin;
 
-pub type TokenAmount = u128;
-
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
-    Borrows,
     Config,
-    Actions,
-    InconsistentAccounts,
+    UserProfiles,
+}
+
+#[derive(Default)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct AccruedInterest {
+    last_recalculation_block: BlockHeight,
+    accumulated_interest: Balance,
+}
+
+#[derive(Default)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct UserProfile {
+    borrows: Balance,
+
+    borrow_interest: AccruedInterest,
+    supply_interest: AccruedInterest,
+
+    is_consistent: bool,
 }
 
 #[near_bindgen]
@@ -50,13 +66,10 @@ pub struct Contract {
     initial_exchange_rate: u128,
 
     /// Total sum of supplied tokens
-    total_reserves: TokenAmount,
-
-    /// Total sum of borrowed tokens
-    total_borrows: TokenAmount,
+    total_reserves: Balance,
 
     /// Account Id -> Token's amount
-    borrows: UnorderedMap<AccountId, TokenAmount>,
+    user_profiles: UnorderedMap<AccountId, UserProfile>,
 
     /// Address of underlying token
     underlying_token: AccountId,
@@ -67,9 +80,6 @@ pub struct Contract {
     /// Contract configuration object
     config: LazyOption<Config>,
 
-    /// BlockHeight of last action user produced
-    actions: LookupMap<AccountId, BlockHeight>,
-
     model: InterestRateModel,
 
     ///User action protection
@@ -77,8 +87,6 @@ pub struct Contract {
 
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
-
-    inconsistent_accounts: LookupMap<AccountId, BlockHeight>,
 }
 
 impl Default for Contract {
@@ -153,16 +161,13 @@ impl Contract {
         Self {
             initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
-            total_borrows: 0,
-            borrows: UnorderedMap::new(StorageKeys::Borrows),
+            user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
-            actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel::default(),
             mutex: ActionMutex::default(),
             admin: config.owner_id,
-            inconsistent_accounts: LookupMap::new(StorageKeys::InconsistentAccounts),
         }
     }
 }

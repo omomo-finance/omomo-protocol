@@ -51,15 +51,16 @@ impl Contract {
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
-            U128(self.total_borrows),
+            U128(self.get_total_borrows()),
             U128(self.total_reserves),
             U128(self.model.get_reserve_factor()),
         );
-        self.model.calculate_accrued_supply_interest(
-            env::signer_account_id(),
+        let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
+            self.get_accrued_supply_interest(env::signer_account_id())
         );
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
         self.mint(self.get_signer_address(), dtoken_amount.into());

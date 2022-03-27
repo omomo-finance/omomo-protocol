@@ -43,15 +43,17 @@ impl Contract {
         let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of),
-            U128(self.total_borrows),
+            U128(self.get_total_borrows()),
             U128(self.total_reserves),
             U128(self.model.get_reserve_factor()),
         );
-        self.model.calculate_accrued_supply_interest(
-            env::signer_account_id(),
+        let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
+            self.get_accrued_supply_interest(env::signer_account_id())
         );
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
+
         let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
 
         controller::withdraw_supplies(

@@ -24,7 +24,7 @@ impl Contract {
         if self.token.total_supply == 0 {
             return self.initial_exchange_rate;
         }
-        return (Balance::from(underlying_balance) + self.total_borrows - self.total_reserves) * RATIO_DECIMALS
+        return (Balance::from(underlying_balance) + self.get_total_borrows() - self.total_reserves) * RATIO_DECIMALS
             / self.token.total_supply;
     }
 
@@ -45,13 +45,16 @@ impl Contract {
     pub fn mutex_account_unlock(&mut self) {
         self.mutex.unlock(env::signer_account_id());
     }
-        
+
     pub fn add_inconsistent_account(&mut self, account: AccountId) {
-        self.inconsistent_accounts.insert(&account, &block_height());
+        let mut user = self.user_profiles.get(&account).unwrap();
+        user.is_consistent = true;
+
+        self.user_profiles.insert(&account, &user);
     }
 
     pub fn remove_inconsistent_account(&mut self, account: AccountId) {
-        self.inconsistent_accounts.remove(&account);
+        self.user_profiles.remove(&account);
     }
 
     pub fn custom_fail_log(event: String, account: AccountId, amount: Balance, reason: String) {
@@ -72,11 +75,6 @@ impl Contract {
         self.total_reserves = amount;
         self.get_total_reserves()
     }
-
-    pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
-        self.total_borrows = amount;
-        self.get_total_borrows()
-    }
 }
 
 #[near_bindgen]
@@ -86,7 +84,7 @@ impl Contract {
     }
 
     pub fn get_total_borrows(&self) -> Balance {
-        self.total_borrows
+        self.user_profiles.iter().map(|(_, value)| value.borrows).sum()
     }
 
     pub fn get_total_reserves(&self) -> Balance {
