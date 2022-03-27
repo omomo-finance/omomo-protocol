@@ -3,7 +3,7 @@ use crate::*;
 use std::collections::HashMap;
 
 impl Contract {
-    pub fn get_price_sum(&self, map: HashMap<AccountId, Balance>) -> Balance {
+    pub fn get_price_sum(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         let mut result: Balance = 0;
         for (asset, balance) in map.iter() {
             let price = self.get_price(asset.clone()).unwrap();
@@ -20,7 +20,7 @@ impl Contract {
             ActionType::Borrow => self.user_profiles.get(&user_account).unwrap_or_default().account_borrows,
         };
 
-        return self.get_price_sum(map_raw);
+        return self.get_price_sum(&map_raw);
     }
 }
 
@@ -85,7 +85,7 @@ mod tests {
 
         let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
         assert_eq!(
-            controller_contract.get_price_sum(raw_map_empty),
+            controller_contract.get_price_sum(&raw_map_empty),
             0,
             "Test for None Option has been failed"
         );
@@ -102,7 +102,7 @@ mod tests {
         );
 
         assert_eq!(
-            controller_contract.get_price_sum(raw_map),
+            controller_contract.get_price_sum(&raw_map),
             160,
             "Test for None Option has been failed"
         );

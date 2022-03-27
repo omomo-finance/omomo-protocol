@@ -176,6 +176,7 @@ mod tests {
     use near_sdk::AccountId;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use general::Price;
 
     use crate::{Config, Contract};
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
@@ -255,5 +256,37 @@ mod tests {
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(20));
+    }
+
+    #[test]
+    fn get_total_supplies() {
+        let (mut near_contract, token_address, user_account) = init_test_env();
+
+        let price = Price{
+            asset_id: token_address.clone(),
+            value: U128(100),
+            volatility: U128(1),
+            fraction_digits: 4u32,
+        };
+        near_contract.upsert_price(&price);
+        near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
+
+        assert_eq!(near_contract.get_total_supplies(user_account.clone()), U128(1000));
+    }
+
+    #[test]
+    fn get_total_borrows() {
+        let (mut near_contract, token_address, user_account) = init_test_env();
+
+        let price = Price{
+            asset_id: token_address.clone(),
+            value: U128(100),
+            volatility: U128(1),
+            fraction_digits: 4u32,
+        };
+        near_contract.upsert_price(&price);
+        near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
+
+        assert_eq!(near_contract.get_total_borrows(user_account.clone()), U128(1000));
     }
 }
