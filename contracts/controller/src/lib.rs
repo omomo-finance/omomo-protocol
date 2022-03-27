@@ -35,6 +35,43 @@ pub enum StorageKeys {
     Prices,
     Config,
     Borrows,
+    UserProfiles,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct UserProfile {
+    /// Dtoken address -> Supplies balance
+    pub account_supplies: HashMap<AccountId, Balance>,
+
+    /// Dtoken address -> Borrow balance
+    pub account_borrows: HashMap<AccountId, Balance>,
+}
+
+impl Default for UserProfile {
+    fn default() -> Self {
+        UserProfile {
+            account_supplies: HashMap::new(),
+            account_borrows: HashMap::new(),
+        }
+    }
+}
+
+impl UserProfile {
+    fn update(&mut self, action: ActionType, token_address: AccountId, token_amount: Balance) {
+        if let ActionType::Supply = action {
+            *self.account_supplies.entry(token_address).or_default() += token_amount;
+        }
+        else {
+            *self.account_borrows.entry(token_address).or_default() += token_amount;
+        }
+    }
+
+    fn get(& self, action: ActionType, token_address: AccountId) -> Balance {
+        match action {
+            ActionType::Supply => *self.account_supplies.get(&token_address).unwrap_or(&0u128),
+            ActionType::Borrow => *self.account_borrows.get(&token_address).unwrap_or(&0u128),
+        }
+    }
 }
 
 #[near_bindgen]
@@ -44,10 +81,8 @@ pub struct Contract {
     pub markets: LookupMap<AccountId, AccountId>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
-    pub account_supplies: LookupMap<AccountId, HashMap<AccountId, Balance>>,
-
     /// User Account ID -> Dtoken address -> Borrow balance
-    pub account_borrows: LookupMap<AccountId, HashMap<AccountId, Balance>>,
+    user_profiles: LookupMap<AccountId, UserProfile>,
 
     /// Asset ID -> Price value
     pub prices: LookupMap<AccountId, Price>,
@@ -123,8 +158,9 @@ impl Contract {
 
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
-            account_supplies: LookupMap::new(StorageKeys::Supplies),
-            account_borrows: LookupMap::new(StorageKeys::Borrows),
+            user_profiles: LookupMap::new(StorageKeys::UserProfiles),
+            // account_supplies: LookupMap::new(StorageKeys::Supplies),
+            // account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             admin: config.owner_id,

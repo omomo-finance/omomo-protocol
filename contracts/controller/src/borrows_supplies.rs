@@ -13,63 +13,18 @@ pub enum ActionType {
 #[near_bindgen]
 impl Contract {
     #[private]
-    fn set_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
-        // Receive ActionType whether its Supply or Borrow so that
-        // it will be doing respective variable configuration
-
-        let accounts = self.get_params_by_action_mut(action);
-        let account_entry = accounts.get(&account);
-        if let None = account_entry {
-            let mut account_map: HashMap<AccountId, u128> =
-            HashMap::new();
-            account_map.insert(token_address, token_amount);
-            accounts.insert(&account, &account_map);
-        } else {
-            // For some reason this operation doesn't update HashMap state. Uncomment this part and comment next to see the mistake
-            // account_entry
-            // .unwrap()
-            // .insert(token_address, token_amount);
-
-            // New part
-            let mut account_map: HashMap<AccountId, u128> =
-                account_entry.unwrap();
-            account_map.insert(token_address, token_amount);
-            accounts.insert(&account, &account_map);
-        }
+    fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
+        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+        user.update(action, token_address, token_amount);
+        self.user_profiles.insert(&user_id, &user);
 
         return token_amount;
     }
 
-    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
-        let balance: Balance = 0;
+    pub fn get_entity_by_token(&self, action: ActionType, user_id: AccountId, token_address: AccountId) -> Balance {
+        let user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
 
-        let accounts = self.get_params_by_action(action);
-
-        let account_entry = accounts.get(&account);
-
-        if let None = account_entry {
-            return balance;
-        }
-
-        let accounts_map = account_entry.unwrap();
-
-        *accounts_map.get(&token_address).unwrap_or(&balance)
-    }
-
-    fn get_params_by_action(&self, action: ActionType) -> &LookupMap<AccountId, HashMap<AccountId, Balance>> {
-        // return parameters respective to ActionType
-        match action {
-            ActionType::Supply => &self.account_supplies, 
-            ActionType::Borrow => &self.account_borrows
-        }
-    }
-
-    fn get_params_by_action_mut(&mut self, action: ActionType) -> &mut LookupMap<AccountId, HashMap<AccountId, Balance>> {
-        // return parameters respective to ActionType
-        match action {
-            ActionType::Supply => &mut self.account_supplies,
-            ActionType::Borrow => &mut self.account_borrows,
-        }
+        user.get(action, token_address)
     }
 
     pub fn increase_borrows(
@@ -218,11 +173,11 @@ impl Contract {
     }
 
     pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
-        return self.get_account_balance(self.account_borrows.get(&account));
+        todo!();
     }
 
     pub fn get_total_supplies(&self, account: AccountId) -> WBalance {
-        return self.get_account_balance(self.account_supplies.get(&account));
+        todo!();
     }
 }
 
