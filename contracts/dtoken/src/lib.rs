@@ -32,6 +32,7 @@ mod interest_model;
 mod interest_rate_model;
 mod user_flow_protection;
 mod admin;
+mod views;
 
 pub type TokenAmount = u128;
 

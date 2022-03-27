@@ -19,8 +19,8 @@ impl Default for ActionMutex {
     }
 }
 
-#[near_bindgen]
 impl ActionMutex {
+
     pub fn lock(&mut self, account_id: AccountId) {
         let block_height = block_height();
         log!("Lock account: {}", account_id);
@@ -37,6 +37,7 @@ impl ActionMutex {
     }
 
     pub fn try_lock(&mut self, account_id: AccountId) -> bool {
+
         log!("Try lock account: {}", account_id);
         let mut is_locked: bool = true;
         let current_block_height = block_height();

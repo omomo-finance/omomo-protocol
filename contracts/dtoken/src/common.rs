@@ -22,7 +22,7 @@ impl Contract {
 
     pub fn get_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
         if self.token.total_supply == 0 {
-            return self.initial_exchange_rate;
+            return self.initial_exchange_rate * RATIO_DECIMALS;
         }
         return (Balance::from(underlying_balance) + self.total_borrows - self.total_reserves) * RATIO_DECIMALS
             / self.token.total_supply;
