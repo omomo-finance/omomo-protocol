@@ -2,7 +2,7 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::{AccountId, Balance, BlockHeight, BorshStorageKey, env, ext_contract, Gas,
                is_promise_success, log, near_bindgen, PromiseOrValue, PromiseResult};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
+use near_sdk::collections::{LazyOption, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::require;
 use near_sdk::serde::{Deserialize, Serialize};
