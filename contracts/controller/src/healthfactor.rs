@@ -1,5 +1,7 @@
 use crate::*;
 
+use std::collections::HashMap;
+
 impl Contract {
     pub fn get_price_sum(&self, map: HashMap<AccountId, Balance>) -> Balance {
         let mut result: Balance = 0;

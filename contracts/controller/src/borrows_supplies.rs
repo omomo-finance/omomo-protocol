@@ -156,28 +156,17 @@ impl Contract {
         );
         self.increase_borrows(account_id, token_address, token_amount);
     }
-    fn get_account_balance(&self, account_entry: Option<HashMap<AccountId, Balance>>) -> WBalance {
-        let mut balance: Balance = 0;
 
-        if account_entry.is_some() {
-            let account_borrow = account_entry.unwrap();
+    pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
+        let supplies = self.user_profiles.get(&user_id).unwrap_or_default().account_supplies;
 
-            for (asset, asset_amount) in account_borrow.iter() {
-                let asset_price: Balance = self.get_price(asset.clone()).unwrap().value.0;
-
-                balance += asset_price * asset_amount;
-            }
-        }
-
-        U128(balance)
+        supplies.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0 ).sum::<Balance>().into()
     }
 
-    pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
-        todo!();
-    }
+    pub fn get_total_borrows(&self, user_id: AccountId) -> WBalance {
+        let borrows = self.user_profiles.get(&user_id).unwrap_or_default().account_borrows;
 
-    pub fn get_total_supplies(&self, account: AccountId) -> WBalance {
-        todo!();
+        borrows.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0 ).sum::<Balance>().into()
     }
 }
 

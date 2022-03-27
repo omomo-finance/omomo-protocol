@@ -1,14 +1,13 @@
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap};
-use std::collections::HashMap;
+
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 use near_sdk::require;
 
-#[allow(unused_imports)]
 use general::*;
 
 pub use crate::borrows_supplies::*;
@@ -17,6 +16,7 @@ pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
 pub use crate::liquidation::*;
+pub use crate::user_profile::*;
 
 #[allow(unused_imports)]
 mod config;
@@ -27,6 +27,7 @@ pub mod repay;
 mod healthfactor;
 mod admin;
 mod liquidation;
+pub mod user_profile;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -36,42 +37,6 @@ pub enum StorageKeys {
     Config,
     Borrows,
     UserProfiles,
-}
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct UserProfile {
-    /// Dtoken address -> Supplies balance
-    pub account_supplies: HashMap<AccountId, Balance>,
-
-    /// Dtoken address -> Borrow balance
-    pub account_borrows: HashMap<AccountId, Balance>,
-}
-
-impl Default for UserProfile {
-    fn default() -> Self {
-        UserProfile {
-            account_supplies: HashMap::new(),
-            account_borrows: HashMap::new(),
-        }
-    }
-}
-
-impl UserProfile {
-    fn set(&mut self, action: ActionType, token_address: AccountId, token_amount: Balance) {
-        if let ActionType::Supply = action {
-            *self.account_supplies.entry(token_address).or_default() = token_amount;
-        }
-        else {
-            *self.account_borrows.entry(token_address).or_default() = token_amount;
-        }
-    }
-
-    fn get(& self, action: ActionType, token_address: AccountId) -> Balance {
-        match action {
-            ActionType::Supply => *self.account_supplies.get(&token_address).unwrap_or(&0u128),
-            ActionType::Borrow => *self.account_borrows.get(&token_address).unwrap_or(&0u128),
-        }
-    }
 }
 
 #[near_bindgen]
@@ -159,8 +124,6 @@ impl Contract {
         Self {
             markets: LookupMap::new(StorageKeys::Markets),
             user_profiles: LookupMap::new(StorageKeys::UserProfiles),
-            // account_supplies: LookupMap::new(StorageKeys::Supplies),
-            // account_borrows: LookupMap::new(StorageKeys::Borrows),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             admin: config.owner_id,
