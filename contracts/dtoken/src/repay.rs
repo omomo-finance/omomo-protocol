@@ -1,7 +1,7 @@
 use crate::*;
 
 impl Contract {
-
+    
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         self.mutex_account_lock(String::from("repay"));
 
@@ -19,12 +19,17 @@ impl Contract {
         ))
         .into()
     }
+}
 
+#[near_bindgen]
+impl Contract {
+
+    #[private]
     pub fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("repay_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount); 
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -70,6 +75,7 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn controller_repay_borrows_callback(
         &mut self,
         amount: WBalance,

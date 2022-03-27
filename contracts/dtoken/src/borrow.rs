@@ -3,6 +3,7 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+
     pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         self.mutex_account_lock(String::from("borrow"));
 
@@ -21,6 +22,7 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
@@ -56,6 +58,7 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to make borrow for {} on {} token amount", env::signer_account_id(), Balance::from(token_amount)));
@@ -83,6 +86,7 @@ impl Contract {
         .into()
     }
 
+    #[private]
     pub fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.increase_borrows(env::signer_account_id(), token_amount);
@@ -108,6 +112,7 @@ impl Contract {
         }
     }
 
+    #[private]
     pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance){
         if !is_promise_success(){
             Contract::custom_fail_log(String::from("borrow_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to revert state for {}", env::signer_account_id()));
@@ -118,6 +123,7 @@ impl Contract {
         // TODO: Change string messages into Enum type
         Contract::custom_success_log(String::from("borrow_success"), env::signer_account_id(), Balance::from(token_amount));
     }
+
 
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
@@ -150,7 +156,6 @@ impl Contract {
         return self.set_borrows(account.clone(), U128(increased_borrows));
     }
 
-    #[private]
     pub fn set_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         self.borrows.insert(&account, &Balance::from(token_amount));
         return Balance::from(token_amount);
