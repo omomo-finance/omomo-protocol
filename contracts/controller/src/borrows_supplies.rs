@@ -15,7 +15,7 @@ impl Contract {
     #[private]
     fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
         let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
-        user.update(action, token_address, token_amount);
+        user.set(action, token_address, token_amount);
         self.user_profiles.insert(&user_id, &user);
 
         return token_amount;
@@ -226,16 +226,16 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
-        near_contract.increase_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(20));
+        near_contract.increase_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(100));
 
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 10);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 20);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 100);
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2));
         near_contract.decrease_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
 
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 8);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 18);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 98);
     }
 
     #[test]

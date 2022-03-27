@@ -57,12 +57,12 @@ impl Default for UserProfile {
 }
 
 impl UserProfile {
-    fn update(&mut self, action: ActionType, token_address: AccountId, token_amount: Balance) {
+    fn set(&mut self, action: ActionType, token_address: AccountId, token_amount: Balance) {
         if let ActionType::Supply = action {
-            *self.account_supplies.entry(token_address).or_default() += token_amount;
+            *self.account_supplies.entry(token_address).or_default() = token_amount;
         }
         else {
-            *self.account_borrows.entry(token_address).or_default() += token_amount;
+            *self.account_borrows.entry(token_address).or_default() = token_amount;
         }
     }
 
