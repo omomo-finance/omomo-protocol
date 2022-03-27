@@ -58,7 +58,7 @@ impl InterestRateModel{
         self.reserve_factor = value;
     }
 
-    pub fn calculate_accrued_interest(&mut self, borrow_rate: Ratio, total_borrow: Balance, accrued_interest: AccruedInterest) -> AccruedInterest{
+    pub fn calculate_accrued_interest(&self, borrow_rate: Ratio, total_borrow: Balance, accrued_interest: AccruedInterest) -> AccruedInterest{
         let current_block_height = block_height();
         let accrued_rate = total_borrow * borrow_rate * (current_block_height - accrued_interest.last_recalculation_block) as u128 / RATIO_DECIMALS;
 
@@ -69,21 +69,18 @@ impl InterestRateModel{
     }
 }
 
-#[near_bindgen]
-impl InterestRateModel{
-    pub fn get_with_ratio_decimals(value: f32) -> Ratio{
-        return (value * RATIO_DECIMALS as f32) as Ratio;
-    }
+fn get_with_ratio_decimals(value: f32) -> Ratio{
+    (value * RATIO_DECIMALS as f32) as Ratio
 }
 
 impl Default for InterestRateModel{
     fn default()-> Self{
         Self{
-            kink: InterestRateModel::get_with_ratio_decimals(1.0),
-            base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-            multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-            jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-            reserve_factor: InterestRateModel::get_with_ratio_decimals(0.05),
+            kink: get_with_ratio_decimals(1.0),
+            base_rate_per_block: get_with_ratio_decimals(1.0),
+            multiplier_per_block: get_with_ratio_decimals(1.0),
+            jump_multiplier_per_block: get_with_ratio_decimals(1.0),
+            reserve_factor: get_with_ratio_decimals(0.05),
         }
     }
 }

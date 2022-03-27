@@ -20,6 +20,7 @@ pub use crate::repay::*;
 pub use crate::supply::*;
 pub use crate::user_flow_protection::*;
 pub use crate::withdraw::*;
+pub use crate::user_profile::*;
 
 mod borrow;
 mod common;
@@ -32,31 +33,12 @@ mod interest_model;
 mod interest_rate_model;
 mod user_flow_protection;
 mod admin;
+mod user_profile;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
     Config,
     UserProfiles,
-}
-
-#[derive(Default)]
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct AccruedInterest {
-    last_recalculation_block: BlockHeight,
-    accumulated_interest: Balance,
-}
-
-#[derive(Default)]
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct UserProfile {
-    borrows: Balance,
-
-    borrow_interest: AccruedInterest,
-    supply_interest: AccruedInterest,
-
-    is_consistent: bool,
 }
 
 #[near_bindgen]
