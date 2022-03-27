@@ -1,22 +1,25 @@
 use crate::*;
 
+const MIN_WITHDRAW_GAS_MULTIPLIER: u64 = 130;
+
 #[near_bindgen]
 impl Contract {
 
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> { 
+        assert!(env::prepaid_gas() >= self.terra_gas(MIN_WITHDRAW_GAS_MULTIPLIER), "Prepaid gas is not enough for withdraw flow");
         self.mutex_account_lock(String::from("withdraw"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            TGAS,
         )
         .then(ext_self::withdraw_balance_of_callback(
             Balance::from(dtoken_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(160),
+            self.terra_gas(100),
         ))
         .into()
     }
@@ -60,7 +63,7 @@ impl Contract {
             token_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         )
         .then(ext_self::withdraw_supplies_callback(
             env::signer_account_id(),
@@ -68,7 +71,7 @@ impl Contract {
             dtoken_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(120),
+            self.terra_gas(70),
         ))
         .into()
     }
@@ -96,14 +99,14 @@ impl Contract {
             )),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
-            self.terra_gas(40),
+            self.terra_gas(10),
         )
         .then(ext_self::withdraw_ft_transfer_call_callback(
             token_amount.into(),
             dtoken_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(50),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -126,13 +129,13 @@ impl Contract {
                 token_amount,
                 self.get_controller_address(),
                 NO_DEPOSIT,
-                self.terra_gas(10),
+                self.terra_gas(5),
             )
             .then(ext_self::withdraw_increase_supplies_callback(
                 token_amount,
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
-                self.terra_gas(10),
+                self.terra_gas(5),
             ))
             .into()
         }

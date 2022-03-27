@@ -1,23 +1,25 @@
 use crate::*;
 
+const MIN_BORROW_GAS_MULTIPLIER: u64 = 120;
 
 #[near_bindgen]
 impl Contract {
 
     pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+        assert!(env::prepaid_gas() >= self.terra_gas(MIN_BORROW_GAS_MULTIPLIER), "Prepaid gas is not enough for borrow flow");
         self.mutex_account_lock(String::from("borrow"));
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            TGAS,
         )
         .then(ext_self::borrow_balance_of_callback(
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(200),
+            self.terra_gas(90),
         ))
         .into()
     }
@@ -47,13 +49,13 @@ impl Contract {
             token_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         )
         .then(ext_self::make_borrow_callback(
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(150),
+            self.terra_gas(60),
         ))
         .into()
     }
@@ -75,13 +77,13 @@ impl Contract {
             )),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
-            self.terra_gas(40),
+            self.terra_gas(10),
         )
         .then(ext_self::borrow_ft_transfer_callback(
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(80),
+            self.terra_gas(25),
         ))
         .into()
     }
@@ -100,13 +102,13 @@ impl Contract {
                 token_amount,
                 self.get_controller_address(),
                 NO_DEPOSIT,
-                self.terra_gas(10),
+                self.terra_gas(2),
             )
             .then(ext_self::controller_decrease_borrows_fail(
                 token_amount,
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
-                self.terra_gas(10),
+                self.terra_gas(2),
             ))
             .into()
         }
