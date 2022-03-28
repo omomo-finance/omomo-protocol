@@ -1,25 +1,26 @@
 use crate::*;
 
+use std::collections::HashMap;
+
 impl Contract {
-    pub fn get_price_sum(&self, map_raw: Option<HashMap<AccountId, Balance>>) -> Balance {
+    pub fn get_price_sum(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         let mut result: Balance = 0;
-        if let Some(map) = map_raw {
-            for (asset, balance) in map.iter() {
-                let price = self.get_price(asset.clone()).unwrap();
-                result += Percentage::from(Percent::from(price.volatility))
-                    .apply_to(Balance::from(price.value) * balance / Balance::from(10u128.pow(price.fraction_digits)));
-            }
+        for (asset, balance) in map.iter() {
+            let price = self.get_price(asset.clone()).unwrap();
+            result += Percentage::from(Percent::from(price.volatility))
+                .apply_to(Balance::from(price.value) * balance / Balance::from(10u128.pow(price.fraction_digits)));
         }
+
         return result;
     }
 
     fn get_account_sum_per_action(&self, user_account: AccountId, action: ActionType) -> Balance {
-        let map_raw: Option<HashMap<AccountId, Balance>> = match action {
-            ActionType::Supply => self.account_supplies.get(&user_account),
-            ActionType::Borrow => self.account_borrows.get(&user_account),
+        let map_raw: HashMap<AccountId, Balance> = match action {
+            ActionType::Supply => self.user_profiles.get(&user_account).unwrap_or_default().account_supplies,
+            ActionType::Borrow => self.user_profiles.get(&user_account).unwrap_or_default().account_borrows,
         };
 
-        return self.get_price_sum(map_raw);
+        return self.get_price_sum(&map_raw);
     }
 }
 
@@ -79,33 +80,29 @@ mod tests {
     }
 
     #[test]
+    fn test_get_price_sum_empty_map() {
+        let (controller_contract, _token_address, _user_account) = init();
+
+        let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
+        assert_eq!(
+            controller_contract.get_price_sum(&raw_map_empty),
+            0,
+            "Test for None Option has been failed"
+        );
+    }
+
+    #[test]
     fn test_for_get_price_sum() {
         let (controller_contract, _token_address, _user_account) = init();
 
-        let balance: Balance = 100;
-
-        let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
-
-        assert_eq!(
-            controller_contract.get_price_sum(None),
-            0,
-            "Test for None Option has been failed"
-        );
-
-        assert_eq!(
-            controller_contract.get_price_sum(Some(raw_map_empty)),
-            0,
-            "Test for None Option has been failed"
-        );
-
         raw_map.insert(
             AccountId::new_unchecked("wnear.near".to_string()),
-            balance,
+            100,
         );
 
         assert_eq!(
-            controller_contract.get_price_sum(Some(raw_map)),
+            controller_contract.get_price_sum(&raw_map),
             160,
             "Test for None Option has been failed"
         );
