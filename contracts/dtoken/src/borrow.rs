@@ -1,6 +1,7 @@
 use crate::*;
 const GAS_FOR_BORROW: Gas = Gas(120_000_000_000_000);
 
+
 #[near_bindgen]
 impl Contract {
 
@@ -39,8 +40,13 @@ impl Contract {
                 .into(),
         };
 
-        let borrow_rate: Balance = self.get_borrow_rate(U128(balance_of), U128(self.total_borrows), U128(self.total_reserves));
-        self.model.calculate_accrued_borrow_interest(env::signer_account_id(), borrow_rate, self.get_borrows_by_account(env::signer_account_id()));
+        let borrow_rate: Balance = self.get_borrow_rate(U128(balance_of), U128(self.get_total_borrows()), U128(self.total_reserves));
+        let borrow_accrued_interest = self.model.calculate_accrued_interest(
+            borrow_rate, 
+            self.get_account_borrows(env::signer_account_id()), 
+            self.get_accrued_borrow_interest(env::signer_account_id())
+        );
+        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
 
         return controller::make_borrow(
             env::signer_account_id(),
@@ -127,45 +133,28 @@ impl Contract {
 
 
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
+        let borrows = self.get_account_borrows(account.clone());
+        let new_borrows = borrows - Balance::from(token_amount);
 
-        assert!(
-            existing_borrows >= Balance::from(token_amount),
-            "Repay amount is more than existing borrows"
-        );
-        let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
-
-        let new_total_borrows = self.total_borrows.checked_sub(Balance::from(token_amount));
-        assert!(
-            new_total_borrows.is_some(),
-            "Overflow occurs while decreasing total borrow"
-        );
-        self.total_borrows = new_total_borrows.unwrap();
-        return self.set_borrows(account.clone(), U128(decreased_borrows));
+        return self.set_account_borrows(account.clone(), U128(new_borrows));
     }
 
     pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let existing_borrows: Balance = self.get_borrows_by_account(account.clone());
-        let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
+        let borrows: Balance = self.get_account_borrows(account.clone());
+        let new_borrows = borrows + Balance::from(token_amount);
 
-        let new_total_borrows = self.total_borrows.checked_add(Balance::from(token_amount));
-        assert!(
-            new_total_borrows.is_some(),
-            "Overflow occurs while incresing total borrow"
-        );
-        self.total_borrows = new_total_borrows.unwrap();
-        return self.set_borrows(account.clone(), U128(increased_borrows));
+        return self.set_account_borrows(account.clone(), U128(new_borrows));
     }
 
-    pub fn set_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        self.borrows.insert(&account, &Balance::from(token_amount));
-        return Balance::from(token_amount);
+    pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let mut user = self.user_profiles.get(&account).unwrap_or_default();
+        user.borrows = Balance::from(token_amount);
+        self.user_profiles.insert(&account, &user);
+
+        self.get_account_borrows(account)
     }
 
-    pub fn get_borrows_by_account(&self, account: AccountId) -> Balance {
-        if self.borrows.get(&account).is_none() {
-            return 0;
-        }
-        return self.borrows.get(&account).unwrap();
+    pub fn get_account_borrows(&self, account: AccountId) -> Balance {
+        return self.user_profiles.get(&account).unwrap_or_default().borrows;
     }
 }

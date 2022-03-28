@@ -37,3 +37,14 @@ pub struct Price {
     /// Asset precision digits number
     pub fraction_digits: Digits
 }
+
+impl Default for Price {
+    fn default() -> Self {
+        Price {
+            asset_id: AccountId::new_unchecked("".to_string()),
+            value: 0.into(),
+            volatility: 0.into(),
+            fraction_digits: 0u32,
+        }
+    }
+}
