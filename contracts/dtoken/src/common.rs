@@ -75,10 +75,7 @@ impl Contract {
         self.total_reserves = amount;
         self.get_total_reserves()
     }
-}
 
-#[near_bindgen]
-impl Contract {
     pub fn get_total_supplies(&self) -> Balance {
         self.token.total_supply
     }
@@ -90,6 +87,10 @@ impl Contract {
     pub fn get_total_reserves(&self) -> Balance {
         self.total_reserves
     }
+}
+
+#[near_bindgen]
+impl Contract {
 
     // TODO: this method should be private. Please move it and fix tests
     pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
