@@ -1,21 +1,24 @@
 use crate::*;
 
+const GAS_FOR_SUPPLY: Gas = Gas(95_000_000_000_000);
+
 impl Contract {
 
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+        require!(env::prepaid_gas() >= GAS_FOR_SUPPLY, "Prepaid gas is not enough for supply flow");
         self.mutex_account_lock(String::from("supply"));
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            TGAS,
         )
         .then(ext_self::supply_balance_of_callback(
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -51,15 +54,16 @@ impl Contract {
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
-            U128(self.total_borrows),
+            U128(self.get_total_borrows()),
             U128(self.total_reserves),
             U128(self.model.get_reserve_factor()),
         );
-        self.model.calculate_accrued_supply_interest(
-            env::signer_account_id(),
+        let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
+            self.get_accrued_supply_interest(env::signer_account_id())
         );
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
         self.mint(self.get_signer_address(), dtoken_amount.into());
@@ -76,14 +80,14 @@ impl Contract {
             token_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(20),
+            self.terra_gas(5),
         )
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
             U128(dtoken_amount),
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         ))
         .into()
     }

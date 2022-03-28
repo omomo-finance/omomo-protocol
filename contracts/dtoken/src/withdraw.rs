@@ -1,22 +1,25 @@
 use crate::*;
 
+const GAS_FOR_WITHDRAW: Gas = Gas(130_000_000_000_000);
+
 #[near_bindgen]
 impl Contract {
 
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> { 
+        require!(env::prepaid_gas() >= GAS_FOR_WITHDRAW, "Prepaid gas is not enough for withdraw flow");
         self.mutex_account_lock(String::from("withdraw"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            TGAS,
         )
         .then(ext_self::withdraw_balance_of_callback(
             Balance::from(dtoken_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(160),
+            self.terra_gas(100),
         ))
         .into()
     }
@@ -43,15 +46,17 @@ impl Contract {
         let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of),
-            U128(self.total_borrows),
+            U128(self.get_total_borrows()),
             U128(self.total_reserves),
             U128(self.model.get_reserve_factor()),
         );
-        self.model.calculate_accrued_supply_interest(
-            env::signer_account_id(),
+        let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
+            self.get_accrued_supply_interest(env::signer_account_id())
         );
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
+
         let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
 
         controller::withdraw_supplies(
@@ -60,7 +65,7 @@ impl Contract {
             token_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         )
         .then(ext_self::withdraw_supplies_callback(
             env::signer_account_id(),
@@ -68,7 +73,7 @@ impl Contract {
             dtoken_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(120),
+            self.terra_gas(70),
         ))
         .into()
     }
@@ -96,14 +101,14 @@ impl Contract {
             )),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
-            self.terra_gas(40),
+            self.terra_gas(10),
         )
         .then(ext_self::withdraw_ft_transfer_call_callback(
             token_amount.into(),
             dtoken_amount.into(),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(50),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -126,13 +131,13 @@ impl Contract {
                 token_amount,
                 self.get_controller_address(),
                 NO_DEPOSIT,
-                self.terra_gas(10),
+                self.terra_gas(5),
             )
             .then(ext_self::withdraw_increase_supplies_callback(
                 token_amount,
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
-                self.terra_gas(10),
+                self.terra_gas(5),
             ))
             .into()
         }

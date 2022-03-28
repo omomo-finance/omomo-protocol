@@ -1,21 +1,24 @@
 use crate::*;
 
+const GAS_FOR_REPAY: Gas = Gas(95_000_000_000_000);
+
 impl Contract {
     
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
+        require!(env::prepaid_gas() >= GAS_FOR_REPAY, "Prepaid gas is not enough for repay flow");
         self.mutex_account_lock(String::from("repay"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            TGAS,
         )
         .then(ext_self::repay_balance_of_callback(
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -42,20 +45,19 @@ impl Contract {
 
         let borrow_rate: Balance = self.get_borrow_rate(
             U128(balance_of - Balance::from(token_amount)),
-            U128(self.total_borrows),
+            U128(self.get_total_borrows()),
             U128(self.total_reserves),
         );
-        let borrow_amount = self.get_borrows_by_account(env::signer_account_id());
-        self.model.calculate_accrued_borrow_interest(
-            env::signer_account_id(),
-            borrow_rate,
-            self.get_borrows_by_account(env::signer_account_id()),
+        let borrow_amount = self.get_account_borrows(env::signer_account_id());
+        let borrow_accrued_interest = self.model.calculate_accrued_interest(
+            borrow_rate, 
+            self.get_account_borrows(env::signer_account_id()), 
+            self.get_accrued_borrow_interest(env::signer_account_id())
         );
-        let accrued_rate = self
-            .model
-            .get_borrow_interest_by_user(env::signer_account_id());
-        let borrow_with_rate_amount = borrow_amount + accrued_rate;
-        assert!(Balance::from(token_amount) >= borrow_with_rate_amount);
+        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
+        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
+
+        require!(Balance::from(token_amount) >= borrow_with_rate_amount, format!("repay amount {} is less than actual debt {}", Balance::from(token_amount), borrow_with_rate_amount));
 
         controller::repay_borrows(
             env::signer_account_id(),
@@ -63,14 +65,14 @@ impl Contract {
             U128(borrow_amount),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         )
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
             U128(borrow_with_rate_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         ))
         .into()
     }
@@ -90,12 +92,9 @@ impl Contract {
         let extra_balance = Balance::from(amount) - Balance::from(borrow_amount);
         self.decrease_borrows(
             env::signer_account_id(),
-            U128(self.get_borrows_by_account(env::signer_account_id())),
+            U128(self.get_account_borrows(env::signer_account_id())),
         );
-        self.model
-            .set_borrow_block_by_user(env::signer_account_id(), 0);
-        self.model
-            .set_borrow_interest_by_user(env::signer_account_id(), 0);
+        self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
 
         self.mutex_account_unlock();
         Contract::custom_success_log(String::from("repay_success"), env::signer_account_id(), Balance::from(borrow_amount));
