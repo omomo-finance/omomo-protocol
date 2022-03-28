@@ -33,7 +33,7 @@ impl Contract {
     }
 
     pub fn mutex_account_lock(&mut self, action: String) {
-        if !self.mutex.try_lock(env::current_account_id()) {
+        if !self.mutex.try_lock(&env::current_account_id()) {
             panic!(
                 "failed to acquire {} action mutex for account {}",
                 action,
@@ -43,7 +43,7 @@ impl Contract {
     }
 
     pub fn mutex_account_unlock(&mut self) {
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex.unlock(&env::signer_account_id());
     }
 
     pub fn add_inconsistent_account(&mut self, account: AccountId) {

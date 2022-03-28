@@ -427,7 +427,7 @@ fn scenario_supply_not_enough_balance() {
 
 #[test]
 fn scenario_supply() {
-    let (dtoken, controller, utoken, user, _) = base2_fixture();
+    let (dtoken, controller, utoken, user, root) = base2_fixture();
 
     let json = r#"
        {
@@ -445,12 +445,27 @@ fn scenario_supply() {
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(20),
+            U128(5),
             Some("SUPPLY".to_string()),
             String::from(json)
         ),
         deposit = 1
     ).assert_success();
+
+    root.borrow_runtime_mut().produce_blocks(100).unwrap();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(15),
+            Some("SUPPLY".to_string()),
+            String::from(json)
+        ),
+        deposit = 1
+    ).assert_success();
+
+
 
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
