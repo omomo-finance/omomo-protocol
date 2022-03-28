@@ -1,21 +1,24 @@
 use crate::*;
 
+const GAS_FOR_REPAY: Gas = Gas(95_000_000_000_000);
+
 impl Contract {
     
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
+        require!(env::prepaid_gas() >= GAS_FOR_REPAY, "Prepaid gas is not enough for repay flow");
         self.mutex_account_lock(String::from("repay"));
 
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            TGAS,
         )
         .then(ext_self::repay_balance_of_callback(
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -63,14 +66,14 @@ impl Contract {
             U128(borrow_amount),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         )
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
             U128(borrow_with_rate_amount),
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         ))
         .into()
     }
