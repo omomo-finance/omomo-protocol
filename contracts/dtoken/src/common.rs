@@ -22,7 +22,7 @@ impl Contract {
 
     pub fn get_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
         if self.token.total_supply == 0 {
-            return self.initial_exchange_rate * RATIO_DECIMALS;
+            return self.initial_exchange_rate;
         }
         return (Balance::from(underlying_balance) + self.total_borrows - self.total_reserves) * RATIO_DECIMALS
             / self.token.total_supply;
@@ -70,23 +70,23 @@ impl Contract {
 
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
-        self._get_total_reserves()
+        self.get_total_reserves()
     }
 
     pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
         self.total_borrows = amount;
-        self._get_total_borrows()
+        self.get_total_borrows()
     }
 
-    pub fn _get_total_supplies(&self) -> Balance {
+    pub fn get_total_supplies(&self) -> Balance {
         self.token.total_supply
     }
 
-    pub fn _get_total_borrows(&self) -> Balance {
+    pub fn get_total_borrows(&self) -> Balance {
         self.total_borrows
     }
 
-    pub fn _get_total_reserves(&self) -> Balance {
+    pub fn get_total_reserves(&self) -> Balance {
         self.total_reserves
     }
 }
