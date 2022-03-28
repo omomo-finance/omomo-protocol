@@ -740,7 +740,7 @@ fn scenario_liquidation_success()
           "action":"SUPPLY"
        }"#;
 
-    println!("logs 1: {:?}", call!(
+    call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
@@ -749,7 +749,7 @@ fn scenario_liquidation_success()
             String::from(json)
         ),
         deposit = 1
-    ).outcome());
+    );
 
     let json = json!({
         "action": "LIQUIDATION",
@@ -762,7 +762,7 @@ fn scenario_liquidation_success()
         }
     });
 
-    println!("logs 2: {:?}",call!(
+    call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
@@ -771,16 +771,23 @@ fn scenario_liquidation_success()
             json.to_string()
         ),
         deposit = 1
-    ).outcome());
+    );
 
-    let user_balance: u128 = view!(
+    let user_borrows: u128 = view!(
         dtoken.get_borrows_by_account(
             user.account_id()
         )
     ).unwrap_json();
 
+    let user_balance: u128 = view!(
+        dtoken.get_borrows_by_account(
+           AccountId::new_unchecked("test.testnet".to_string())
+        )
+    ).unwrap_json();
+
     // NEAR tests doesn't work with liquidation due some issues
-    //assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
+    //assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
+    //assert_eq!(user_balance, 10, "Supply balance on dtoken should be 10");
 }
 
 #[test]

@@ -16,6 +16,7 @@ impl Contract {
         let res = self.is_liquidation_allowed(
             borrower.clone(),
             borrowing_dtoken.clone(),
+            _liquidator,
             collateral_dtoken,
             liquidation_amount,
         );
@@ -28,33 +29,43 @@ impl Contract {
         &self,
         borrower: AccountId,
         borrowing_dtoken: AccountId,
+        liquidator: AccountId,
         collateral_dtoken: AccountId,
         amount_for_liquidation: WBalance,
     ) -> Result<WBalance, String> {
-        let borrow_amount = self.get_entity_by_token(
-            ActionType::Borrow,
-            borrower.clone(),
-            borrowing_dtoken.clone(),
-        );
+        if self.get_health_factor(borrower.clone()) > self.get_health_factor_threshold() {
+            return Err(String::from(
+                "User can't be liquidated as he has normal value of health factor",
+            ));
+        } else {
+            if liquidator == borrower {
+                return Err(String::from("Liquidation cannot liquidate his on borrow"));
+            }
 
-        if borrow_amount > amount_for_liquidation.0 {
-            return Err(String::from("Borrow bigger than liquidation amount"));
+            let borrow_amount = self.get_entity_by_token(
+                ActionType::Borrow,
+                borrower.clone(),
+                borrowing_dtoken.clone(),
+            );
+
+            if borrow_amount > amount_for_liquidation.0 {
+                return Err(String::from("Borrow bigger than liquidation amount"));
+            }
+
+            let balance_of_borrower_collateral = self.get_entity_by_token(
+                ActionType::Supply,
+                borrower.clone(),
+                collateral_dtoken.clone(),
+            );
+
+            if balance_of_borrower_collateral < amount_for_liquidation.0 {
+                return Err(String::from("Borrower collateral balance is too low"));
+            }
+
+            Ok(amount_for_liquidation)
         }
-
-        let balance_of_borrower_collateral = self.get_entity_by_token(
-            ActionType::Supply,
-            borrower.clone(),
-            collateral_dtoken.clone(),
-        );
-
-        if balance_of_borrower_collateral < amount_for_liquidation.0 {
-            return Err(String::from("Borrower collateral balance is too low"));
-        }
-
-        Ok(amount_for_liquidation)
     }
 
-    #[private]
     pub fn on_debt_repaying_callback(
         &mut self,
         borrower: AccountId,
@@ -63,6 +74,7 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
+        // TODO: Add check that only real Dtoken address can call this
         if !is_promise_success() {
             self.increase_borrows(borrower.clone(), _borrowing_dtoken, liquidation_amount);
             log!("Liquidation failed on borrow_repay call, revert changes...");

@@ -144,11 +144,6 @@ trait InternalTokenInterface {
                           liquidator: AccountId,
                           collateral_dtoken: AccountId,
                           liquidation_amount: WBalance);
-    fn liquidation_repay_borrows_callback(&mut self, borrower: AccountId,
-                                          borrowing_dtoken: AccountId,
-                                          collateral_dtoken: AccountId,
-                                          liquidator: AccountId,
-                                          liquidation_amount: WBalance);
 }
 
 #[near_bindgen]

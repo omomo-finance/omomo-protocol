@@ -46,15 +46,15 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             Contract::custom_fail_log(
-                String::from("withdraw_fail"),
+                String::from("liquidation_fail"),
                 env::signer_account_id(),
                 Balance::from(liquidation_amount.0),
                 format!(
-                    "Liquidation failed, while tried to call controller ({:?})",
+                    "Liquidation failed, while tried to call controller {}",
                     self.get_controller_address()
                 ),
             );
-            env::panic_str("");
+            env::abort();
         }
 
         controller::repay_borrows(
@@ -75,28 +75,6 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(20),
         ))
-        .into()
-    }
-
-    #[private]
-    pub fn liquidation_repay_borrows_callback(
-        &mut self,
-        borrower: AccountId,
-        borrowing_dtoken: AccountId,
-        collateral_dtoken: AccountId,
-        liquidator: AccountId,
-        liquidation_amount: WBalance,
-    ) -> PromiseOrValue<U128> {
-        controller::on_debt_repaying_callback(
-            borrower,
-            borrowing_dtoken,
-            collateral_dtoken,
-            liquidator,
-            liquidation_amount,
-            self.get_controller_address(),
-            NO_DEPOSIT,
-            self.terra_gas(15),
-        )
         .into()
     }
 

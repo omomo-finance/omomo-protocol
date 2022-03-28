@@ -3,6 +3,8 @@ use crate::*;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::serde_json;
 use near_sdk::serde_json::Value;
+use near_sdk::AccountId;
+use std::convert::TryFrom;
 
 #[near_bindgen]
 impl FungibleTokenReceiver for Contract {
@@ -40,16 +42,23 @@ impl FungibleTokenReceiver for Contract {
                 let memo_data = msg["memo"].clone();
 
                 let borrower =
-                    AccountId::new_unchecked(String::from(memo_data["borrower"].as_str().unwrap()));
-                let borrowing_dtoken = AccountId::new_unchecked(String::from(
+                    AccountId::try_from(String::from(memo_data["borrower"].as_str().unwrap()))
+                        .unwrap();
+
+                let borrowing_dtoken = AccountId::try_from(String::from(
                     memo_data["borrowing_dtoken"].as_str().unwrap(),
-                ));
-                let liquidator = AccountId::new_unchecked(String::from(
-                    memo_data["liquidator"].as_str().unwrap(),
-                ));
-                let collateral_dtoken = AccountId::new_unchecked(String::from(
+                ))
+                .unwrap();
+
+                let liquidator =
+                    AccountId::try_from(String::from(memo_data["liquidator"].as_str().unwrap()))
+                        .unwrap();
+
+                let collateral_dtoken = AccountId::try_from(String::from(
                     memo_data["collateral_dtoken"].as_str().unwrap(),
-                ));
+                ))
+                .unwrap();
+
                 let liquidation_amount = WBalance::from(
                     memo_data["liquidation_amount"]
                         .as_str()
