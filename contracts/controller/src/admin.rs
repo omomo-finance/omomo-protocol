@@ -2,8 +2,11 @@ use near_sdk::{AccountId, env, require};
 
 use general::{Percent, Ratio};
 
+use crate::*;
 use crate::Contract;
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub enum MethodType {
     Withdraw,
     Repay,
@@ -12,7 +15,7 @@ pub enum MethodType {
     Borrow,
 }
 
-
+#[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
         return self.admin.clone();
@@ -31,7 +34,7 @@ impl Contract {
     pub fn add_market(&mut self, key: AccountId, value: AccountId) {
         require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
-        self.markets.insert(&key, &value);
+        self.markets.insert(key, value);
     }
 
     pub fn remove_market(&mut self, key: AccountId) {

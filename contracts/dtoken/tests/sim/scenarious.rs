@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use near_sdk::AccountId;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
@@ -103,11 +104,11 @@ fn base_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount
     (dtoken, controller, utoken, d_user, root)
 }
 
-fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount, UserAccount) {
+fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount, UserAccount, UserAccount) {
     let root = init_simulator(None);
 
     let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
+    let (croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
@@ -137,7 +138,7 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
         deposit = 0
     ).assert_success();
 
-    (dtoken, controller, utoken, d_user, root)
+    (dtoken, controller, utoken, d_user, root, croot)
 }
 
 fn base_repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
@@ -427,7 +428,22 @@ fn scenario_supply_not_enough_balance() {
 
 #[test]
 fn scenario_supply() {
-    let (dtoken, controller, utoken, user, _) = base2_fixture();
+    let (dtoken, controller, utoken, user, _, croot) = base2_fixture();
+
+    let near: AccountId = "near".parse().unwrap();
+    let near_contr: AccountId = "near_contr".parse().unwrap();
+
+    let weth: AccountId = "weth".parse().unwrap();
+    let weth_contr: AccountId = "weth_contr".parse().unwrap();
+
+    // croot - controller admin dy default
+    call!(croot, controller.add_market(near, near_contr)).assert_success();
+    call!(croot, controller.add_market(weth, weth_contr)).assert_success();
+
+
+    let result: HashMap<AccountId, AccountId> = view!(controller.get_markets()).unwrap_json();
+
+    dbg!(result);
 
     let json = r#"
        {
@@ -521,7 +537,7 @@ fn scenario_withdraw_less_same() {
 
 #[test]
 fn scenario_withdraw() {
-    let (dtoken, controller, utoken, user, root) = base2_fixture();
+    let (dtoken, controller, utoken, user, root, _) = base2_fixture();
 
     let json = r#"
        {
@@ -696,7 +712,7 @@ fn scenario_repay_more_than_borrow() {
 
 #[test]
 fn scenario_borrow() {
-    let (dtoken, controller, utoken, user, _) = base2_fixture();
+    let (dtoken, controller, utoken, user, _, _) = base2_fixture();
 
     call!(
         user,

@@ -23,6 +23,11 @@ impl Contract {
         // Update & insert operation
         self.prices.insert(&price.asset_id, &price);
     }
+
+    pub fn get_markets(&self) -> &HashMap<AccountId,AccountId>{
+        &self.markets
+    }
+
 }
 
 #[cfg(test)]
