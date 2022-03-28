@@ -70,28 +70,29 @@ impl Contract {
 
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
-        self.get_total_reserves()
+        self._get_total_reserves()
     }
 
     pub fn set_total_borrows(&mut self, amount: Balance) -> Balance {
         self.total_borrows = amount;
-        self.get_total_borrows()
+        self._get_total_borrows()
+    }
+
+    pub fn _get_total_supplies(&self) -> Balance {
+        self.token.total_supply
+    }
+
+    pub fn _get_total_borrows(&self) -> Balance {
+        self.total_borrows
+    }
+
+    pub fn _get_total_reserves(&self) -> Balance {
+        self.total_reserves
     }
 }
 
 #[near_bindgen]
 impl Contract {
-    pub fn get_total_supplies(&self) -> Balance {
-        self.token.total_supply
-    }
-
-    pub fn get_total_borrows(&self) -> Balance {
-        self.total_borrows
-    }
-
-    pub fn get_total_reserves(&self) -> Balance {
-        self.total_reserves
-    }
 
     // TODO: this method should be private. Please move it and fix tests
     pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {

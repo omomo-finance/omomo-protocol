@@ -17,22 +17,34 @@ pub struct MarketData {
 #[near_bindgen]
 impl Contract {
 
-    pub fn get_market_data(&self, balance_of: WBalance) -> MarketData {
+    pub fn get_total_supplies(&self) -> Balance  {
+        return self._get_total_supplies();
+    }
 
-        let market_total_supplies = self.get_total_supplies();
-        let market_total_borrows = self.get_total_borrows();
-        let market_total_reserves = self.get_total_reserves();
-        let exchange_rate = self.get_exchange_rate(balance_of);
+    pub fn get_total_borrows(&self) -> Balance  {
+        return self._get_total_borrows();
+    }
+
+    pub fn get_total_reserves(&self) -> Balance  {
+        return self._get_total_reserves();
+    }
+
+    pub fn get_market_data(&self, ft_balance_of: WBalance) -> MarketData {
+
+        let market_total_supplies = self._get_total_supplies();
+        let market_total_borrows = self._get_total_borrows();
+        let market_total_reserves = self._get_total_reserves();
+        let exchange_rate = self.get_exchange_rate(ft_balance_of);
         let reserve_factor = self.model.get_reserve_factor();
 
         let interest_rate = self.get_supply_rate(
-            balance_of,
+            ft_balance_of,
                 WBalance::from(market_total_borrows),
                 WBalance::from(market_total_reserves),
                 WBalance::from(reserve_factor)
         );
         let borrow_rate = self.get_borrow_rate(
-            balance_of,
+            ft_balance_of,
             WBalance::from(market_total_borrows),
             WBalance::from(market_total_reserves),
         );
