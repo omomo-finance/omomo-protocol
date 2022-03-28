@@ -34,6 +34,7 @@ mod interest_rate_model;
 mod user_flow_protection;
 mod admin;
 mod user_profile;
+mod views;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
