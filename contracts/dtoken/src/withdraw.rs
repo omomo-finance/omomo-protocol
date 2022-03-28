@@ -1,12 +1,12 @@
 use crate::*;
 
-const MIN_WITHDRAW_GAS_MULTIPLIER: u64 = 130;
+const GAS_FOR_WITHDRAW: Gas = Gas(130_000_000_000_000);
 
 #[near_bindgen]
 impl Contract {
 
     pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> { 
-        assert!(env::prepaid_gas() >= self.terra_gas(MIN_WITHDRAW_GAS_MULTIPLIER), "Prepaid gas is not enough for withdraw flow");
+        require!(env::prepaid_gas() >= GAS_FOR_WITHDRAW, "Prepaid gas is not enough for withdraw flow");
         self.mutex_account_lock(String::from("withdraw"));
 
         underlying_token::ft_balance_of(
