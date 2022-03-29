@@ -1,9 +1,12 @@
-use near_sdk::{AccountId, env, require};
+use near_sdk::{AccountId, env, require, near_bindgen};
+use near_sdk::serde::{Deserialize, Serialize};
 
 use general::{Percent, Ratio};
 
-use crate::Contract;
+use crate::*;
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub enum MethodType {
     Withdraw,
     Repay,
@@ -12,7 +15,7 @@ pub enum MethodType {
     Borrow,
 }
 
-
+#[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
         return self.admin.clone();
@@ -24,7 +27,7 @@ impl Contract {
     }
 
     fn is_valid_admin_call(&self) -> bool {
-        env::predecessor_account_id() == self.admin || env::predecessor_account_id() == env::current_account_id()
+        env::signer_account_id() == self.admin || env::signer_account_id() == env::current_account_id()
     }
 
 

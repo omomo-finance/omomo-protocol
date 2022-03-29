@@ -89,7 +89,7 @@ mod tests {
         let controller_contract = Contract::new(Config { owner_id: alice(), oracle_account_id: bob() });
 
         let context = VMContextBuilder::new()
-            .predecessor_account_id(alice())
+            .signer_account_id(alice())
             .build();
 
         testing_env!(context);
