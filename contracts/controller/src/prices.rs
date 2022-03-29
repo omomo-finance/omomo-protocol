@@ -9,7 +9,7 @@ impl Contract {
         for asset in assets {
             if self.prices.contains_key(&asset) {
                 let price_raw = self.get_price(asset);
-                if(price_raw.is_some()){
+                if price_raw.is_some() {
                     let price = price_raw.unwrap();
                     result.insert(price.asset_id.clone(), price);
                 }
@@ -28,6 +28,7 @@ impl Contract {
 #[near_bindgen]
 impl Contract {
 
+    // TODO Do we really need to expose this via near_bindgen
     #[private]
     pub fn upsert_price(&mut self, price: &Price) {
         // Update & insert operation
