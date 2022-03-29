@@ -37,7 +37,7 @@ impl Contract {
     pub fn remove_market(&mut self, key: AccountId) {
         require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
-        require!(self.markets.contains_key(&key), "Asset by this key doesnt exist");
+        require!(self.markets.get(&key).is_some(), "Asset by this key doesnt exist");
 
         self.markets.remove(&key);
     }
