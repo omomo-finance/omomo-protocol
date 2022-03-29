@@ -2,14 +2,18 @@ use crate::*;
 
 use std::collections::HashMap;
 
-#[near_bindgen]
 impl Contract {
-    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Balance> {
+
+    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Price> {
         let mut result = HashMap::new();
         for asset in assets {
             if self.prices.contains_key(&asset) {
-                let price = self.get_price(asset).unwrap();
-                result.insert(price.asset_id, Balance::from(price.value));
+                let price_raw = self.get_price(asset);
+                if price_raw.is_some() {
+                    let price = price_raw.unwrap();
+                    result.insert(price.asset_id.clone(), price);
+                }
+
             }
         }
         return result;
@@ -19,10 +23,18 @@ impl Contract {
         return self.prices.get(&asset_id);
     }
 
+}
+
+#[near_bindgen]
+impl Contract {
+
+    // TODO Do we really need to expose this via near_bindgen
+    #[private]
     pub fn upsert_price(&mut self, price: &Price) {
         // Update & insert operation
         self.prices.insert(&price.asset_id, &price);
     }
+
 }
 
 #[cfg(test)]
