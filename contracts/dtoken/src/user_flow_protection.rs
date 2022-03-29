@@ -98,7 +98,7 @@ mod tests {
     }
 
     #[test]
-    fn try_lock_unlock_account() {
+    fn try_lock_after_unlock() {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = ActionMutex::default();

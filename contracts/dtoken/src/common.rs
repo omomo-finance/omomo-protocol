@@ -1,6 +1,5 @@
 use crate::*;
 
-
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
         let config: Config = self.get_contract_config();
@@ -61,7 +60,7 @@ impl Contract {
         log!(
             r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}", "reason": "{}"}}}}"#,  
             event, account, amount, reason
-        ); 
+        );
     }
 
     pub fn custom_success_log(event: String, account: AccountId, amount: Balance) {
@@ -91,7 +90,6 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-
     // TODO: this method should be private. Please move it and fix tests
     pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
         if self.token.accounts.get(&account_id).is_none() {
