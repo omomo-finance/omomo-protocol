@@ -4,15 +4,8 @@ use std::collections::HashMap;
 
 #[near_bindgen]
 impl Contract {
-    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Balance> {
-        let mut result = HashMap::new();
-        for asset in assets {
-            if self.prices.contains_key(&asset) {
-                let price = self.get_price(asset).unwrap();
-                result.insert(price.asset_id, Balance::from(price.value));
-            }
-        }
-        return result;
+    pub fn get_markets(&self) -> HashMap<AccountId,AccountId>{
+        self.markets.iter().collect()
     }
 
     pub fn get_price(&self, asset_id: AccountId) -> Option<Price> {
@@ -23,12 +16,21 @@ impl Contract {
         // Update & insert operation
         self.prices.insert(&price.asset_id, &price);
     }
-
-    pub fn get_markets(&self) -> HashMap<AccountId,AccountId>{
-        self.markets.iter().collect()
-    }
-
 }
+
+impl Contract {
+    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Balance> {
+        let mut result = HashMap::new();
+        for asset in assets {
+            if self.prices.contains_key(&asset) {
+                let price = self.get_price(asset).unwrap();
+                result.insert(price.asset_id, Balance::from(price.value));
+            }
+        }
+        return result;
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
