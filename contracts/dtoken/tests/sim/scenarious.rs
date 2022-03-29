@@ -428,22 +428,7 @@ fn scenario_supply_not_enough_balance() {
 
 #[test]
 fn scenario_supply() {
-    let (dtoken, controller, utoken, user, _, croot) = base2_fixture();
-
-    let near: AccountId = "near".parse().unwrap();
-    let near_contr: AccountId = "near_contr".parse().unwrap();
-
-    let weth: AccountId = "weth".parse().unwrap();
-    let weth_contr: AccountId = "weth_contr".parse().unwrap();
-
-    // croot - controller admin dy default
-    call!(croot, controller.add_market(near, near_contr)).assert_success();
-    call!(croot, controller.add_market(weth, weth_contr)).assert_success();
-
-
-    let result: HashMap<AccountId, AccountId> = view!(controller.get_markets()).unwrap_json();
-
-    dbg!(result);
+    let (dtoken, controller, utoken, user, _, _) = base2_fixture();
 
     let json = r#"
        {
@@ -770,4 +755,25 @@ fn scenatio_borrow_more_than_on_dtoken() {
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
     assert_eq!(dtoken_balance, 50.to_string(), "Dtoken balance on utoken should be 50");
+}
+
+#[test]
+fn scenario_get_markets() {
+    let (_, controller, _, _, _, croot) = base2_fixture();
+
+    let near: AccountId = "near".parse().unwrap();
+    let near_contract: AccountId = "near_contr".parse().unwrap();
+
+    let eth: AccountId = "weth".parse().unwrap();
+    let eth_contract: AccountId = "weth_contr".parse().unwrap();
+
+    // croot - controller admin dy default
+    call!(croot, controller.add_market(&near, &near_contract)).assert_success();
+    call!(croot, controller.add_market(&eth, &eth_contract)).assert_success();
+
+
+    let markets: HashMap<AccountId, AccountId> = view!(controller.get_markets()).unwrap_json();
+
+    assert!(markets.contains_key(&near));
+    assert!(markets.contains_key(&eth));
 }

@@ -31,7 +31,7 @@ impl Contract {
     }
 
 
-    pub fn add_market(&mut self, key: AccountId, value: AccountId) {
+    pub fn add_market(&mut self, key: &AccountId, value: &AccountId) {
         require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
         self.markets.insert(key, value);

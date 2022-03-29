@@ -24,8 +24,8 @@ impl Contract {
         self.prices.insert(&price.asset_id, &price);
     }
 
-    pub fn get_markets(&self) -> &HashMap<AccountId,AccountId>{
-        &self.markets
+    pub fn get_markets(&self) -> HashMap<AccountId,AccountId>{
+        self.markets.iter().collect()
     }
 
 }
