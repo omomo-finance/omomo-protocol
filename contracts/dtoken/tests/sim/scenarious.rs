@@ -126,7 +126,7 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     );
 
     call!(
-        d_user,
+        controller.user_account,
         controller.upsert_price(
             &Price {
                 asset_id: dtoken.account_id(),
@@ -329,7 +329,7 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
     ).assert_success();
 
     call!(
-        d_user,
+        controller.user_account,
         controller.upsert_price(
             &Price {
                 asset_id: dtoken.account_id(),
