@@ -484,10 +484,10 @@ fn triple_supply_success() {
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 58.to_string(), "Dtoken balance should be 60");
+    assert_eq!(dtoken_balance, 58.to_string(), "Dtoken balance should be 58");
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 18, "Balance on controller should be 20");
+    assert_eq!(user_balance, 18, "Balance on controller should be 18");
 }
 
 
