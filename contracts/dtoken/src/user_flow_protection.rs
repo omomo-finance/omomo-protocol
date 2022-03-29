@@ -41,11 +41,9 @@ impl ActionMutex {
         let current_block_height = block_height();
         let blocked_index = self.get_last_block_index(&account_id);
         if blocked_index > 0 && current_block_height - blocked_index <= BLOCKS_TO_NEXT_OPERATION {
-            // log!("error, not allowed to perform operation\n");
             is_locked = false;
         } else {
             self.blocked_accounts.insert(&account_id, &current_block_height);
-            // log!("i successfully locked\n");
         }
         is_locked
     }

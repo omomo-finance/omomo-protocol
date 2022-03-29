@@ -424,10 +424,9 @@ fn scenario_supply_not_enough_balance() {
     );
     assert_failure(result, "The account doesn't have enough balance");
 }
-
 #[test]
-fn scenario_supply() {
-    let (dtoken, controller, utoken, user, root) = base2_fixture();
+fn triple_supply_success() {
+    let (dtoken, controller, utoken, user, _) = base2_fixture();
 
     let json = r#"
        {
@@ -452,13 +451,12 @@ fn scenario_supply() {
         deposit = 1
     ).assert_success();
 
-    root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(15),
+            U128(12),
             Some("SUPPLY".to_string()),
             String::from(json)
         ),
@@ -466,6 +464,59 @@ fn scenario_supply() {
     ).assert_success();
 
 
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(1),
+            Some("SUPPLY".to_string()),
+            String::from(json)
+        ),
+        deposit = 1
+    ).assert_success();
+
+
+    let user_balance: String = view!(
+        utoken.ft_balance_of(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 2.to_string(), "User balance should be 2");
+
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 58.to_string(), "Dtoken balance should be 60");
+
+    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 18, "Balance on controller should be 20");
+}
+
+
+#[test]
+fn scenario_supply() {
+    let (dtoken, controller, utoken, user, _) = base2_fixture();
+
+    let json = r#"
+       {
+          "action":"SUPPLY",
+          "memo":{
+             "borrower":"123",
+             "borrowing_dtoken":"123",
+             "liquidator":"123",
+             "collateral_dtoken":"123",
+             "liquidation_amount":"123"
+          }
+       }"#;
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            String::from(json)
+        ),
+        deposit = 1
+    ).assert_success();
 
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())

@@ -33,7 +33,7 @@ impl Contract {
     }
 
     pub fn mutex_account_lock(&mut self, action: String) {
-        if !self.mutex.try_lock(&env::current_account_id()) {
+        if !self.mutex.try_lock(&env::signer_account_id()) {
             panic!(
                 "failed to acquire {} action mutex for account {}",
                 action,
