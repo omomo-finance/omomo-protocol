@@ -1,14 +1,6 @@
 use crate::*;
 use near_sdk::env::block_height;
 
-#[derive(BorshSerialize, BorshStorageKey)]
-pub enum StorageKeys {
-    BorrowBlock,
-    BorrowInterest,
-    SupplyBlock,
-    SupplyInterest,
-}
-
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)] 
 pub struct InterestRateModel {
@@ -17,10 +9,6 @@ pub struct InterestRateModel {
     base_rate_per_block: Ratio,
     jump_multiplier_per_block: Ratio,
     reserve_factor: Ratio,
-    account_borrow_block: LookupMap<AccountId, BlockHeight>,
-    account_borrow_interest: LookupMap<AccountId, Balance>,
-    account_supply_block: LookupMap<AccountId, BlockHeight>,
-    account_supply_interest: LookupMap<AccountId, Balance>
 }
 
 #[near_bindgen]
@@ -43,22 +31,6 @@ impl InterestRateModel{
 
     pub fn get_reserve_factor(&self) -> Ratio{
         return self.reserve_factor;
-    }
-
-    pub fn get_borrow_block_by_user(&self, account: AccountId) -> BlockHeight{
-        self.account_borrow_block.get(&account).unwrap_or(0)
-    }
-
-    pub fn get_borrow_interest_by_user(&self, account: AccountId) -> Balance{
-        self.account_borrow_interest.get(&account).unwrap_or(0)
-    }
-
-    pub fn get_supply_block_by_user(&self, account: AccountId) -> BlockHeight{
-        self.account_supply_block.get(&account).unwrap_or(0)
-    }
-
-    pub fn get_supply_interest_by_user(&self, account: AccountId) -> Balance{
-        self.account_supply_interest.get(&account).unwrap_or(0)
     }
 
     #[private]
@@ -86,60 +58,54 @@ impl InterestRateModel{
         self.reserve_factor = value;
     }
 
-    #[private]
-    pub fn set_borrow_block_by_user(&mut self, account: AccountId, block_height: BlockHeight){
-        self.account_borrow_block.insert(&account, &block_height);
-    }
-
-    #[private]
-    pub fn set_borrow_interest_by_user(&mut self, account: AccountId, interest: Balance){
-        self.account_borrow_interest.insert(&account, &interest);
-    }
-    
-    fn set_supply_block_by_user(&mut self, account: AccountId, block_height: BlockHeight){
-        self.account_supply_block.insert(&account, &block_height);
-    }
-
-    fn set_supply_interest_by_user(&mut self, account: AccountId, interest: Ratio){
-        self.account_supply_interest.insert(&account, &interest);
-    }
-
-    pub fn calculate_accrued_borrow_interest(&mut self, account: AccountId, borrow_rate: Ratio, total_borrow: Balance) {
+    pub fn calculate_accrued_interest(&self, borrow_rate: Ratio, total_borrow: Balance, accrued_interest: AccruedInterest) -> AccruedInterest{
         let current_block_height = block_height();
-        let accrued_rate = total_borrow * borrow_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
-        let total_accrued_rate = self.get_borrow_interest_by_user(account.clone()) + accrued_rate;
-        self.set_borrow_block_by_user(account.clone(), current_block_height);
-        self.set_borrow_interest_by_user(account, total_accrued_rate);
-    }
+        let accrued_rate = total_borrow * borrow_rate * (current_block_height - accrued_interest.last_recalculation_block) as u128 / RATIO_DECIMALS;
 
-    pub fn calculate_accrued_supply_interest(&mut self, account: AccountId, supply_rate: Ratio, total_supply: Balance) {
-        let current_block_height = block_height();
-        let accrued_rate = total_supply * supply_rate * (current_block_height - self.get_supply_block_by_user(account.clone())) as u128 / RATIO_DECIMALS;
-        let total_accrued_rate = self.get_supply_interest_by_user(account.clone()) + accrued_rate;
-        self.set_supply_block_by_user(account.clone(), current_block_height);
-        self.set_supply_interest_by_user(account, total_accrued_rate);
+        AccruedInterest{
+            accumulated_interest: accrued_interest.accumulated_interest + accrued_rate,
+            last_recalculation_block: current_block_height,
+        }
     }
 }
 
-#[near_bindgen]
-impl InterestRateModel{
-    pub fn get_with_ratio_decimals(value: f32) -> Ratio{
-        return (value * RATIO_DECIMALS as f32) as Ratio;
-    }
+fn get_with_ratio_decimals(value: f32) -> Ratio{
+    (value * RATIO_DECIMALS as f32) as Ratio
 }
 
 impl Default for InterestRateModel{
     fn default()-> Self{
         Self{
-            kink: InterestRateModel::get_with_ratio_decimals(1.0),
-            base_rate_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-            multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-            jump_multiplier_per_block: InterestRateModel::get_with_ratio_decimals(1.0),
-            reserve_factor: InterestRateModel::get_with_ratio_decimals(0.05),
-            account_borrow_block: LookupMap::new(StorageKeys::BorrowBlock),
-            account_borrow_interest: LookupMap::new(StorageKeys::BorrowInterest),
-            account_supply_block: LookupMap::new(StorageKeys::SupplyBlock),
-            account_supply_interest: LookupMap::new(StorageKeys::SupplyInterest),
+            kink: get_with_ratio_decimals(1.0),
+            base_rate_per_block: get_with_ratio_decimals(1.0),
+            multiplier_per_block: get_with_ratio_decimals(1.0),
+            jump_multiplier_per_block: get_with_ratio_decimals(1.0),
+            reserve_factor: get_with_ratio_decimals(0.05),
         }
+    }
+}
+
+#[near_bindgen]
+impl Contract {
+    pub fn get_accrued_borrow_interest(&self, account: AccountId) -> AccruedInterest{
+        self.user_profiles.get(&account).unwrap_or_default().borrow_interest
+    }
+
+    pub fn get_accrued_supply_interest(&self, account: AccountId) -> AccruedInterest{
+        self.user_profiles.get(&account).unwrap_or_default().supply_interest
+    }
+
+    #[private]
+    pub fn set_accrued_supply_interest(&mut self, account: AccountId, accrued_interest: AccruedInterest) {
+        let mut user = self.user_profiles.get(&account).unwrap_or_default();
+        user.supply_interest = accrued_interest;
+        self.user_profiles.insert(&account, &user);
+    }
+
+    #[private]
+    pub fn set_accrued_borrow_interest(&mut self, account: AccountId, accrued_interest: AccruedInterest) {
+        let mut user = self.user_profiles.get(&account).unwrap_or_default();
+        user.borrow_interest = accrued_interest;
+        self.user_profiles.insert(&account, &user);
     }
 }

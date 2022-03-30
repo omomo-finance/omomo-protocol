@@ -1,13 +1,12 @@
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen, ext_contract, require};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap};
-use std::collections::HashMap;
+use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
+
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
-#[allow(unused_imports)]
 use general::*;
 
 pub use crate::borrows_supplies::*;
@@ -16,6 +15,7 @@ pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
 pub use crate::liquidation::*;
+pub use crate::user_profile::*;
 
 #[allow(unused_imports)]
 mod config;
@@ -26,6 +26,8 @@ pub mod repay;
 mod healthfactor;
 mod admin;
 mod liquidation;
+pub mod user_profile;
+mod views;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -34,19 +36,18 @@ pub enum StorageKeys {
     Prices,
     Config,
     Borrows,
+    UserProfiles,
 }
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
     /// Market name [Underlying asset name] -> Dtoken contract address
-    pub markets: LookupMap<AccountId, AccountId>,
+    pub markets: UnorderedMap<AccountId, AccountId>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
-    pub account_supplies: LookupMap<AccountId, HashMap<AccountId, Balance>>,
-
     /// User Account ID -> Dtoken address -> Borrow balance
-    pub account_borrows: LookupMap<AccountId, HashMap<AccountId, Balance>>,
+    user_profiles: LookupMap<AccountId, UserProfile>,
 
     /// Asset ID -> Price value
     pub prices: LookupMap<AccountId, Price>,
@@ -131,9 +132,8 @@ impl Contract {
         require!(!env::state_exists(), "Already initialized");
 
         Self {
-            markets: LookupMap::new(StorageKeys::Markets),
-            account_supplies: LookupMap::new(StorageKeys::Supplies),
-            account_borrows: LookupMap::new(StorageKeys::Borrows),
+            markets: UnorderedMap::new(StorageKeys::Markets),
+            user_profiles: LookupMap::new(StorageKeys::UserProfiles),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             admin: config.owner_id,

@@ -1,3 +1,27 @@
+use near_contract_standards::fungible_token::FungibleToken;
+use near_sdk::{AccountId, Balance, BlockHeight, BorshStorageKey, env, ext_contract, Gas,
+               is_promise_success, log, near_bindgen, PromiseOrValue, PromiseResult};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::{LazyOption, UnorderedMap};
+use near_sdk::json_types::U128;
+use near_sdk::require;
+use near_sdk::serde::{Deserialize, Serialize};
+
+#[allow(unused_imports)]
+use general::*;
+
+pub use crate::borrow::*;
+pub use crate::common::*;
+pub use crate::config::*;
+pub use crate::ft::*;
+pub use crate::interest_model::*;
+pub use crate::interest_rate_model::*;
+pub use crate::repay::*;
+pub use crate::supply::*;
+pub use crate::user_flow_protection::*;
+pub use crate::withdraw::*;
+pub use crate::user_profile::*;
+
 mod borrow;
 mod common;
 mod config;
@@ -9,38 +33,14 @@ mod withdraw;
 mod interest_model;
 mod interest_rate_model;
 mod user_flow_protection;
-
-pub use crate::borrow::*;
-pub use crate::common::*;
-pub use crate::config::*;
-pub use crate::ft::*;
-pub use crate::repay::*;
-pub use crate::supply::*;
-pub use crate::withdraw::*;
-pub use crate::interest_model::*;
-pub use crate::interest_rate_model::*;
-pub use crate::user_flow_protection::*;
-
-#[allow(unused_imports)]
-use general::*;
-
-use near_contract_standards::fungible_token::FungibleToken;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
-use near_sdk::json_types::U128;
-use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance,
-               BorshStorageKey, Gas, PromiseOrValue, PromiseResult, BlockHeight};
-use near_sdk::require;
-
-pub type TokenAmount = u128;
+mod admin;
+mod user_profile;
+mod views;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
-    Borrows,
     Config,
-    Actions,
-    InconsistentAccounts
+    UserProfiles,
 }
 
 #[near_bindgen]
@@ -50,13 +50,10 @@ pub struct Contract {
     initial_exchange_rate: u128,
 
     /// Total sum of supplied tokens
-    total_reserves: TokenAmount,
-
-    /// Total sum of borrowed tokens
-    total_borrows: TokenAmount,
+    total_reserves: Balance,
 
     /// Account Id -> Token's amount
-    borrows: UnorderedMap<AccountId, TokenAmount>,
+    user_profiles: UnorderedMap<AccountId, UserProfile>,
 
     /// Address of underlying token
     underlying_token: AccountId,
@@ -67,15 +64,13 @@ pub struct Contract {
     /// Contract configuration object
     config: LazyOption<Config>,
 
-    /// BlockHeight of last action user produced
-    actions: LookupMap<AccountId, BlockHeight>,
-
     model: InterestRateModel,
 
     ///User action protection
     mutex: ActionMutex,
 
-    inconsistent_accounts: LookupMap<AccountId, BlockHeight>
+    /// Contract admin account (dtoken itself by default)
+    pub admin: AccountId,
 }
 
 impl Default for Contract {
@@ -169,15 +164,13 @@ impl Contract {
         Self {
             initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
             total_reserves: 0,
-            total_borrows: 0,
-            borrows: UnorderedMap::new(StorageKeys::Borrows),
+            user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
-            actions: LookupMap::new(StorageKeys::Actions),
             model: InterestRateModel::default(),
             mutex: ActionMutex::default(),
-            inconsistent_accounts: LookupMap::new(StorageKeys::InconsistentAccounts)
+            admin: config.owner_id,
         }
     }
 }

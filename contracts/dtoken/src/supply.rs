@@ -1,34 +1,43 @@
 use crate::*;
 
-#[near_bindgen]
+const GAS_FOR_SUPPLY: Gas = Gas(95_000_000_000_000);
+
 impl Contract {
-    #[payable]
+
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
-        if !self.mutex.try_lock(env::current_account_id()) {
-            Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to acquire action mutex for account {}", env::signer_account_id()));
-            panic!();
-        }
+        require!(env::prepaid_gas() >= GAS_FOR_SUPPLY, "Prepaid gas is not enough for supply flow");
+        self.mutex_account_lock(String::from("supply"));
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            TGAS,
         )
         .then(ext_self::supply_balance_of_callback(
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(40),
         ))
         .into()
     }
 
+    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
+        self.token.accounts.get(&account).unwrap_or(0).into()
+    }
+
+}
+
+#[near_bindgen]
+impl Contract {
+
     #[allow(dead_code)]
+    #[private]
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
-            self.mutex.unlock(env::signer_account_id());
+           self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -45,15 +54,16 @@ impl Contract {
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
-            U128(self.total_borrows),
+            U128(self.get_total_borrows()),
             U128(self.total_reserves),
             U128(self.model.get_reserve_factor()),
         );
-        self.model.calculate_accrued_supply_interest(
-            env::signer_account_id(),
+        let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
+            self.get_accrued_supply_interest(env::signer_account_id())
         );
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
         self.mint(self.get_signer_address(), dtoken_amount.into());
@@ -70,19 +80,20 @@ impl Contract {
             token_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(20),
+            self.terra_gas(5),
         )
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
             U128(dtoken_amount),
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(5),
         ))
         .into()
     }
 
     #[allow(dead_code)]
+    #[private]
     pub fn controller_increase_supplies_callback(
         &mut self,
         amount: WBalance,
@@ -92,15 +103,11 @@ impl Contract {
             Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(amount), format!("failed to increase {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.burn(&self.get_signer_address(), dtoken_amount);
 
-            self.mutex.unlock(env::signer_account_id()); 
+           self.mutex_account_unlock(); 
             return PromiseOrValue::Value(amount);
         } 
         Contract::custom_success_log(String::from("supply_success"), env::signer_account_id(), Balance::from(amount));
-        self.mutex.unlock(env::signer_account_id());
+        self.mutex_account_unlock();
         PromiseOrValue::Value(U128(0))
-    }
-
-    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
-        self.token.accounts.get(&account).unwrap_or(0).into()
     }
 }
