@@ -249,10 +249,12 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
 
     call!(
         user,
-        dtoken.increase_borrows(user.account_id(),U128(5)),
-        0,
-        100000000000000
+        dtoken.borrow(
+            U128(5)
+        ),
+        deposit = 0
     ).assert_success();
+
 
     let user_balance: u128 = view!(
         dtoken.get_account_borrows(
@@ -261,12 +263,6 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     ).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id() ,U128(5)),
-        0,
-        100000000000000
-    ).assert_success();
 
     let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
