@@ -1,4 +1,5 @@
 use near_sdk::AccountId;
+use near_sdk::borsh::BorshSerialize;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 
@@ -857,4 +858,27 @@ fn supply_borrow_repay_withdraw() {
 
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(dtoken_balance, 167.to_string(), "After withdraw balance should be 167");
+}
+
+#[test]
+fn scenario_multiple_calls(){
+    let (dtoken, controller, utoken, user, _) = base2_fixture();
+    let transaction = user.create_transaction(dtoken.account_id());
+    let json = r#"
+        {
+            "token_amount": "5"
+        }"#;
+
+    let res = transaction.function_call(
+        "borrow".to_string(), 
+        U128(5).try_to_vec().unwrap(), 
+        300_000_000_000_000, 
+        0).submit();
+
+    println!("{:?}", res);
+
+    let user_balance_after_withdraw: String = view!(
+        utoken.ft_balance_of(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance_after_withdraw, 305.to_string(), "User balance should be 305");
 }
