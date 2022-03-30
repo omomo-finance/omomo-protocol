@@ -87,7 +87,7 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to decrease {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
-           self.mutex_account_unlock();
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
 
@@ -122,7 +122,7 @@ impl Contract {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
             Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(dtoken_amount));
-           self.mutex_account_unlock();
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(dtoken_amount);
         } else {
             controller::increase_supplies(

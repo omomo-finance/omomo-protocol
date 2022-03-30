@@ -37,7 +37,7 @@ impl Contract {
     pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
-           self.mutex_account_unlock();
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -103,9 +103,9 @@ impl Contract {
             Contract::custom_fail_log(String::from("supply_fail"), env::signer_account_id(), Balance::from(amount), format!("failed to increase {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
             self.burn(&self.get_signer_address(), dtoken_amount);
 
-           self.mutex_account_unlock(); 
+            self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
-        } 
+        }
         Contract::custom_success_log(String::from("supply_success"), env::signer_account_id(), Balance::from(amount));
         self.mutex_account_unlock();
         PromiseOrValue::Value(U128(0))
