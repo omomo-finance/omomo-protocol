@@ -112,14 +112,14 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
 
     call!(
         uroot,
-        utoken.mint(dtoken.account_id(), U128(40)),
+        utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
         uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(d_user.account_id(), U128(300)),
         0,
         100000000000000
     );
@@ -426,55 +426,6 @@ fn scenario_supply_not_enough_balance() {
 }
 
 #[test]
-fn two_actions_in_a_row() {
-    let (dtoken, controller, utoken, user, _) = base2_fixture();
-
-    let json = r#"
-       {
-          "action":"SUPPLY",
-          "memo":{
-          }
-       }"#;
-
-    call!(
-        user,
-        utoken.ft_transfer_call(
-            dtoken.account_id(),
-            U128(5),
-            Some("SUPPLY".to_string()),
-            String::from(json)
-        ),
-        deposit = 1
-    ).assert_success();
-
-
-    call!(
-        user,
-        utoken.ft_transfer_call(
-            dtoken.account_id(),
-            U128(13),
-            Some("SUPPLY".to_string()),
-            String::from(json)
-        ),
-        deposit = 1
-    ).assert_success();
-
-    let user_balance: String = view!(
-        utoken.ft_balance_of(user.account_id())
-    ).unwrap_json();
-    assert_eq!(user_balance, 2.to_string(), "User balance should be 2");
-
-    let dtoken_balance: String = view!(
-        utoken.ft_balance_of(dtoken.account_id())
-    ).unwrap_json();
-    assert_eq!(dtoken_balance, 58.to_string(), "Dtoken balance should be 58");
-
-    let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 18, "Balance on controller should be 18");
-}
-
-
-#[test]
 fn scenario_supply() {
     let (dtoken, controller, utoken, user, _) = base2_fixture();
 
@@ -504,12 +455,12 @@ fn scenario_supply() {
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 0.to_string(), "User balance should be 0");
+    assert_eq!(user_balance, 280.to_string(), "User balance should be 280");
 
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 60.to_string(), "Dtoken balance should be 60");
+    assert_eq!(dtoken_balance, 120.to_string(), "Dtoken balance should be 120");
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance on controller should be 20");
@@ -610,12 +561,12 @@ fn scenario_withdraw() {
     ).assert_success();
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 17, "Balance should be 17");
+    assert_eq!(user_balance, 19, "Balance should be 19");
 
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 52.to_string(), "After withdraw balance should be 52");
+    assert_eq!(dtoken_balance, 114.to_string(), "After withdraw balance should be 114");
 }
 
 #[test]
@@ -683,7 +634,7 @@ fn scenario_repay() {
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 23.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 2723");
+    assert_eq!(user_balance, 23.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 23");
 
     let user_balance: u128 = view!(
         dtoken.get_account_borrows(
@@ -762,12 +713,12 @@ fn scenario_borrow() {
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 40.to_string(), "User utoken balance should be 40");
+    assert_eq!(user_balance, 320.to_string(), "User utoken balance should be 320");
 
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 20.to_string(), "Dtoken balance on utoken should be 20");
+    assert_eq!(dtoken_balance, 80.to_string(), "Dtoken balance on utoken should be 80");
 }
 
 #[test]
@@ -803,7 +754,8 @@ fn scenario_borrow_more_than_on_dtoken() {
 
 #[test]
 fn supply_borrow_repay_withdraw() {
-    let (dtoken, controller, utoken, user, root) = base2_fixture();
+    // initial dtoken_balance = 100; user_balance = 300;
+    let (dtoken, controller, utoken, user, _) = base2_fixture();
 
     let supply_json = r#"
        {
@@ -827,12 +779,12 @@ fn supply_borrow_repay_withdraw() {
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 5.to_string(), "User balance should be 5");
+    assert_eq!(user_balance, 285.to_string(), "User balance should be 285");
 
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 55.to_string(), "Dtoken balance should be 55");
+    assert_eq!(dtoken_balance, 115.to_string(), "Dtoken balance should be 115");
 
     let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 15, "supplied assets should be 15");
@@ -858,8 +810,7 @@ fn supply_borrow_repay_withdraw() {
     let dtoken_balance: String = view!(
         utoken.ft_balance_of(dtoken.account_id())
     ).unwrap_json();
-    assert_eq!(dtoken_balance, 50.to_string(), "Dtoken balance should be 50");
-
+    assert_eq!(dtoken_balance, 110.to_string(), "Dtoken balance should be 50");
 
 
     let json_repay = r#"
@@ -868,51 +819,42 @@ fn supply_borrow_repay_withdraw() {
           "memo":{}
        }"#;
 
-    let result = call!(
+    call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(5),
+            U128(60),
             Some("REPAY".to_string()),
             String::from(json_repay)
         ),
         deposit = 1
     );
 
-
+    // after repaying
     let user_borrowed_balance_after_repay: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-    assert_eq!(user_borrowed_balance_after_repay, 0, "User balance should be 0");
+    assert_eq!(user_borrowed_balance_after_repay, 0, "User borrowed balance should be 0");
 
     let user_balance_after_repay: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-
-    assert_eq!(user_balance_after_repay, 10.to_string(), "User balance should be 5+5 = 10");
+    assert_eq!(user_balance_after_repay, 233.to_string(), "User balance should be 233");
 
 
     call!(
         user,
-        dtoken.withdraw(U128(15)),
+        dtoken.withdraw(U128(10)),
         deposit = 0
     ).assert_success();
 
-
+    // after withdrawing
     let user_balance_after_withdraw: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
+    assert_eq!(user_balance_after_withdraw, 233.to_string(), "User balance should be 233");
 
-    dbg!(user_balance_after_withdraw);
+    let user_supply_balance_after_withdraw = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
+    assert_eq!(user_supply_balance_after_withdraw, 15, "supply balance should be 15");
 
-    //
-    // let user_balance: u128 = view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
-    // dbg!(user_balance);
-    // // assert_eq!(user_balance, 17, "Balance should be 17");
-    //
-    // let dtoken_balance: String = view!(
-    //     utoken.ft_balance_of(dtoken.account_id())
-    // ).unwrap_json();
-    // dbg!(dtoken_balance);
-    // // assert_eq!(dtoken_balance, 52.to_string(), "After withdraw balance should be 52");
-
-
+    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    assert_eq!(dtoken_balance, 167.to_string(), "After withdraw balance should be 167");
 }
