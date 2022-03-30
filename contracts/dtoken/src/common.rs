@@ -21,7 +21,6 @@ pub enum Events {
     WithdrawSuccess(AccountId, Balance),
     WithdrawFailedToMakeFallback(AccountId, Balance),
     WithdrawFallbackSuccess(AccountId, Balance),
-
 }
 
 impl Contract {
@@ -80,20 +79,6 @@ impl Contract {
         self.user_profiles.remove(&account);
     }
 
-    pub fn custom_fail_log(event: String, account: AccountId, amount: Balance, reason: String) {
-        log!(
-            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}", "reason": "{}"}}}}"#,  
-            event, account, amount, reason
-        );
-    }
-
-    pub fn custom_success_log(event: String, account: AccountId, amount: Balance) {
-        log!(
-            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  
-            event, account, amount
-        );
-    }
-
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
         self.get_total_reserves()
@@ -111,6 +96,26 @@ impl Contract {
         self.total_reserves
     }
 }
+
+#[near_bindgen]
+impl Contract {
+    // TODO: this method should be private. Please move it and fix tests
+    pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
+        if self.token.accounts.get(&account_id).is_none() {
+            self.token.internal_register_account(&account_id);
+        };
+        self.token.internal_deposit(&account_id, amount.into());
+    }
+
+    // TODO: this method should be private. Please move it and fix tests
+    pub fn burn(&mut self, account_id: &AccountId, amount: WBalance) {
+        if !self.token.accounts.contains_key(&account_id.clone()) {
+            panic!("User with account {} wasn't found", account_id.clone());
+        }
+        self.token.internal_withdraw(account_id, amount.into());
+    }
+}
+
 
 impl fmt::Display for Events {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -164,25 +169,5 @@ impl fmt::Display for Events {
                 write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
                     account, balance),
         }
-        
-    }
-}
-
-#[near_bindgen]
-impl Contract {
-    // TODO: this method should be private. Please move it and fix tests
-    pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
-        if self.token.accounts.get(&account_id).is_none() {
-            self.token.internal_register_account(&account_id);
-        };
-        self.token.internal_deposit(&account_id, amount.into());
-    }
-
-    // TODO: this method should be private. Please move it and fix tests
-    pub fn burn(&mut self, account_id: &AccountId, amount: WBalance) {
-        if !self.token.accounts.contains_key(&account_id.clone()) {
-            panic!("User with account {} wasn't found", account_id.clone());
-        }
-        self.token.internal_withdraw(account_id, amount.into());
     }
 }
