@@ -147,7 +147,7 @@ impl Contract {
     pub fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>{
         if !is_promise_success() {
             self.add_inconsistent_account(env::signer_account_id());
-            log!("{}", Events::WithdrawFailedToMakeFallback(env::signer_account_id(), Balance::from(token_amount)));
+            log!("{}", Events::WithdrawFailedToFallback(env::signer_account_id(), Balance::from(token_amount)));
             return PromiseOrValue::Value(token_amount);
         }
         self.mutex_account_unlock();

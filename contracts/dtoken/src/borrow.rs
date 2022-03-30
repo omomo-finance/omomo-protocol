@@ -123,7 +123,7 @@ impl Contract {
     pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance){
         if !is_promise_success(){
             self.add_inconsistent_account(env::signer_account_id());
-            log!("{}", Events::BorrowFailedToMakeFallback(env::signer_account_id(), Balance::from(token_amount)));
+            log!("{}", Events::BorrowFailedToFallback(env::signer_account_id(), Balance::from(token_amount)));
         }
         self.mutex_account_unlock();
         log!("{}", Events::BorrowFallbackSuccess(env::signer_account_id(), Balance::from(token_amount)));
