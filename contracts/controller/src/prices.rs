@@ -4,14 +4,14 @@ use std::collections::HashMap;
 
 impl Contract {
 
-    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Price> {
+    pub fn get_prices_for_dtokens(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
         let mut result = HashMap::new();
-        for asset in assets {
-            if self.prices.contains_key(&asset) {
-                let price_raw = self.get_price(asset);
+        for dtoken in dtokens {
+            if self.prices.contains_key(&dtoken) {
+                let price_raw = self.get_price(dtoken.clone());
                 if price_raw.is_some() {
                     let price = price_raw.unwrap();
-                    result.insert(price.asset_id.clone(), price);
+                    result.insert(dtoken, price);
                 }
 
             }
@@ -19,8 +19,8 @@ impl Contract {
         return result;
     }
 
-    pub fn get_price(&self, asset_id: AccountId) -> Option<Price> {
-        return self.prices.get(&asset_id);
+    pub fn get_price(&self, dtoken_id: AccountId) -> Option<Price> {
+        return self.prices.get(&dtoken_id);
     }
 
 }
@@ -30,9 +30,8 @@ impl Contract {
 
     // TODO Do we really need to expose this via near_bindgen
     #[private]
-    pub fn upsert_price(&mut self, price: &Price) {
-        // Update & insert operation
-        self.prices.insert(&price.asset_id, &price);
+    pub fn upsert_price(&mut self, dtoken_id: AccountId, price: &Price) {
+        self.prices.insert(&dtoken_id, &price);
     }
 
 }
@@ -64,19 +63,19 @@ mod tests {
 
         let price = Price {
             // adding price of Near
-            asset_id: token_address.clone(),
+            ticker_id: "wnear".to_string(),
             value: U128(20),
             volatility: U128(100),
             fraction_digits: 4
         };
 
-        near_contract.upsert_price(&price);
+        near_contract.upsert_price(token_address.clone(), &price);
 
         let gotten_price = near_contract.get_price(token_address).unwrap();
         assert_matches!(&gotten_price, _price, "Get price format check has been failed");
         assert_eq!(&gotten_price.value, &price.value, "Get price values check has been failed");
         assert_eq!(&gotten_price.volatility, &price.volatility,  "Get price volatility check has been failed");
-        assert_eq!(&gotten_price.asset_id, &price.asset_id, "Get price asset_id check has been failed");
+        assert_eq!(&gotten_price.ticker_id, &price.ticker_id, "Get price asset_id check has been failed");
         assert_eq!(&gotten_price.fraction_digits, &price.fraction_digits, "Get fraction digits check has been failed");
     }
 }

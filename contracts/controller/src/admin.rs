@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use near_sdk::{AccountId, env, require, near_bindgen};
 use near_sdk::serde::{Deserialize, Serialize};
 
@@ -15,6 +16,15 @@ pub enum MethodType {
     Borrow,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(Debug)]
+pub struct Market {
+    pub asset_id: AccountId,
+    pub dtoken: AccountId,
+    pub ticker_id: String
+}
+
 #[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
@@ -30,11 +40,41 @@ impl Contract {
         env::signer_account_id() == self.admin || env::signer_account_id() == env::current_account_id()
     }
 
+    pub fn get_markets_list(&self) -> Vec<Market> {
+        return self.markets.iter().map(|(asset_id, market)| {
+            return Market {
+                asset_id,
+                dtoken: market.dtoken,
+                ticker_id: market.ticker_id,
+            }
+        }).collect::<Vec<Market>>();
+    }
 
-    pub fn add_market(&mut self, key: AccountId, value: AccountId) {
+    pub fn get_tickers_dtoken_hash(&self) -> HashMap<String, AccountId> {
+        let mut result: HashMap<String, AccountId> = HashMap::new();
+        self.markets.iter().for_each(|(_, market)| {
+            result.insert( market.ticker_id, market.dtoken);
+        });
+        return result;
+    }
+
+    pub fn get_utoken_tickers_hash(&self) -> HashMap<AccountId, String> {
+        let mut result: HashMap<AccountId, String> = HashMap::new();
+        self.markets.iter().for_each(|(asset_id, market)| {
+            result.insert(asset_id, market.ticker_id);
+        });
+        return result;
+    }
+
+    pub fn add_market(&mut self, asset_id: AccountId, dtoken: AccountId, ticker_id: String) {
         require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
-        self.markets.insert(&key, &value);
+        let market = MarketProfile {
+            dtoken,
+            ticker_id
+        };
+
+        self.markets.insert(&asset_id, &market);
     }
 
     pub fn remove_market(&mut self, key: AccountId) {

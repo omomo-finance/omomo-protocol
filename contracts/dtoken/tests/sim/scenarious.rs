@@ -127,8 +127,9 @@ fn base2_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     call!(
         controller.user_account,
         controller.upsert_price(
+            dtoken.account_id(),
             &Price {
-                asset_id: dtoken.account_id(),
+                ticker_id: "weth".to_string(),
                 value: U128(20),
                 volatility: U128(100),
                 fraction_digits: 4
@@ -330,8 +331,9 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
     call!(
         controller.user_account,
         controller.upsert_price(
+            dtoken.account_id(),
             &Price {
-                asset_id: dtoken.account_id(),
+                ticker_id: "weth".to_string(),
                 value: U128(20),
                 volatility: U128(100),
                 fraction_digits: 4

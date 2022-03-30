@@ -17,6 +17,7 @@ pub use crate::prices::*;
 pub use crate::repay::*;
 pub use crate::liquidation::*;
 pub use crate::user_profile::*;
+pub use crate::views::*;
 
 #[allow(unused_imports)]
 mod config;
@@ -43,14 +44,15 @@ pub enum StorageKeys {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    /// Market name [Underlying asset name] -> Dtoken contract address
-    pub markets: UnorderedMap<AccountId, AccountId>,
+    /// Utoken Id [Underlying asset name] -> Dtoken address
+    /// Utoken Id [Underlying asset name] -> Ticker Id
+    pub markets: UnorderedMap<AccountId, MarketProfile>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
     /// User Account ID -> Dtoken address -> Borrow balance
     user_profiles: LookupMap<AccountId, UserProfile>,
 
-    /// Asset ID -> Price value
+    /// Dtoken ID -> Price
     pub prices: LookupMap<AccountId, Price>,
 
     /// Contract configuration object
@@ -87,6 +89,16 @@ pub struct PriceJsonList {
 
     /// Vector of asset prices
     pub price_list: Vec<Price>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MarketProfile {
+    /// Dtoken address
+    pub dtoken: AccountId,
+
+    /// Ticker name
+    pub ticker_id: String,
 }
 
 
