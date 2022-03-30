@@ -30,7 +30,7 @@ impl Contract {
         dtoken_amount: Balance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to get {} balance on {}", self.get_contract_address(), self.get_underlying_contract_address()));
+            log!("{}", Events::WithdrawFailedToGetUnderlyingBalance(env::signer_account_id(), Balance::from(dtoken_amount), self.get_contract_address(), self.get_underlying_contract_address()));
             self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
@@ -86,7 +86,7 @@ impl Contract {
         dtoken_amount: WBalance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(dtoken_amount), format!("failed to decrease {} supply balance of {} on controller", env::signer_account_id(), self.get_contract_address()));
+            log!("{}", Events::WithdrawFailedToDecreaseSupplyOnController(env::signer_account_id(), Balance::from(dtoken_amount), self.get_contract_address()));
             self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
@@ -121,8 +121,8 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
-            Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(dtoken_amount));
             self.mutex_account_unlock();
+            log!("{}", Events::WithdrawSuccess(env::signer_account_id(), Balance::from(dtoken_amount)));
             return PromiseOrValue::Value(dtoken_amount);
         } else {
             controller::increase_supplies(
@@ -146,12 +146,12 @@ impl Contract {
     #[private]
     pub fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>{
         if !is_promise_success() {
-            Contract::custom_fail_log(String::from("withdraw_fail"), env::signer_account_id(), Balance::from(token_amount), format!("failed to revert state for {}", env::signer_account_id()));
             self.add_inconsistent_account(env::signer_account_id());
+            log!("{}", Events::WithdrawFailedToFallback(env::signer_account_id(), Balance::from(token_amount)));
             return PromiseOrValue::Value(token_amount);
         }
-        Contract::custom_success_log(String::from("withdraw_success"), env::signer_account_id(), Balance::from(token_amount));
         self.mutex_account_unlock();
+        log!("{}", Events::WithdrawFallbackSuccess(env::signer_account_id(), Balance::from(token_amount)));
         return PromiseOrValue::Value(token_amount);
     }
 }
