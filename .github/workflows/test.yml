@@ -1,4 +1,4 @@
-name: master nearlend-protocol test automatically
+name: nearlend-protocol test automatically
 
 on:
   push:
@@ -10,9 +10,6 @@ jobs:
   test:
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: master
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
