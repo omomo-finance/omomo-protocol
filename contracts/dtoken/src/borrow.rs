@@ -129,7 +129,20 @@ impl Contract {
         log!("{}", Events::BorrowFallbackSuccess(env::signer_account_id(), Balance::from(token_amount)));
     }
 
+    pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let mut user = self.user_profiles.get(&account).unwrap_or_default();
+        user.borrows = Balance::from(token_amount);
+        self.user_profiles.insert(&account, &user);
 
+        self.get_account_borrows(account)
+    }
+
+    pub fn get_account_borrows(&self, account: AccountId) -> Balance {
+        return self.user_profiles.get(&account).unwrap_or_default().borrows;
+    }
+}
+
+impl Contract {
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let borrows = self.get_account_borrows(account.clone());
         let new_borrows = borrows - Balance::from(token_amount);
@@ -142,17 +155,5 @@ impl Contract {
         let new_borrows = borrows + Balance::from(token_amount);
 
         return self.set_account_borrows(account.clone(), U128(new_borrows));
-    }
-
-    pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let mut user = self.user_profiles.get(&account).unwrap_or_default();
-        user.borrows = Balance::from(token_amount);
-        self.user_profiles.insert(&account, &user);
-
-        self.get_account_borrows(account)
-    }
-
-    pub fn get_account_borrows(&self, account: AccountId) -> Balance {
-        return self.user_profiles.get(&account).unwrap_or_default().borrows;
     }
 }

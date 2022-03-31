@@ -1,11 +1,10 @@
-use near_sdk::{AccountId, BlockHeight, log, near_bindgen};
+use near_sdk::{AccountId, BlockHeight, log};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::env::block_height;
 
 const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
 
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ActionMutex {
     blocked_accounts: LookupMap<AccountId, BlockHeight>,
