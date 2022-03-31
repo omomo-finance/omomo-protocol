@@ -1,4 +1,4 @@
-name: master nearlend-protocol deploy automatically
+name: master nearlend-protocol test automatically
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 concurrency: nearlend
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v2
         with:
