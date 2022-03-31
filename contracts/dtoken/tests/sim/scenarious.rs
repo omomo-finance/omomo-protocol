@@ -1,7 +1,5 @@
 use near_sdk::AccountId;
-use near_sdk::borsh::BorshSerialize;
 use near_sdk::json_types::U128;
-use near_sdk::serde_json;
 use near_sdk::serde_json::json;
 use near_sdk_sim::{call, ContractAccount, ExecutionResult, init_simulator, UserAccount, view};
 
@@ -10,7 +8,6 @@ use controller::ActionType::{Borrow, Supply};
 use controller::Config as cConfig;
 use dtoken::Config as dConfig;
 use general::Price;
-use dtoken::Actions;
 
 use crate::utils::{init_controller, init_dtoken, init_two_dtokens, init_utoken};
 
@@ -453,19 +450,10 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
 
     call!(
         uroot,
-        utoken.mint(dtoken.account_id(), U128(15)),
+        utoken.mint(dtoken.account_id(), U128(20)),
         0,
         100000000000000
     );
-
-
-    call!(
-        uroot,
-        utoken.mint(dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    );
-
 
     call!(
         uroot,
@@ -474,10 +462,7 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
         100000000000000
     );
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         d_user,
@@ -485,7 +470,7 @@ fn borrow_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccou
             dtoken.account_id(),
             U128(30),
             Some("SUPPLY".to_string()),
-            String::from(json)
+            action
         ),
         deposit = 1
     ).assert_success();
@@ -840,36 +825,36 @@ fn scenario_borrow() {
     assert_eq!(dtoken_balance, 80.to_string(), "Dtoken balance on utoken should be 80");
 }
 
-// #[test]
-// fn scenario_borrow_more_than_on_dtoken() {
-//     let (dtoken, controller, utoken, user) = borrow_fixture();
+#[test]
+fn scenario_borrow_more_than_on_dtoken() {
+    let (dtoken, controller, utoken, user) = borrow_fixture();
 
-//     call!(
-//         user,
-//         dtoken.borrow(
-//             U128(70)
-//         ),
-//         deposit = 0
-//     ).assert_success();
+    call!(
+        user,
+        dtoken.borrow(
+            U128(60)
+        ),
+        deposit = 0
+    ).assert_success();
 
-//     let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-//     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+    let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+    assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 
-//     let user_balance: u128 = view!(
-//         dtoken.get_account_borrows(user.account_id())
-//     ).unwrap_json();
-//     assert_eq!(user_balance, 0, "User borrow balance on dtoken should be 0");
+    let user_balance: u128 = view!(
+        dtoken.get_account_borrows(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0, "User borrow balance on dtoken should be 0");
 
-//     let user_balance: String = view!(
-//         utoken.ft_balance_of(user.account_id())
-//     ).unwrap_json();
-//     assert_eq!(user_balance, 0.to_string(), "User balance on utoken should be 0");
+    let user_balance: String = view!(
+        utoken.ft_balance_of(user.account_id())
+    ).unwrap_json();
+    assert_eq!(user_balance, 0.to_string(), "User balance on utoken should be 0");
 
-//     let dtoken_balance: String = view!(
-//         utoken.ft_balance_of(dtoken.account_id())
-//     ).unwrap_json();
-//     assert_eq!(dtoken_balance, 50.to_string(), "Dtoken balance on utoken should be 50");
-// }
+    let dtoken_balance: String = view!(
+        utoken.ft_balance_of(dtoken.account_id())
+    ).unwrap_json();
+    assert_eq!(dtoken_balance, 50.to_string(), "Dtoken balance on utoken should be 50");
+}
 
 #[test]
 fn supply_borrow_repay_withdraw() {
