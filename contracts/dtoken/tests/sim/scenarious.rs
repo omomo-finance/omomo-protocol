@@ -344,9 +344,10 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
 
     call!(
         user,
-        dtoken.increase_borrows(user.account_id(),U128(5)),
-        0,
-        100000000000000
+        dtoken.borrow(
+            U128(5)
+        ),
+        deposit = 0
     ).assert_success();
 
     let user_balance: u128 = view!(
@@ -356,12 +357,6 @@ fn repay_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccoun
     ).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id() ,U128(5)),
-        0,
-        100000000000000
-    ).assert_success();
 
     let user_balance: u128 = view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
@@ -416,10 +411,12 @@ fn liquidation_fixture() -> (
 
     call!(
         d_user1,
-        dtoken1.increase_borrows(d_user1.account_id(),U128(5)),
-        0,
-        100000000000000
+        dtoken1.borrow(
+            U128(5)
+        ),
+        deposit = 0
     ).assert_success();
+
 
     let user_balance: u128 = view!(
         dtoken1.get_account_borrows(
@@ -428,12 +425,7 @@ fn liquidation_fixture() -> (
     ).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
-    call!(
-        d_user1,
-        controller.increase_borrows(d_user1.account_id(), dtoken1.account_id() ,U128(5)),
-        0,
-        100000000000000
-    ).assert_success();
+
 
     let user_balance: u128 = view_balance(&controller, Borrow, d_user1.account_id(), dtoken1.account_id());
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
@@ -752,11 +744,6 @@ fn scenario_repay() {
        {
           "action":"REPAY",
           "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
           }
        }"#;
 
@@ -774,7 +761,7 @@ fn scenario_repay() {
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 23.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 23");
+    assert_eq!(user_balance, 248.to_string(), "After repay of 277 tokens (borrow was 5), balance should be 248");
 
     let user_balance: u128 = view!(
         dtoken.get_account_borrows(
@@ -795,11 +782,6 @@ fn scenario_repay_more_than_borrow() {
        {
           "action":"REPAY",
           "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
           }
        }"#;
 
@@ -817,7 +799,7 @@ fn scenario_repay_more_than_borrow() {
     let user_balance: String = view!(
         utoken.ft_balance_of(user.account_id())
     ).unwrap_json();
-    assert_eq!(user_balance, 23.to_string(), "As it was borrowed 10 tokens and repayed 13 tokens (rate 1.3333), balance should be 7");
+    assert_eq!(user_balance, 248.to_string(), "As it was borrowed 5 tokens and repayed 13 tokens (rate 1.3333), balance should be 248");
 
     let user_balance: u128 = view!(
         dtoken.get_account_borrows(
