@@ -89,20 +89,6 @@ impl Contract {
         self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), increased_borrows);
     }
 
-}
-
-impl Contract {
-
-    pub fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
-        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
-        user.set(action, token_address, token_amount);
-        self.user_profiles.insert(&user_id, &user);
-
-        return token_amount;
-    }
-
-
-
     pub fn decrease_borrows(
         &mut self,
         account: AccountId,
@@ -137,6 +123,18 @@ impl Contract {
                                         token_address.clone(),
                                         decreased_supplies,
         );
+    }
+
+}
+
+impl Contract {
+
+    pub fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
+        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+        user.set(action, token_address, token_amount);
+        self.user_profiles.insert(&user_id, &user);
+
+        return token_amount;
     }
 
     fn is_withdraw_allowed(
