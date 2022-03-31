@@ -91,6 +91,7 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
+    // TODO: this method should be private. Please move it and fix tests
     pub fn mint(&mut self, account_id: AccountId, amount: WBalance) {
         if self.token.accounts.get(&account_id).is_none() {
             self.token.internal_register_account(&account_id);
@@ -98,6 +99,7 @@ impl Contract {
         self.token.internal_deposit(&account_id, amount.into());
     }
 
+    // TODO: this method should be private. Please move it and fix tests
     pub fn burn(&mut self, account_id: &AccountId, amount: WBalance) {
         if !self.token.accounts.contains_key(&account_id.clone()) {
             panic!("User with account {} wasn't found", account_id.clone());
