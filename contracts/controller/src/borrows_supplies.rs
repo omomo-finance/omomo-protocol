@@ -10,8 +10,23 @@ pub enum ActionType {
     Borrow,
 }
 
-
+#[near_bindgen]
 impl Contract {
+    #[private]
+    fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
+        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+        user.set(action, token_address, token_amount);
+        self.user_profiles.insert(&user_id, &user);
+
+        return token_amount;
+    }
+
+    pub fn get_entity_by_token(&self, action: ActionType, user_id: AccountId, token_address: AccountId) -> Balance {
+        let user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+
+        user.get(action, token_address)
+    }
+
     pub fn increase_borrows(
         &mut self,
         account: AccountId,
@@ -38,26 +53,6 @@ impl Contract {
 
         return self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
     }
-}
-
-
-#[near_bindgen]
-impl Contract {
-    #[private]
-    fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
-        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
-        user.set(action, token_address, token_amount);
-        self.user_profiles.insert(&user_id, &user);
-
-        return token_amount;
-    }
-
-    pub fn get_entity_by_token(&self, action: ActionType, user_id: AccountId, token_address: AccountId) -> Balance {
-        let user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
-
-        user.get(action, token_address)
-    }
-
 
     pub fn increase_supplies(
         &mut self,
@@ -98,7 +93,7 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> bool {
-        require!( 
+        require!(
             !self.is_action_paused.withdraw,
             "withdrawing is paused"
         );
@@ -165,13 +160,13 @@ impl Contract {
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
         let supplies = self.user_profiles.get(&user_id).unwrap_or_default().account_supplies;
 
-        supplies.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0).sum::<Balance>().into()
+        supplies.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0 ).sum::<Balance>().into()
     }
 
     pub fn get_total_borrows(&self, user_id: AccountId) -> WBalance {
         let borrows = self.user_profiles.get(&user_id).unwrap_or_default().account_borrows;
 
-        borrows.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0).sum::<Balance>().into()
+        borrows.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0 ).sum::<Balance>().into()
     }
 }
 
@@ -181,7 +176,6 @@ mod tests {
     use near_sdk::AccountId;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-
     use general::Price;
 
     use crate::{Config, Contract};
@@ -268,7 +262,7 @@ mod tests {
     fn get_total_supplies() {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
-        let price = Price {
+        let price = Price{
             asset_id: token_address.clone(),
             value: U128(100),
             volatility: U128(1),
@@ -284,7 +278,7 @@ mod tests {
     fn get_total_borrows() {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
-        let price = Price {
+        let price = Price{
             asset_id: token_address.clone(),
             value: U128(100),
             volatility: U128(1),

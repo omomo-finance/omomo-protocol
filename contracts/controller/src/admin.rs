@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, env, require, near_bindgen};
+use near_sdk::{AccountId, env, near_bindgen, require};
 use near_sdk::serde::{Deserialize, Serialize};
 
 use general::{Percent, Ratio};
@@ -101,35 +101,5 @@ impl Contract {
             MethodType::Liquidate => self.is_action_paused.liquidate = false,
             MethodType::Borrow => self.is_action_paused.borrow = false
         }
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use crate::Config;
-
-    use super::*;
-
-    pub fn init_() -> (Contract, AccountId, AccountId) {
-        let owner_account: AccountId = "contract.near".parse().unwrap();
-        let oracle_account: AccountId = "oracle.near".parse().unwrap();
-        let user_account: AccountId = "user.near".parse().unwrap();
-
-
-        let near_contract = Contract::new(Config {
-            owner_id: owner_account,
-            oracle_account_id: oracle_account,
-        });
-
-        let token_address: AccountId = "near".parse().unwrap();
-
-        return (near_contract, token_address, user_account);
-    }
-
-    #[test]
-    fn get_set_admin() {
-        let (near_contract, _, _) = init_();
-        assert_eq!(near_contract.admin, near_contract.get_admin());
     }
 }
