@@ -1,4 +1,4 @@
-name: master nearlend-protocol deploy automatically
+name: nearlend-protocol test automatically
 
 on:
   push:
@@ -6,14 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
-concurrency: nearlend
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: master
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
