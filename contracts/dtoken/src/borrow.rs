@@ -121,7 +121,6 @@ impl Contract {
 
     #[private]
     pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance){
-        assert_eq!(2, 0, "{}", is_promise_success());
         if !is_promise_success(){
             self.add_inconsistent_account(env::signer_account_id());
             log!("{}", Events::BorrowFailedToFallback(env::signer_account_id(), Balance::from(token_amount)));

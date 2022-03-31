@@ -516,13 +516,16 @@ fn scenario_supply_error_command() {
 #[test]
 fn scenario_supply_zero_tokens() {
     let (dtoken, _controller, utoken, user, _) = base_fixture();
+    
+    let action = "\"Supply\"".to_string();
+    
     let result = call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(0),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            action
         ),
         deposit = 1
     );
@@ -533,17 +536,14 @@ fn scenario_supply_zero_tokens() {
 fn scenario_supply_error_contract() {
     let (dtoken, _controller, _utoken, user, _) = base_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     let result = call!(
         user,
         dtoken.ft_on_transfer(
             user.account_id(),
             U128(20),
-            String::from(json)
+            action
         ),
         deposit = 0
     );
@@ -554,13 +554,16 @@ fn scenario_supply_error_contract() {
 #[test]
 fn scenario_supply_not_enough_balance() {
     let (dtoken, _controller, utoken, user, _) = base_fixture();
+    
+    let action = "\"Supply\"".to_string();
+    
     let result = call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(50),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            action
         ),
         deposit = 1
     );
@@ -955,6 +958,8 @@ fn supply_borrow_repay_withdraw() {
 }
 // // liquidation_fixture
 
+// liquidation_fixture
+
 #[test]
 fn scenario_liquidation_success() {
     let (dtoken1,
@@ -1181,3 +1186,4 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token()
     ).unwrap_json();
     //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
 }
+
