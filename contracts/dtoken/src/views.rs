@@ -65,6 +65,8 @@ impl Contract {
 mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::testing_env;
     use general::WBalance;
 
     use crate::{Config, Contract};
@@ -72,6 +74,14 @@ mod tests {
 
     pub fn init_test_env() -> Contract {
         let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
+
+        let context =  VMContextBuilder::new()
+            .current_account_id(user_account.clone())
+            .signer_account_id(user_account.clone())
+            .is_view(false)
+            .build();
+
+        testing_env!(context);
 
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),

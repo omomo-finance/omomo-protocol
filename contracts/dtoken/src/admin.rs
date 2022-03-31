@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, env, require};
+use near_sdk::{AccountId, Balance, env, require};
 
 use crate::Contract;
 
@@ -13,30 +13,28 @@ impl Contract {
     }
 
     fn is_valid_admin_call(&self) -> bool {
-        env::predecessor_account_id() == self.admin || env::predecessor_account_id() == env::current_account_id()
+        env::signer_account_id() == self.admin || env::signer_account_id() == env::current_account_id()
     }
-}
 
+    pub fn add_inconsistent_account(&mut self, account: AccountId) {
+        require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
-#[cfg(test)]
-mod tests {
-    use near_sdk::json_types::U128;
+        let mut user = self.user_profiles.get(&account).unwrap();
+        user.is_consistent = true;
 
-    use crate::Config;
+        self.user_profiles.insert(&account, &user);
+    }
 
-    use super::*;
+    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
+        require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
-    #[test]
-    fn set_get_admin() {
-        let dtoken_contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000),
-            underlying_token_id: "weth".parse().unwrap(),
-            owner_id: "dtoken".parse().unwrap(),
-            controller_account_id: "controller".parse().unwrap(),
-        });
+        self.user_profiles.remove(&account);
+    }
 
+    pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
+        require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
 
-        assert_eq!(dtoken_contract.admin, dtoken_contract.get_admin());
-        assert_eq!(AccountId::new_unchecked("dtoken".parse().unwrap()), dtoken_contract.get_admin());
+        self.total_reserves = amount;
+        self.get_total_reserves()
     }
 }
