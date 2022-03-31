@@ -1,5 +1,5 @@
 use crate::*;
-const GAS_FOR_BORROW: Gas = Gas(120_000_000_000_000);
+const GAS_FOR_BORROW: Gas = Gas(130_000_000_000_000);
 
 
 #[near_bindgen]
@@ -19,7 +19,7 @@ impl Contract {
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(90),
+            self.terra_gas(100),
         ))
         .into()
     }
@@ -60,7 +60,7 @@ impl Contract {
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(70),
         ))
         .into()
     }
@@ -88,7 +88,7 @@ impl Contract {
             token_amount,
             env::current_account_id().clone(),
             NO_DEPOSIT,
-            self.terra_gas(25),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -107,13 +107,13 @@ impl Contract {
                 token_amount,
                 self.get_controller_address(),
                 NO_DEPOSIT,
-                self.terra_gas(4),
+                self.terra_gas(5),
             )
             .then(ext_self::controller_decrease_borrows_fail(
                 token_amount,
                 env::current_account_id().clone(),
                 NO_DEPOSIT,
-                self.terra_gas(4),
+                self.terra_gas(5),
             ))
             .into()
         }
@@ -124,6 +124,7 @@ impl Contract {
         if !is_promise_success(){
             self.add_inconsistent_account(env::signer_account_id());
             log!("{}", Events::BorrowFailedToFallback(env::signer_account_id(), Balance::from(token_amount)));
+            
         } else {
             self.mutex_account_unlock();
             log!("{}", Events::BorrowFallbackSuccess(env::signer_account_id(), Balance::from(token_amount)));

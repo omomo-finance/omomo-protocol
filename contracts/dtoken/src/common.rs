@@ -130,7 +130,7 @@ impl fmt::Display for Events {
                 write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
                     account, balance),
             Events::BorrowFailedToFallback(account, balance) => 
-                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToMakeFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#, 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#, 
                     account, balance, account),
             Events::BorrowFallbackSuccess(account, balance) => 
                 write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
@@ -163,7 +163,7 @@ impl fmt::Display for Events {
                 write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
                     account, balance),
             Events::WithdrawFailedToFallback(account, balance) => 
-                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToMakeFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#, 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#, 
                     account, balance, account),
             Events::WithdrawFallbackSuccess(account, balance) => 
                 write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
