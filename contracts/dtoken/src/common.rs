@@ -1,4 +1,27 @@
 use crate::*;
+use std::fmt;
+
+pub enum Events {
+    BorrowFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
+    BorrowFailedToInceaseBorrowOnController(AccountId, Balance),
+    BorrowSuccess(AccountId, Balance),
+    BorrowFailedToFallback(AccountId, Balance),
+    BorrowFallbackSuccess(AccountId, Balance),
+
+    RepayFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
+    RepayFailedToUpdateUserBalance(AccountId, Balance),
+    RepaySuccess(AccountId, Balance),
+
+    SupplyFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
+    SupplyFailedToInceaseSupplyOnController(AccountId, Balance),
+    SupplySuccess(AccountId, Balance),
+
+    WithdrawFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
+    WithdrawFailedToDecreaseSupplyOnController(AccountId, Balance, AccountId),
+    WithdrawSuccess(AccountId, Balance),
+    WithdrawFailedToFallback(AccountId, Balance),
+    WithdrawFallbackSuccess(AccountId, Balance),
+}
 
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
@@ -56,20 +79,6 @@ impl Contract {
         self.user_profiles.remove(&account);
     }
 
-    pub fn custom_fail_log(event: String, account: AccountId, amount: Balance, reason: String) {
-        log!(
-            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}", "reason": "{}"}}}}"#,  
-            event, account, amount, reason
-        );
-    }
-
-    pub fn custom_success_log(event: String, account: AccountId, amount: Balance) {
-        log!(
-            r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "{}", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,  
-            event, account, amount
-        );
-    }
-
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
         self.get_total_reserves()
@@ -104,5 +113,61 @@ impl Contract {
             panic!("User with account {} wasn't found", account_id.clone());
         }
         self.token.internal_withdraw(account_id, amount.into());
+    }
+}
+
+
+impl fmt::Display for Events {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &*self {
+            Events::BorrowFailedToGetUnderlyingBalance(account, balance, contract_id, underlying_token_id) 
+                => write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#, 
+                    account, balance, contract_id, underlying_token_id),
+            Events::BorrowFailedToInceaseBorrowOnController(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToInceaseBorrowOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to make borrow for {} on {} token amount"}}}}"#, 
+                    account, balance, account, balance),
+            Events::BorrowSuccess(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
+                    account, balance),
+            Events::BorrowFailedToFallback(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToMakeFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#, 
+                    account, balance, account),
+            Events::BorrowFallbackSuccess(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
+                    account, balance),
+            Events::RepayFailedToGetUnderlyingBalance(account, balance, contract_id, underlying_token_id) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepayFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#, 
+                    account, balance, contract_id, underlying_token_id),
+            Events::RepayFailedToUpdateUserBalance(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepayFailedToUpdateUserBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to update user {} balance {}: user is not registered"}}}}"#, 
+                    account, balance, account, balance),
+            Events::RepaySuccess(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepaySuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
+                    account, balance),
+            Events::SupplyFailedToGetUnderlyingBalance(account, balance, contract_id, underlying_token_id) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#, 
+                    account, balance, contract_id, underlying_token_id),
+            Events::SupplyFailedToInceaseSupplyOnController(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToInceaseSupplyOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} supply balance of {} on controller"}}}}"#, 
+                    account, balance, account, balance),
+            Events::SupplySuccess(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplySuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
+                    account, balance),
+            Events::WithdrawFailedToGetUnderlyingBalance(account, balance, contract_id, underlying_token_id) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#, 
+                    account, balance, contract_id, underlying_token_id),
+            Events::WithdrawFailedToDecreaseSupplyOnController(account, balance, contract_id) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToDecreaseSupplyOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to decrease {} supply balance of {} on controller"}}}}"#, 
+                    account, balance, account, contract_id),
+            Events::WithdrawSuccess(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
+                    account, balance),
+            Events::WithdrawFailedToFallback(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToMakeFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#, 
+                    account, balance, account),
+            Events::WithdrawFallbackSuccess(account, balance) => 
+                write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#, 
+                    account, balance),
+        }
     }
 }
