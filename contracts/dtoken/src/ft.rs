@@ -2,7 +2,7 @@ use crate::*;
 
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::serde_json;
-use near_sdk::serde_json::Value;
+use near_sdk::AccountId;
 
 #[near_bindgen]
 impl FungibleTokenReceiver for Contract {
@@ -28,26 +28,19 @@ impl FungibleTokenReceiver for Contract {
 
         log!(format!("sender_id {}, msg {}", sender_id, msg));
 
-        let msg: Value =
-            serde_json::from_str(msg.to_string().as_str()).expect("Can't parse JSON message");
+        let action: Actions = serde_json::from_str(&msg).expect("Incorrect command in transfer");
 
-        if !msg["memo"].is_null() {
-            let memo_data = msg["memo"].clone();
-            log!("borrower: {}", memo_data["borrower"]);
-            log!("borrowing_dtoken: {}", memo_data["borrowing_dtoken"]);
-            log!("liquidator: {}", memo_data["liquidator"]);
-            log!("collateral_dtoken: {}", memo_data["collateral_dtoken"]);
-            log!("liquidation_amount: {}", memo_data["liquidation_amount"]);
-        }
-
-        // TODO: In future make action not a single one, but array in JSON message
-        let action: &str = msg["action"].as_str().unwrap();
         match action {
-            "SUPPLY" => self.supply(amount),
-            "REPAY" => self.repay(amount),
-            _ => {
-                log!("Incorrect command in transfer: {}", action);
-                PromiseOrValue::Value(amount)
+            Actions::Supply => self.supply(amount),
+            Actions::Repay => self.repay(amount),
+            Actions::Liquidate { borrower, borrowing_dtoken, liquidator, collateral_dtoken, liquidation_amount} => {
+                self.liquidate(
+                    borrower,
+                    borrowing_dtoken,
+                    liquidator,
+                    collateral_dtoken,
+                    liquidation_amount,
+                )
             }
         }
     }
