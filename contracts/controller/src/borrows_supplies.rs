@@ -13,63 +13,18 @@ pub enum ActionType {
 #[near_bindgen]
 impl Contract {
     #[private]
-    fn set_entity_by_token(&mut self, action: ActionType, account: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
-        // Receive ActionType whether its Supply or Borrow so that
-        // it will be doing respective variable configuration
-
-        let accounts = self.get_params_by_action_mut(action);
-        let account_entry = accounts.get(&account);
-        if let None = account_entry {
-            let mut account_map: HashMap<AccountId, u128> =
-            HashMap::new();
-            account_map.insert(token_address, token_amount);
-            accounts.insert(&account, &account_map);
-        } else {
-            // For some reason this operation doesn't update HashMap state. Uncomment this part and comment next to see the mistake
-            // account_entry
-            // .unwrap()
-            // .insert(token_address, token_amount);
-
-            // New part
-            let mut account_map: HashMap<AccountId, u128> =
-                account_entry.unwrap();
-            account_map.insert(token_address, token_amount);
-            accounts.insert(&account, &account_map);
-        }
+    fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
+        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+        user.set(action, token_address, token_amount);
+        self.user_profiles.insert(&user_id, &user);
 
         return token_amount;
     }
 
-    pub fn get_entity_by_token(&self, action: ActionType, account: AccountId, token_address: AccountId) -> Balance {
-        let balance: Balance = 0;
+    pub fn get_entity_by_token(&self, action: ActionType, user_id: AccountId, token_address: AccountId) -> Balance {
+        let user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
 
-        let accounts = self.get_params_by_action(action);
-
-        let account_entry = accounts.get(&account);
-
-        if let None = account_entry {
-            return balance;
-        }
-
-        let accounts_map = account_entry.unwrap();
-
-        *accounts_map.get(&token_address).unwrap_or(&balance)
-    }
-
-    fn get_params_by_action(&self, action: ActionType) -> &LookupMap<AccountId, HashMap<AccountId, Balance>> {
-        // return parameters respective to ActionType
-        match action {
-            ActionType::Supply => &self.account_supplies, 
-            ActionType::Borrow => &self.account_borrows
-        }
-    }
-
-    fn get_params_by_action_mut(&mut self, action: ActionType) -> &mut LookupMap<AccountId, HashMap<AccountId, Balance>> {
-        // return parameters respective to ActionType
-        match action {
-            ActionType::Supply => &mut self.account_supplies,
-            ActionType::Borrow => &mut self.account_borrows,
-        }
+        user.get(action, token_address)
     }
 
     pub fn increase_borrows(
@@ -201,28 +156,17 @@ impl Contract {
         );
         self.increase_borrows(account_id, token_address, token_amount);
     }
-    fn get_account_balance(&self, account_entry: Option<HashMap<AccountId, Balance>>) -> WBalance {
-        let mut balance: Balance = 0;
 
-        if account_entry.is_some() {
-            let account_borrow = account_entry.unwrap();
+    pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
+        let supplies = self.user_profiles.get(&user_id).unwrap_or_default().account_supplies;
 
-            for (asset, asset_amount) in account_borrow.iter() {
-                let asset_price: Balance = self.get_price(asset.clone()).unwrap().value.0;
-
-                balance += asset_price * asset_amount;
-            }
-        }
-
-        U128(balance)
+        supplies.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0 ).sum::<Balance>().into()
     }
 
-    pub fn get_total_borrows(&self, account: AccountId) -> WBalance {
-        return self.get_account_balance(self.account_borrows.get(&account));
-    }
+    pub fn get_total_borrows(&self, user_id: AccountId) -> WBalance {
+        let borrows = self.user_profiles.get(&user_id).unwrap_or_default().account_borrows;
 
-    pub fn get_total_supplies(&self, account: AccountId) -> WBalance {
-        return self.get_account_balance(self.account_supplies.get(&account));
+        borrows.iter().map(|(asset, balance)| balance * self.get_price(asset.clone()).unwrap_or_default().value.0 ).sum::<Balance>().into()
     }
 }
 
@@ -232,6 +176,7 @@ mod tests {
     use near_sdk::AccountId;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use general::Price;
 
     use crate::{Config, Contract};
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
@@ -271,16 +216,16 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
-        near_contract.increase_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(20));
+        near_contract.increase_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(100));
 
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 10);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 20);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 100);
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2));
         near_contract.decrease_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
 
         assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 8);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 18);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 98);
     }
 
     #[test]
@@ -311,5 +256,37 @@ mod tests {
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(20));
+    }
+
+    #[test]
+    fn get_total_supplies() {
+        let (mut near_contract, token_address, user_account) = init_test_env();
+
+        let price = Price{
+            asset_id: token_address.clone(),
+            value: U128(100),
+            volatility: U128(1),
+            fraction_digits: 4u32,
+        };
+        near_contract.upsert_price(&price);
+        near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
+
+        assert_eq!(near_contract.get_total_supplies(user_account.clone()), U128(1000));
+    }
+
+    #[test]
+    fn get_total_borrows() {
+        let (mut near_contract, token_address, user_account) = init_test_env();
+
+        let price = Price{
+            asset_id: token_address.clone(),
+            value: U128(100),
+            volatility: U128(1),
+            fraction_digits: 4u32,
+        };
+        near_contract.upsert_price(&price);
+        near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
+
+        assert_eq!(near_contract.get_total_borrows(user_account.clone()), U128(1000));
     }
 }

@@ -45,14 +45,9 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            Contract::custom_fail_log(
-                String::from("liquidation_fail"),
-                env::signer_account_id(),
-                Balance::from(liquidation_amount.0),
-                format!(
-                    "Liquidation failed, while tried to call controller {}",
-                    self.get_controller_address()
-                ),
+            log!(
+                "{}",
+                Events::LiquidationFailed(liquidator, borrower, Balance::from(liquidation_amount))
             );
             env::abort();
         }
@@ -94,10 +89,9 @@ impl Contract {
 
         self.token
             .internal_transfer(&borrower, &liquidator, amount, None);
-        Contract::custom_success_log(
-            String::from("liquidation_success"),
-            env::signer_account_id(),
-            Balance::from(liquidation_amount.0),
+        log!(
+            "{}",
+            Events::LiquidationSuccess(liquidator, borrower, Balance::from(liquidation_amount))
         );
         PromiseOrValue::Value(U128(0))
     }
