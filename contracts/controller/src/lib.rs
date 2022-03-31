@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen};
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen, ext_contract, require};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 
@@ -6,7 +6,6 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
-use near_sdk::require;
 
 use general::*;
 
@@ -114,6 +113,16 @@ pub struct ActionStatus {
 
 pub trait OraclePriceHandlerHook {
     fn oracle_on_data(&mut self, price_data: PriceJsonList);
+}
+
+#[ext_contract(dtoken)]
+trait DtokenInterface {
+    fn swap_supplies(
+        &mut self,
+        borrower: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+    ) -> PromiseOrValue<U128>;
 }
 
 #[near_bindgen]
