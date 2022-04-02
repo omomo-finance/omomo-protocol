@@ -1,7 +1,7 @@
 use near_sdk::require;
 
-use crate::*;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
+use crate::*;
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -12,7 +12,6 @@ pub enum ActionType {
 
 #[near_bindgen]
 impl Contract {
-
     pub fn make_borrow(
         &mut self,
         account_id: AccountId,
@@ -20,11 +19,7 @@ impl Contract {
         token_amount: WBalance,
     ) {
         assert_eq!(
-            self.is_borrow_allowed(
-                account_id.clone(),
-                token_address.clone(),
-                token_amount,
-            ),
+            self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
             true,
             "Borrow operation is not allowed for account {} token_address {} token_amount {}",
             account_id,
@@ -41,11 +36,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> Balance {
         assert_eq!(
-            self.is_withdraw_allowed(
-                account_id.clone(),
-                token_address.clone(),
-                token_amount,
-            ),
+            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount,),
             true,
             "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
             account_id,
@@ -56,13 +47,16 @@ impl Contract {
         self.decrease_supplies(account_id, token_address, token_amount)
     }
 
-
-    pub fn get_entity_by_token(&self, action: ActionType, user_id: AccountId, token_address: AccountId) -> Balance {
+    pub fn get_entity_by_token(
+        &self,
+        action: ActionType,
+        user_id: AccountId,
+        token_address: AccountId,
+    ) -> Balance {
         let user = self.user_profiles.get(&user_id).unwrap_or_default();
 
         user.get(action, token_address)
     }
-
 
     pub fn increase_supplies(
         &mut self,
@@ -70,12 +64,12 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) {
-        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
+        let existing_supplies =
+            self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         let increased_supplies: Balance = existing_supplies + Balance::from(token_amount);
 
         self.set_entity_by_token(Supply, account, token_address, increased_supplies);
     }
-
 
     pub fn increase_borrows(
         &mut self,
@@ -83,7 +77,8 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) {
-        let existing_borrows: Balance = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
+        let existing_borrows: Balance =
+            self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
         self.set_entity_by_token(Borrow, account, token_address, increased_borrows);
@@ -95,9 +90,13 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> Balance {
-        let existing_borrows: Balance = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
+        let existing_borrows: Balance =
+            self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
-        assert!(existing_borrows >= Balance::from(token_amount), "Too much borrowed assets trying to pay out");
+        assert!(
+            existing_borrows >= Balance::from(token_amount),
+            "Too much borrowed assets trying to pay out"
+        );
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
@@ -110,7 +109,8 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> Balance {
-        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
+        let existing_supplies =
+            self.get_entity_by_token(Supply, account.clone(), token_address.clone());
 
         assert!(
             Balance::from(token_amount) <= existing_supplies,
@@ -118,18 +118,18 @@ impl Contract {
         );
         let decreased_supplies: Balance = existing_supplies - Balance::from(token_amount);
 
-        self.set_entity_by_token(Supply,
-                                        account,
-                                        token_address,
-                                        decreased_supplies,
-        )
+        self.set_entity_by_token(Supply, account, token_address, decreased_supplies)
     }
-
 }
 
 impl Contract {
-
-    pub fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
+    pub fn set_entity_by_token(
+        &mut self,
+        action: ActionType,
+        user_id: AccountId,
+        token_address: AccountId,
+        token_amount: Balance,
+    ) -> Balance {
         let mut user = self.user_profiles.get(&user_id).unwrap_or_default();
         user.set(action, token_address, token_amount);
         self.user_profiles.insert(&user_id, &user);
@@ -143,23 +143,21 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> bool {
-        require!( 
-            !self.is_action_paused.withdraw,
-            "withdrawing is paused"
-        );
+        require!(!self.is_action_paused.withdraw, "withdrawing is paused");
         let existing_supplies = self.get_entity_by_token(Supply, account, token_address);
         existing_supplies >= Balance::from(token_amount)
     }
 
-
-
     #[warn(dead_code)]
-    fn is_borrow_allowed(&mut self, account: AccountId, token_address: AccountId, _token_amount: WBalance) -> bool {
-        require!(
-            !self.is_action_paused.borrow,
-            "borrowing is paused"
-        );
-        let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
+    fn is_borrow_allowed(
+        &mut self,
+        account: AccountId,
+        token_address: AccountId,
+        _token_amount: WBalance,
+    ) -> bool {
+        require!(!self.is_action_paused.borrow, "borrowing is paused");
+        let _existing_borrows =
+            self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
         let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address);
 
@@ -167,50 +165,57 @@ impl Contract {
     }
 
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
-        let supplies = self.user_profiles.get(&user_id).unwrap_or_default().account_supplies;
+        let supplies = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_supplies;
 
-        supplies.iter()
-            .map(
-                |(asset, balance)| {
-                    let mut result = 0;
-                    let price = self.get_price(asset.clone());
-                    if price.is_some() {
-                        result = balance * price.unwrap().value.0;
-                    }
-                    result
+        supplies
+            .iter()
+            .map(|(asset, balance)| {
+                let mut result = 0;
+                let price = self.get_price(asset.clone());
+                if price.is_some() {
+                    result = balance * price.unwrap().value.0;
                 }
-
-            ).sum::<Balance>().into()
+                result
+            })
+            .sum::<Balance>()
+            .into()
     }
 
     pub fn get_total_borrows(&self, user_id: AccountId) -> WBalance {
-        let borrows = self.user_profiles.get(&user_id).unwrap_or_default().account_borrows;
+        let borrows = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_borrows;
 
-        borrows.iter()
-            .map(
-                |(asset, balance)| {
-                    let mut result = 0;
-                    let price = self.get_price(asset.clone());
-                    if price.is_some() {
-                        result = balance * price.unwrap().value.0;
-                    }
-                    result
+        borrows
+            .iter()
+            .map(|(asset, balance)| {
+                let mut result = 0;
+                let price = self.get_price(asset.clone());
+                if price.is_some() {
+                    result = balance * price.unwrap().value.0;
                 }
-
-            ).sum::<Balance>().into()
+                result
+            })
+            .sum::<Balance>()
+            .into()
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use near_sdk::AccountId;
+    use general::Price;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use general::Price;
+    use near_sdk::AccountId;
 
-    use crate::{Config, Contract};
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
+    use crate::{Config, Contract};
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, oracle_account, user_account) = (alice(), bob(), carol());
@@ -228,18 +233,30 @@ mod tests {
     #[test]
     fn test_for_supply_and_borrow_getters() {
         let (near_contract, token_address, user_account) = init_test_env();
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 0);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account, token_address), 0);
+        assert_eq!(
+            near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()),
+            0
+        );
+        assert_eq!(
+            near_contract.get_entity_by_token(Borrow, user_account, token_address),
+            0
+        );
     }
 
     #[test]
     fn test_for_supply_and_borrow_setters() {
         let (mut near_contract, token_address, user_account) = init_test_env();
         near_contract.set_entity_by_token(Supply, user_account.clone(), token_address.clone(), 100);
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 100);
+        assert_eq!(
+            near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()),
+            100
+        );
 
         near_contract.set_entity_by_token(Borrow, user_account.clone(), token_address.clone(), 50);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account, token_address), 50);
+        assert_eq!(
+            near_contract.get_entity_by_token(Borrow, user_account, token_address),
+            50
+        );
     }
 
     #[test]
@@ -247,16 +264,44 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
-        near_contract.increase_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(100));
+        near_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("test.nearlend".to_string()),
+            U128(100),
+        );
 
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 10);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 100);
+        assert_eq!(
+            near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()),
+            10
+        );
+        assert_eq!(
+            near_contract.get_entity_by_token(
+                Borrow,
+                user_account.clone(),
+                AccountId::new_unchecked("test.nearlend".to_string())
+            ),
+            100
+        );
 
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2));
-        near_contract.decrease_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
+        near_contract.decrease_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("test.nearlend".to_string()),
+            U128(2),
+        );
 
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address), 8);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account, AccountId::new_unchecked("test.nearlend".to_string())), 98);
+        assert_eq!(
+            near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address),
+            8
+        );
+        assert_eq!(
+            near_contract.get_entity_by_token(
+                Borrow,
+                user_account,
+                AccountId::new_unchecked("test.nearlend".to_string())
+            ),
+            98
+        );
     }
 
     #[test]
@@ -264,16 +309,44 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
-        near_contract.increase_supplies(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(20));
+        near_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("test.nearlend".to_string()),
+            U128(20),
+        );
 
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 10);
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 20);
+        assert_eq!(
+            near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()),
+            10
+        );
+        assert_eq!(
+            near_contract.get_entity_by_token(
+                Supply,
+                user_account.clone(),
+                AccountId::new_unchecked("test.nearlend".to_string())
+            ),
+            20
+        );
 
         near_contract.decrease_supplies(user_account.clone(), token_address.clone(), U128(2));
-        near_contract.decrease_supplies(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
+        near_contract.decrease_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("test.nearlend".to_string()),
+            U128(2),
+        );
 
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address), 8);
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account, AccountId::new_unchecked("test.nearlend".to_string())), 18);
+        assert_eq!(
+            near_contract.get_entity_by_token(Supply, user_account.clone(), token_address),
+            8
+        );
+        assert_eq!(
+            near_contract.get_entity_by_token(
+                Supply,
+                user_account,
+                AccountId::new_unchecked("test.nearlend".to_string())
+            ),
+            18
+        );
     }
 
     #[test]
@@ -309,7 +382,7 @@ mod tests {
     fn get_total_borrows() {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
-        let price = Price{
+        let price = Price {
             ticker_id: "wnear".to_string(),
             value: U128(100),
             volatility: U128(1),

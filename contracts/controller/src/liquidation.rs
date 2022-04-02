@@ -42,21 +42,15 @@ impl Contract {
                 return Err(String::from("Liquidation cannot liquidate his on borrow"));
             }
 
-            let borrow_amount = self.get_entity_by_token(
-                ActionType::Borrow,
-                borrower.clone(),
-                borrowing_dtoken,
-            );
+            let borrow_amount =
+                self.get_entity_by_token(ActionType::Borrow, borrower.clone(), borrowing_dtoken);
 
             if borrow_amount > amount_for_liquidation.0 {
                 return Err(String::from("Borrow bigger than liquidation amount"));
             }
 
-            let balance_of_borrower_collateral = self.get_entity_by_token(
-                ActionType::Supply,
-                borrower,
-                collateral_dtoken,
-            );
+            let balance_of_borrower_collateral =
+                self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken);
 
             if balance_of_borrower_collateral < amount_for_liquidation.0 {
                 return Err(String::from("Borrower collateral balance is too low"));

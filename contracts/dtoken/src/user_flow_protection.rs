@@ -1,7 +1,7 @@
-use near_sdk::{AccountId, BlockHeight, log, near_bindgen};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::env::block_height;
+use near_sdk::{log, near_bindgen, AccountId, BlockHeight};
 
 const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
 
@@ -43,7 +43,8 @@ impl ActionMutex {
         if blocked_index > 0 && current_block_height - blocked_index <= BLOCKS_TO_NEXT_OPERATION {
             is_locked = false;
         } else {
-            self.blocked_accounts.insert(account_id, &current_block_height);
+            self.blocked_accounts
+                .insert(account_id, &current_block_height);
         }
         is_locked
     }
@@ -68,9 +69,9 @@ impl ActionMutex {
 mod tests {
     use std::convert::TryFrom;
 
-    use near_sdk::{testing_env, VMContext};
     use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, VMContext};
 
     use super::*;
 

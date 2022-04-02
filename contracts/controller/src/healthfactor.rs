@@ -16,8 +16,18 @@ impl Contract {
 
     fn get_account_sum_per_action(&self, user_account: AccountId, action: ActionType) -> Balance {
         let map_raw: HashMap<AccountId, Balance> = match action {
-            ActionType::Supply => self.user_profiles.get(&user_account).unwrap_or_default().account_supplies,
-            ActionType::Borrow => self.user_profiles.get(&user_account).unwrap_or_default().account_borrows,
+            ActionType::Supply => {
+                self.user_profiles
+                    .get(&user_account)
+                    .unwrap_or_default()
+                    .account_supplies
+            }
+            ActionType::Borrow => {
+                self.user_profiles
+                    .get(&user_account)
+                    .unwrap_or_default()
+                    .account_borrows
+            }
         };
 
         self.get_price_sum(&map_raw)
@@ -25,7 +35,7 @@ impl Contract {
 }
 
 #[near_bindgen]
-impl Contract{
+impl Contract {
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
         let mut ratio = RATIO_DECIMALS;
         let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
@@ -62,7 +72,7 @@ mod tests {
         controller_contract.add_market(
             utoken_address_near,
             dtoken_address_near,
-            ticker_id_near.clone()
+            ticker_id_near.clone(),
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
@@ -72,22 +82,21 @@ mod tests {
         controller_contract.add_market(
             utoken_address_eth,
             dtoken_address_eth,
-            ticker_id_eth.clone()
+            ticker_id_eth.clone(),
         );
-
 
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
             ticker_id: ticker_id_near,
             value: U128(20000),
             volatility: U128(80),
-            fraction_digits: 4
+            fraction_digits: 4,
         });
         prices.push(Price {
             ticker_id: ticker_id_eth,
             value: U128(20000),
             volatility: U128(100),
-            fraction_digits: 4
+            fraction_digits: 4,
         });
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -117,10 +126,7 @@ mod tests {
         let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
-        raw_map.insert(
-            AccountId::new_unchecked("dwnear.near".to_string()),
-            100,
-        );
+        raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
 
         assert_eq!(
             controller_contract.get_price_sum(&raw_map),

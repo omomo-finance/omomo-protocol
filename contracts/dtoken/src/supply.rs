@@ -3,9 +3,11 @@ use crate::*;
 const GAS_FOR_SUPPLY: Gas = Gas(95_000_000_000_000);
 
 impl Contract {
-
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
-        require!(env::prepaid_gas() >= GAS_FOR_SUPPLY, "Prepaid gas is not enough for supply flow");
+        require!(
+            env::prepaid_gas() >= GAS_FOR_SUPPLY,
+            "Prepaid gas is not enough for supply flow"
+        );
         self.mutex_account_lock(String::from("supply"));
 
         underlying_token::ft_balance_of(
@@ -23,20 +25,29 @@ impl Contract {
         .into()
     }
 
-    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
+    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance {
         self.token.accounts.get(&account).unwrap_or(0)
     }
-
 }
 
 #[near_bindgen]
 impl Contract {
-
     #[allow(dead_code)]
     #[private]
-    pub fn supply_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn supply_balance_of_callback(
+        &mut self,
+        token_amount: WBalance,
+    ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!("{}", Events::SupplyFailedToGetUnderlyingBalance(env::signer_account_id(), Balance::from(token_amount), self.get_contract_address(), self.get_underlying_contract_address()));
+            log!(
+                "{}",
+                Events::SupplyFailedToGetUnderlyingBalance(
+                    env::signer_account_id(),
+                    Balance::from(token_amount),
+                    self.get_contract_address(),
+                    self.get_underlying_contract_address()
+                )
+            );
             self.mutex_account_unlock();
             return PromiseOrValue::Value(token_amount);
         }
@@ -44,9 +55,11 @@ impl Contract {
         let balance_of: Balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<WBalance>(&result)
-                .unwrap()
-                .into(),
+            PromiseResult::Successful(result) => {
+                near_sdk::serde_json::from_slice::<WBalance>(&result)
+                    .unwrap()
+                    .into()
+            }
         };
 
         let exchange_rate: Balance =
@@ -61,7 +74,7 @@ impl Contract {
         let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
-            self.get_accrued_supply_interest(env::signer_account_id())
+            self.get_accrued_supply_interest(env::signer_account_id()),
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
@@ -100,13 +113,22 @@ impl Contract {
         dtoken_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            log!("{}", Events::SupplyFailedToInceaseSupplyOnController(env::signer_account_id(), Balance::from(amount)));
+            log!(
+                "{}",
+                Events::SupplyFailedToInceaseSupplyOnController(
+                    env::signer_account_id(),
+                    Balance::from(amount)
+                )
+            );
             self.burn(&self.get_signer_address(), dtoken_amount);
 
             self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
         }
-        log!("{}", Events::SupplySuccess(env::signer_account_id(), Balance::from(amount)));
+        log!(
+            "{}",
+            Events::SupplySuccess(env::signer_account_id(), Balance::from(amount))
+        );
         self.mutex_account_unlock();
         PromiseOrValue::Value(U128(0))
     }
