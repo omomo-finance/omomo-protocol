@@ -16,11 +16,11 @@ impl Contract {
 
             }
         }
-        return result;
+        result
     }
 
     pub fn get_price(&self, dtoken_id: AccountId) -> Option<Price> {
-        return self.prices.get(&dtoken_id);
+        self.prices.get(&dtoken_id)
     }
 
 }
@@ -31,7 +31,7 @@ impl Contract {
     // TODO Do we really need to expose this via near_bindgen
     #[private]
     pub fn upsert_price(&mut self, dtoken_id: AccountId, price: &Price) {
-        self.prices.insert(&dtoken_id, &price);
+        self.prices.insert(&dtoken_id, price);
     }
 
 }
@@ -52,7 +52,7 @@ mod tests {
 
         let token_address: AccountId = "near".parse().unwrap();
 
-        return (eth_contract, token_address, user_account);
+        (eth_contract, token_address, user_account)
     }
 
     use super::*;

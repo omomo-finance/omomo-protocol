@@ -32,26 +32,26 @@ impl Default for AccountData {
 impl Contract {
 
     pub fn view_total_borrows(&self, user_id: AccountId) -> Balance {
-        return self.get_total_borrows(user_id).into();
+        self.get_total_borrows(user_id).into()
     }
 
     pub fn view_total_supplies(&self, user_id: AccountId) -> Balance {
-        return self.get_total_supplies(user_id).into();
+        self.get_total_supplies(user_id).into()
     }
 
     pub fn view_markets(&self) -> Vec<Market>  {
-        return self.get_markets_list();
+        self.get_markets_list()
     }
 
     pub fn view_accounts(&self, user_ids: Vec<AccountId>) -> Vec<AccountData> {
         return user_ids.iter()
-        .filter(|user_id| { return self.user_profiles.get(user_id).is_some() })
+        .filter(|user_id| { self.user_profiles.get(user_id).is_some() })
         // .filter(|_user_id| { return true })
         .map(|user_id| {
             let total_borrows = self.get_total_borrows(user_id.clone());
             let total_supplies = self.get_total_supplies(user_id.clone());
             let health_factor = self.get_health_factor(user_id.clone());
-            return AccountData {
+            AccountData {
                 account_id: user_id.clone(),
                 total_borrows: total_borrows.into(),
                 total_supplies: total_supplies.into(),
@@ -62,7 +62,7 @@ impl Contract {
     }
 
     pub fn view_prices(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
-        return self.get_prices_for_dtokens(dtokens);
+        self.get_prices_for_dtokens(dtokens)
     }
 
 }
@@ -88,7 +88,7 @@ mod tests {
 
         let context = VMContextBuilder::new()
             .signer_account_id(owner_account.clone())
-            .predecessor_account_id(owner_account.clone())
+            .predecessor_account_id(owner_account)
             .build();
 
         testing_env!(context);
@@ -101,21 +101,21 @@ mod tests {
         let asset_id_2 = AccountId::new_unchecked("token.wnear".to_string());
         let dtoken_id_2 = AccountId::new_unchecked("dtoken.wnear".to_string());
 
-        controller_contract.add_market(asset_id_1.clone(), dtoken_id_1.clone(), ticker_id_1.clone());
-        controller_contract.add_market(asset_id_2.clone(), dtoken_id_2.clone(), ticker_id_2.clone());
+        controller_contract.add_market(asset_id_1, dtoken_id_1, ticker_id_1.clone());
+        controller_contract.add_market(asset_id_2, dtoken_id_2, ticker_id_2.clone());
 
 
         let token_address: AccountId = "dtoken.wnear".parse().unwrap();
 
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
-            ticker_id: ticker_id_2.clone(),
+            ticker_id: ticker_id_2,
             value: U128(20000),
             volatility: U128(80),
             fraction_digits: 4
         });
         prices.push(Price {
-            ticker_id: ticker_id_1.clone(),
+            ticker_id: ticker_id_1,
             value: U128(20000),
             volatility: U128(100),
             fraction_digits: 4
@@ -126,7 +126,7 @@ mod tests {
             price_list: prices,
         });
 
-        return (controller_contract, token_address, user_account);
+        (controller_contract, token_address, user_account)
     }
 
 
@@ -163,7 +163,7 @@ mod tests {
         accounts.push(alice());
         accounts.push(bob());
 
-        near_contract.set_entity_by_token(Supply, accounts[0].clone(), token_address.clone(), 100);
+        near_contract.set_entity_by_token(Supply, accounts[0].clone(), token_address, 100);
         let result = near_contract.view_accounts(accounts);
 
         assert_eq!(result.len(), 1, "View accounts response doesn't match");

@@ -28,7 +28,7 @@ pub struct Market {
 #[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
-        return self.admin.clone();
+        self.admin.clone()
     }
 
     pub fn set_admin(&mut self, account: AccountId) {
@@ -42,7 +42,7 @@ impl Contract {
 
     pub fn get_markets_list(&self) -> Vec<Market> {
         return self.markets.iter().map(|(asset_id, market)| {
-            return Market {
+            Market {
                 asset_id,
                 dtoken: market.dtoken,
                 ticker_id: market.ticker_id,
@@ -55,7 +55,7 @@ impl Contract {
         self.markets.iter().for_each(|(_, market)| {
             result.insert( market.ticker_id, market.dtoken);
         });
-        return result;
+        result
     }
 
     pub fn get_utoken_tickers_hash(&self) -> HashMap<AccountId, String> {
@@ -63,7 +63,7 @@ impl Contract {
         self.markets.iter().for_each(|(asset_id, market)| {
             result.insert(asset_id, market.ticker_id);
         });
-        return result;
+        result
     }
 
     pub fn add_market(&mut self, asset_id: AccountId, dtoken: AccountId, ticker_id: String) {
@@ -164,7 +164,7 @@ mod tests {
 
         let token_address: AccountId = "near".parse().unwrap();
 
-        return (near_contract, token_address, user_account);
+        (near_contract, token_address, user_account)
     }
 
     #[test]

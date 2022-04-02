@@ -132,8 +132,8 @@ impl Contract {
     pub fn new_with_config(owner_id: AccountId, oracle_account_id: AccountId) -> Self {
         Self::new(
             Config{
-                owner_id: owner_id,
-                oracle_account_id: oracle_account_id
+                owner_id,
+                oracle_account_id
             }
         )
     }

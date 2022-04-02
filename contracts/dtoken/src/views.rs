@@ -18,15 +18,15 @@ pub struct MarketData {
 impl Contract {
 
     pub fn view_total_supplies(&self) -> Balance  {
-        return self.get_total_supplies();
+        self.get_total_supplies()
     }
 
     pub fn view_total_borrows(&self) -> Balance  {
-        return self.get_total_borrows();
+        self.get_total_borrows()
     }
 
     pub fn view_total_reserves(&self) -> Balance  {
-        return self.get_total_reserves();
+        self.get_total_reserves()
     }
 
     pub fn view_market_data(&self, ft_balance_of: WBalance) -> MarketData {
@@ -49,14 +49,14 @@ impl Contract {
             WBalance::from(total_reserves),
         );
 
-        return MarketData {
+        MarketData {
             total_supplies,
             total_borrows,
             total_reserves,
             exchange_rate,
             interest_rate,
             borrow_rate
-        };
+        }
     }
 
 }
@@ -75,14 +75,14 @@ mod tests {
 
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),
-            underlying_token_id: underlying_token_account.clone(),
-            owner_id: user_account.clone(),
-            controller_account_id: controller_account.clone(),
+            underlying_token_id: underlying_token_account,
+            owner_id: user_account,
+            controller_account_id: controller_account,
         });
 
         contract.set_total_reserves(200);
 
-        return contract;
+        contract
     }
 
     #[test]

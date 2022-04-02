@@ -16,7 +16,7 @@ impl Contract {
         )
         .then(ext_self::supply_balance_of_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(40),
         ))
@@ -24,7 +24,7 @@ impl Contract {
     }
 
     pub fn get_supplies_by_account(&self, account: AccountId) -> Balance{
-        self.token.accounts.get(&account).unwrap_or(0).into()
+        self.token.accounts.get(&account).unwrap_or(0)
     }
 
 }

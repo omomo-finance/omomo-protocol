@@ -31,7 +31,7 @@ impl FungibleTokenReceiver for Contract {
         log!(format!("sender_id {}, msg {}", sender_id, msg));
 
         let msg: Value =
-            serde_json::from_str(msg.to_string().as_str()).expect("Can't parse JSON message");
+            serde_json::from_str(msg.as_str()).expect("Can't parse JSON message");
 
         // TODO: In future make action not a single one, but array in JSON message
         let action: &str = msg["action"].as_str().unwrap();

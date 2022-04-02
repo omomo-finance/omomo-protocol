@@ -23,7 +23,7 @@ impl Contract {
             self.is_borrow_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                token_amount.clone(),
+                token_amount,
             ),
             true,
             "Borrow operation is not allowed for account {} token_address {} token_amount {}",
@@ -44,7 +44,7 @@ impl Contract {
             self.is_withdraw_allowed(
                 account_id.clone(),
                 token_address.clone(),
-                token_amount.clone(),
+                token_amount,
             ),
             true,
             "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
@@ -53,12 +53,12 @@ impl Contract {
             Balance::from(token_amount)
         );
 
-        return self.decrease_supplies(account_id, token_address, token_amount);
+        self.decrease_supplies(account_id, token_address, token_amount)
     }
 
 
     pub fn get_entity_by_token(&self, action: ActionType, user_id: AccountId, token_address: AccountId) -> Balance {
-        let user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+        let user = self.user_profiles.get(&user_id).unwrap_or_default();
 
         user.get(action, token_address)
     }
@@ -73,7 +73,7 @@ impl Contract {
         let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         let increased_supplies: Balance = existing_supplies + Balance::from(token_amount);
 
-        self.set_entity_by_token(Supply, account.clone(), token_address.clone(), increased_supplies);
+        self.set_entity_by_token(Supply, account, token_address, increased_supplies);
     }
 
 
@@ -86,7 +86,7 @@ impl Contract {
         let existing_borrows: Balance = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
-        self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), increased_borrows);
+        self.set_entity_by_token(Borrow, account, token_address, increased_borrows);
     }
 
     pub fn decrease_borrows(
@@ -101,7 +101,7 @@ impl Contract {
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
-        return self.set_entity_by_token(Borrow, account.clone(), token_address.clone(), decreased_borrows);
+        self.set_entity_by_token(Borrow, account, token_address, decreased_borrows)
     }
 
     pub fn decrease_supplies(
@@ -118,11 +118,11 @@ impl Contract {
         );
         let decreased_supplies: Balance = existing_supplies - Balance::from(token_amount);
 
-        return self.set_entity_by_token(Supply,
-                                        account.clone(),
-                                        token_address.clone(),
+        self.set_entity_by_token(Supply,
+                                        account,
+                                        token_address,
                                         decreased_supplies,
-        );
+        )
     }
 
 }
@@ -130,11 +130,11 @@ impl Contract {
 impl Contract {
 
     pub fn set_entity_by_token(&mut self, action: ActionType, user_id: AccountId, token_address: AccountId, token_amount: Balance) -> Balance {
-        let mut user = self.user_profiles.get(&user_id).unwrap_or(UserProfile::default());
+        let mut user = self.user_profiles.get(&user_id).unwrap_or_default();
         user.set(action, token_address, token_amount);
         self.user_profiles.insert(&user_id, &user);
 
-        return token_amount;
+        token_amount
     }
 
     fn is_withdraw_allowed(
@@ -147,7 +147,7 @@ impl Contract {
             !self.is_action_paused.withdraw,
             "withdrawing is paused"
         );
-        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
+        let existing_supplies = self.get_entity_by_token(Supply, account, token_address);
         existing_supplies >= Balance::from(token_amount)
     }
 
@@ -161,9 +161,9 @@ impl Contract {
         );
         let _existing_borrows = self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
-        let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
+        let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address);
 
-        return self.get_health_factor(account.clone()) > self.get_health_factor_threshold();
+        self.get_health_factor(account) > self.get_health_factor_threshold()
     }
 
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
@@ -177,7 +177,7 @@ impl Contract {
                     if price.is_some() {
                         result = balance * price.unwrap().value.0;
                     }
-                    return result;
+                    result
                 }
 
             ).sum::<Balance>().into()
@@ -194,7 +194,7 @@ impl Contract {
                     if price.is_some() {
                         result = balance * price.unwrap().value.0;
                     }
-                    return result;
+                    result
                 }
 
             ).sum::<Balance>().into()
@@ -222,14 +222,14 @@ mod tests {
 
         let token_address: AccountId = "near".parse().unwrap();
 
-        return (near_contract, token_address, user_account);
+        (near_contract, token_address, user_account)
     }
 
     #[test]
     fn test_for_supply_and_borrow_getters() {
         let (near_contract, token_address, user_account) = init_test_env();
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 0);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 0);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account, token_address), 0);
     }
 
     #[test]
@@ -239,7 +239,7 @@ mod tests {
         assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 100);
 
         near_contract.set_entity_by_token(Borrow, user_account.clone(), token_address.clone(), 50);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 50);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account, token_address), 50);
     }
 
     #[test]
@@ -255,8 +255,8 @@ mod tests {
         near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2));
         near_contract.decrease_borrows(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
 
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address.clone()), 8);
-        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 98);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account.clone(), token_address), 8);
+        assert_eq!(near_contract.get_entity_by_token(Borrow, user_account, AccountId::new_unchecked("test.nearlend".to_string())), 98);
     }
 
     #[test]
@@ -272,8 +272,8 @@ mod tests {
         near_contract.decrease_supplies(user_account.clone(), token_address.clone(), U128(2));
         near_contract.decrease_supplies(user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string()), U128(2));
 
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address.clone()), 8);
-        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), AccountId::new_unchecked("test.nearlend".to_string())), 18);
+        assert_eq!(near_contract.get_entity_by_token(Supply, user_account.clone(), token_address), 8);
+        assert_eq!(near_contract.get_entity_by_token(Supply, user_account, AccountId::new_unchecked("test.nearlend".to_string())), 18);
     }
 
     #[test]
@@ -286,7 +286,7 @@ mod tests {
 
         near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
 
-        near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(20));
+        near_contract.decrease_borrows(user_account, token_address, U128(20));
     }
 
     #[test]
@@ -300,9 +300,9 @@ mod tests {
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_supplies(user_account.clone(), token_address, U128(10));
 
-        assert_eq!(near_contract.get_total_supplies(user_account.clone()), U128(1000));
+        assert_eq!(near_contract.get_total_supplies(user_account), U128(1000));
     }
 
     #[test]
@@ -316,8 +316,8 @@ mod tests {
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_borrows(user_account.clone(), token_address, U128(10));
 
-        assert_eq!(near_contract.get_total_borrows(user_account.clone()), U128(1000));
+        assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
     }
 }

@@ -37,14 +37,3 @@ pub struct Price {
     /// Ticker precision digits number
     pub fraction_digits: Digits
 }
-
-// impl Default for Price {
-//     fn default() -> Self {
-//         Price {
-//             ticker_id: AccountId::new_unchecked("default.near".to_string()),
-//             value: 0.into(),
-//             volatility: 0.into(),
-//             fraction_digits: 0u32,
-//         }
-//     }
-// }
