@@ -18,5 +18,3 @@ impl OraclePriceHandlerHook for Contract {
         }
     }
 }
-
-

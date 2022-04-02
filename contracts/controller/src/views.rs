@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::*;
+use std::collections::HashMap;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -10,7 +10,7 @@ pub struct AccountData {
     pub total_borrows: Balance,
     pub total_supplies: Balance,
     pub blocked: bool,
-    pub health_factor: Ratio
+    pub health_factor: Ratio,
 }
 
 impl Default for AccountData {
@@ -20,7 +20,7 @@ impl Default for AccountData {
             total_borrows: 0,
             total_supplies: 0,
             blocked: false,
-            health_factor: 1 * RATIO_DECIMALS,
+            health_factor: RATIO_DECIMALS,
         }
     }
 }
@@ -31,77 +31,72 @@ impl Default for AccountData {
 #[derive(Debug)]
 pub struct Market {
     pub asset_id: AccountId,
-    pub dtoken: AccountId
+    pub dtoken: AccountId,
 }
-
 
 #[near_bindgen]
 impl Contract {
-
     pub fn view_total_borrows(&self, user_id: AccountId) -> Balance {
-        return self.get_total_borrows(user_id).into();
+        self.get_total_borrows(user_id).into()
     }
 
     pub fn view_total_supplies(&self, user_id: AccountId) -> Balance {
-        return self.get_total_supplies(user_id).into();
+        self.get_total_supplies(user_id).into()
     }
 
-    pub fn view_markets(&self) -> Vec<Market>  {
-        return self.markets.iter().map(|(asset_id, dtoken)| {
-            return Market {
-                asset_id,
-                dtoken
-            }
-        }).collect::<Vec<Market>>();
+    pub fn view_markets(&self) -> Vec<Market> {
+        return self
+            .markets
+            .iter()
+            .map(|(asset_id, dtoken)| Market { asset_id, dtoken })
+            .collect::<Vec<Market>>();
     }
 
     pub fn view_accounts(&self, user_ids: Vec<AccountId>) -> Vec<AccountData> {
-        return user_ids.iter().map(|user_id| {
-            let total_borrows = self.get_total_borrows(user_id.clone());
-            let total_supplies = self.get_total_supplies(user_id.clone());
-            let health_factor = self.get_health_factor(user_id.clone());
-            return AccountData {
-                account_id: user_id.clone(),
-                total_borrows: total_borrows.into(),
-                total_supplies: total_supplies.into(),
-                blocked: false,
-                health_factor
-            }
-        }).collect::<Vec<AccountData>>();
+        return user_ids
+            .iter()
+            .map(|user_id| {
+                let total_borrows = self.get_total_borrows(user_id.clone());
+                let total_supplies = self.get_total_supplies(user_id.clone());
+                let health_factor = self.get_health_factor(user_id.clone());
+                AccountData {
+                    account_id: user_id.clone(),
+                    total_borrows: total_borrows.into(),
+                    total_supplies: total_supplies.into(),
+                    blocked: false,
+                    health_factor,
+                }
+            })
+            .collect::<Vec<AccountData>>();
     }
 
     pub fn view_prices(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Price> {
-        return self.get_prices_for_assets(assets);
+        self.get_prices_for_assets(assets)
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {
-    use near_sdk::{AccountId, testing_env};
+    use crate::{Config, Contract};
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::test_utils::VMContextBuilder;
-    use crate::{Config, Contract};
+    use near_sdk::{testing_env, AccountId};
 
     pub fn init_test_env() -> (Contract, AccountId) {
+        let controller_contract = Contract::new(Config {
+            owner_id: alice(),
+            oracle_account_id: bob(),
+        });
 
-        let controller_contract = Contract::new(Config { owner_id: alice(), oracle_account_id: bob() });
-
-        let context = VMContextBuilder::new()
-            .signer_account_id(alice())
-            .build();
+        let context = VMContextBuilder::new().signer_account_id(alice()).build();
 
         testing_env!(context);
 
-        return (controller_contract, alice());
+        (controller_contract, alice())
     }
 
     #[test]
-    fn test_view_prices() {
-
-    }
-
+    fn test_view_prices() {}
 
     #[test]
     fn test_view_markets() {
@@ -118,11 +113,22 @@ mod tests {
         let accounts = near_contract.view_markets();
 
         assert_eq!(accounts.len(), 2, "View market response doesn't match");
-        assert_eq!(accounts[0].asset_id, asset_id_1, "View market AssetId check has been failed");
-        assert_eq!(accounts[0].dtoken, dtoken_id_1, "View market Dtoken check has been failed");
-        assert_eq!(accounts[1].asset_id, asset_id_2, "View market AssetId check has been failed");
-        assert_eq!(accounts[1].dtoken, dtoken_id_2, "View market Dtoken check has been failed");
-
+        assert_eq!(
+            accounts[0].asset_id, asset_id_1,
+            "View market AssetId check has been failed"
+        );
+        assert_eq!(
+            accounts[0].dtoken, dtoken_id_1,
+            "View market Dtoken check has been failed"
+        );
+        assert_eq!(
+            accounts[1].asset_id, asset_id_2,
+            "View market AssetId check has been failed"
+        );
+        assert_eq!(
+            accounts[1].dtoken, dtoken_id_2,
+            "View market Dtoken check has been failed"
+        );
     }
 
     #[test]
@@ -136,10 +142,27 @@ mod tests {
         let result = near_contract.view_accounts(accounts.clone());
 
         assert_eq!(result.len(), 2, "View accounts response doesn't match");
-        assert_eq!(result[0].account_id, alice(), "View accounts account_id check has been failed");
-        assert_eq!(result[1].account_id, bob(), "View accounts account_id check has been failed");
-        assert_eq!(result[0].total_borrows,0, "View accounts total borrows check has been failed");
-        assert_eq!(result[0].total_supplies,0, "View accounts total supplies check has been failed");
-        assert_eq!(result[0].health_factor,10000, "View accounts health factor check has been failed");
+        assert_eq!(
+            result[0].account_id,
+            alice(),
+            "View accounts account_id check has been failed"
+        );
+        assert_eq!(
+            result[1].account_id,
+            bob(),
+            "View accounts account_id check has been failed"
+        );
+        assert_eq!(
+            result[0].total_borrows, 0,
+            "View accounts total borrows check has been failed"
+        );
+        assert_eq!(
+            result[0].total_supplies, 0,
+            "View accounts total supplies check has been failed"
+        );
+        assert_eq!(
+            result[0].health_factor, 10000,
+            "View accounts health factor check has been failed"
+        );
     }
 }
