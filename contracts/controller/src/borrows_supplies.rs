@@ -18,9 +18,8 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) {
-        assert_eq!(
+        assert!(
             self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
-            true,
             "Borrow operation is not allowed for account {} token_address {} token_amount {}",
             account_id,
             token_address,
@@ -35,9 +34,8 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) -> Balance {
-        assert_eq!(
+        assert!(
             self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount,),
-            true,
             "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
             account_id,
             token_address,

@@ -15,8 +15,7 @@ impl OraclePriceHandlerHook for Contract {
 
         let tickers_map = self.get_tickers_dtoken_hash();
         for price in price_data.price_list {
-            let dtoken = tickers_map.get(&price.ticker_id);
-            if dtoken.is_some() {
+            if let Some(dtoken) = tickers_map.get(&price.ticker_id) {
                 self.upsert_price(dtoken.unwrap().clone(), &price);
             }
         }
