@@ -58,7 +58,7 @@ impl Contract {
             U128(self.total_reserves),
         );
         let borrow_amount = self.get_account_borrows(env::signer_account_id());
-        let borrow_accrued_interest = self.model.calculate_accrued_interest(
+        let borrow_accrued_interest = model.calculate_accrued_interest(
             borrow_rate,
             self.get_account_borrows(env::signer_account_id()),
             self.get_accrued_borrow_interest(env::signer_account_id()),
