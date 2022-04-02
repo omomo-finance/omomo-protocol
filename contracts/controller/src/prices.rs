@@ -7,9 +7,7 @@ impl Contract {
         let mut result = HashMap::new();
         for dtoken in dtokens {
             if self.prices.contains_key(&dtoken) {
-                let price_raw = self.get_price(dtoken.clone());
-                if price_raw.is_some() {
-                    let price = price_raw.unwrap();
+                if let Some(price) = self.get_price(dtoken.clone()) {
                     result.insert(dtoken, price);
                 }
             }

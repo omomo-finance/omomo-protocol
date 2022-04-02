@@ -174,12 +174,11 @@ impl Contract {
         supplies
             .iter()
             .map(|(asset, balance)| {
-                let mut result = 0;
-                let price = self.get_price(asset.clone());
-                if price.is_some() {
-                    result = balance * price.unwrap().value.0;
+                if let Some(price) = self.get_price(asset.clone()) {
+                    balance * price.value.0
+                } else {
+                    0
                 }
-                result
             })
             .sum::<Balance>()
             .into()
@@ -195,12 +194,11 @@ impl Contract {
         borrows
             .iter()
             .map(|(asset, balance)| {
-                let mut result = 0;
-                let price = self.get_price(asset.clone());
-                if price.is_some() {
-                    result = balance * price.unwrap().value.0;
+                if let Some(price) = self.get_price(asset.clone()) {
+                    balance * price.value.0
+                } else {
+                    0
                 }
-                result
             })
             .sum::<Balance>()
             .into()

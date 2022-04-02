@@ -1,7 +1,7 @@
 use crate::*;
+use std::collections::HashMap;
 
 use crate::admin::Market;
-use std::collections::HashMap;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -22,7 +22,7 @@ impl Default for AccountData {
             total_borrows: 0,
             total_supplies: 0,
             blocked: false,
-            health_factor: 1 * RATIO_DECIMALS,
+            health_factor: RATIO_DECIMALS,
         }
     }
 }

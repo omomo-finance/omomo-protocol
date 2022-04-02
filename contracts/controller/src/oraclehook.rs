@@ -9,8 +9,8 @@ impl OraclePriceHandlerHook for Contract {
             env::predecessor_account_id(),
             config.oracle_account_id,
             "Oracle account {} doesn't match to the signer {}",
-            config.oracle_account_id.to_string(),
-            env::predecessor_account_id().to_string()
+            config.oracle_account_id,
+            env::predecessor_account_id()
         );
 
         let tickers_map = self.get_tickers_dtoken_hash();
