@@ -20,9 +20,13 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            ~/.cargo/registry
+            ~/.cargo/bin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
             ~/.cargo/git
-            target
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            target/
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       # linter checks
       - uses: actions-rs/cargo@v1
