@@ -49,10 +49,9 @@ impl Contract {
         if self.token.total_supply == 0 {
             return self.initial_exchange_rate;
         }
-        return (Balance::from(underlying_balance) + self.get_total_borrows()
-            - self.total_reserves)
+        (Balance::from(underlying_balance) + self.get_total_borrows() - self.total_reserves)
             * RATIO_DECIMALS
-            / self.token.total_supply;
+            / self.token.total_supply
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {

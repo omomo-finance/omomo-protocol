@@ -1,4 +1,3 @@
-use near_sdk::serde::de::Unexpected::Str;
 use near_sdk::AccountId;
 use near_sdk_sim::{deploy, to_yocto, ContractAccount, UserAccount};
 
@@ -72,7 +71,7 @@ pub fn init_two_dtokens(
 pub fn init_utoken(
     root: UserAccount,
     token_id: AccountId,
-    account_name: String
+    account_name: String,
 ) -> (UserAccount, ContractAccount<Utoken>, UserAccount) {
     let contract = deploy!(
         contract: Utoken,
@@ -107,5 +106,3 @@ pub fn init_controller(
 
     (root, contract, user_account)
 }
-
-

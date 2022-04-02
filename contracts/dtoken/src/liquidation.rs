@@ -28,7 +28,7 @@ impl Contract {
             liquidator,
             collateral_dtoken,
             liquidation_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(60),
         ))
@@ -81,7 +81,7 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         assert_eq!(env::predecessor_account_id(), self.get_controller_address());
 
-        let amount = Balance::from(liquidation_amount.0);
+        let amount = liquidation_amount.0;
 
         if !self.token.accounts.contains_key(&liquidator) {
             self.token.internal_register_account(&liquidator);
