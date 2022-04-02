@@ -27,7 +27,7 @@ jobs:
             ~/.cargo/.crates.toml
             ~/.cargo/.crates2.json
             target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/contracts/Cargo.lock') }}
       # linter checks
       - uses: actions-rs/cargo@v1
         with:
