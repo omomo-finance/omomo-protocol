@@ -3,20 +3,20 @@ use crate::*;
 use std::collections::HashMap;
 
 impl Contract {
-    pub fn get_prices_for_assets(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Price> {
+    pub fn get_prices_for_dtokens(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
         let mut result = HashMap::new();
-        for asset in assets {
-            if self.prices.contains_key(&asset) {
-                if let Some(price) = self.get_price(asset) {
-                    result.insert(price.asset_id.clone(), price);
+        for dtoken in dtokens {
+            if self.prices.contains_key(&dtoken) {
+                if let Some(price) = self.get_price(dtoken.clone()) {
+                    result.insert(dtoken, price);
                 }
             }
         }
         result
     }
 
-    pub fn get_price(&self, asset_id: AccountId) -> Option<Price> {
-        self.prices.get(&asset_id)
+    pub fn get_price(&self, dtoken_id: AccountId) -> Option<Price> {
+        self.prices.get(&dtoken_id)
     }
 }
 
@@ -24,9 +24,8 @@ impl Contract {
 impl Contract {
     // TODO Do we really need to expose this via near_bindgen
     #[private]
-    pub fn upsert_price(&mut self, price: &Price) {
-        // Update & insert operation
-        self.prices.insert(&price.asset_id, price);
+    pub fn upsert_price(&mut self, dtoken_id: AccountId, price: &Price) {
+        self.prices.insert(&dtoken_id, price);
     }
 }
 
@@ -60,13 +59,13 @@ mod tests {
 
         let price = Price {
             // adding price of Near
-            asset_id: token_address.clone(),
+            ticker_id: "wnear".to_string(),
             value: U128(20),
             volatility: U128(100),
             fraction_digits: 4,
         };
 
-        near_contract.upsert_price(&price);
+        near_contract.upsert_price(token_address.clone(), &price);
 
         let gotten_price = near_contract.get_price(token_address).unwrap();
         assert_matches!(
@@ -83,7 +82,7 @@ mod tests {
             "Get price volatility check has been failed"
         );
         assert_eq!(
-            &gotten_price.asset_id, &price.asset_id,
+            &gotten_price.ticker_id, &price.ticker_id,
             "Get price asset_id check has been failed"
         );
         assert_eq!(

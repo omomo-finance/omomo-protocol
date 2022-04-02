@@ -13,8 +13,11 @@ impl OraclePriceHandlerHook for Contract {
             env::predecessor_account_id()
         );
 
+        let tickers_map = self.get_tickers_dtoken_hash();
         for price in price_data.price_list {
-            self.upsert_price(&price);
+            if let Some(dtoken) = tickers_map.get(&price.ticker_id) {
+                self.upsert_price(dtoken.clone(), &price);
+            }
         }
     }
 }

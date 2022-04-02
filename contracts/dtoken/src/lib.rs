@@ -95,7 +95,6 @@ trait UnderlineTokenInterface {
     fn ft_resolve_transfer(&self, account_id: AccountId) -> U128;
 }
 
-#[allow(clippy::too_many_arguments)]
 #[ext_contract(controller)]
 trait ControllerInterface {
     fn increase_supplies(
