@@ -4,6 +4,10 @@ cover: .gitbook/assets/mountains_bg.svg
 coverY: 0
 ---
 
+# Status
+[![nearlend-protocol test automatically](https://github.com/nearlend/nearlend-protocol/actions/workflows/test.yml/badge.svg)](https://github.com/nearlend/nearlend-protocol/actions/workflows/test.yml)
+
+---
 # Overview
 
 ## What is Nearlend?
