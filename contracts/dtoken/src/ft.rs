@@ -33,15 +33,19 @@ impl FungibleTokenReceiver for Contract {
         match action {
             Actions::Supply => self.supply(amount),
             Actions::Repay => self.repay(amount),
-            Actions::Liquidate { borrower, borrowing_dtoken, liquidator, collateral_dtoken, liquidation_amount} => {
-                self.liquidate(
-                    borrower,
-                    borrowing_dtoken,
-                    liquidator,
-                    collateral_dtoken,
-                    liquidation_amount,
-                )
-            }
+            Actions::Liquidate {
+                borrower,
+                borrowing_dtoken,
+                liquidator,
+                collateral_dtoken,
+                liquidation_amount,
+            } => self.liquidate(
+                borrower,
+                borrowing_dtoken,
+                liquidator,
+                collateral_dtoken,
+                liquidation_amount,
+            ),
         }
     }
 }

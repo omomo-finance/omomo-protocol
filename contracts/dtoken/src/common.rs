@@ -32,14 +32,14 @@ pub enum Events {
 pub enum Actions {
     Supply,
     Repay,
-    Liquidate { 
+    Liquidate {
         borrower: AccountId,
         borrowing_dtoken: AccountId,
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
-    }
-  }
+    },
+}
 
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
@@ -64,8 +64,7 @@ impl Contract {
         if self.token.total_supply == 0 {
             return self.initial_exchange_rate;
         }
-        (Balance::from(underlying_balance) + self.get_total_borrows()
-            - self.total_reserves)
+        (Balance::from(underlying_balance) + self.get_total_borrows() - self.total_reserves)
             * RATIO_DECIMALS
             / self.token.total_supply
     }
