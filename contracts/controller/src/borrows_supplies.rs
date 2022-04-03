@@ -12,19 +12,37 @@ pub enum ActionType {
 
 #[near_bindgen]
 impl Contract {
-    #[private]
-    fn set_entity_by_token(
+    pub fn make_borrow(
         &mut self,
-        action: ActionType,
-        user_id: AccountId,
+        account_id: AccountId,
         token_address: AccountId,
-        token_amount: Balance,
-    ) -> Balance {
-        let mut user = self.user_profiles.get(&user_id).unwrap_or_default();
-        user.set(action, token_address, token_amount);
-        self.user_profiles.insert(&user_id, &user);
+        token_amount: WBalance,
+    ) {
+        assert!(
+            self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
+            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
+            account_id,
+            token_address,
+            Balance::from(token_amount)
+        );
+        self.increase_borrows(account_id, token_address, token_amount);
+    }
 
-        token_amount
+    pub fn withdraw_supplies(
+        &mut self,
+        account_id: AccountId,
+        token_address: AccountId,
+        token_amount: WBalance,
+    ) -> Balance {
+        assert!(
+            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount,),
+            "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
+            account_id,
+            token_address,
+            Balance::from(token_amount)
+        );
+
+        self.decrease_supplies(account_id, token_address, token_amount)
     }
 
     pub fn get_entity_by_token(
@@ -36,6 +54,19 @@ impl Contract {
         let user = self.user_profiles.get(&user_id).unwrap_or_default();
 
         user.get(action, token_address)
+    }
+
+    pub fn increase_supplies(
+        &mut self,
+        account: AccountId,
+        token_address: AccountId,
+        token_amount: WBalance,
+    ) {
+        let existing_supplies =
+            self.get_entity_by_token(Supply, account.clone(), token_address.clone());
+        let increased_supplies: Balance = existing_supplies + Balance::from(token_amount);
+
+        self.set_entity_by_token(Supply, account, token_address, increased_supplies);
     }
 
     pub fn increase_borrows(
@@ -70,19 +101,6 @@ impl Contract {
         self.set_entity_by_token(Borrow, account, token_address, decreased_borrows)
     }
 
-    pub fn increase_supplies(
-        &mut self,
-        account: AccountId,
-        token_address: AccountId,
-        token_amount: WBalance,
-    ) {
-        let existing_supplies =
-            self.get_entity_by_token(Supply, account.clone(), token_address.clone());
-        let increased_supplies: Balance = existing_supplies + Balance::from(token_amount);
-
-        self.set_entity_by_token(Supply, account, token_address, increased_supplies);
-    }
-
     pub fn decrease_supplies(
         &mut self,
         account: AccountId,
@@ -100,6 +118,22 @@ impl Contract {
 
         self.set_entity_by_token(Supply, account, token_address, decreased_supplies)
     }
+}
+
+impl Contract {
+    pub fn set_entity_by_token(
+        &mut self,
+        action: ActionType,
+        user_id: AccountId,
+        token_address: AccountId,
+        token_amount: Balance,
+    ) -> Balance {
+        let mut user = self.user_profiles.get(&user_id).unwrap_or_default();
+        user.set(action, token_address, token_amount);
+        self.user_profiles.insert(&user_id, &user);
+
+        token_amount
+    }
 
     fn is_withdraw_allowed(
         &mut self,
@@ -110,24 +144,6 @@ impl Contract {
         require!(!self.is_action_paused.withdraw, "withdrawing is paused");
         let existing_supplies = self.get_entity_by_token(Supply, account, token_address);
         existing_supplies >= Balance::from(token_amount)
-    }
-
-    pub fn withdraw_supplies(
-        &mut self,
-        account_id: AccountId,
-        token_address: AccountId,
-        token_amount: WBalance,
-    ) -> Balance {
-        assert_eq!(
-            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount,),
-            true,
-            "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
-            account_id,
-            token_address,
-            Balance::from(token_amount)
-        );
-
-        self.decrease_supplies(account_id, token_address, token_amount)
     }
 
     #[warn(dead_code)]
@@ -146,23 +162,6 @@ impl Contract {
         self.get_health_factor(account) > self.get_health_factor_threshold()
     }
 
-    pub fn make_borrow(
-        &mut self,
-        account_id: AccountId,
-        token_address: AccountId,
-        token_amount: WBalance,
-    ) {
-        assert_eq!(
-            self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
-            true,
-            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
-            account_id,
-            token_address,
-            Balance::from(token_amount)
-        );
-        self.increase_borrows(account_id, token_address, token_amount);
-    }
-
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
         let supplies = self
             .user_profiles
@@ -173,7 +172,11 @@ impl Contract {
         supplies
             .iter()
             .map(|(asset, balance)| {
-                balance * self.get_price(asset.clone()).unwrap_or_default().value.0
+                if let Some(price) = self.get_price(asset.clone()) {
+                    balance * price.value.0
+                } else {
+                    0
+                }
             })
             .sum::<Balance>()
             .into()
@@ -189,7 +192,11 @@ impl Contract {
         borrows
             .iter()
             .map(|(asset, balance)| {
-                balance * self.get_price(asset.clone()).unwrap_or_default().value.0
+                if let Some(price) = self.get_price(asset.clone()) {
+                    balance * price.value.0
+                } else {
+                    0
+                }
             })
             .sum::<Balance>()
             .into()
@@ -356,12 +363,12 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         let price = Price {
-            asset_id: token_address.clone(),
+            ticker_id: "wnear".to_string(),
             value: U128(100),
             volatility: U128(1),
             fraction_digits: 4u32,
         };
-        near_contract.upsert_price(&price);
+        near_contract.upsert_price(token_address.clone(), &price);
         near_contract.increase_supplies(user_account.clone(), token_address, U128(10));
 
         assert_eq!(near_contract.get_total_supplies(user_account), U128(1000));
@@ -372,12 +379,12 @@ mod tests {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
         let price = Price {
-            asset_id: token_address.clone(),
+            ticker_id: "wnear".to_string(),
             value: U128(100),
             volatility: U128(1),
             fraction_digits: 4u32,
         };
-        near_contract.upsert_price(&price);
+        near_contract.upsert_price(token_address.clone(), &price);
         near_contract.increase_borrows(user_account.clone(), token_address, U128(10));
 
         assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));

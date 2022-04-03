@@ -65,15 +65,35 @@ mod tests {
             oracle_account_id: user_account.clone(),
         });
 
+        let utoken_address_near = AccountId::new_unchecked("wnear.near".to_string());
+        let dtoken_address_near = AccountId::new_unchecked("dwnear.near".to_string());
+        let ticker_id_near = "wnear".to_string();
+
+        controller_contract.add_market(
+            utoken_address_near,
+            dtoken_address_near,
+            ticker_id_near.clone(),
+        );
+
+        let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
+        let dtoken_address_eth = AccountId::new_unchecked("dweth.near".to_string());
+        let ticker_id_eth = "weth".to_string();
+
+        controller_contract.add_market(
+            utoken_address_eth,
+            dtoken_address_eth,
+            ticker_id_eth.clone(),
+        );
+
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
-            asset_id: AccountId::new_unchecked("wnear.near".to_string()),
+            ticker_id: ticker_id_near,
             value: U128(20000),
             volatility: U128(80),
             fraction_digits: 4,
         });
         prices.push(Price {
-            asset_id: AccountId::new_unchecked("weth.near".to_string()),
+            ticker_id: ticker_id_eth,
             value: U128(20000),
             volatility: U128(100),
             fraction_digits: 4,
@@ -106,7 +126,7 @@ mod tests {
         let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
-        raw_map.insert(AccountId::new_unchecked("wnear.near".to_string()), 100);
+        raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
 
         assert_eq!(
             controller_contract.get_price_sum(&raw_map),
@@ -129,13 +149,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("wnear.near".to_string()),
+            AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(balance),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("weth.near".to_string()),
+            AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
         );
 

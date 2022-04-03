@@ -267,12 +267,15 @@ fn base2_fixture() -> (
 
     call!(
         controller.user_account,
-        controller.upsert_price(&Price {
-            asset_id: dtoken.account_id(),
-            value: U128(20),
-            volatility: U128(100),
-            fraction_digits: 4
-        }),
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
         deposit = 0
     )
     .assert_success();
@@ -569,12 +572,15 @@ fn borrow_fixture() -> (
 
     call!(
         controller.user_account,
-        controller.upsert_price(&Price {
-            asset_id: dtoken.account_id(),
-            value: U128(20),
-            volatility: U128(100),
-            fraction_digits: 4
-        }),
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
         deposit = 0
     )
     .assert_success();
@@ -1041,7 +1047,6 @@ fn supply_borrow_repay_withdraw() {
         "After withdraw balance should be 167"
     );
 }
-// // liquidation_fixture
 
 // liquidation_fixture
 

@@ -1,7 +1,7 @@
 use crate::*;
 use std::cmp::{max, min};
 
-const MAX_RESERVE_FACTOR_VALUE: Ratio = 1 * RATIO_DECIMALS;
+const MAX_RESERVE_FACTOR_VALUE: Ratio = RATIO_DECIMALS;
 
 #[near_bindgen]
 impl Contract {
