@@ -8,10 +8,10 @@ impl Contract {
         for (asset, balance) in map.iter() {
             let price = self.get_price(asset.clone()).unwrap();
             result += Percentage::from(Percent::from(price.volatility))
-                .apply_to(Balance::from(price.value) * balance / Balance::from(10u128.pow(price.fraction_digits)));
+                .apply_to(Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits));
         }
 
-        return result;
+        result
     }
 
     fn get_account_sum_per_action(&self, user_account: AccountId, action: ActionType) -> Balance {
@@ -20,7 +20,7 @@ impl Contract {
             ActionType::Borrow => self.user_profiles.get(&user_account).unwrap_or_default().account_borrows,
         };
 
-        return self.get_price_sum(&map_raw);
+        self.get_price_sum(&map_raw)
     }
 }
 
@@ -29,13 +29,13 @@ impl Contract{
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
         let mut ratio = RATIO_DECIMALS;
         let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
-        let borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
+        let borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
 
         if borrows != 0 {
             ratio = collaterals * RATIO_DECIMALS / borrows;
         }
 
-        return ratio;
+        ratio
     }
 }
 
@@ -76,7 +76,7 @@ mod tests {
 
         let token_address: AccountId = AccountId::new_unchecked("near".to_string());
 
-        return (controller_contract, token_address, user_account);
+        (controller_contract, token_address, user_account)
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod tests {
         );
 
         assert_eq!(
-            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_health_factor(user_account),
             (100 * RATIO_DECIMALS / 100),
             "Health factor calculation has been failed"
         );

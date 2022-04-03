@@ -39,16 +39,16 @@ pub struct Market {
 impl Contract {
 
     pub fn view_total_borrows(&self, user_id: AccountId) -> Balance {
-        return self.get_total_borrows(user_id).into();
+        self.get_total_borrows(user_id).into()
     }
 
     pub fn view_total_supplies(&self, user_id: AccountId) -> Balance {
-        return self.get_total_supplies(user_id).into();
+        self.get_total_supplies(user_id).into()
     }
 
     pub fn view_markets(&self) -> Vec<Market>  {
         return self.markets.iter().map(|(asset_id, dtoken)| {
-            return Market {
+            Market {
                 asset_id,
                 dtoken
             }
@@ -60,7 +60,7 @@ impl Contract {
             let total_borrows = self.get_total_borrows(user_id.clone());
             let total_supplies = self.get_total_supplies(user_id.clone());
             let health_factor = self.get_health_factor(user_id.clone());
-            return AccountData {
+            AccountData {
                 account_id: user_id.clone(),
                 total_borrows: total_borrows.into(),
                 total_supplies: total_supplies.into(),
@@ -71,7 +71,7 @@ impl Contract {
     }
 
     pub fn view_prices(&self, assets: Vec<AccountId>) -> HashMap<AccountId, Price> {
-        return self.get_prices_for_assets(assets);
+        self.get_prices_for_assets(assets)
     }
 
 }
@@ -94,7 +94,7 @@ mod tests {
 
         testing_env!(context);
 
-        return (controller_contract, alice());
+        (controller_contract, alice())
     }
 
     #[test]

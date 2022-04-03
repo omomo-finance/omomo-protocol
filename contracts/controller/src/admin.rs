@@ -18,7 +18,7 @@ pub enum MethodType {
 #[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
-        return self.admin.clone();
+        self.admin.clone()
     }
 
     pub fn set_admin(&mut self, account: AccountId) {
@@ -124,7 +124,7 @@ mod tests {
 
         let token_address: AccountId = "near".parse().unwrap();
 
-        return (near_contract, token_address, user_account);
+        (near_contract, token_address, user_account)
     }
 
     #[test]

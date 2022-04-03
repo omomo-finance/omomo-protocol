@@ -48,7 +48,7 @@ impl Contract {
         );
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
 
-        return controller::make_borrow(
+        controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
@@ -58,7 +58,7 @@ impl Contract {
         )
         .then(ext_self::make_borrow_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(60),
         ))
@@ -86,7 +86,7 @@ impl Contract {
         )
         .then(ext_self::borrow_ft_transfer_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(25),
         ))
@@ -99,7 +99,7 @@ impl Contract {
             self.increase_borrows(env::signer_account_id(), token_amount);
             self.mutex_account_unlock();
             log!("{}", Events::BorrowSuccess(env::signer_account_id(), Balance::from(token_amount)));
-            return PromiseOrValue::Value(token_amount);
+            PromiseOrValue::Value(token_amount)
         } else {
             controller::decrease_borrows(
                 env::signer_account_id(),
@@ -111,7 +111,7 @@ impl Contract {
             )
             .then(ext_self::controller_decrease_borrows_fail(
                 token_amount,
-                env::current_account_id().clone(),
+                env::current_account_id(),
                 NO_DEPOSIT,
                 self.terra_gas(2),
             ))
@@ -135,14 +135,14 @@ impl Contract {
         let borrows = self.get_account_borrows(account.clone());
         let new_borrows = borrows - Balance::from(token_amount);
 
-        return self.set_account_borrows(account.clone(), U128(new_borrows));
+        self.set_account_borrows(account, U128(new_borrows))
     }
 
     pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let borrows: Balance = self.get_account_borrows(account.clone());
         let new_borrows = borrows + Balance::from(token_amount);
 
-        return self.set_account_borrows(account.clone(), U128(new_borrows));
+        self.set_account_borrows(account, U128(new_borrows))
     }
 
     pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
@@ -154,6 +154,6 @@ impl Contract {
     }
 
     pub fn get_account_borrows(&self, account: AccountId) -> Balance {
-        return self.user_profiles.get(&account).unwrap_or_default().borrows;
+        self.user_profiles.get(&account).unwrap_or_default().borrows
     }
 }

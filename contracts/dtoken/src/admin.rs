@@ -4,7 +4,7 @@ use crate::Contract;
 
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
-        return self.admin.clone();
+        self.admin.clone()
     }
 
     pub fn set_admin(&mut self, account: AccountId) {

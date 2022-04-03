@@ -20,7 +20,7 @@ impl Contract {
         let multiplier_per_block = self.model.get_multiplier_per_block();
         let base_rate_per_block =self.model.get_base_rate_per_block();
         let jump_multiplier_per_block = self.model.get_jump_multiplier_per_block();
-        return min(util, kink) * multiplier_per_block / RATIO_DECIMALS + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block / RATIO_DECIMALS + base_rate_per_block        
+        min(util, kink) * multiplier_per_block / RATIO_DECIMALS + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block / RATIO_DECIMALS + base_rate_per_block        
     }
 
     fn get_util(&self, underlying_balance: WBalance, total_borrows: WBalance, total_reserves:WBalance) -> Ratio {
@@ -29,7 +29,7 @@ impl Contract {
         let denominator = sum_balance_borrows.unwrap().checked_sub(Balance::from(total_reserves));
         assert!(denominator.is_some(), "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
         assert_ne!(denominator.unwrap(), 0, "Cannot calculate utilization rate as denominator is equal 0");
-        return Balance::from(total_borrows) * RATIO_DECIMALS / denominator.unwrap();
+        Balance::from(total_borrows) * RATIO_DECIMALS / denominator.unwrap()
     }
 }
 
@@ -45,12 +45,12 @@ mod tests {
     
         let contract = Contract::new(Config { 
             initial_exchange_rate: U128(10000), 
-            underlying_token_id: underlying_token_account.clone() ,
-            owner_id: user_account.clone(), 
-            controller_account_id: controller_account.clone(), 
+            underlying_token_id: underlying_token_account ,
+            owner_id: user_account, 
+            controller_account_id: controller_account, 
         });
     
-        return contract;
+        contract
     }
 
     #[test]

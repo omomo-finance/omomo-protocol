@@ -23,27 +23,27 @@ impl ActionMutex {
     pub fn lock(&mut self, account_id: &AccountId) {
         let block_height = block_height();
         log!("Lock account: {}", account_id);
-        self.blocked_accounts.insert(&account_id, &block_height);
+        self.blocked_accounts.insert(account_id, &block_height);
     }
 
     pub fn unlock(&mut self, account_id: &AccountId) {
         log!("Unlock operation for account: {}", account_id);
-        self.blocked_accounts.remove(&account_id);
+        self.blocked_accounts.remove(account_id);
     }
 
     pub fn get_last_block_index(&self, account_id: &AccountId) -> BlockHeight {
-        self.blocked_accounts.get(&account_id).unwrap_or(0)
+        self.blocked_accounts.get(account_id).unwrap_or(0)
     }
 
     pub fn try_lock(&mut self, account_id: &AccountId) -> bool {
         log!("Try lock account: {}", account_id);
         let mut is_locked: bool = true;
         let current_block_height = block_height();
-        let blocked_index = self.get_last_block_index(&account_id);
+        let blocked_index = self.get_last_block_index(account_id);
         if blocked_index > 0 && current_block_height - blocked_index <= BLOCKS_TO_NEXT_OPERATION {
             is_locked = false;
         } else {
-            self.blocked_accounts.insert(&account_id, &current_block_height);
+            self.blocked_accounts.insert(account_id, &current_block_height);
         }
         is_locked
     }
@@ -52,7 +52,7 @@ impl ActionMutex {
         log!("Account: {}  can do action", account_id);
         let mut access: bool = false;
         let current_block_height = block_height();
-        let blocked_index = self.get_last_block_index(&account_id);
+        let blocked_index = self.get_last_block_index(account_id);
         if current_block_height - blocked_index >= BLOCKS_TO_NEXT_OPERATION {
             if blocked_index > 0 {
                 self.unlock(account_id);

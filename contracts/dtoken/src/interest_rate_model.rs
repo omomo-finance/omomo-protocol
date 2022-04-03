@@ -14,23 +14,23 @@ pub struct InterestRateModel {
 #[near_bindgen]
 impl InterestRateModel{
     pub fn get_kink(&self) -> Ratio{
-        return self.kink; 
+        self.kink 
     }
 
     pub fn get_multiplier_per_block(&self) -> Ratio{
-        return self.multiplier_per_block;
+        self.multiplier_per_block
     }
 
     pub fn get_base_rate_per_block(&self) -> Ratio{
-        return self.base_rate_per_block;
+        self.base_rate_per_block
     }
 
     pub fn get_jump_multiplier_per_block(&self) -> Ratio{
-        return self.jump_multiplier_per_block;
+        self.jump_multiplier_per_block
     }
 
     pub fn get_reserve_factor(&self) -> Ratio{
-        return self.reserve_factor;
+        self.reserve_factor
     }
 
     #[private]

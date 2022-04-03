@@ -148,10 +148,10 @@ impl Contract {
     pub fn new_with_config(owner_id: AccountId, underlying_token_id: AccountId, controller_account_id: AccountId, initial_exchange_rate: U128) -> Self {
         Self::new(
             Config {
-                owner_id: owner_id,
-                underlying_token_id: underlying_token_id,
-                controller_account_id: controller_account_id,
-                initial_exchange_rate: initial_exchange_rate,
+                owner_id,
+                underlying_token_id,
+                controller_account_id,
+                initial_exchange_rate,
             }
         )
     }
@@ -162,7 +162,7 @@ impl Contract {
         require!(!env::state_exists(), "Already initialized");
 
         Self {
-            initial_exchange_rate: Balance::from(config.initial_exchange_rate.clone()),
+            initial_exchange_rate: Balance::from(config.initial_exchange_rate),
             total_reserves: 0,
             user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             underlying_token: config.underlying_token_id.clone(),

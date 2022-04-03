@@ -16,7 +16,7 @@ impl Contract {
         )
         .then(ext_self::repay_balance_of_callback(
             token_amount,
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(40),
         ))
@@ -70,7 +70,7 @@ impl Contract {
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
             U128(borrow_with_rate_amount),
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(5),
         ))

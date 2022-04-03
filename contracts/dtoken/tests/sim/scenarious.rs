@@ -99,7 +99,7 @@ fn initialize_controller(root: &UserAccount) -> (UserAccount, ContractAccount<co
         croot,
         controller.new(
             cConfig{
-                owner_id: croot.account_id().clone(), 
+                owner_id: croot.account_id(), 
                 oracle_account_id: "oracle".parse().unwrap()
             }),
         deposit = 0
@@ -120,7 +120,7 @@ fn initialize_dtoken(root: &UserAccount, utoken_account: AccountId, controller_a
             dConfig{
                 initial_exchange_rate: U128(10000), 
                 underlying_token_id: utoken_account ,
-                owner_id: droot.account_id().clone(), 
+                owner_id: droot.account_id(), 
                 controller_account_id: controller_account,
             }),
         deposit = 0
@@ -152,7 +152,7 @@ fn initialize_two_dtokens(
         dtoken1.new(dConfig {
             initial_exchange_rate: U128(10000),
             underlying_token_id: utoken_account1,
-            owner_id: droot.account_id().clone(),
+            owner_id: droot.account_id(),
             controller_account_id: controller_account.clone(),
         }),
         deposit = 0
@@ -164,8 +164,8 @@ fn initialize_two_dtokens(
         dtoken2.new(dConfig {
             initial_exchange_rate: U128(10000),
             underlying_token_id: utoken_account2,
-            owner_id: droot.account_id().clone(),
-            controller_account_id: controller_account.clone(),
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account,
         }),
         deposit = 0
     )
@@ -281,7 +281,7 @@ fn withdraw_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcc
         utoken.ft_transfer(
             dtoken.account_id(), 
             U128(20), 
-            Some(format!("Supply with token_amount 20"))),
+            Some("Supply with token_amount 20".to_string())),
         1,
         100000000000000
     );
@@ -328,7 +328,7 @@ fn withdraw_less_dtoken_fixture() -> (ContractAccount<dtoken::ContractContract>,
         utoken.ft_transfer(
             dtoken.account_id(), 
             U128(10), 
-            Some(format!("Supply with token_amount 10"))),
+            Some("Supply with token_amount 10".to_string())),
         1,
         100000000000000
     );
@@ -990,13 +990,13 @@ fn scenario_liquidation_success() {
 
     call!(
         user2,
-        utoken1.ft_transfer_call(dtoken1.account_id(), U128(10), None, action.to_string()),
+        utoken1.ft_transfer_call(dtoken1.account_id(), U128(10), None, action),
         deposit = 1
     );
 
-    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+    let _user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
 
-    let user_balance: u128 = view_balance(&controller, Supply, user2.account_id(), dtoken2.account_id());
+    let _user_balance: u128 = view_balance(&controller, Supply, user2.account_id(), dtoken2.account_id());
 
     // NEAR tests doesn't work with liquidation due some issues
     //assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
@@ -1042,13 +1042,13 @@ fn scenario_liquidation_success_on_single_dtoken()
         deposit = 1
     );
 
-    let user_borrows: u128 = view!(
+    let _user_borrows: u128 = view!(
         dtoken.get_account_borrows(
             user.account_id()
         )
     ).unwrap_json();
 
-    let user_balance: u128 = view!(
+    let _user_balance: u128 = view!(
         dtoken.get_account_borrows(
            AccountId::new_unchecked("test.testnet".to_string())
         )
@@ -1085,7 +1085,7 @@ fn scenario_liquidation_failed_no_collateral()
         deposit = 1
     ).assert_success();
 
-    let user_borrows: u128 = view!(
+    let _user_borrows: u128 = view!(
         dtoken.get_account_borrows(
             user.account_id()
         )
@@ -1132,7 +1132,7 @@ fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate()
         deposit = 1
     ).assert_success();
 
-    let user_borrows: u128 = view!(
+    let _user_borrows: u128 = view!(
         dtoken.get_account_borrows(
             user.account_id()
         )
@@ -1179,7 +1179,7 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token()
         deposit = 1
     ).assert_success();
 
-    let user_borrows: u128 = view!(
+    let _user_borrows: u128 = view!(
         dtoken.get_account_borrows(
             user.account_id()
         )

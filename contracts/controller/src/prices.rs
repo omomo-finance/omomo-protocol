@@ -16,11 +16,11 @@ impl Contract {
 
             }
         }
-        return result;
+        result
     }
 
     pub fn get_price(&self, asset_id: AccountId) -> Option<Price> {
-        return self.prices.get(&asset_id);
+        self.prices.get(&asset_id)
     }
 
 }
@@ -32,7 +32,7 @@ impl Contract {
     #[private]
     pub fn upsert_price(&mut self, price: &Price) {
         // Update & insert operation
-        self.prices.insert(&price.asset_id, &price);
+        self.prices.insert(&price.asset_id, price);
     }
 
 }
@@ -53,7 +53,7 @@ mod tests {
 
         let token_address: AccountId = "near".parse().unwrap();
 
-        return (eth_contract, token_address, user_account);
+        (eth_contract, token_address, user_account)
     }
 
     use super::*;
