@@ -1,4 +1,4 @@
-name: master nearlend-protocol deploy automatically
+name: nearlend-protocol test automatically
 
 on:
   push:
@@ -6,17 +6,37 @@ on:
   pull_request:
   workflow_dispatch:
 
-concurrency: nearlend
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: master
+      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      # cache for dependencies
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git
+            ~/.cargo/.crates.toml
+            ~/.cargo/.crates2.json
+            contracts/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/contracts/Cargo.lock') }}
+      # linter checks
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args:  --manifest-path ./contracts/Cargo.toml --all -- --check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args:  --manifest-path ./contracts/Cargo.toml -- -A clippy::too-many-arguments -D warnings
+
       - run: ./build.sh
       - run: ./test.sh
