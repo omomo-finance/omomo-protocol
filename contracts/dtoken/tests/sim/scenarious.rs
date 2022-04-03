@@ -544,14 +544,7 @@ fn borrow_fixture() -> (
 
     call!(
         uroot,
-        utoken.mint(dtoken.account_id(), U128(15)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot,
-        utoken.mint(dtoken.account_id(), U128(5)),
+        utoken.mint(dtoken.account_id(), U128(20)),
         0,
         100000000000000
     );
@@ -563,10 +556,7 @@ fn borrow_fixture() -> (
         100000000000000
     );
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         d_user,
@@ -574,7 +564,7 @@ fn borrow_fixture() -> (
             dtoken.account_id(),
             U128(30),
             Some("SUPPLY".to_string()),
-            String::from(json)
+            action
         ),
         deposit = 1
     )
@@ -626,13 +616,16 @@ fn scenario_supply_error_command() {
 #[test]
 fn scenario_supply_zero_tokens() {
     let (dtoken, _controller, utoken, user, _) = base_fixture();
+
+    let action = "\"Supply\"".to_string();
+
     let result = call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(0),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            action
         ),
         deposit = 1
     );
@@ -643,14 +636,11 @@ fn scenario_supply_zero_tokens() {
 fn scenario_supply_error_contract() {
     let (dtoken, _controller, _utoken, user, _) = base_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     let result = call!(
         user,
-        dtoken.ft_on_transfer(user.account_id(), U128(20), String::from(json)),
+        dtoken.ft_on_transfer(user.account_id(), U128(20), action),
         deposit = 0
     );
 
@@ -660,13 +650,16 @@ fn scenario_supply_error_contract() {
 #[test]
 fn scenario_supply_not_enough_balance() {
     let (dtoken, _controller, utoken, user, _) = base_fixture();
+
+    let action = "\"Supply\"".to_string();
+
     let result = call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(50),
             Some("SUPPLY".to_string()),
-            "SUPPLY".to_string()
+            action
         ),
         deposit = 1
     );
@@ -677,10 +670,7 @@ fn scenario_supply_not_enough_balance() {
 fn scenario_supply() {
     let (dtoken, controller, utoken, user, _) = base2_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
@@ -688,7 +678,7 @@ fn scenario_supply() {
             dtoken.account_id(),
             U128(20),
             Some("SUPPLY".to_string()),
-            String::from(json)
+            action
         ),
         deposit = 1
     )
@@ -756,10 +746,7 @@ fn scenario_withdraw_less_same() {
 fn scenario_withdraw() {
     let (dtoken, controller, utoken, user, _) = base2_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
@@ -767,7 +754,7 @@ fn scenario_withdraw() {
             dtoken.account_id(),
             U128(20),
             Some("SUPPLY".to_string()),
-            String::from(json)
+            action
         ),
         deposit = 1
     )
@@ -804,13 +791,15 @@ fn scenario_withdraw_error_transfer() {
 fn scenario_repay_no_borrow() {
     let (dtoken, _controller, utoken, user, _) = base_fixture();
 
+    let action = "\"Repay\"".to_string();
+
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(20),
             Some("REPAY".to_string()),
-            "REPAY".to_string()
+            action
         ),
         deposit = 1
     )
@@ -828,17 +817,7 @@ fn scenario_repay_no_borrow() {
 fn scenario_repay() {
     let (dtoken, controller, utoken, user) = repay_fixture();
 
-    let json = r#"
-       {
-          "action":"REPAY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
-       }"#;
+    let action = "\"Repay\"".to_string();
 
     call!(
         user,
@@ -846,7 +825,7 @@ fn scenario_repay() {
             dtoken.account_id(),
             U128(277),
             Some("REPAY".to_string()),
-            String::from(json)
+            action
         ),
         deposit = 1
     )
@@ -871,17 +850,7 @@ fn scenario_repay() {
 fn scenario_repay_more_than_borrow() {
     let (dtoken, controller, utoken, user) = repay_fixture();
 
-    let json = r#"
-       {
-          "action":"REPAY",
-          "memo":{
-             "borrower":"123",
-             "borrowing_dtoken":"123",
-             "liquidator":"123",
-             "collateral_dtoken":"123",
-             "liquidation_amount":"123"
-          }
-       }"#;
+    let action = "\"Repay\"".to_string();
 
     call!(
         user,
@@ -889,7 +858,7 @@ fn scenario_repay_more_than_borrow() {
             dtoken.account_id(),
             U128(300),
             Some("REPAY".to_string()),
-            String::from(json)
+            action
         ),
         deposit = 1
     )
@@ -977,11 +946,7 @@ fn supply_borrow_repay_withdraw() {
     // initial dtoken_balance = 100; user_balance = 300;
     let (dtoken, controller, utoken, user, _) = base2_fixture();
 
-    let supply_json = r#"
-       {
-          "action":"SUPPLY",
-          "memo":{}
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
@@ -989,7 +954,7 @@ fn supply_borrow_repay_withdraw() {
             dtoken.account_id(),
             U128(15),
             Some("SUPPLY".to_string()),
-            String::from(supply_json)
+            action
         ),
         deposit = 1
     )
@@ -1028,11 +993,7 @@ fn supply_borrow_repay_withdraw() {
         "Dtoken balance should be 50"
     );
 
-    let json_repay = r#"
-       {
-          "action":"REPAY",
-          "memo":{}
-       }"#;
+    let action = "\"Repay\"".to_string();
 
     call!(
         user,
@@ -1040,7 +1001,7 @@ fn supply_borrow_repay_withdraw() {
             dtoken.account_id(),
             U128(60),
             Some("REPAY".to_string()),
-            String::from(json_repay)
+            action
         ),
         deposit = 1
     );
@@ -1093,31 +1054,28 @@ fn supply_borrow_repay_withdraw() {
 fn scenario_liquidation_success() {
     let (dtoken1, dtoken2, controller, utoken1, utoken2, user1, user2) = liquidation_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user1,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(10), None, String::from(json)),
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(10), None, action),
         deposit = 1
     );
 
-    let json = json!({
-        "action": "LIQUIDATION",
-        "memo": {
+    let action = json!({
+        "Liquidate":{
             "borrower": user1.account_id.as_str(),
             "borrowing_dtoken": dtoken1.account_id().as_str(),
             "liquidator": user2.account_id.as_str(),
             "collateral_dtoken": dtoken2.account_id().as_str(),
             "liquidation_amount": U128(5)
         }
-    });
+    })
+    .to_string();
 
     call!(
         user2,
-        utoken1.ft_transfer_call(dtoken1.account_id(), U128(10), None, json.to_string()),
+        utoken1.ft_transfer_call(dtoken1.account_id(), U128(10), None, action),
         deposit = 1
     );
 
@@ -1139,31 +1097,28 @@ fn scenario_liquidation_success() {
 fn scenario_liquidation_success_on_single_dtoken() {
     let (dtoken, _controller, utoken, user) = repay_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, String::from(json)),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
         deposit = 1
     );
 
-    let json = json!({
-        "action": "LIQUIDATION",
-        "memo": {
+    let action = json!({
+        "Liquidate":{
             "borrower": user.account_id.as_str(),
             "borrowing_dtoken": dtoken.account_id().as_str(),
             "liquidator": "test.testnet",
             "collateral_dtoken": dtoken.account_id().as_str(),
             "liquidation_amount": U128(10)
         }
-    });
+    })
+    .to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, json.to_string()),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
         deposit = 1
     );
 
@@ -1182,20 +1137,20 @@ fn scenario_liquidation_success_on_single_dtoken() {
 fn scenario_liquidation_failed_no_collateral() {
     let (dtoken, _controller, utoken, user) = repay_fixture();
 
-    let json = json!({
-        "action": "LIQUIDATION",
-        "memo": {
+    let action = json!({
+        "Liquidate":{
             "borrower": user.account_id.as_str(),
             "borrowing_dtoken": dtoken.account_id().as_str(),
             "liquidator": "test.testnet",
             "collateral_dtoken": dtoken.account_id().as_str(),
             "liquidation_amount": U128(5)
         }
-    });
+    })
+    .to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, json.to_string()),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
         deposit = 1
     )
     .assert_success();
@@ -1208,31 +1163,28 @@ fn scenario_liquidation_failed_no_collateral() {
 fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
     let (dtoken, _controller, utoken, user) = repay_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, String::from(json)),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
         deposit = 1
     );
 
-    let json = json!({
-        "action": "LIQUIDATION",
-        "memo": {
+    let action = json!({
+        "Liquidate":{
             "borrower": user.account_id.as_str(),
             "borrowing_dtoken": dtoken.account_id().as_str(),
             "liquidator": "test.testnet",
             "collateral_dtoken": dtoken.account_id().as_str(),
             "liquidation_amount": U128(3)
         }
-    });
+    })
+    .to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(3), None, json.to_string()),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(3), None, action),
         deposit = 1
     )
     .assert_success();
@@ -1245,31 +1197,28 @@ fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
 fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
     let (dtoken, _controller, utoken, user) = repay_fixture();
 
-    let json = r#"
-       {
-          "action":"SUPPLY"
-       }"#;
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, String::from(json)),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
         deposit = 1
     );
 
-    let json = json!({
-        "action": "LIQUIDATION",
-        "memo": {
+    let action = json!({
+        "Liquidate":{
             "borrower": user.account_id.as_str(),
             "borrowing_dtoken": "test.testnet",
             "liquidator": "test.testnet",
             "collateral_dtoken": dtoken.account_id().as_str(),
             "liquidation_amount": U128(5)
         }
-    });
+    })
+    .to_string();
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, json.to_string()),
+        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
         deposit = 1
     )
     .assert_success();

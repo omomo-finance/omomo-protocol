@@ -26,6 +26,21 @@ pub enum Events {
     LiquidationFailed(AccountId, AccountId, Balance),
 }
 
+#[derive(Deserialize)]
+#[cfg_attr(not(target_arch = "wasm32"), derive(Debug, Serialize))]
+#[serde(crate = "near_sdk::serde")]
+pub enum Actions {
+    Supply,
+    Repay,
+    Liquidate {
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        liquidator: AccountId,
+        collateral_dtoken: AccountId,
+        liquidation_amount: WBalance,
+    },
+}
+
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
         let config: Config = self.get_contract_config();
