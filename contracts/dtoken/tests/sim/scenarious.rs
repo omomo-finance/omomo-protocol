@@ -424,22 +424,14 @@ fn repay_fixture() -> (
 
     call!(
         user,
-        dtoken.increase_borrows(user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+        dtoken.borrow(
+            U128(5)
+        ),
+        deposit = 0
+    ).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
@@ -499,11 +491,11 @@ fn liquidation_fixture() -> (
 
     call!(
         d_user1,
-        dtoken1.increase_borrows(d_user1.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+        dtoken1.borrow(
+            U128(5)
+        ),
+        deposit = 0
+    ).assert_success();
 
     let user_balance: u128 = view!(dtoken1.get_account_borrows(d_user1.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
@@ -834,8 +826,8 @@ fn scenario_repay() {
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        23.to_string(),
-        "After repay of 277 tokens (borrow was 5), balance should be 23"
+        248.to_string(),
+        "After repay of 277 tokens (borrow was 5), balance should be 248"
     );
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
@@ -867,8 +859,8 @@ fn scenario_repay_more_than_borrow() {
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        23.to_string(),
-        "As it was borrowed 10 tokens and repayed 13 tokens (rate 1.3333), balance should be 7"
+        248.to_string(),
+        "As it was borrowed 5 tokens and repayed 300 tokens , balance should be 248"
     );
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
