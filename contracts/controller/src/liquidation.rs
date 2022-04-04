@@ -14,8 +14,8 @@ impl Contract {
         // TODO: Add check that this function was called by real Dtoken that we store somewhere in self.markets
 
         let res = self.is_liquidation_allowed(
-            borrower.clone(),
-            borrowing_dtoken.clone(),
+            borrower,
+            borrowing_dtoken,
             _liquidator,
             collateral_dtoken,
             liquidation_amount,
@@ -34,29 +34,23 @@ impl Contract {
         amount_for_liquidation: WBalance,
     ) -> Result<WBalance, String> {
         if self.get_health_factor(borrower.clone()) > self.get_health_factor_threshold() {
-            return Err(String::from(
+            Err(String::from(
                 "User can't be liquidated as he has normal value of health factor",
-            ));
+            ))
         } else {
             if liquidator == borrower {
                 return Err(String::from("Liquidation cannot liquidate his on borrow"));
             }
 
-            let borrow_amount = self.get_entity_by_token(
-                ActionType::Borrow,
-                borrower.clone(),
-                borrowing_dtoken.clone(),
-            );
+            let borrow_amount =
+                self.get_entity_by_token(ActionType::Borrow, borrower.clone(), borrowing_dtoken);
 
             if borrow_amount > amount_for_liquidation.0 {
                 return Err(String::from("Borrow bigger than liquidation amount"));
             }
 
-            let balance_of_borrower_collateral = self.get_entity_by_token(
-                ActionType::Supply,
-                borrower.clone(),
-                collateral_dtoken.clone(),
-            );
+            let balance_of_borrower_collateral =
+                self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken);
 
             if balance_of_borrower_collateral < amount_for_liquidation.0 {
                 return Err(String::from("Borrower collateral balance is too low"));
@@ -76,29 +70,29 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         // TODO: Add check that only real Dtoken address can call this
         if !is_promise_success() {
-            self.increase_borrows(borrower.clone(), _borrowing_dtoken, liquidation_amount);
+            self.increase_borrows(borrower, _borrowing_dtoken, liquidation_amount);
             log!("Liquidation failed on borrow_repay call, revert changes...");
             PromiseOrValue::Value(U128(liquidation_amount.0))
         } else {
             self.decrease_supplies(
                 borrower.clone(),
                 collateral_dtoken.clone(),
-                liquidation_amount.clone(),
+                liquidation_amount,
             );
 
             self.increase_supplies(
                 liquidator.clone(),
                 collateral_dtoken.clone(),
-                liquidation_amount.clone(),
+                liquidation_amount,
             );
 
             dtoken::swap_supplies(
-                borrower.clone(),
-                liquidator.clone(),
-                liquidation_amount.clone(),
-                collateral_dtoken.clone(),
+                borrower,
+                liquidator,
+                liquidation_amount,
+                collateral_dtoken,
                 NO_DEPOSIT,
-                near_sdk::Gas::ONE_TERA * 8 as u64,
+                near_sdk::Gas::ONE_TERA * 8_u64,
             )
             .into()
         }
