@@ -1,6 +1,6 @@
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, near_bindgen, ext_contract, require};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
+use near_sdk::{env, ext_contract, near_bindgen, require, AccountId, Balance, BorshStorageKey};
 
 #[allow(unused_imports)]
 use near_sdk::json_types::U128;
@@ -11,21 +11,22 @@ use general::*;
 
 pub use crate::borrows_supplies::*;
 pub use crate::config::*;
+pub use crate::liquidation::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
-pub use crate::liquidation::*;
 pub use crate::user_profile::*;
+pub use crate::views::*;
 
+mod admin;
+pub mod borrows_supplies;
 #[allow(unused_imports)]
 mod config;
+mod healthfactor;
+mod liquidation;
 mod oraclehook;
 mod prices;
-pub mod borrows_supplies;
 pub mod repay;
-mod healthfactor;
-mod admin;
-mod liquidation;
 pub mod user_profile;
 mod views;
 
@@ -42,14 +43,15 @@ pub enum StorageKeys {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    /// Market name [Underlying asset name] -> Dtoken contract address
-    pub markets: UnorderedMap<AccountId, AccountId>,
+    /// Utoken Id [Underlying asset name] -> Dtoken address
+    /// Utoken Id [Underlying asset name] -> Ticker Id
+    pub markets: UnorderedMap<AccountId, MarketProfile>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
     /// User Account ID -> Dtoken address -> Borrow balance
     user_profiles: LookupMap<AccountId, UserProfile>,
 
-    /// Asset ID -> Price value
+    /// Dtoken ID -> Price
     pub prices: LookupMap<AccountId, Price>,
 
     /// Contract configuration object
@@ -69,7 +71,6 @@ pub struct Contract {
 
     /// Reserve Factor
     pub reserve_factor: Percent,
-
 }
 
 impl Default for Contract {
@@ -88,6 +89,15 @@ pub struct PriceJsonList {
     pub price_list: Vec<Price>,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MarketProfile {
+    /// Dtoken address
+    pub dtoken: AccountId,
+
+    /// Ticker name
+    pub ticker_id: String,
+}
 
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -118,12 +128,10 @@ impl Contract {
     /// Initializes the contract with the given config. Needs to be called once.
     #[init]
     pub fn new_with_config(owner_id: AccountId, oracle_account_id: AccountId) -> Self {
-        Self::new(
-            Config{
-                owner_id: owner_id,
-                oracle_account_id: oracle_account_id
-            }
-        )
+        Self::new(Config {
+            owner_id,
+            oracle_account_id,
+        })
     }
 
     /// Initializes the contract with the given config. Needs to be called once.

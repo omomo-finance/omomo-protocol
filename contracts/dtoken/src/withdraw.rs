@@ -4,9 +4,11 @@ const GAS_FOR_WITHDRAW: Gas = Gas(130_000_000_000_000);
 
 #[near_bindgen]
 impl Contract {
-
-    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> { 
-        require!(env::prepaid_gas() >= GAS_FOR_WITHDRAW, "Prepaid gas is not enough for withdraw flow");
+    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+        require!(
+            env::prepaid_gas() >= GAS_FOR_WITHDRAW,
+            "Prepaid gas is not enough for withdraw flow"
+        );
         self.mutex_account_lock(String::from("withdraw"));
 
         underlying_token::ft_balance_of(
@@ -17,7 +19,7 @@ impl Contract {
         )
         .then(ext_self::withdraw_balance_of_callback(
             Balance::from(dtoken_amount),
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(100),
         ))
@@ -30,7 +32,15 @@ impl Contract {
         dtoken_amount: Balance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!("{}", Events::WithdrawFailedToGetUnderlyingBalance(env::signer_account_id(), Balance::from(dtoken_amount), self.get_contract_address(), self.get_underlying_contract_address()));
+            log!(
+                "{}",
+                Events::WithdrawFailedToGetUnderlyingBalance(
+                    env::signer_account_id(),
+                    dtoken_amount,
+                    self.get_contract_address(),
+                    self.get_underlying_contract_address()
+                )
+            );
             self.mutex_account_unlock();
             return PromiseOrValue::Value(WBalance::from(dtoken_amount));
         }
@@ -53,11 +63,11 @@ impl Contract {
         let accrued_supply_interest = self.model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
-            self.get_accrued_supply_interest(env::signer_account_id())
+            self.get_accrued_supply_interest(env::signer_account_id()),
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
-        let token_amount: Balance = Balance::from(dtoken_amount) * RATIO_DECIMALS / exchange_rate;
+        let token_amount: Balance = dtoken_amount * RATIO_DECIMALS / exchange_rate;
 
         controller::withdraw_supplies(
             env::signer_account_id(),
@@ -71,7 +81,7 @@ impl Contract {
             env::signer_account_id(),
             token_amount.into(),
             dtoken_amount.into(),
-            env::current_account_id().clone(),
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(70),
         ))
@@ -86,9 +96,16 @@ impl Contract {
         dtoken_amount: WBalance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            log!("{}", Events::WithdrawFailedToDecreaseSupplyOnController(env::signer_account_id(), Balance::from(dtoken_amount), self.get_contract_address()));
+            log!(
+                "{}",
+                Events::WithdrawFailedToDecreaseSupplyOnController(
+                    env::signer_account_id(),
+                    Balance::from(dtoken_amount),
+                    self.get_contract_address()
+                )
+            );
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(WBalance::from(dtoken_amount));
+            return PromiseOrValue::Value(dtoken_amount);
         }
 
         // Cross-contract call to market token
@@ -104,9 +121,9 @@ impl Contract {
             self.terra_gas(10),
         )
         .then(ext_self::withdraw_ft_transfer_call_callback(
-            token_amount.into(),
-            dtoken_amount.into(),
-            env::current_account_id().clone(),
+            token_amount,
+            dtoken_amount,
+            env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(40),
         ))
@@ -122,8 +139,11 @@ impl Contract {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
             self.mutex_account_unlock();
-            log!("{}", Events::WithdrawSuccess(env::signer_account_id(), Balance::from(dtoken_amount)));
-            return PromiseOrValue::Value(dtoken_amount);
+            log!(
+                "{}",
+                Events::WithdrawSuccess(env::signer_account_id(), Balance::from(dtoken_amount))
+            );
+            PromiseOrValue::Value(dtoken_amount)
         } else {
             controller::increase_supplies(
                 env::signer_account_id(),
@@ -135,7 +155,7 @@ impl Contract {
             )
             .then(ext_self::withdraw_increase_supplies_callback(
                 token_amount,
-                env::current_account_id().clone(),
+                env::current_account_id(),
                 NO_DEPOSIT,
                 self.terra_gas(5),
             ))
@@ -144,14 +164,26 @@ impl Contract {
     }
 
     #[private]
-    pub fn withdraw_increase_supplies_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>{
+    pub fn withdraw_increase_supplies_callback(
+        &mut self,
+        token_amount: WBalance,
+    ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             self.add_inconsistent_account(env::signer_account_id());
-            log!("{}", Events::WithdrawFailedToFallback(env::signer_account_id(), Balance::from(token_amount)));
+            log!(
+                "{}",
+                Events::WithdrawFailedToFallback(
+                    env::signer_account_id(),
+                    Balance::from(token_amount)
+                )
+            );
             return PromiseOrValue::Value(token_amount);
         }
         self.mutex_account_unlock();
-        log!("{}", Events::WithdrawFallbackSuccess(env::signer_account_id(), Balance::from(token_amount)));
-        return PromiseOrValue::Value(token_amount);
+        log!(
+            "{}",
+            Events::WithdrawFallbackSuccess(env::signer_account_id(), Balance::from(token_amount))
+        );
+        PromiseOrValue::Value(token_amount)
     }
 }
