@@ -161,7 +161,7 @@ trait InternalTokenInterface {
         amount: WBalance,
         borrow_amount: WBalance,
     ) -> PromiseOrValue<WBalance>;
-    fn controller_decrease_borrows_fail(
+    fn controller_decrease_borrows_fail_callback(
         &mut self,
         token_amount: WBalance,
     ) -> PromiseOrValue<WBalance>;

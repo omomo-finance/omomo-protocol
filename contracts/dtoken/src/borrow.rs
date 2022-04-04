@@ -137,7 +137,7 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-            .then(ext_self::controller_decrease_borrows_fail(
+            .then(ext_self::controller_decrease_borrows_fail_callback(
                 token_amount,
                 env::current_account_id(),
                 NO_DEPOSIT,
@@ -148,7 +148,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn controller_decrease_borrows_fail(&mut self, token_amount: WBalance) {
+    pub fn controller_decrease_borrows_fail_callback(&mut self, token_amount: WBalance) {
         if !is_promise_success() {
             self.add_inconsistent_account(env::signer_account_id());
             log!(
