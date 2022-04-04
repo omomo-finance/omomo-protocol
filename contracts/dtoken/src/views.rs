@@ -81,14 +81,14 @@ mod tests {
 
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),
-            underlying_token_id: underlying_token_account.clone(),
-            owner_id: user_account.clone(),
-            controller_account_id: controller_account.clone(),
+            underlying_token_id: underlying_token_account,
+            owner_id: user_account,
+            controller_account_id: controller_account,
         });
 
         contract.set_total_reserves(200);
 
-        return contract;
+        contract;
     }
 
     #[test]

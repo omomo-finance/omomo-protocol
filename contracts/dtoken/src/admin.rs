@@ -4,11 +4,14 @@ use crate::Contract;
 
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
-        return self.admin.clone();
+        self.admin.clone()
     }
 
     pub fn set_admin(&mut self, account: AccountId) {
-        require!(self.is_valid_admin_call(), "This functionality is allowed to be called by admin or contract only");
+        require!(
+            self.is_valid_admin_call(),
+            "This functionality is allowed to be called by admin or contract only"
+        );
         self.admin = account;
     }
 
