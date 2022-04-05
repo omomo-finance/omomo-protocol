@@ -144,12 +144,18 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.withdraw, "withdrawing is paused");
-        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
+        let existing_supplies =
+            self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         assert!(
             Balance::from(token_amount) <= existing_supplies,
             "Not enough existing supplies"
         );
-        self.get_potential_health_factor(account, token_address, Balance::from(token_amount), Supply) >= HEALTH_THRESHOLD
+        self.get_potential_health_factor(
+            account,
+            token_address,
+            Balance::from(token_amount),
+            Supply,
+        ) >= HEALTH_THRESHOLD
     }
 
     #[warn(dead_code)]
@@ -160,7 +166,12 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.borrow, "borrowing is paused");
-        self.get_potential_health_factor(account, token_address,Balance::from(token_amount), Borrow) >= HEALTH_THRESHOLD
+        self.get_potential_health_factor(
+            account,
+            token_address,
+            Balance::from(token_amount),
+            Borrow,
+        ) >= HEALTH_THRESHOLD
     }
 
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {

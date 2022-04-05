@@ -353,7 +353,6 @@ fn withdraw_fixture() -> (
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
 
-    
     call!(
         controller.user_account,
         controller.upsert_price(
