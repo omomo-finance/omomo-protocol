@@ -3,7 +3,7 @@ use near_sdk::require;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 use crate::*;
 
-const HEALTH_THRESHOLD: u128 = 15000;
+pub const HEALTH_THRESHOLD: u128 = 15000;
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -144,12 +144,12 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.withdraw, "withdrawing is paused");
-        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address);
+        let existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         assert!(
             Balance::from(token_amount) <= existing_supplies,
             "Not enough existing supplies"
         );
-        self.get_potential_health_factor(account, Balance::from(token_amount), Supply) > HEALTH_THRESHOLD
+        self.get_potential_health_factor(account, token_address, Balance::from(token_amount), Supply) >= HEALTH_THRESHOLD
     }
 
     #[warn(dead_code)]
@@ -160,13 +160,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.borrow, "borrowing is paused");
-        let _existing_borrows =
-            self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
-
-        let _existing_supplies = self.get_entity_by_token(Supply, account.clone(), token_address);
-
-        self.get_potential_health_factor(account, Balance::from(token_amount), Borrow) > HEALTH_THRESHOLD
-
+        self.get_potential_health_factor(account, token_address,Balance::from(token_amount), Borrow) >= HEALTH_THRESHOLD
     }
 
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
