@@ -69,11 +69,12 @@ mod tests {
     use crate::{Config, Contract};
 
     pub fn init_test_env() -> Contract {
-        let (user_account, underlying_token_account, controller_account) = (alice(), bob(), carol());
+        let (dtoken_account, underlying_token_account, controller_account) =
+            (alice(), bob(), carol());
 
-        let context =  VMContextBuilder::new()
-            .current_account_id(user_account.clone())
-            .signer_account_id(user_account.clone())
+        let context = VMContextBuilder::new()
+            .current_account_id(dtoken_account.clone())
+            .signer_account_id(dtoken_account.clone())
             .is_view(false)
             .build();
 
@@ -82,13 +83,13 @@ mod tests {
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),
             underlying_token_id: underlying_token_account,
-            owner_id: user_account,
+            owner_id: dtoken_account,
             controller_account_id: controller_account,
         });
 
         contract.set_total_reserves(200);
 
-        contract;
+        contract
     }
 
     #[test]
