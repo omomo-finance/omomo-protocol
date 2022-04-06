@@ -149,6 +149,21 @@ fn withdraw_less_same_fixture() -> (
         100000000000000
     );
 
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
     let user_balance: u128 =
         view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
@@ -189,7 +204,7 @@ fn supply_borrow_withdraw_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20),
+                value: U128(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }

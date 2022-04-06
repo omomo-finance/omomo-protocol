@@ -174,34 +174,35 @@ fn supply_borrow_repay_withdraw_fixture() -> (
 #[test]
 fn scenario_borrow() {
     let (dtoken, controller, utoken, user) = borrow_fixture();
+    //call!(user, controller.make_borrow(user.account_id(), dtoken.account_id(), U128(10)), deposit = 0).assert_success();
 
-    call!(user, dtoken.borrow(U128(20)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(U128(10)), deposit = 0).assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(
-        user_balance, 20,
-        "User borrow balance on controller should be 20"
+        user_balance, 10,
+        "User borrow balance on controller should be 10"
     );
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
-        user_balance, 20,
-        "User borrow balance on dtoken should be 20"
+        user_balance, 10,
+        "User borrow balance on dtoken should be 10"
     );
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        320.to_string(),
-        "User utoken balance should be 320"
+        295.to_string(),
+        "User utoken balance should be 295"
     );
 
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
         dtoken_balance,
-        80.to_string(),
-        "Dtoken balance on utoken should be 80"
+        105.to_string(),
+        "Dtoken balance on utoken should be 105"
     );
 }
 
