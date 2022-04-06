@@ -183,7 +183,6 @@ impl Contract {
     }
 }
 
-
 impl Contract {
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let borrows = self.get_account_borrows(account.clone());

@@ -77,8 +77,6 @@ mod tests {
         let (user_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
-        
-
         Contract::new(Config {
             initial_exchange_rate: U128(10000),
             underlying_token_id: underlying_token_account,
