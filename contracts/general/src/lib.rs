@@ -39,7 +39,6 @@ pub struct Price {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-#[cfg_attr(not(target_arch = "wasm32"), derive(Debug))]
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]
 pub enum Actions {

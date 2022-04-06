@@ -13,7 +13,9 @@ impl Contract {
     }
 
     pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
-
+        if !is_promise_success() {
+            return PromiseOrValue::Value(token_amount);
+        }
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),

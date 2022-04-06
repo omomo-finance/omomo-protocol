@@ -58,8 +58,12 @@ impl Contract {
         TGAS * gas
     }
 
-    pub fn mutex_account_lock(&mut self, action: Actions, amount: WBalance, gas: Gas) -> PromiseOrValue<U128> {
-
+    pub fn mutex_account_lock(
+        &mut self,
+        action: Actions,
+        amount: WBalance,
+        gas: Gas,
+    ) -> PromiseOrValue<U128> {
         return controller::mutex_lock(
             action.clone(),
             self.get_controller_address(),
@@ -74,29 +78,10 @@ impl Contract {
             gas,
         ))
         .into();
-
     }
 
     pub fn mutex_account_unlock(&mut self) -> () {
-        controller::mutex_unlock(
-            self.get_controller_address(),
-            NO_DEPOSIT,
-            self.terra_gas(5),
-        );
-    }
-
-    pub fn mutex_lock_callback(&mut self, action: Actions, amount: WBalance) -> PromiseOrValue<WBalance> {
-
-        match action {
-            Actions::Repay => self.post_repay(amount),
-            Actions::Withdraw => self.post_withdraw(amount),
-            Actions::Supply => self.post_supply(amount),
-            Actions::Borrow => self.post_borrow(amount),
-            _ => {
-                panic!("Incorrect action at mutex lock callback")
-            }
-        }
-
+        controller::mutex_unlock(self.get_controller_address(), NO_DEPOSIT, self.terra_gas(5));
     }
 
     pub fn get_total_supplies(&self) -> Balance {
@@ -131,6 +116,23 @@ impl Contract {
             panic!("User with account {} wasn't found", account_id.clone());
         }
         self.token.internal_withdraw(account_id, amount.into());
+    }
+
+    #[private]
+    pub fn mutex_lock_callback(
+        &mut self,
+        action: Actions,
+        amount: WBalance,
+    ) -> PromiseOrValue<WBalance> {
+        match action {
+            Actions::Repay => self.post_repay(amount),
+            Actions::Withdraw => self.post_withdraw(amount),
+            Actions::Supply => self.post_supply(amount),
+            Actions::Borrow => self.post_borrow(amount),
+            _ => {
+                panic!("Incorrect action at mutex lock callback")
+            }
+        }
     }
 }
 
