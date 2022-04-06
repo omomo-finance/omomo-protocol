@@ -1,13 +1,15 @@
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::AccountId;
+use near_sdk::test_utils::test_env::bob;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, ExecutionResult, UserAccount};
 
-use controller::ActionType;
+use controller::{AccountData, ActionType};
 use controller::ActionType::{Borrow, Supply};
 use controller::Config as cConfig;
 use dtoken::Config as dConfig;
 use general::Price;
+use controller;
 
 use crate::utils::{init_controller, init_dtoken, init_two_dtokens, init_utoken};
 
@@ -1225,4 +1227,61 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
 
     let _user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
+}
+
+#[test]
+fn scenario_view_accounts() {
+    let (dtoken, controller, utoken, user, _) = base2_fixture();
+
+    // user has 100
+    // dtoken 300
+
+    let mut accounts =    vec![user.account_id.clone()];
+
+    accounts.push(bob());
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "wnear".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+        .assert_success();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+        .assert_success();
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+
+    let vec_acc_data: Vec<AccountData> = call!(
+        controller.user_account,
+        controller.view_accounts(accounts)
+    ).unwrap_json();
+
+    let user_supply_on_dtoken = *vec_acc_data[0].user_profile.account_supplies.get(&dtoken.account_id()).unwrap();
+    let user_borrow_on_dtoken = *vec_acc_data[0].user_profile.account_borrows.get(&dtoken.account_id()).unwrap();
+
+    // borrow on dtoken should be 5 & supply 20
+    assert_eq!(20, user_supply_on_dtoken);
+    assert_eq!(5, user_borrow_on_dtoken);
+
+    println!("{:?}", vec_acc_data);
 }
