@@ -193,7 +193,7 @@ mod tests {
             "View accounts total supplies check has been failed"
         );
         assert_eq!(
-            result[0].health_factor, 10000,
+            result[0].health_factor, 15000,
             "View accounts health factor check has been failed"
         );
     }

@@ -99,22 +99,6 @@ impl Contract {
 
     }
 
-    pub fn add_inconsistent_account(&mut self, account: AccountId) {
-        let mut user = self.user_profiles.get(&account).unwrap();
-        user.is_consistent = true;
-
-        self.user_profiles.insert(&account, &user);
-    }
-
-    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
-        self.user_profiles.remove(&account);
-    }
-
-    pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
-        self.total_reserves = amount;
-        self.get_total_reserves()
-    }
-
     pub fn get_total_supplies(&self) -> Balance {
         self.token.total_supply
     }
