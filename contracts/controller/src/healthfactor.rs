@@ -40,7 +40,6 @@ impl Contract {
         amount: Balance,
         action: ActionType,
     ) -> Ratio {
-        let mut ratio = HEALTH_THRESHOLD;
         let mut collaterals =
             self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
         let mut borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
@@ -58,24 +57,24 @@ impl Contract {
         }
 
         if borrows != 0 {
-            ratio = collaterals * RATIO_DECIMALS / borrows;
+            collaterals * RATIO_DECIMALS / borrows
+        } else {
+            self.get_health_threshold()
         }
-        ratio
     }
 }
 
 #[near_bindgen]
 impl Contract {
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
-        let mut ratio = HEALTH_THRESHOLD;
         let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
         let borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
 
         if borrows != 0 {
-            ratio = collaterals * RATIO_DECIMALS / borrows;
+            collaterals * RATIO_DECIMALS / borrows
+        } else {
+            self.get_health_threshold()
         }
-
-        ratio
     }
 }
 
@@ -173,7 +172,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            HEALTH_THRESHOLD,
+            controller_contract.get_health_threshold(),
             "Test for account w/o collaterals and borrows has been failed"
         );
 
@@ -191,7 +190,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            (100 * HEALTH_THRESHOLD / 100),
+            (100 * controller_contract.get_health_threshold() / 100),
             "Health factor calculation has been failed"
         );
     }

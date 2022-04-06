@@ -3,8 +3,6 @@ use near_sdk::require;
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 use crate::*;
 
-pub const HEALTH_THRESHOLD: u128 = 15000;
-
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum ActionType {
@@ -155,7 +153,7 @@ impl Contract {
             token_address,
             Balance::from(token_amount),
             Supply,
-        ) >= HEALTH_THRESHOLD
+        ) >= self.get_health_threshold()
     }
 
     #[warn(dead_code)]
@@ -171,7 +169,7 @@ impl Contract {
             token_address,
             Balance::from(token_amount),
             Borrow,
-        ) >= HEALTH_THRESHOLD
+        ) >= self.get_health_threshold()
     }
 
     pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
