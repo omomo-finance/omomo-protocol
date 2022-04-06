@@ -13,7 +13,7 @@ pub struct AccountData {
     pub total_supplies: Balance,
     pub blocked: bool,
     pub health_factor: Ratio,
-    pub user_profile: UserProfile
+    pub user_profile: UserProfile,
 }
 
 impl Default for AccountData {
@@ -24,7 +24,7 @@ impl Default for AccountData {
             total_supplies: 0,
             blocked: false,
             health_factor: RATIO_DECIMALS,
-            user_profile: Default::default()
+            user_profile: Default::default(),
         }
     }
 }
@@ -59,7 +59,7 @@ impl Contract {
                     total_supplies: total_supplies.into(),
                     blocked: false,
                     health_factor,
-                    user_profile
+                    user_profile,
                 }
             })
             .collect::<Vec<AccountData>>();
