@@ -1,13 +1,12 @@
-use near_sdk_sim::{call, view, init_simulator, ContractAccount, UserAccount};
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, assert_failure, view_balance};
-use near_sdk::json_types::U128;
-use general::Price;
+use crate::utils::{
+    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance,
+};
 use controller::ActionType::Supply;
+use general::Price;
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
-fn withdraw_with_no_supply_fixture() -> (
-    ContractAccount<dtoken::ContractContract>,
-    UserAccount,
-) {
+fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
 
     // Initialize
@@ -87,8 +86,12 @@ fn withdraw_more_fixture() -> (
         100000000000000
     );
 
-    let user_balance: u128 =
-        view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        d_user.account_id(),
+        dtoken.account_id(),
+    );
     assert_eq!(user_balance, 20, "Balance should be 20");
 
     (dtoken, controller, d_user)
@@ -164,8 +167,12 @@ fn withdraw_less_same_fixture() -> (
     )
     .assert_success();
 
-    let user_balance: u128 =
-        view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        d_user.account_id(),
+        dtoken.account_id(),
+    );
     assert_eq!(user_balance, 20, "Balance should be 20");
 
     (dtoken, controller, d_user, root)
@@ -287,8 +294,12 @@ fn withdraw_error_transfer_fixture() -> (
         100000000000000
     );
 
-    let user_balance: u128 =
-        view_balance(&controller, Supply, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        d_user.account_id(),
+        dtoken.account_id(),
+    );
     assert_eq!(user_balance, 20, "Balance should be 20");
 
     (dtoken, controller, utoken, d_user)

@@ -1,8 +1,8 @@
-use near_sdk_sim::{call, view, init_simulator, ContractAccount, UserAccount};
 use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
-use near_sdk::json_types::U128;
-use general::Price;
 use controller::ActionType::{Borrow, Supply};
+use general::Price;
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -169,7 +169,6 @@ fn supply_borrow_repay_withdraw_fixture() -> (
 
     (dtoken, controller, utoken, d_user, root)
 }
-
 
 #[test]
 fn scenario_borrow() {

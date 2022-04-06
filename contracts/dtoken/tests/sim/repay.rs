@@ -1,7 +1,7 @@
-use near_sdk_sim::{call, view, init_simulator, ContractAccount, UserAccount};
 use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
-use near_sdk::json_types::U128;
 use controller::ActionType::Borrow;
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn repay_no_borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -79,8 +79,12 @@ fn repay_fixture() -> (
     )
     .assert_success();
 
-    let user_balance: u128 =
-        view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(
+        &controller,
+        Borrow,
+        d_user.account_id(),
+        dtoken.account_id(),
+    );
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     (dtoken, controller, utoken, d_user)
@@ -132,13 +136,16 @@ fn repay_more_than_borrow_fixture() -> (
     )
     .assert_success();
 
-    let user_balance: u128 =
-        view_balance(&controller, Borrow, d_user.account_id(), dtoken.account_id());
+    let user_balance: u128 = view_balance(
+        &controller,
+        Borrow,
+        d_user.account_id(),
+        dtoken.account_id(),
+    );
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     (dtoken, controller, utoken, d_user)
 }
-
 
 #[test]
 fn scenario_repay_no_borrow() {

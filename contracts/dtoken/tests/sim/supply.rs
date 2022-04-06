@@ -1,8 +1,10 @@
-use near_sdk_sim::{call, view, init_simulator, ContractAccount, UserAccount};
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, assert_failure, view_balance};
-use near_sdk::json_types::U128;
-use general::Price;
+use crate::utils::{
+    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance,
+};
 use controller::ActionType::Supply;
+use general::Price;
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn supply_error_command_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -64,10 +66,7 @@ fn supply_zero_tokens_fixture() -> (
     (dtoken, utoken, d_user)
 }
 
-fn supply_error_contract_fixture() -> (
-    ContractAccount<dtoken::ContractContract>,
-    UserAccount,
-) {
+fn supply_error_contract_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
 
     // Initialize
