@@ -31,6 +31,20 @@ fn borrow_fixture() -> (
         100000000000000
     );
 
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        d_user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(15),
+            Some("SUPPLY".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
     call!(
         controller.user_account,
         controller.upsert_price(
