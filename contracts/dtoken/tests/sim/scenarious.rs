@@ -1287,6 +1287,4 @@ fn scenario_view_accounts() {
     // borrow on dtoken should be 5 & supply 20
     assert_eq!(20, user_supply_on_dtoken);
     assert_eq!(5, user_borrow_on_dtoken);
-
-    println!("{:?}", vec_acc_data);
 }
