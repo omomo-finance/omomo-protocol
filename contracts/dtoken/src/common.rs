@@ -26,21 +26,6 @@ pub enum Events {
     LiquidationFailed(AccountId, AccountId, Balance),
 }
 
-#[derive(Deserialize)]
-#[cfg_attr(not(target_arch = "wasm32"), derive(Debug, Serialize))]
-#[serde(crate = "near_sdk::serde")]
-pub enum Actions {
-    Supply,
-    Repay,
-    Liquidate {
-        borrower: AccountId,
-        borrowing_dtoken: AccountId,
-        liquidator: AccountId,
-        collateral_dtoken: AccountId,
-        liquidation_amount: WBalance,
-    },
-}
-
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
         let config: Config = self.get_contract_config();
@@ -73,18 +58,45 @@ impl Contract {
         TGAS * gas
     }
 
-    pub fn mutex_account_lock(&mut self, action: String) {
-        if !self.mutex.try_lock(&env::signer_account_id()) {
-            panic!(
-                "failed to acquire {} action mutex for account {}",
-                action,
-                env::current_account_id()
-            );
-        }
+    pub fn mutex_account_lock(&mut self, action: Actions, amount: WBalance, gas: Gas) -> PromiseOrValue<U128> {
+
+        return controller::mutex_lock(
+            action.clone(),
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        )
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into();
+
     }
 
-    pub fn mutex_account_unlock(&mut self) {
-        self.mutex.unlock(&env::signer_account_id());
+    pub fn mutex_account_unlock(&mut self) -> () {
+        controller::mutex_unlock(
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        );
+    }
+
+    pub fn mutex_lock_callback(&mut self, action: Actions, amount: WBalance) -> PromiseOrValue<WBalance> {
+
+        match action {
+            Actions::Repay => self.post_repay(amount),
+            Actions::Withdraw => self.post_withdraw(amount),
+            Actions::Supply => self.post_supply(amount),
+            Actions::Borrow => self.post_borrow(amount),
+            _ => {
+                panic!("Incorrect action at mutex lock callback")
+            }
+        }
+
     }
 
     pub fn add_inconsistent_account(&mut self, account: AccountId) {

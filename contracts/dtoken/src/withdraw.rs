@@ -1,6 +1,6 @@
 use crate::*;
 
-const GAS_FOR_WITHDRAW: Gas = Gas(130_000_000_000_000);
+const GAS_FOR_WITHDRAW: Gas = Gas(145_000_000_000_000);
 
 #[near_bindgen]
 impl Contract {
@@ -9,8 +9,10 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
         );
-        self.mutex_account_lock(String::from("withdraw"));
+        return self.mutex_account_lock(Actions::Withdraw, dtoken_amount, self.terra_gas(110));
+    }
 
+    pub fn post_withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),

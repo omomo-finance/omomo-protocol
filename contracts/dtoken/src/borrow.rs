@@ -1,15 +1,17 @@
 use crate::*;
-const GAS_FOR_BORROW: Gas = Gas(130_000_000_000_000);
+const GAS_FOR_BORROW: Gas = Gas(140_000_000_000_000);
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>  {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
-        self.mutex_account_lock(String::from("borrow"));
+        return self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(110));
+    }
 
+    pub fn post_borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),

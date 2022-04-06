@@ -15,6 +15,7 @@ pub use crate::liquidation::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
+pub use crate::user_flow_protection::*;
 pub use crate::user_profile::*;
 pub use crate::views::*;
 
@@ -27,6 +28,7 @@ mod liquidation;
 mod oraclehook;
 mod prices;
 pub mod repay;
+pub mod user_flow_protection;
 pub mod user_profile;
 mod views;
 
@@ -71,6 +73,9 @@ pub struct Contract {
 
     /// Reserve Factor
     pub reserve_factor: Percent,
+
+    ///User action protection
+    mutex: ActionMutex,
 }
 
 impl Default for Contract {
@@ -155,6 +160,7 @@ impl Contract {
             health_factor_threshold: 0,
             liquidation_incentive: 0,
             reserve_factor: 0,
+            mutex: ActionMutex::default(),
         }
     }
 }
