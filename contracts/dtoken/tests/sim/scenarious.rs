@@ -323,7 +323,7 @@ fn withdraw_fixture() -> (
     let (dtoken, controller, utoken, user, root) = base_fixture();
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
@@ -365,7 +365,7 @@ fn withdraw_less_dtoken_fixture() -> (
     let (dtoken, controller, utoken, user, _) = base_fixture();
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(3)),
         0,
         100000000000000
@@ -373,7 +373,7 @@ fn withdraw_less_dtoken_fixture() -> (
     .assert_success();
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(7)),
         0,
         100000000000000
@@ -381,7 +381,7 @@ fn withdraw_less_dtoken_fixture() -> (
     .assert_success();
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(10)),
         0,
         100000000000000
@@ -422,13 +422,7 @@ fn repay_fixture() -> (
 ) {
     let (dtoken, controller, utoken, user) = base_repay_fixture();
 
-    call!(
-        user,
-        dtoken.borrow(
-            U128(5)
-        ),
-        deposit = 0
-    ).assert_success();
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
@@ -489,13 +483,7 @@ fn liquidation_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user1,
-        dtoken1.borrow(
-            U128(5)
-        ),
-        deposit = 0
-    ).assert_success();
+    call!(d_user1, dtoken1.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken1.get_account_borrows(d_user1.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
