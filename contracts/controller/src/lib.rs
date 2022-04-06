@@ -157,7 +157,7 @@ impl Contract {
             health_factor_threshold: 0,
             liquidation_incentive: 0,
             reserve_factor: 0,
-            health_threshold: 15000
+            health_threshold: 15000,
         }
     }
 }
