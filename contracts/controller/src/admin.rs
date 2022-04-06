@@ -120,7 +120,7 @@ impl Contract {
     }
 
     pub fn get_health_threshold(&self) -> Ratio {
-        self.health_factor_threshold
+        self.health_threshold
     }
 
     pub fn set_health_factor_threshold(mut self, value: Ratio) {
