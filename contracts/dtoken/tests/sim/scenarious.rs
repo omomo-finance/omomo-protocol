@@ -272,7 +272,7 @@ fn base2_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20),
+                value: U128(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -353,6 +353,21 @@ fn withdraw_fixture() -> (
     let user_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
 
     (dtoken, controller, utoken, user, root)
 }
@@ -577,7 +592,7 @@ fn borrow_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20),
+                value: U128(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -882,35 +897,35 @@ fn scenario_repay_more_than_borrow() {
 
 #[test]
 fn scenario_borrow() {
-    let (dtoken, controller, utoken, user, _) = base2_fixture();
+    let (dtoken, controller, utoken, user) = borrow_fixture();
 
-    call!(user, dtoken.borrow(U128(20)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(U128(10)), deposit = 0).assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(
-        user_balance, 20,
-        "User borrow balance on controller should be 20"
+        user_balance, 10,
+        "User borrow balance on controller should be 10"
     );
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
-        user_balance, 20,
-        "User borrow balance on dtoken should be 20"
+        user_balance, 10,
+        "User borrow balance on dtoken should be 10"
     );
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        320.to_string(),
-        "User utoken balance should be 320"
+        10.to_string(),
+        "User utoken balance should be 10"
     );
 
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
         dtoken_balance,
-        80.to_string(),
-        "Dtoken balance on utoken should be 80"
+        40.to_string(),
+        "Dtoken balance on utoken should be 40"
     );
 }
 
