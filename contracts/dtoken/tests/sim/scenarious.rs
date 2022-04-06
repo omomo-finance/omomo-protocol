@@ -1,15 +1,14 @@
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::AccountId;
 use near_sdk::test_utils::test_env::bob;
+use near_sdk::AccountId;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, ExecutionResult, UserAccount};
 
-use controller::{AccountData, ActionType};
 use controller::ActionType::{Borrow, Supply};
 use controller::Config as cConfig;
+use controller::{AccountData, ActionType};
 use dtoken::Config as dConfig;
 use general::Price;
-use controller;
 
 use crate::utils::{init_controller, init_dtoken, init_two_dtokens, init_utoken};
 
@@ -1236,7 +1235,7 @@ fn scenario_view_accounts() {
     // user has 100
     // dtoken 300
 
-    let mut accounts =    vec![user.account_id.clone()];
+    let mut accounts = vec![user.account_id.clone()];
 
     accounts.push(bob());
 
@@ -1253,7 +1252,7 @@ fn scenario_view_accounts() {
         ),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     let action = "\"Supply\"".to_string();
 
@@ -1267,17 +1266,23 @@ fn scenario_view_accounts() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
-    let vec_acc_data: Vec<AccountData> = call!(
-        controller.user_account,
-        controller.view_accounts(accounts)
-    ).unwrap_json();
+    let vec_acc_data: Vec<AccountData> =
+        call!(controller.user_account, controller.view_accounts(accounts)).unwrap_json();
 
-    let user_supply_on_dtoken = *vec_acc_data[0].user_profile.account_supplies.get(&dtoken.account_id()).unwrap();
-    let user_borrow_on_dtoken = *vec_acc_data[0].user_profile.account_borrows.get(&dtoken.account_id()).unwrap();
+    let user_supply_on_dtoken = *vec_acc_data[0]
+        .user_profile
+        .account_supplies
+        .get(&dtoken.account_id())
+        .unwrap();
+    let user_borrow_on_dtoken = *vec_acc_data[0]
+        .user_profile
+        .account_borrows
+        .get(&dtoken.account_id())
+        .unwrap();
 
     // borrow on dtoken should be 5 & supply 20
     assert_eq!(20, user_supply_on_dtoken);
