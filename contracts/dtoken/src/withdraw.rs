@@ -1,6 +1,6 @@
 use crate::*;
 
-const GAS_FOR_WITHDRAW: Gas = Gas(145_000_000_000_000);
+const GAS_FOR_WITHDRAW: Gas = Gas(180_000_000_000_000);
 
 impl Contract {
     pub fn post_withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
@@ -17,7 +17,7 @@ impl Contract {
                 Balance::from(dtoken_amount),
                 env::current_account_id(),
                 NO_DEPOSIT,
-                self.terra_gas(100),
+                self.terra_gas(140),
             ))
             .into()
     }
@@ -30,7 +30,7 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
         );
-        return self.mutex_account_lock(Actions::Withdraw, dtoken_amount, self.terra_gas(110));
+        return self.mutex_account_lock(Actions::Withdraw, dtoken_amount, self.terra_gas(180));
     }
 
     #[private]
@@ -82,7 +82,7 @@ impl Contract {
             token_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(5),
+            self.terra_gas(10),
         )
         .then(ext_self::withdraw_supplies_callback(
             env::signer_account_id(),
@@ -90,7 +90,7 @@ impl Contract {
             dtoken_amount.into(),
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(70),
+            self.terra_gas(80),
         ))
         .into()
     }
@@ -132,7 +132,7 @@ impl Contract {
             dtoken_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            self.terra_gas(50),
         ))
         .into()
     }
@@ -164,7 +164,7 @@ impl Contract {
                 token_amount,
                 env::current_account_id(),
                 NO_DEPOSIT,
-                self.terra_gas(5),
+                self.terra_gas(20),
             ))
             .into()
         }

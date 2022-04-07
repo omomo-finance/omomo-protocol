@@ -43,7 +43,7 @@ impl Contract {
         let mut collaterals =
             self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
         let mut borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
-
+        
         let price = self.get_price(token_address).unwrap();
         let usd_amount = Percentage::from(Percent::from(price.volatility))
             .apply_to(Balance::from(price.value) * amount / 10u128.pow(price.fraction_digits));

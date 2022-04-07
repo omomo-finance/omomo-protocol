@@ -10,7 +10,7 @@ use near_sdk::{
 };
 
 #[allow(unused_imports)]
-use general::*;
+pub use general::*;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
