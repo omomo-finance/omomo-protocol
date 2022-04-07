@@ -384,11 +384,17 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
 
     call!(
         user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(10),
+            Some("SUPPLY".to_string()),
+            action
+        ),
         deposit = 1
-    );
+    )
+        .assert_success();
 
-    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+    dbg!(call!(user, dtoken.borrow(U128(5)), deposit = 0));
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");

@@ -1,5 +1,23 @@
 use crate::*;
+
 const GAS_FOR_BORROW: Gas = Gas(130_000_000_000_000);
+
+impl Contract {
+    pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let borrows = self.get_account_borrows(account.clone());
+        let new_borrows = borrows - Balance::from(token_amount);
+
+        self.set_account_borrows(account, U128(new_borrows))
+    }
+
+    pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let borrows: Balance = self.get_account_borrows(account.clone());
+        let new_borrows = borrows + Balance::from(token_amount);
+
+        self.set_account_borrows(account, U128(new_borrows))
+    }
+}
+
 
 #[near_bindgen]
 impl Contract {
@@ -16,13 +34,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::borrow_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(100),
-        ))
-        .into()
+            .then(ext_self::borrow_balance_of_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(100),
+            ))
+            .into()
     }
 
     #[private]
@@ -72,13 +90,13 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::make_borrow_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(70),
-        ))
-        .into()
+            .then(ext_self::make_borrow_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(70),
+            ))
+            .into()
     }
 
     #[private]
@@ -106,13 +124,13 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-        .then(ext_self::borrow_ft_transfer_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(40),
-        ))
-        .into()
+            .then(ext_self::borrow_ft_transfer_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(40),
+            ))
+            .into()
     }
 
     #[private]
@@ -137,13 +155,13 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-            .then(ext_self::controller_decrease_borrows_fail_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(5),
-            ))
-            .into()
+                .then(ext_self::controller_decrease_borrows_fail_callback(
+                    token_amount,
+                    env::current_account_id(),
+                    NO_DEPOSIT,
+                    self.terra_gas(5),
+                ))
+                .into()
         }
     }
 
@@ -168,20 +186,6 @@ impl Contract {
                 )
             );
         }
-    }
-
-    pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let borrows = self.get_account_borrows(account.clone());
-        let new_borrows = borrows - Balance::from(token_amount);
-
-        self.set_account_borrows(account, U128(new_borrows))
-    }
-
-    pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let borrows: Balance = self.get_account_borrows(account.clone());
-        let new_borrows = borrows + Balance::from(token_amount);
-
-        self.set_account_borrows(account, U128(new_borrows))
     }
 
     pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
