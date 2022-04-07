@@ -1,5 +1,6 @@
 use crate::utils::{
-    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance, new_user
+    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, new_user,
+    view_balance,
 };
 use controller::ActionType::Supply;
 use general::Price;
@@ -17,8 +18,7 @@ fn supply_error_command_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -48,8 +48,7 @@ fn supply_zero_tokens_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -75,8 +74,7 @@ fn supply_error_contract_fixture() -> (ContractAccount<dtoken::ContractContract>
     let user = new_user(&root, "user".parse().unwrap());
     let (uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -106,8 +104,7 @@ fn supply_not_enough_balance_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -137,8 +134,7 @@ fn supply_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,

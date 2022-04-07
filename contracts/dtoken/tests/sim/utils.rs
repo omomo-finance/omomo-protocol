@@ -111,10 +111,7 @@ pub fn view_balance(
 
 pub fn initialize_utoken(
     root: &UserAccount,
-) -> (
-    UserAccount,
-    ContractAccount<test_utoken::ContractContract>,
-) {
+) -> (UserAccount, ContractAccount<test_utoken::ContractContract>) {
     let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
     let (uroot, utoken) = init_utoken(
         uroot,

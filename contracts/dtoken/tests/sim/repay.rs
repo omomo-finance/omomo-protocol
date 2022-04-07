@@ -1,4 +1,6 @@
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance, new_user};
+use crate::utils::{
+    initialize_controller, initialize_dtoken, initialize_utoken, new_user, view_balance,
+};
 use controller::ActionType::Borrow;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
