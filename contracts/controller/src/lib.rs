@@ -26,6 +26,7 @@ mod healthfactor;
 mod liquidation;
 mod oraclehook;
 mod prices;
+mod helper;
 pub mod repay;
 pub mod user_profile;
 mod views;
@@ -68,6 +69,9 @@ pub struct Contract {
 
     /// Liquidation Incentive
     pub liquidation_incentive: Ratio,
+
+    /// Liquidation Health Factor
+    pub liquidation_health_factor_threshold: Ratio,
 
     /// Reserve Factor
     pub reserve_factor: Percent,
@@ -153,7 +157,8 @@ impl Contract {
                 borrow: false,
             },
             health_factor_threshold: 0,
-            liquidation_incentive: 0,
+            liquidation_incentive: 500, // TODO: Think of some function that will calculate percent from any integer
+            liquidation_health_factor_threshold: 15000, // Same here
             reserve_factor: 0,
         }
     }

@@ -30,7 +30,7 @@ impl Contract {
             liquidation_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(80),
         ))
         .into()
     }
@@ -88,10 +88,14 @@ impl Contract {
         }
 
         self.token
-            .internal_transfer(&borrower, &liquidator, amount, None);
+            .internal_transfer(&borrower.clone(), &liquidator, amount, None);
         log!(
             "{}",
-            Events::LiquidationSuccess(liquidator, borrower, Balance::from(liquidation_amount))
+            Events::LiquidationSuccess(
+                liquidator,
+                borrower.clone(),
+                Balance::from(liquidation_amount)
+            )
         );
         PromiseOrValue::Value(U128(0))
     }

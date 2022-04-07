@@ -12,7 +12,6 @@ impl Contract {
         liquidation_amount: WBalance,
     ) {
         // TODO: Add check that this function was called by real Dtoken that we store somewhere in self.markets
-
         let res = self.is_liquidation_allowed(
             borrower,
             borrowing_dtoken,
@@ -21,8 +20,68 @@ impl Contract {
             liquidation_amount,
         );
         if res.is_err() {
-            panic!("Liquidation failed on controller, {}", res.unwrap_err());
+            panic!("Liquidation failed on controller, {:?}", res.unwrap_err());
         }
+    }
+
+    pub fn get_liquidation_revenue(
+        &self,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        amount_for_liquidation: WBalance,
+    ) -> WBalance {
+        WBalance::from(
+            self.get_liquidation_incentive()
+                * amount_for_liquidation.0
+                * self.prices.get(&borrowing_dtoken).unwrap().value.0
+                / self.prices.get(&collateral_dtoken).unwrap().value.0,
+        )
+    }
+
+    pub fn maximum_possible_liquidation_amount(
+        &self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        amount_for_liquidation: WBalance,
+    ) -> WBalance {
+        let unhealth_factor =
+            self.liquidation_health_factor_threshold - self.get_health_factor(borrower.clone());
+
+        let borrow_amount = self.get_entity_by_token(
+            ActionType::Borrow,
+            borrower.clone(),
+            borrowing_dtoken.clone(),
+        );
+
+        let borrow_price = self.prices.get(&borrowing_dtoken.clone()).unwrap().value.0 as f64;
+
+        let max_unhealth_repay = WBalance::from(
+            (borrow_amount as f64 * borrow_price * self.get_percent(unhealth_factor)) as u128,
+        );
+
+        let liquidation_revenue = self
+            .get_liquidation_revenue(
+                borrowing_dtoken.clone(),
+                collateral_dtoken.clone(),
+                max_unhealth_repay,
+            )
+            .0 as f64;
+
+        let supply_amount = self.get_entity_by_token(
+            ActionType::Supply,
+            borrower.clone(),
+            borrowing_dtoken.clone(),
+        ) as f64;
+        let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0 as f64;
+
+        let max_revenue = Contract::min(liquidation_revenue, collateral_price * supply_amount);
+
+        let max_possible_liquidation_amount = max_revenue
+            * (self.get_percent(Ratio::from(self.get_liquidation_incentive())))
+            / borrow_price;
+
+        WBalance::from(max_possible_liquidation_amount as u128)
     }
 
     pub fn is_liquidation_allowed(
@@ -32,31 +91,70 @@ impl Contract {
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         amount_for_liquidation: WBalance,
-    ) -> Result<WBalance, String> {
+    ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_factor_threshold() {
-            Err(String::from(
-                "User can't be liquidated as he has normal value of health factor",
-            ))
+            return Err((
+                WBalance::from(amount_for_liquidation.0),
+                WBalance::from(0),
+                String::from("User can't be liquidated as he has normal value of health factor"),
+            ));
         } else {
-            if liquidator == borrower {
-                return Err(String::from("Liquidation cannot liquidate his on borrow"));
+            let max_possible_liquidation_amount = self.maximum_possible_liquidation_amount(
+                borrower.clone(),
+                borrowing_dtoken.clone(),
+                collateral_dtoken.clone(),
+                amount_for_liquidation,
+            );
+
+            if max_possible_liquidation_amount.0 < amount_for_liquidation.0 {
+                return Err((
+                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(max_possible_liquidation_amount.0),
+                    String::from(
+                        "Max possible liquidation amount cannot be less than liquidation amount",
+                    ),
+                ));
             }
 
-            let borrow_amount =
-                self.get_entity_by_token(ActionType::Borrow, borrower.clone(), borrowing_dtoken);
+            if liquidator == borrower {
+                return Err((
+                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(max_possible_liquidation_amount.0),
+                    String::from("Liquidation cannot liquidate his on borrow"),
+                ));
+            }
+
+            let borrow_amount = self.get_entity_by_token(
+                ActionType::Borrow,
+                borrower.clone(),
+                borrowing_dtoken.clone(),
+            );
 
             if borrow_amount > amount_for_liquidation.0 {
-                return Err(String::from("Borrow bigger than liquidation amount"));
+                return Err((
+                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(max_possible_liquidation_amount.0),
+                    String::from("Borrow bigger than liquidation amount"),
+                ));
             }
 
             let balance_of_borrower_collateral =
-                self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken);
+                self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
 
             if balance_of_borrower_collateral < amount_for_liquidation.0 {
-                return Err(String::from("Borrower collateral balance is too low"));
+                return Err((
+                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(max_possible_liquidation_amount.0),
+                    String::from("Borrower collateral balance is too low"),
+                ));
             }
 
-            Ok(amount_for_liquidation)
+            let revenue_amount = self.get_liquidation_revenue(
+                borrowing_dtoken.clone(),
+                collateral_dtoken.clone(),
+                amount_for_liquidation,
+            );
+            Ok((amount_for_liquidation, revenue_amount))
         }
     }
 
