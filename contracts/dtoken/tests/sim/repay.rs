@@ -141,20 +141,13 @@ fn scenario_repay() {
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
-    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    let user_balance: u128 =
-        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
-
     let action = "\"Repay\"".to_string();
 
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(277),
+            U128(80),
             Some("REPAY".to_string()),
             action
         ),
@@ -165,8 +158,8 @@ fn scenario_repay() {
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        23.to_string(),
-        "After repay of 277 tokens (borrow was 5), balance should be 23"
+        270.to_string(),
+        "After repay of 277 tokens (borrow was 5), balance should be 270"
     );
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
