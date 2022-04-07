@@ -1,7 +1,9 @@
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
-use controller::ActionType::Borrow;
 use near_sdk::json_types::U128;
-use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use near_sdk_sim::{call, ContractAccount, init_simulator, UserAccount, view};
+
+use controller::ActionType::Borrow;
+
+use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
 
 fn repay_no_borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -60,24 +62,10 @@ fn repay_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+    call!(d_user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -104,37 +92,23 @@ fn repay_more_than_borrow_fixture() -> (
         initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(d_user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+    call!(d_user, dtoken.borrow(U128(10)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -163,7 +137,7 @@ fn scenario_repay_no_borrow() {
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -189,7 +163,7 @@ fn scenario_repay() {
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -222,7 +196,7 @@ fn scenario_repay_more_than_borrow() {
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(

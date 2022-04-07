@@ -20,7 +20,7 @@ fn liquidation_success_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (uroot1, uroot2, utoken1, utoken2, _u_user1, _u_user2) = initialize_two_utokens(&root);
+    let (_uroot1, _uroot2, utoken1, utoken2, _u_user1, _u_user2) = initialize_two_utokens(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken1, dtoken2, d_user1, d_user2) = initialize_two_dtokens(
         &root,
@@ -30,51 +30,37 @@ fn liquidation_success_fixture() -> (
     );
 
     call!(
-        uroot1,
+        utoken1.user_account,
         utoken1.mint(dtoken1.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
-        uroot1,
+        utoken1.user_account,
         utoken1.mint(d_user1.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
-        uroot2,
+        utoken2.user_account,
         utoken2.mint(dtoken2.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
-        uroot2,
+        utoken2.user_account,
         utoken2.mint(d_user2.account_id(), U128(20)),
         0,
         100000000000000
     );
 
-    call!(
-        d_user1,
-        dtoken1.increase_borrows(d_user1.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+    call!(d_user1, dtoken1.borrow( U128(5)), deposit=0).assert_success();
 
     let user_balance: u128 = view!(dtoken1.get_account_borrows(d_user1.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user1,
-        controller.increase_borrows(d_user1.account_id(), dtoken1.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -96,43 +82,29 @@ fn liquidation_success_on_single_dtoken_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
+    let (_uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) =
         initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(d_user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+    call!(d_user, dtoken.borrow(U128(5)), deposit=0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -152,43 +124,29 @@ fn liquidation_failed_no_collateral_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
+    let (_uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) =
         initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(d_user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
+    call!(d_user, dtoken.borrow( U128(5)), deposit=0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -208,43 +166,26 @@ fn liquidation_failed_on_not_enough_amount_to_liquidate_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
+    let (_uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) =
         initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(d_user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
-    let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -264,51 +205,24 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
+    let (_uroot, utoken, _u_user) = initialize_utoken(&root);
     let (_croot, controller, _c_user) = initialize_controller(&root);
     let (_droot, dtoken, d_user) =
         initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(d_user.account_id(), U128(300)),
         0,
         100000000000000
     );
-
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
-    let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
-    let user_balance: u128 = view_balance(
-        &controller,
-        Borrow,
-        d_user.account_id(),
-        dtoken.account_id(),
-    );
-    assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     (dtoken, utoken, d_user)
 }
@@ -435,6 +349,11 @@ fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
         deposit = 1
     );
 
+    call!(user, dtoken.borrow( U128(5)), deposit=0).assert_success();
+
+    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+
     let action = json!({
         "Liquidate":{
             "borrower": user.account_id.as_str(),
@@ -468,6 +387,11 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
         utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
         deposit = 1
     );
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+
+    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     let action = json!({
         "Liquidate":{
