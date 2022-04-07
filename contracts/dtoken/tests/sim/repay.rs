@@ -1,4 +1,4 @@
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
+use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance, new_user};
 use controller::ActionType::Borrow;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
@@ -11,10 +11,10 @@ fn repay_no_borrow_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -25,12 +25,12 @@ fn repay_no_borrow_fixture() -> (
 
     call!(
         uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
-    (dtoken, utoken, d_user)
+    (dtoken, utoken, user)
 }
 
 fn repay_fixture() -> (
@@ -41,10 +41,10 @@ fn repay_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -55,39 +55,35 @@ fn repay_fixture() -> (
 
     call!(
         uroot,
-        utoken.mint(d_user.account_id(), U128(300)),
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
     call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
+        user,
+        dtoken.increase_borrows(user.account_id(), U128(5)),
         0,
         100000000000000
     )
     .assert_success();
 
-    let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
+    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
+        user,
+        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
         0,
         100000000000000
     )
     .assert_success();
 
-    let user_balance: u128 = view_balance(
-        &controller,
-        Borrow,
-        d_user.account_id(),
-        dtoken.account_id(),
-    );
+    let user_balance: u128 =
+        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 fn repay_more_than_borrow_fixture() -> (
@@ -98,10 +94,10 @@ fn repay_more_than_borrow_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -112,39 +108,35 @@ fn repay_more_than_borrow_fixture() -> (
 
     call!(
         uroot,
-        utoken.mint(d_user.account_id(), U128(300)),
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
     call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
+        user,
+        dtoken.increase_borrows(user.account_id(), U128(5)),
         0,
         100000000000000
     )
     .assert_success();
 
-    let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
+    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
-        d_user,
-        controller.increase_borrows(d_user.account_id(), dtoken.account_id(), U128(5)),
+        user,
+        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
         0,
         100000000000000
     )
     .assert_success();
 
-    let user_balance: u128 = view_balance(
-        &controller,
-        Borrow,
-        d_user.account_id(),
-        dtoken.account_id(),
-    );
+    let user_balance: u128 =
+        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 #[test]
@@ -194,7 +186,7 @@ fn scenario_repay() {
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        23.to_string(),
+        55.to_string(),
         "After repay of 277 tokens (borrow was 5), balance should be 23"
     );
 
@@ -227,7 +219,7 @@ fn scenario_repay_more_than_borrow() {
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        23.to_string(),
+        55.to_string(),
         "As it was borrowed 10 tokens and repayed 13 tokens (rate 1.3333), balance should be 7"
     );
 
