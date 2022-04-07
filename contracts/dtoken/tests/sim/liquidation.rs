@@ -1,12 +1,14 @@
-use crate::utils::{
-    initialize_controller, initialize_dtoken, initialize_two_dtokens, initialize_two_utokens,
-    initialize_utoken, view_balance,
-};
-use controller::ActionType::{Borrow, Supply};
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::AccountId;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+
+use controller::ActionType::{Borrow, Supply};
+
+use crate::utils::{
+    initialize_controller, initialize_dtoken, initialize_two_dtokens, initialize_two_utokens,
+    initialize_utoken, view_balance,
+};
 
 fn liquidation_success_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -57,7 +59,7 @@ fn liquidation_success_fixture() -> (
         100000000000000
     );
 
-    call!(d_user1, dtoken1.borrow( U128(5)), deposit=0).assert_success();
+    call!(d_user1, dtoken1.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken1.get_account_borrows(d_user1.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
@@ -101,7 +103,7 @@ fn liquidation_success_on_single_dtoken_fixture() -> (
         100000000000000
     );
 
-    call!(d_user, dtoken.borrow(U128(5)), deposit=0).assert_success();
+    call!(d_user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
@@ -143,7 +145,7 @@ fn liquidation_failed_no_collateral_fixture() -> (
         100000000000000
     );
 
-    call!(d_user, dtoken.borrow( U128(5)), deposit=0).assert_success();
+    call!(d_user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
@@ -184,8 +186,6 @@ fn liquidation_failed_on_not_enough_amount_to_liquidate_fixture() -> (
         0,
         100000000000000
     );
-
-
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -349,7 +349,7 @@ fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
         deposit = 1
     );
 
-    call!(user, dtoken.borrow( U128(5)), deposit=0).assert_success();
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
@@ -392,7 +392,7 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     dbg!(call!(user, dtoken.borrow(U128(5)), deposit = 0));
 

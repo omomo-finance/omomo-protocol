@@ -1,5 +1,5 @@
 use near_sdk::json_types::U128;
-use near_sdk_sim::{call, ContractAccount, init_simulator, UserAccount, view};
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 use controller::ActionType::Borrow;
 
@@ -111,7 +111,7 @@ fn scenario_repay_no_borrow() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -137,19 +137,15 @@ fn scenario_repay() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
-    let user_balance: u128 = view_balance(
-        &controller,
-        Borrow,
-        user.account_id(),
-        dtoken.account_id(),
-    );
+    let user_balance: u128 =
+        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     let action = "\"Repay\"".to_string();
@@ -164,7 +160,7 @@ fn scenario_repay() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -197,7 +193,7 @@ fn scenario_repay_more_than_borrow() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
@@ -213,7 +209,7 @@ fn scenario_repay_more_than_borrow() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(

@@ -1,12 +1,14 @@
-use crate::utils::{
-    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance,
-};
-use controller::AccountData;
-use controller::ActionType::Supply;
-use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::test_utils::test_env::bob;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+
+use controller::AccountData;
+use controller::ActionType::Supply;
+use general::Price;
+
+use crate::utils::{
+    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance,
+};
 
 fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
