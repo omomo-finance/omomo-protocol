@@ -6,6 +6,7 @@ use controller::ActionType::{Borrow, Supply};
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::AccountId;
+use general::Price;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn liquidation_success_fixture() -> (
@@ -318,6 +319,36 @@ fn scenario_liquidation_success() {
     let (dtoken1, dtoken2, controller, utoken1, utoken2, user1, user2) =
         liquidation_success_fixture();
 
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken1.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken2.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -343,18 +374,17 @@ fn scenario_liquidation_success() {
         deposit = 1
     );
 
-    let _user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
 
-    let _user_balance: u128 = view_balance(
+    let user_balance: u128 = view_balance(
         &controller,
         Supply,
         user2.account_id(),
         dtoken2.account_id(),
     );
 
-    // NEAR tests doesn't work with liquidation due some issues
-    //assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
-    //assert_eq!(user_balance, 10, "Supply balance on dtoken should be 10");
+    assert_eq!(user_balance, 5, "Supply balance on dtoken should be 5");
+    assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
 }
 
 #[test]
