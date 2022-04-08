@@ -62,18 +62,28 @@ mod tests {
     use general::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::testing_env;
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
 
     pub fn init_test_env() -> Contract {
-        let (user_account, underlying_token_account, controller_account) =
+        let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
+
+        let context = VMContextBuilder::new()
+            .current_account_id(dtoken_account.clone())
+            .signer_account_id(dtoken_account.clone())
+            .is_view(false)
+            .build();
+
+        testing_env!(context);
 
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),
             underlying_token_id: underlying_token_account,
-            owner_id: user_account,
+            owner_id: dtoken_account,
             controller_account_id: controller_account,
         });
 

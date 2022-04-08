@@ -67,6 +67,8 @@ pub struct Contract {
     /// Health Factor
     pub health_factor_threshold: Ratio,
 
+    pub health_threshold: Ratio,
+
     /// Liquidation Incentive
     pub liquidation_incentive: Ratio,
 
@@ -160,6 +162,7 @@ impl Contract {
             liquidation_incentive: 500, // TODO: Think of some function that will calculate percent from any integer
             liquidation_health_factor_threshold: 15000, // Same here
             reserve_factor: 0,
+            health_threshold: 15000,
         }
     }
 }
