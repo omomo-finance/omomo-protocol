@@ -17,4 +17,4 @@ jobs:
         run: |
           echo "${{secrets.nearnodessh}}" > ssh-key-nearlend-node
           sudo chmod 600 ssh-key-nearlend-node
-          ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near; kurtosis clean -a; /root/near/launch-local-near-cluster.sh; cd nearlend-protocol; git pull; git reset --hard; deploy.sh; test.sh'
+          ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near; kurtosis clean -a; /root/near/launch-local-near-cluster.sh; cd nearlend-protocol; git pull; git reset --hard; ./deploy.sh; ./test.sh'
