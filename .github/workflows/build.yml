@@ -11,6 +11,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v3
       - name: apply
@@ -20,4 +21,3 @@ jobs:
           ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near; kurtosis clean -a; /root/near/launch-local-near-cluster.sh'
           ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near/nearlend-protocol; git pull; git reset --hard'
           ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near/nearlend-protocol; echo "deploying"; ./deploy.sh'
-          ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near/nearlend-protocol; echo "testing"; ./test.sh'
