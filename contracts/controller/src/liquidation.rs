@@ -43,7 +43,6 @@ impl Contract {
         borrower: AccountId,
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
-        amount_for_liquidation: WBalance,
     ) -> WBalance {
         let unhealth_factor =
             self.liquidation_health_factor_threshold - self.get_health_factor(borrower.clone());
@@ -103,7 +102,6 @@ impl Contract {
                 borrower.clone(),
                 borrowing_dtoken.clone(),
                 collateral_dtoken.clone(),
-                amount_for_liquidation,
             );
 
             if max_possible_liquidation_amount.0 < amount_for_liquidation.0 {

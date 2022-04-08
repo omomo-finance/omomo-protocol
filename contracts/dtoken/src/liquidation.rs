@@ -12,6 +12,8 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         assert_eq!(self.get_contract_address(), borrowing_dtoken);
 
+        self.decrease_borrows(borrower.clone(), liquidation_amount);
+
         controller::liquidation(
             borrower.clone(),
             borrowing_dtoken.clone(),
@@ -45,6 +47,7 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
+            self.increase_borrows(borrower.clone(), liquidation_amount);
             log!(
                 "{}",
                 Events::LiquidationFailed(liquidator, borrower, Balance::from(liquidation_amount))

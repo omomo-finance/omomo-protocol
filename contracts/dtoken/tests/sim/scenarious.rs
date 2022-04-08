@@ -620,6 +620,242 @@ fn scenario_supply_error_command() {
     );
 }
 
+
+// liquidation_fixture
+
+#[test]
+fn scenario_liquidation_success() {
+    let (dtoken1, dtoken2, controller, utoken1, utoken2, user1, user2) = liquidation_fixture();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken1.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+        .assert_success();
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken2.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+        .assert_success();
+
+    call!(
+        user1,
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    let action = json!({
+        "Liquidate":{
+            "borrower": user1.account_id.as_str(),
+            "borrowing_dtoken": dtoken1.account_id().as_str(),
+            "liquidator": user2.account_id.as_str(),
+            "collateral_dtoken": dtoken2.account_id().as_str(),
+            "liquidation_amount": U128(5)
+        }
+    })
+        .to_string();
+
+    call!(
+        user2,
+        utoken1.ft_transfer_call(dtoken1.account_id(), U128(5), None, action),
+        deposit = 1
+    )
+        .assert_success();
+
+    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+
+    let user_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user2.account_id(),
+        dtoken2.account_id(),
+    );
+
+    /*let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+
+    let user_balance: u128 =
+        view!(dtoken2.get_account_borrows(user2.account_id))
+            .unwrap_json();*/
+
+    //assert_eq!(user_balance, 5, "Supply balance on dtoken should be 5");
+    //assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
+}
+
+#[test]
+fn scenario_liquidation_success_on_single_dtoken() {
+    let (dtoken, controller, utoken, user) = repay_fixture();
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+        .assert_success();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    let action = json!({
+        "Liquidate":{
+            "borrower": user.account_id.as_str(),
+            "borrowing_dtoken": dtoken.account_id().as_str(),
+            "liquidator": "test.testnet",
+            "collateral_dtoken": dtoken.account_id().as_str(),
+            "liquidation_amount": U128(5)
+        }
+    })
+        .to_string();
+
+    println!("{:?}", call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
+        deposit = 1
+    ).outcome());
+
+
+    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+
+    let user_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        AccountId::new_unchecked("test.testnet".to_string()),
+        dtoken.account_id(),
+    );
+
+    // NEAR tests doesn't work with liquidation due some issues
+    assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
+    assert_eq!(user_balance, 5, "Supply balance on dtoken should be 5");
+}
+
+#[test]
+fn scenario_liquidation_failed_no_collateral() {
+    let (dtoken, _controller, utoken, user) = repay_fixture();
+
+    let action = json!({
+        "Liquidate":{
+            "borrower": user.account_id.as_str(),
+            "borrowing_dtoken": dtoken.account_id().as_str(),
+            "liquidator": "test.testnet",
+            "collateral_dtoken": dtoken.account_id().as_str(),
+            "liquidation_amount": U128(5)
+        }
+    })
+        .to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
+        deposit = 1
+    )
+        .assert_success();
+
+    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    //assert_eq!(user_borrows, 5, "Borrow balance of user should stay the same, because of an error");
+}
+
+#[test]
+fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
+    let (dtoken, _controller, utoken, user) = repay_fixture();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    let action = json!({
+        "Liquidate":{
+            "borrower": user.account_id.as_str(),
+            "borrowing_dtoken": dtoken.account_id().as_str(),
+            "liquidator": "test.testnet",
+            "collateral_dtoken": dtoken.account_id().as_str(),
+            "liquidation_amount": U128(3)
+        }
+    })
+        .to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(3), None, action),
+        deposit = 1
+    )
+        .assert_success();
+
+    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
+}
+
+#[test]
+fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
+    let (dtoken, _controller, utoken, user) = repay_fixture();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    let action = json!({
+        "Liquidate":{
+            "borrower": user.account_id.as_str(),
+            "borrowing_dtoken": "test.testnet",
+            "liquidator": "test.testnet",
+            "collateral_dtoken": dtoken.account_id().as_str(),
+            "liquidation_amount": U128(5)
+        }
+    })
+        .to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
+        deposit = 1
+    )
+        .assert_success();
+
+    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
+}
+
+
 #[test]
 fn scenario_supply_zero_tokens() {
     let (dtoken, _controller, utoken, user, _) = base_fixture();
@@ -1053,238 +1289,4 @@ fn supply_borrow_repay_withdraw() {
         167.to_string(),
         "After withdraw balance should be 167"
     );
-}
-
-// liquidation_fixture
-
-#[test]
-fn scenario_liquidation_success() {
-    let (dtoken1, dtoken2, controller, utoken1, utoken2, user1, user2) = liquidation_fixture();
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dtoken1.account_id(),
-            &Price {
-                ticker_id: "weth".to_string(),
-                value: U128(20),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-        .assert_success();
-
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dtoken2.account_id(),
-            &Price {
-                ticker_id: "weth".to_string(),
-                value: U128(20),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-        .assert_success();
-
-    call!(
-        user1,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
-    let action = json!({
-        "Liquidate":{
-            "borrower": user1.account_id.as_str(),
-            "borrowing_dtoken": dtoken1.account_id().as_str(),
-            "liquidator": user2.account_id.as_str(),
-            "collateral_dtoken": dtoken2.account_id().as_str(),
-            "liquidation_amount": U128(5)
-        }
-    })
-    .to_string();
-
-    call!(
-        user2,
-        utoken1.ft_transfer_call(dtoken1.account_id(), U128(5), None, action),
-        deposit = 1
-    )
-        .assert_success();
-
-    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
-
-    let user_balance: u128 = view_balance(
-        &controller,
-        Supply,
-        user2.account_id(),
-        dtoken2.account_id(),
-    );
-
-    /*let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
-
-    let user_balance: u128 =
-        view!(dtoken2.get_account_borrows(user2.account_id))
-            .unwrap_json();*/
-
-    //assert_eq!(user_balance, 5, "Supply balance on dtoken should be 5");
-    //assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
-}
-
-#[test]
-fn scenario_liquidation_success_on_single_dtoken() {
-    let (dtoken, controller, utoken, user) = repay_fixture();
-
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dtoken.account_id(),
-            &Price {
-                ticker_id: "weth".to_string(),
-                value: U128(20),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-        .assert_success();
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
-    let action = json!({
-        "Liquidate":{
-            "borrower": user.account_id.as_str(),
-            "borrowing_dtoken": dtoken.account_id().as_str(),
-            "liquidator": "test.testnet",
-            "collateral_dtoken": dtoken.account_id().as_str(),
-            "liquidation_amount": U128(5)
-        }
-    })
-    .to_string();
-
-    println!("{:?}", call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
-        deposit = 1
-    ).outcome());
-
-
-    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-
-    let user_balance: u128 = view_balance(
-        &controller,
-        Supply,
-        AccountId::new_unchecked("test.testnet".to_string()),
-        dtoken.account_id(),
-    );
-
-    // NEAR tests doesn't work with liquidation due some issues
-    assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
-    assert_eq!(user_balance, 5, "Supply balance on dtoken should be 5");
-}
-
-#[test]
-fn scenario_liquidation_failed_no_collateral() {
-    let (dtoken, _controller, utoken, user) = repay_fixture();
-
-    let action = json!({
-        "Liquidate":{
-            "borrower": user.account_id.as_str(),
-            "borrowing_dtoken": dtoken.account_id().as_str(),
-            "liquidator": "test.testnet",
-            "collateral_dtoken": dtoken.account_id().as_str(),
-            "liquidation_amount": U128(5)
-        }
-    })
-    .to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
-        deposit = 1
-    )
-    .assert_success();
-
-    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    //assert_eq!(user_borrows, 5, "Borrow balance of user should stay the same, because of an error");
-}
-
-#[test]
-fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
-    let (dtoken, _controller, utoken, user) = repay_fixture();
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
-    let action = json!({
-        "Liquidate":{
-            "borrower": user.account_id.as_str(),
-            "borrowing_dtoken": dtoken.account_id().as_str(),
-            "liquidator": "test.testnet",
-            "collateral_dtoken": dtoken.account_id().as_str(),
-            "liquidation_amount": U128(3)
-        }
-    })
-    .to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(3), None, action),
-        deposit = 1
-    )
-    .assert_success();
-
-    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
-}
-
-#[test]
-fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
-    let (dtoken, _controller, utoken, user) = repay_fixture();
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
-    let action = json!({
-        "Liquidate":{
-            "borrower": user.account_id.as_str(),
-            "borrowing_dtoken": "test.testnet",
-            "liquidator": "test.testnet",
-            "collateral_dtoken": dtoken.account_id().as_str(),
-            "liquidation_amount": U128(5)
-        }
-    })
-    .to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
-        deposit = 1
-    )
-    .assert_success();
-
-    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
 }
