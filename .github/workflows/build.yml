@@ -1,0 +1,22 @@
+name: nearlend-protocol build automatically
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: apply
+        run: |
+          echo "${{secrets.nearnodessh}}" > ssh-key-nearlend-node
+          sudo chmod 600 ssh-key-nearlend-node
+          scp -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" deploy.sh ${{secrets.nearnodehost}}:/root/near/deploy.sh
+          scp -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" integration_tests.sh ${{secrets.nearnodehost}}:/root/near/integration_tests.sh
+          ssh -i ssh-key-nearlend-node -o "StrictHostKeyChecking no" ${{secrets.nearnodehost}} 'cd /root/near; kurtosis clean -a; ~/launch-local-near-cluster.sh; cd nearlend-protocol; git pull; git reset --hard; deploy.sh; integration_tests.sh'
