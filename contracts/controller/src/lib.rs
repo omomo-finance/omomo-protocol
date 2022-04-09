@@ -51,7 +51,7 @@ pub struct Contract {
 
     /// User Account ID -> Dtoken address -> Supplies balance
     /// User Account ID -> Dtoken address -> Borrow balance
-    user_profiles: LookupMap<AccountId, UserProfile>,
+    user_profiles: UnorderedMap<AccountId, UserProfile>,
 
     /// Dtoken ID -> Price
     pub prices: LookupMap<AccountId, Price>,
@@ -148,7 +148,7 @@ impl Contract {
 
         Self {
             markets: UnorderedMap::new(StorageKeys::Markets),
-            user_profiles: LookupMap::new(StorageKeys::UserProfiles),
+            user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             admin: config.owner_id,

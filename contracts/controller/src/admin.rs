@@ -44,6 +44,17 @@ impl Contract {
             || env::signer_account_id() == env::current_account_id()
     }
 
+    fn is_dtoken_caller(&self) -> bool {
+        let markets_match: Vec<MarketProfile> = self
+            .markets
+            .values()
+            .cloned()
+            .filter(|profile| profile.dtoken == env::predecessor_account_id())
+            .collect::<Vec<MarketProfile>>();
+
+        return markets_match.len() == 1;
+    }
+
     pub fn get_markets_list(&self) -> Vec<Market> {
         return self
             .markets

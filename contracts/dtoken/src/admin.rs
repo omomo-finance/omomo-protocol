@@ -1,4 +1,5 @@
 use near_sdk::{env, require, AccountId, Balance};
+use general::NO_DEPOSIT;
 
 use crate::Contract;
 
@@ -26,19 +27,13 @@ impl Contract {
             "This functionality is allowed to be called by admin or contract only"
         );
 
-        let mut user = self.user_profiles.get(&account).unwrap();
-        user.is_consistent = true;
-
-        self.user_profiles.insert(&account, &user);
-    }
-
-    pub fn remove_inconsistent_account(&mut self, account: AccountId) {
-        require!(
-            self.is_valid_admin_call(),
-            "This functionality is allowed to be called by admin or contract only"
-        );
-
-        self.user_profiles.remove(&account);
+        controller::set_account_consistency(
+            account,
+            false,
+            self.get_controller_address(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        )
     }
 
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
