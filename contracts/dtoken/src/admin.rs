@@ -1,7 +1,7 @@
 use near_sdk::{env, require, AccountId, Balance};
 use general::NO_DEPOSIT;
 
-use crate::Contract;
+use crate::*;
 
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
@@ -33,7 +33,7 @@ impl Contract {
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),
-        )
+        );
     }
 
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
