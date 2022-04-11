@@ -20,16 +20,15 @@ impl Contract {
         let user = self.user_profiles.get(&env::signer_account_id()).unwrap_or_default();
 
         require!(
-            user.is_inconsistent() == false,
-            "Account {} is inconsistent",
-            &env::signer_account_id()
+            user.is_consistent(),
+            format!("Account {} is inconsistent", env::signer_account_id())
         );
 
         if !self.mutex.try_lock(&env::signer_account_id()) {
             panic!(
-                "failed to acquire {} action mutex for account {}",
+                "failed to acquire {} action mutex for account {account}",
                 action,
-                env::current_account_id()
+                account = env::current_account_id()
             );
         }
     }

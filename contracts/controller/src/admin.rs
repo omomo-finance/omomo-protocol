@@ -39,16 +39,17 @@ impl Contract {
         self.admin = account;
     }
 
-    fn is_valid_admin_call(&self) -> bool {
+    #[private]
+    pub fn is_valid_admin_call(&self) -> bool {
         env::signer_account_id() == self.admin
             || env::signer_account_id() == env::current_account_id()
     }
 
-    fn is_dtoken_caller(&self) -> bool {
+    #[private]
+    pub fn is_dtoken_caller(&self) -> bool {
         let markets_match: Vec<MarketProfile> = self
             .markets
             .values()
-            .cloned()
             .filter(|profile| profile.dtoken == env::predecessor_account_id())
             .collect::<Vec<MarketProfile>>();
 
