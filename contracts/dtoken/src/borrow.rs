@@ -30,7 +30,7 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
-        return self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(180));
+        self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(180))
     }
 
     #[private]

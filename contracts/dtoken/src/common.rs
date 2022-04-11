@@ -64,7 +64,7 @@ impl Contract {
         amount: WBalance,
         gas: Gas,
     ) -> PromiseOrValue<U128> {
-        return controller::mutex_lock(
+        controller::mutex_lock(
             action.clone(),
             self.get_controller_address(),
             NO_DEPOSIT,
@@ -77,10 +77,10 @@ impl Contract {
             NO_DEPOSIT,
             gas,
         ))
-        .into();
+        .into()
     }
 
-    pub fn mutex_account_unlock(&mut self) -> () {
+    pub fn mutex_account_unlock(&mut self) {
         controller::mutex_unlock(self.get_controller_address(), NO_DEPOSIT, self.terra_gas(5));
     }
 

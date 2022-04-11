@@ -16,8 +16,10 @@ pub struct ActionMutex {
 #[near_bindgen]
 impl Contract {
     pub fn mutex_lock(&mut self, action: Actions) {
-
-        let user = self.user_profiles.get(&env::signer_account_id()).unwrap_or_default();
+        let user = self
+            .user_profiles
+            .get(&env::signer_account_id())
+            .unwrap_or_default();
 
         require!(
             user.is_consistent(),

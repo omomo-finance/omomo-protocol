@@ -1,5 +1,5 @@
-use near_sdk::{env, require, AccountId, Balance};
 use general::NO_DEPOSIT;
+use near_sdk::{env, require, AccountId, Balance};
 
 use crate::*;
 

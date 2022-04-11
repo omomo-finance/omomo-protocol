@@ -32,7 +32,7 @@ impl UserProfile {
     }
 
     pub fn is_consistent(&self) -> bool {
-        return !self.is_inconsistent;
+        !self.is_inconsistent
     }
 
     pub fn set_consistency(&mut self, consistency: bool) {

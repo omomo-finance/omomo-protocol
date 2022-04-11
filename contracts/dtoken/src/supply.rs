@@ -8,7 +8,7 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_SUPPLY,
             "Prepaid gas is not enough for supply flow"
         );
-        return self.mutex_account_lock(Actions::Supply, token_amount, self.terra_gas(120));
+        self.mutex_account_lock(Actions::Supply, token_amount, self.terra_gas(120))
     }
 
     pub fn post_supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {

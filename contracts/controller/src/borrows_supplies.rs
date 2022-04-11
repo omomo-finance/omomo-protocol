@@ -136,7 +136,7 @@ impl Contract {
     }
 
     fn is_withdraw_allowed(
-        &mut self,
+        &self,
         account: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
@@ -158,7 +158,7 @@ impl Contract {
 
     #[warn(dead_code)]
     fn is_borrow_allowed(
-        &mut self,
+        &self,
         account: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
