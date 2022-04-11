@@ -13,13 +13,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::withdraw_balance_of_callback(
-                Balance::from(dtoken_amount),
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(140),
-            ))
-            .into()
+        .then(ext_self::withdraw_balance_of_callback(
+            Balance::from(dtoken_amount),
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(140),
+        ))
+        .into()
     }
 }
 

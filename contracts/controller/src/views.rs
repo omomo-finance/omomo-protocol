@@ -12,7 +12,7 @@ pub struct AccountData {
     pub total_borrows: Balance,
     pub total_supplies: Balance,
     pub blocked: bool,
-    pub health_factor: Ratio
+    pub health_factor: Ratio,
 }
 
 impl Default for AccountData {

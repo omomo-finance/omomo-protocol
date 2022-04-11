@@ -139,8 +139,8 @@ trait ControllerInterface {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
-    fn mutex_lock( &mut self, action: Actions );
-    fn mutex_unlock( &mut self );
+    fn mutex_lock(&mut self, action: Actions);
+    fn mutex_unlock(&mut self);
 }
 
 #[ext_contract(ext_self)]
@@ -188,7 +188,11 @@ trait InternalTokenInterface {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
-    fn mutex_lock_callback(&mut self, action: Actions, amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn mutex_lock_callback(
+        &mut self,
+        action: Actions,
+        amount: WBalance,
+    ) -> PromiseOrValue<WBalance>;
 }
 
 #[near_bindgen]

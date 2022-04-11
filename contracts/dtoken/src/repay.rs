@@ -3,7 +3,6 @@ use crate::*;
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
 impl Contract {
-
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_REPAY,
@@ -71,7 +70,6 @@ impl Contract {
         );
         let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
-
         require!(
             Balance::from(token_amount) >= borrow_with_rate_amount,
             format!(
