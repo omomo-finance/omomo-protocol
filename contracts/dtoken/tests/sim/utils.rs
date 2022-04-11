@@ -3,11 +3,10 @@ use near_sdk::AccountId;
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 
 use controller::ContractContract as Controller;
-use dtoken::ContractContract as Dtoken;
-use test_utoken::ContractContract as Utoken;
-
 use controller::{ActionType, Config as cConfig};
 use dtoken::Config as dConfig;
+use dtoken::ContractContract as Dtoken;
+use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     DTOKEN_WASM_BYTES => "../../res/dtoken.wasm",
