@@ -13,6 +13,7 @@ pub struct AccountData {
     pub total_supplies: Balance,
     pub blocked: bool,
     pub health_factor: Ratio,
+    pub user_profile: UserProfile,
 }
 
 impl Default for AccountData {
@@ -23,6 +24,7 @@ impl Default for AccountData {
             total_supplies: 0,
             blocked: false,
             health_factor: RATIO_DECIMALS,
+            user_profile: Default::default(),
         }
     }
 }
@@ -49,12 +51,14 @@ impl Contract {
                 let total_borrows = self.get_total_borrows(user_id.clone());
                 let total_supplies = self.get_total_supplies(user_id.clone());
                 let health_factor = self.get_health_factor(user_id.clone());
+                let user_profile = self.user_profiles.get(user_id).unwrap();
                 AccountData {
                     account_id: user_id.clone(),
                     total_borrows: total_borrows.into(),
                     total_supplies: total_supplies.into(),
                     blocked: false,
                     health_factor,
+                    user_profile,
                 }
             })
             .collect::<Vec<AccountData>>();
