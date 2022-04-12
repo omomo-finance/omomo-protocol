@@ -1,5 +1,22 @@
 use crate::*;
+
 const GAS_FOR_BORROW: Gas = Gas(130_000_000_000_000);
+
+impl Contract {
+    pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let borrows = self.get_account_borrows(account.clone());
+        let new_borrows = borrows - Balance::from(token_amount);
+
+        self.set_account_borrows(account, U128(new_borrows))
+    }
+
+    pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let borrows: Balance = self.get_account_borrows(account.clone());
+        let new_borrows = borrows + Balance::from(token_amount);
+
+        self.set_account_borrows(account, U128(new_borrows))
+    }
+}
 
 #[near_bindgen]
 impl Contract {
@@ -168,20 +185,6 @@ impl Contract {
                 )
             );
         }
-    }
-
-    pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let borrows = self.get_account_borrows(account.clone());
-        let new_borrows = borrows - Balance::from(token_amount);
-
-        self.set_account_borrows(account, U128(new_borrows))
-    }
-
-    pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let borrows: Balance = self.get_account_borrows(account.clone());
-        let new_borrows = borrows + Balance::from(token_amount);
-
-        self.set_account_borrows(account, U128(new_borrows))
     }
 
     pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
