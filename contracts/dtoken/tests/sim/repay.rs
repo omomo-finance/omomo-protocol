@@ -1,9 +1,10 @@
+use crate::utils::{
+    initialize_controller, initialize_dtoken, initialize_utoken, new_user, view_balance,
+};
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 use controller::ActionType::Borrow;
-
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
 
 fn repay_no_borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -13,10 +14,10 @@ fn repay_no_borrow_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -27,12 +28,12 @@ fn repay_no_borrow_fixture() -> (
 
     call!(
         uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
-    (dtoken, utoken, d_user)
+    (dtoken, utoken, user)
 }
 
 fn repay_fixture() -> (
@@ -43,10 +44,10 @@ fn repay_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -57,12 +58,12 @@ fn repay_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(300)),
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 fn repay_more_than_borrow_fixture() -> (
@@ -73,10 +74,10 @@ fn repay_more_than_borrow_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -87,12 +88,12 @@ fn repay_more_than_borrow_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(300)),
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 #[test]
