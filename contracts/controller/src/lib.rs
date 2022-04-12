@@ -158,9 +158,9 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            health_factor_threshold: 0,
-            liquidation_incentive: 500, // TODO: Think of some function that will calculate percent from any integer
-            liquidation_health_factor_threshold: 15000, // Same here
+            health_factor_threshold: 16000,
+            liquidation_incentive: 500,
+            liquidation_health_factor_threshold: 17000,
             reserve_factor: 0,
             health_threshold: 15000,
         }
