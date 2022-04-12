@@ -172,7 +172,7 @@ impl Contract {
         ) >= self.get_health_threshold()
     }
 
-    pub fn get_total_supplies(&self, user_id: AccountId) -> WBalance {
+    pub fn get_total_supplies(&self, user_id: AccountId) -> USD {
         let supplies = self
             .user_profiles
             .get(&user_id)
@@ -183,7 +183,7 @@ impl Contract {
             .iter()
             .map(|(asset, balance)| {
                 if let Some(price) = self.get_price(asset.clone()) {
-                    balance * price.value.0
+                    (balance * price.value.0) / ONE_TOKEN
                 } else {
                     0
                 }
@@ -192,7 +192,7 @@ impl Contract {
             .into()
     }
 
-    pub fn get_total_borrows(&self, user_id: AccountId) -> WBalance {
+    pub fn get_total_borrows(&self, user_id: AccountId) -> USD {
         let borrows = self
             .user_profiles
             .get(&user_id)
@@ -203,7 +203,7 @@ impl Contract {
             .iter()
             .map(|(asset, balance)| {
                 if let Some(price) = self.get_price(asset.clone()) {
-                    balance * price.value.0
+                    (balance * price.value.0) / ONE_TOKEN
                 } else {
                     0
                 }
@@ -215,7 +215,7 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
-    use general::Price;
+    use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::AccountId;
@@ -374,7 +374,7 @@ mod tests {
 
         let price = Price {
             ticker_id: "wnear".to_string(),
-            value: U128(100),
+            value: U128(100 * ONE_TOKEN),
             volatility: U128(1),
             fraction_digits: 4u32,
         };
@@ -390,7 +390,7 @@ mod tests {
 
         let price = Price {
             ticker_id: "wnear".to_string(),
-            value: U128(100),
+            value: U128(100 * ONE_TOKEN),
             volatility: U128(1),
             fraction_digits: 4u32,
         };
