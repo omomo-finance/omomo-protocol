@@ -1,10 +1,12 @@
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+
+use controller::ActionType::Supply;
+use general::Price;
+
 use crate::utils::{
     assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance,
 };
-use controller::ActionType::Supply;
-use general::Price;
-use near_sdk::json_types::U128;
-use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn supply_error_command_fixture() -> (
     ContractAccount<dtoken::ContractContract>,

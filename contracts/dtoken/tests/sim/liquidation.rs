@@ -58,16 +58,8 @@ fn liquidation_success_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user1,
-        dtoken1.increase_borrows(d_user1.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 = view!(dtoken1.get_account_borrows(d_user1.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+    //assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
         d_user1,
@@ -174,16 +166,8 @@ fn liquidation_success_on_single_dtoken_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+    //assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
         d_user,
@@ -245,16 +229,8 @@ fn liquidation_failed_no_collateral_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+    //assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
         d_user,
@@ -301,16 +277,8 @@ fn liquidation_failed_on_not_enough_amount_to_liquidate_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+    //assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
         d_user,
@@ -357,16 +325,8 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
         100000000000000
     );
 
-    call!(
-        d_user,
-        dtoken.increase_borrows(d_user.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 = view!(dtoken.get_account_borrows(d_user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+    //assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     call!(
         d_user,
@@ -393,11 +353,12 @@ fn scenario_liquidation_success_on_single_dtoken() {
 
     let action = "\"Supply\"".to_string();
 
-    println!("{:?}", call!(
+    call!(
         user,
         utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
         deposit = 1
-    ).outcome());
+    )
+    .outcome();
 
     let action = json!({
         "Liquidate":{
@@ -410,11 +371,12 @@ fn scenario_liquidation_success_on_single_dtoken() {
     })
     .to_string();
 
-    println!("{:?}", call!(
+    call!(
         user,
         utoken.ft_transfer_call(dtoken.account_id(), U128(5), None, action),
         deposit = 1
-    ).outcome());
+    )
+    .outcome();
 
     let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     let user_balance: u128 =
