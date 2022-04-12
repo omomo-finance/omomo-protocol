@@ -1,23 +1,22 @@
-use near_sdk::json_types::U128;
-use near_sdk::test_utils::test_env::bob;
-use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
-
+use crate::utils::{
+    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, new_user,
+    view_balance,
+};
 use controller::AccountData;
 use controller::ActionType::Supply;
 use general::Price;
-
-use crate::utils::{
-    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, view_balance,
-};
+use near_sdk::json_types::U128;
+use near_sdk::test_utils::test_env::bob;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
 
     // Initialize
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -28,12 +27,12 @@ fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContrac
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
-    (dtoken, d_user)
+    (dtoken, user)
 }
 
 fn withdraw_more_fixture() -> (
@@ -44,10 +43,10 @@ fn withdraw_more_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -58,29 +57,29 @@ fn withdraw_more_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
         dtoken.user_account,
-        dtoken.mint(d_user.account_id(), U128(20)),
+        dtoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     )
     .assert_success();
 
     call!(
-        d_user,
-        controller.increase_supplies(d_user.account_id(), dtoken.account_id(), U128(20)),
+        user,
+        controller.increase_supplies(user.account_id(), dtoken.account_id(), U128(20)),
         0,
         100000000000000
     )
     .assert_success();
 
     call!(
-        d_user,
+        user,
         utoken.ft_transfer(
             dtoken.account_id(),
             U128(20),
@@ -90,15 +89,11 @@ fn withdraw_more_fixture() -> (
         100000000000000
     );
 
-    let user_balance: u128 = view_balance(
-        &controller,
-        Supply,
-        d_user.account_id(),
-        dtoken.account_id(),
-    );
+    let user_balance: u128 =
+        view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
 
-    (dtoken, controller, d_user)
+    (dtoken, controller, user)
 }
 
 fn withdraw_less_same_fixture() -> (
@@ -110,10 +105,10 @@ fn withdraw_less_same_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -124,29 +119,29 @@ fn withdraw_less_same_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
         dtoken.user_account,
-        dtoken.mint(d_user.account_id(), U128(20)),
+        dtoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     )
     .assert_success();
 
     call!(
-        d_user,
-        controller.increase_supplies(d_user.account_id(), dtoken.account_id(), U128(20)),
+        user,
+        controller.increase_supplies(user.account_id(), dtoken.account_id(), U128(20)),
         0,
         100000000000000
     )
     .assert_success();
 
     call!(
-        d_user,
+        user,
         utoken.ft_transfer(
             dtoken.account_id(),
             U128(20),
@@ -171,15 +166,11 @@ fn withdraw_less_same_fixture() -> (
     )
     .assert_success();
 
-    let user_balance: u128 = view_balance(
-        &controller,
-        Supply,
-        d_user.account_id(),
-        dtoken.account_id(),
-    );
+    let user_balance: u128 =
+        view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
 
-    (dtoken, controller, d_user, root)
+    (dtoken, controller, user, root)
 }
 
 fn supply_borrow_withdraw_fixture() -> (
@@ -190,10 +181,10 @@ fn supply_borrow_withdraw_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -204,7 +195,7 @@ fn supply_borrow_withdraw_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(300)),
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
@@ -224,7 +215,7 @@ fn supply_borrow_withdraw_fixture() -> (
     )
     .assert_success();
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 fn withdraw_error_transfer_fixture() -> (
@@ -236,10 +227,10 @@ fn withdraw_error_transfer_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (_, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         utoken.user_account,
@@ -250,14 +241,14 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
         dtoken.user_account,
-        dtoken.mint(d_user.account_id(), U128(3)),
+        dtoken.mint(user.account_id(), U128(3)),
         0,
         100000000000000
     )
@@ -265,7 +256,7 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         dtoken.user_account,
-        dtoken.mint(d_user.account_id(), U128(7)),
+        dtoken.mint(user.account_id(), U128(7)),
         0,
         100000000000000
     )
@@ -273,22 +264,22 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         dtoken.user_account,
-        dtoken.mint(d_user.account_id(), U128(10)),
+        dtoken.mint(user.account_id(), U128(10)),
         0,
         100000000000000
     )
     .assert_success();
 
     call!(
-        d_user,
-        controller.increase_supplies(d_user.account_id(), dtoken.account_id(), U128(20)),
+        user,
+        controller.increase_supplies(user.account_id(), dtoken.account_id(), U128(20)),
         0,
         100000000000000
     )
     .assert_success();
 
     call!(
-        d_user,
+        user,
         utoken.ft_transfer(
             dtoken.account_id(),
             U128(10),
@@ -298,15 +289,11 @@ fn withdraw_error_transfer_fixture() -> (
         100000000000000
     );
 
-    let user_balance: u128 = view_balance(
-        &controller,
-        Supply,
-        d_user.account_id(),
-        dtoken.account_id(),
-    );
+    let user_balance: u128 =
+        view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 20, "Balance should be 20");
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 #[test]
