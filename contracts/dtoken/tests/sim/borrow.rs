@@ -15,19 +15,19 @@ fn borrow_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
@@ -74,19 +74,19 @@ fn borrow_more_than_on_dtoken_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(30)),
         0,
         100000000000000
@@ -136,19 +136,19 @@ fn supply_borrow_repay_withdraw_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000

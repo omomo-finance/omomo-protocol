@@ -3,6 +3,7 @@ use crate::utils::{
     initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
+use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::AccountId;
@@ -22,7 +23,7 @@ fn liquidation_success_fixture() -> (
     // Initialize
     let user1 = new_user(&root, "user1".parse().unwrap());
     let user2 = new_user(&root, "user2".parse().unwrap());
-    let (uroot1, uroot2, utoken1, utoken2) = initialize_two_utokens(&root);
+    let (_uroot1, _uroot2, utoken1, utoken2) = initialize_two_utokens(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken1, dtoken2) = initialize_two_dtokens(
         &root,
@@ -32,51 +33,60 @@ fn liquidation_success_fixture() -> (
     );
 
     call!(
-        uroot1,
-        utoken1.mint(dtoken1.account_id(), U128(0)),
+        utoken1.user_account,
+        utoken1.mint(dtoken1.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot1,
-        utoken1.mint(user1.account_id(), U128(20)),
+        utoken1.user_account,
+        utoken1.mint(user1.account_id(), U128(300)),
         0,
         100000000000000
     );
 
     call!(
-        uroot2,
-        utoken2.mint(dtoken2.account_id(), U128(0)),
+        utoken2.user_account,
+        utoken2.mint(dtoken2.account_id(), U128(150)),
         0,
         100000000000000
     );
 
     call!(
-        uroot2,
-        utoken2.mint(user2.account_id(), U128(20)),
+        utoken2.user_account,
+        utoken2.mint(user2.account_id(), U128(200)),
         0,
         100000000000000
     );
+
+    let action = "\"Supply\"".to_string();
 
     call!(
         user1,
-        dtoken1.increase_borrows(user1.account_id(), U128(5)),
-        0,
-        100000000000000
+        utoken1.ft_transfer_call(dtoken1.account_id(), U128(20), None, action),
+        deposit = 1
+    );
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken1.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
     )
     .assert_success();
+
+    call!(user1, dtoken1.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        user1,
-        controller.increase_borrows(user1.account_id(), dtoken1.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
 
     let user_balance: u128 = view_balance(
         &controller,
@@ -97,45 +107,55 @@ fn liquidation_success_on_single_dtoken_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
+    let action = "\"Supply\"".to_string();
+
     call!(
         user,
-        dtoken.increase_borrows(user.account_id(), U128(5)),
-        0,
-        100000000000000
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
     )
     .assert_success();
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     (dtoken, utoken, user)
@@ -149,45 +169,55 @@ fn liquidation_failed_no_collateral_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
+    let action = "\"Supply\"".to_string();
+
     call!(
         user,
-        dtoken.increase_borrows(user.account_id(), U128(5)),
-        0,
-        100000000000000
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
     )
     .assert_success();
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
+
     assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     (dtoken, utoken, user)
@@ -201,46 +231,50 @@ fn liquidation_failed_on_not_enough_amount_to_liquidate_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
-        dtoken.increase_borrows(user.account_id(), U128(5)),
-        0,
-        100000000000000
+        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
+        deposit = 1
+    );
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
     )
     .assert_success();
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    call!(
-        user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
-    )
-    .assert_success();
-
-    let user_balance: u128 =
-        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
 
     (dtoken, utoken, user)
 }
@@ -253,46 +287,57 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
 
     call!(
-        user,
-        dtoken.increase_borrows(user.account_id(), U128(5)),
-        0,
-        100000000000000
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
     )
     .assert_success();
 
-    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
+    let action = "\"Supply\"".to_string();
 
     call!(
         user,
-        controller.increase_borrows(user.account_id(), dtoken.account_id(), U128(5)),
-        0,
-        100000000000000
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(10),
+            Some("SUPPLY".to_string()),
+            action
+        ),
+        deposit = 1
     )
     .assert_success();
 
-    let user_balance: u128 =
-        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-    assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+
+    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
 
     (dtoken, utoken, user)
 }
@@ -344,14 +389,6 @@ fn scenario_liquidation_success() {
 #[test]
 fn scenario_liquidation_success_on_single_dtoken() {
     let (dtoken, utoken, user) = liquidation_success_on_single_dtoken_fixture();
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
 
     let action = json!({
         "Liquidate":{
@@ -411,14 +448,6 @@ fn scenario_liquidation_failed_no_collateral() {
 fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
     let (dtoken, utoken, user) = liquidation_failed_on_not_enough_amount_to_liquidate_fixture();
 
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
     let action = json!({
         "Liquidate":{
             "borrower": user.account_id.as_str(),
@@ -444,14 +473,6 @@ fn scenario_liquidation_failed_on_not_enough_amount_to_liquidate() {
 #[test]
 fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
     let (dtoken, utoken, user) = liquidation_failed_on_call_with_wrong_borrow_token_fixture();
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
 
     let action = json!({
         "Liquidate":{

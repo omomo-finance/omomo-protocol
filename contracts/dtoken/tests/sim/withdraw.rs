@@ -14,19 +14,19 @@ fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContrac
 
     // Initialize
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
@@ -44,26 +44,26 @@ fn withdraw_more_fixture() -> (
 
     // Initialize
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
@@ -106,26 +106,26 @@ fn withdraw_less_same_fixture() -> (
 
     // Initialize
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
@@ -182,19 +182,19 @@ fn supply_borrow_withdraw_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
@@ -228,26 +228,26 @@ fn withdraw_error_transfer_fixture() -> (
 
     // Initialize
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, utoken) = initialize_utoken(&root);
+    let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
     let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(3)),
         0,
         100000000000000
@@ -255,7 +255,7 @@ fn withdraw_error_transfer_fixture() -> (
     .assert_success();
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(7)),
         0,
         100000000000000
@@ -263,7 +263,7 @@ fn withdraw_error_transfer_fixture() -> (
     .assert_success();
 
     call!(
-        user,
+        dtoken.user_account,
         dtoken.mint(user.account_id(), U128(10)),
         0,
         100000000000000
