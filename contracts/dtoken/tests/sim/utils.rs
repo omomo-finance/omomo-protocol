@@ -3,11 +3,10 @@ use near_sdk::AccountId;
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 
 use controller::ContractContract as Controller;
-use dtoken::ContractContract as Dtoken;
-use test_utoken::ContractContract as Utoken;
-
 use controller::{ActionType, Config as cConfig};
 use dtoken::Config as dConfig;
+use dtoken::ContractContract as Dtoken;
+use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     DTOKEN_WASM_BYTES => "../../res/dtoken.wasm",
@@ -15,10 +14,17 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     CONTROLLER_WASM_BYTES => "../../res/controller.wasm",
 }
 
+pub fn new_user(root: &UserAccount, account_id: AccountId) -> UserAccount {
+    root.create_user(
+        account_id,
+        to_yocto("10000"), // initial balance
+    )
+}
+
 pub fn init_dtoken(
     root: UserAccount,
     token_id: AccountId,
-) -> (UserAccount, ContractAccount<Dtoken>, UserAccount) {
+) -> (UserAccount, ContractAccount<Dtoken>) {
     let contract = deploy!(
         contract: Dtoken,
         contract_id: token_id,
@@ -26,12 +32,7 @@ pub fn init_dtoken(
         signer_account: root
     );
 
-    let user_account = root.create_user(
-        "user_account".parse().unwrap(),
-        to_yocto("1000000"), // initial balance
-    );
-
-    (root, contract, user_account)
+    (root, contract)
 }
 
 pub fn init_two_dtokens(
@@ -42,19 +43,12 @@ pub fn init_two_dtokens(
     UserAccount,
     ContractAccount<Dtoken>,
     ContractAccount<Dtoken>,
-    UserAccount,
-    UserAccount,
 ) {
     let contract1 = deploy!(
         contract: Dtoken,
         contract_id: token1_id,
         bytes: &DTOKEN_WASM_BYTES,
         signer_account: root
-    );
-
-    let user_account1 = root.create_user(
-        "user10_account".parse().unwrap(),
-        to_yocto("10000"), // initial balance
     );
 
     let contract2 = deploy!(
@@ -64,19 +58,13 @@ pub fn init_two_dtokens(
         signer_account: root
     );
 
-    let user_account2 = root.create_user(
-        "user11_account".parse().unwrap(),
-        to_yocto("10000"), // initial balance
-    );
-
-    (root, contract1, contract2, user_account1, user_account2)
+    (root, contract1, contract2)
 }
 
 pub fn init_utoken(
     root: UserAccount,
     token_id: AccountId,
-    account_name: String,
-) -> (UserAccount, ContractAccount<Utoken>, UserAccount) {
+) -> (UserAccount, ContractAccount<Utoken>) {
     let contract = deploy!(
         contract: Utoken,
         contract_id: token_id,
@@ -84,18 +72,13 @@ pub fn init_utoken(
         signer_account: root
     );
 
-    let user_account = root.create_user(
-        account_name.as_str().parse().unwrap(),
-        to_yocto("1000000"), // initial balance
-    );
-
-    (root, contract, user_account)
+    (root, contract)
 }
 
 pub fn init_controller(
     root: UserAccount,
     token_id: AccountId,
-) -> (UserAccount, ContractAccount<Controller>, UserAccount) {
+) -> (UserAccount, ContractAccount<Controller>) {
     let contract = deploy!(
         contract: Controller,
         contract_id: token_id,
@@ -103,12 +86,7 @@ pub fn init_controller(
         signer_account: root
     );
 
-    let user_account = root.create_user(
-        "user3_account".parse().unwrap(),
-        to_yocto("1000000"), // initial balance
-    );
-
-    (root, contract, user_account)
+    (root, contract)
 }
 
 pub fn assert_failure(outcome: ExecutionResult, error_message: &str) {
@@ -132,16 +110,11 @@ pub fn view_balance(
 
 pub fn initialize_utoken(
     root: &UserAccount,
-) -> (
-    UserAccount,
-    ContractAccount<test_utoken::ContractContract>,
-    UserAccount,
-) {
+) -> (UserAccount, ContractAccount<test_utoken::ContractContract>) {
     let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
-    let (uroot, utoken, u_user) = init_utoken(
+    let (uroot, utoken) = init_utoken(
         uroot,
         AccountId::new_unchecked("utoken_contract".to_string()),
-        String::from("user2_account"),
     );
     call!(
         uroot,
@@ -154,7 +127,7 @@ pub fn initialize_utoken(
         deposit = 0
     )
     .assert_success();
-    (uroot, utoken, u_user)
+    (uroot, utoken)
 }
 
 pub fn initialize_two_utokens(
@@ -164,14 +137,11 @@ pub fn initialize_two_utokens(
     UserAccount,
     ContractAccount<test_utoken::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
-    UserAccount,
-    UserAccount,
 ) {
     let uroot1 = root.create_user("utoken1".parse().unwrap(), 1200000000000000000000000000000);
-    let (uroot1, utoken1, u_user1) = init_utoken(
+    let (uroot1, utoken1) = init_utoken(
         uroot1,
         AccountId::new_unchecked("utoken_contract1".to_string()),
-        String::from("user4_account"),
     );
     call!(
         uroot1,
@@ -186,10 +156,9 @@ pub fn initialize_two_utokens(
     .assert_success();
 
     let uroot2 = root.create_user("utoken2".parse().unwrap(), 1200000000000000000000000000000);
-    let (uroot2, utoken2, u_user2) = init_utoken(
+    let (uroot2, utoken2) = init_utoken(
         uroot2,
         AccountId::new_unchecked("utoken_contract2".to_string()),
-        String::from("user5_account"),
     );
     call!(
         uroot2,
@@ -203,21 +172,17 @@ pub fn initialize_two_utokens(
     )
     .assert_success();
 
-    (uroot1, uroot2, utoken1, utoken2, u_user1, u_user2)
+    (uroot1, uroot2, utoken1, utoken2)
 }
 
 pub fn initialize_controller(
     root: &UserAccount,
-) -> (
-    UserAccount,
-    ContractAccount<controller::ContractContract>,
-    UserAccount,
-) {
+) -> (UserAccount, ContractAccount<controller::ContractContract>) {
     let croot = root.create_user(
         "controller".parse().unwrap(),
         1200000000000000000000000000000,
     );
-    let (croot, controller, c_user) = init_controller(
+    let (croot, controller) = init_controller(
         croot,
         AccountId::new_unchecked("controller_contract".to_string()),
     );
@@ -230,20 +195,16 @@ pub fn initialize_controller(
         deposit = 0
     )
     .assert_success();
-    (croot, controller, c_user)
+    (croot, controller)
 }
 
 pub fn initialize_dtoken(
     root: &UserAccount,
     utoken_account: AccountId,
     controller_account: AccountId,
-) -> (
-    UserAccount,
-    ContractAccount<dtoken::ContractContract>,
-    UserAccount,
-) {
+) -> (UserAccount, ContractAccount<dtoken::ContractContract>) {
     let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
-    let (droot, dtoken, d_user) = init_dtoken(
+    let (droot, dtoken) = init_dtoken(
         droot,
         AccountId::new_unchecked("dtoken_contract".to_string()),
     );
@@ -258,7 +219,7 @@ pub fn initialize_dtoken(
         deposit = 0
     )
     .assert_success();
-    (droot, dtoken, d_user)
+    (droot, dtoken)
 }
 
 pub fn initialize_two_dtokens(
@@ -270,11 +231,9 @@ pub fn initialize_two_dtokens(
     UserAccount,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
-    UserAccount,
-    UserAccount,
 ) {
     let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
-    let (droot, dtoken1, dtoken2, d_user1, d_user2) = init_two_dtokens(
+    let (droot, dtoken1, dtoken2) = init_two_dtokens(
         droot,
         AccountId::new_unchecked("dtoken_contract1".to_string()),
         AccountId::new_unchecked("dtoken_contract2".to_string()),
@@ -302,5 +261,5 @@ pub fn initialize_two_dtokens(
         deposit = 0
     )
     .assert_success();
-    (droot, dtoken1, dtoken2, d_user1, d_user2)
+    (droot, dtoken1, dtoken2)
 }

@@ -1,4 +1,6 @@
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
+use crate::utils::{
+    initialize_controller, initialize_dtoken, initialize_utoken, new_user, view_balance,
+};
 use controller::ActionType::{Borrow, Supply};
 use general::Price;
 use near_sdk::json_types::U128;
@@ -12,21 +14,21 @@ fn borrow_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(300)),
+        utoken.user_account,
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
@@ -34,7 +36,7 @@ fn borrow_fixture() -> (
     let action = "\"Supply\"".to_string();
 
     call!(
-        d_user,
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(15),
@@ -62,7 +64,7 @@ fn borrow_fixture() -> (
     )
     .assert_success();
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 fn borrow_more_than_on_dtoken_fixture() -> (
@@ -73,21 +75,21 @@ fn borrow_more_than_on_dtoken_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(30)),
+        utoken.user_account,
+        utoken.mint(user.account_id(), U128(30)),
         0,
         100000000000000
     );
@@ -95,7 +97,7 @@ fn borrow_more_than_on_dtoken_fixture() -> (
     let action = "\"Supply\"".to_string();
 
     call!(
-        d_user,
+        user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
             U128(30),
@@ -123,7 +125,7 @@ fn borrow_more_than_on_dtoken_fixture() -> (
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 fn supply_borrow_repay_withdraw_fixture() -> (
@@ -135,21 +137,21 @@ fn supply_borrow_repay_withdraw_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(800)),
+        utoken.user_account,
+        utoken.mint(user.account_id(), U128(800)),
         0,
         100000000000000
     );
@@ -169,7 +171,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
     )
     .assert_success();
 
-    (dtoken, controller, utoken, d_user, root)
+    (dtoken, controller, utoken, user, root)
 }
 
 #[test]

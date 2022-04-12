@@ -1,8 +1,10 @@
-use crate::utils::{initialize_controller, initialize_dtoken, initialize_utoken, view_balance};
-use controller::ActionType::{Borrow, Supply};
-use general::Price;
+use crate::utils::{
+    initialize_controller, initialize_dtoken, initialize_utoken, new_user, view_balance,
+};
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+
+use controller::ActionType::Borrow;
 
 fn repay_no_borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -12,10 +14,10 @@ fn repay_no_borrow_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
         uroot,
@@ -26,12 +28,12 @@ fn repay_no_borrow_fixture() -> (
 
     call!(
         uroot,
-        utoken.mint(d_user.account_id(), U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
-    (dtoken, utoken, d_user)
+    (dtoken, utoken, user)
 }
 
 fn repay_fixture() -> (
@@ -42,21 +44,21 @@ fn repay_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
-        uroot,
-        utoken.mint(d_user.account_id(), U128(800)),
+        utoken.user_account,
+        utoken.mint(user.account_id(), U128(800)),
         0,
         100000000000000
     );
@@ -145,13 +147,13 @@ fn repay_more_than_borrow_fixture() -> (
 ) {
     let root = init_simulator(None);
 
-    let (uroot, utoken, _u_user) = initialize_utoken(&root);
-    let (_croot, controller, _c_user) = initialize_controller(&root);
-    let (_droot, dtoken, d_user) =
-        initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
 
     call!(
-        uroot,
+        utoken.user_account,
         utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
@@ -238,7 +240,7 @@ fn repay_more_than_borrow_fixture() -> (
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    (dtoken, controller, utoken, d_user)
+    (dtoken, controller, utoken, user)
 }
 
 #[test]
@@ -270,6 +272,22 @@ fn scenario_repay_no_borrow() {
 #[test]
 fn scenario_repay() {
     let (dtoken, controller, utoken, user) = repay_fixture();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(30),
+            Some("SUPPLY".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let action = "\"Repay\"".to_string();
 
@@ -303,6 +321,22 @@ fn scenario_repay() {
 #[test]
 fn scenario_repay_more_than_borrow() {
     let (dtoken, controller, utoken, user) = repay_more_than_borrow_fixture();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(20),
+            Some("SUPPLY".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
+    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
     let action = "\"Repay\"".to_string();
 

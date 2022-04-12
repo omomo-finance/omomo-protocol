@@ -9,10 +9,10 @@ use crate::admin::Market;
 #[derive(Debug)]
 pub struct AccountData {
     pub account_id: AccountId,
-    pub total_borrows: Balance,
-    pub total_supplies: Balance,
+    pub total_borrows_usd: USD,
+    pub total_supplies_usd: USD,
     pub blocked: bool,
-    pub health_factor: Ratio,
+    pub health_factor_ratio: WRatio,
     pub user_profile: UserProfile,
 }
 
@@ -20,10 +20,10 @@ impl Default for AccountData {
     fn default() -> Self {
         AccountData {
             account_id: AccountId::new_unchecked("".to_string()),
-            total_borrows: 0,
-            total_supplies: 0,
+            total_borrows_usd: U128(0),
+            total_supplies_usd: U128(0),
             blocked: false,
-            health_factor: RATIO_DECIMALS,
+            health_factor_ratio: WRatio::from(RATIO_DECIMALS),
             user_profile: Default::default(),
         }
     }
@@ -31,12 +31,12 @@ impl Default for AccountData {
 
 #[near_bindgen]
 impl Contract {
-    pub fn view_total_borrows(&self, user_id: AccountId) -> Balance {
-        self.get_total_borrows(user_id).into()
+    pub fn view_total_borrows_usd(&self, user_id: AccountId) -> USD {
+        self.get_total_borrows(user_id)
     }
 
-    pub fn view_total_supplies(&self, user_id: AccountId) -> Balance {
-        self.get_total_supplies(user_id).into()
+    pub fn view_total_supplies_usd(&self, user_id: AccountId) -> USD {
+        self.get_total_supplies(user_id)
     }
 
     pub fn view_markets(&self) -> Vec<Market> {
@@ -54,10 +54,10 @@ impl Contract {
                 let user_profile = self.user_profiles.get(user_id).unwrap();
                 AccountData {
                     account_id: user_id.clone(),
-                    total_borrows: total_borrows.into(),
-                    total_supplies: total_supplies.into(),
+                    total_borrows_usd: total_borrows,
+                    total_supplies_usd: total_supplies,
                     blocked: false,
-                    health_factor,
+                    health_factor_ratio: WRatio::from(health_factor),
                     user_profile,
                 }
             })
@@ -73,7 +73,7 @@ impl Contract {
 mod tests {
     use crate::ActionType::Supply;
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
-    use general::Price;
+    use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
@@ -178,7 +178,12 @@ mod tests {
         accounts.push(alice());
         accounts.push(bob());
 
-        near_contract.set_entity_by_token(Supply, accounts[0].clone(), token_address, 100);
+        near_contract.set_entity_by_token(
+            Supply,
+            accounts[0].clone(),
+            token_address,
+            100 * ONE_TOKEN,
+        );
         let result = near_contract.view_accounts(accounts);
 
         assert_eq!(result.len(), 1, "View accounts response doesn't match");
@@ -188,16 +193,18 @@ mod tests {
             "View accounts account_id check has been failed"
         );
         assert_eq!(
-            result[0].total_borrows, 0,
+            result[0].total_borrows_usd,
+            U128(0),
             "View accounts total borrows check has been failed"
         );
         assert_eq!(
-            result[0].total_supplies,
-            100 * 20000,
+            result[0].total_supplies_usd,
+            U128(100 * 20000),
             "View accounts total supplies check has been failed"
         );
         assert_eq!(
-            result[0].health_factor, 15000,
+            result[0].health_factor_ratio,
+            U128(15000),
             "View accounts health factor check has been failed"
         );
     }

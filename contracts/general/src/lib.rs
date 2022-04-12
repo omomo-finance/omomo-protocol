@@ -9,8 +9,11 @@ pub const NO_DEPOSIT: Balance = 0;
 pub const ONE_YOCTO: Balance = 1;
 pub const TGAS: Gas = near_sdk::Gas::ONE_TERA;
 pub const RATIO_DECIMALS: u128 = 10u128.pow(4);
+pub const ONE_TOKEN: u128 = 10u128.pow(24);
 
 pub type WBalance = U128;
+
+pub type USD = U128;
 
 pub type Ratio = u128;
 pub type WRatio = U128;
