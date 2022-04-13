@@ -111,21 +111,18 @@ impl Contract {
         self.liquidation_incentive + 10000
     }
 
-    pub fn get_health_factor_threshold(&self) -> Ratio {
-        self.health_factor_threshold
-    }
-
     pub fn get_health_threshold(&self) -> Ratio {
         self.health_threshold
     }
 
     pub fn set_health_factor_threshold(mut self, value: Ratio) {
+        // TODO: Maybe change name of this funcction
         require!(
             self.is_valid_admin_call(),
             "this functionality is allowed to be called by admin or contract only"
         );
 
-        self.health_factor_threshold = value;
+        self.health_threshold = value;
     }
 
     pub fn set_liquidation_incentive(mut self, value: Ratio) {

@@ -53,32 +53,21 @@ impl Contract {
             borrowing_dtoken.clone(),
         );
 
-        let borrow_price = self.prices.get(&borrowing_dtoken.clone()).unwrap().value.0 as f64;
+        let borrow_price = self.prices.get(&borrowing_dtoken.clone()).unwrap().value.0;
 
-        let max_unhealth_repay = WBalance::from(
-            (borrow_amount as f64 * borrow_price * self.get_percent(unhealth_factor)) as u128,
-        );
-
-        let liquidation_revenue = self
-            .get_liquidation_revenue(
-                borrowing_dtoken.clone(),
-                collateral_dtoken.clone(),
-                max_unhealth_repay,
-            )
-            .0 as f64;
+        let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
 
         let supply_amount = self.get_entity_by_token(
             ActionType::Supply,
             borrower.clone(),
             borrowing_dtoken.clone(),
-        ) as f64;
-        let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0 as f64;
+        );
+        let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0;
 
-        let max_revenue = Contract::min(liquidation_revenue, collateral_price * supply_amount);
-
-        let max_possible_liquidation_amount = max_revenue
-            * (self.get_percent(Ratio::from(self.get_liquidation_incentive())))
-            / borrow_price;
+        let max_possible_liquidation_amount = Contract::min(
+            max_unhealth_repay,
+            (RATIO_DECIMALS - self.liquidation_incentive) * supply_amount * collateral_price,
+        ) / borrow_price;
 
         WBalance::from(max_possible_liquidation_amount as u128)
     }
@@ -91,7 +80,7 @@ impl Contract {
         collateral_dtoken: AccountId,
         amount_for_liquidation: WBalance,
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
-        if self.get_health_factor(borrower.clone()) > self.get_health_factor_threshold() {
+        if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
             return Err((
                 WBalance::from(amount_for_liquidation.0),
                 WBalance::from(0),
@@ -114,36 +103,29 @@ impl Contract {
                 ));
             }
 
+            let borrower_supply_amount = self.get_entity_by_token(
+                ActionType::Supply,
+                borrower.clone(),
+                collateral_dtoken.clone(),
+            );
+
+
+
+            if borrower_supply_amount < amount_for_liquidation.0 {
+                return Err((
+                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(borrower_supply_amount),
+                    String::from(
+                        "Borrower collateral amount is not enough to pay it to liquidator",
+                    ),
+                ));
+            }
+
             if liquidator == borrower {
                 return Err((
                     WBalance::from(amount_for_liquidation.0),
                     WBalance::from(max_possible_liquidation_amount.0),
                     String::from("Liquidation cannot liquidate his on borrow"),
-                ));
-            }
-
-            let borrow_amount = self.get_entity_by_token(
-                ActionType::Borrow,
-                borrower.clone(),
-                borrowing_dtoken.clone(),
-            );
-
-            if borrow_amount > amount_for_liquidation.0 {
-                return Err((
-                    WBalance::from(amount_for_liquidation.0),
-                    WBalance::from(max_possible_liquidation_amount.0),
-                    String::from("Borrow bigger than liquidation amount"),
-                ));
-            }
-
-            let balance_of_borrower_collateral =
-                self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
-
-            if balance_of_borrower_collateral < amount_for_liquidation.0 {
-                return Err((
-                    WBalance::from(amount_for_liquidation.0),
-                    WBalance::from(max_possible_liquidation_amount.0),
-                    String::from("Borrower collateral balance is too low"),
                 ));
             }
 

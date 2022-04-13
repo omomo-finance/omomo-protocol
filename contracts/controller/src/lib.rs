@@ -64,9 +64,6 @@ pub struct Contract {
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
 
-    /// Health Factor
-    pub health_factor_threshold: Ratio,
-
     pub health_threshold: Ratio,
 
     /// Liquidation Incentive
@@ -158,9 +155,8 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            health_factor_threshold: 16000,
             liquidation_incentive: 500,
-            liquidation_health_factor_threshold: 17000,
+            liquidation_health_factor_threshold: 10000,
             reserve_factor: 0,
             health_threshold: 15000,
         }
