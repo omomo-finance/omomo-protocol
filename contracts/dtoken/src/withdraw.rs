@@ -30,7 +30,7 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
         );
-        self.mutex_account_lock(Actions::Withdraw, dtoken_amount, self.terra_gas(180))
+        self.mutex_account_lock(Actions::Withdraw, dtoken_amount, GAS_FOR_WITHDRAW)
     }
 
     #[private]

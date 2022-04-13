@@ -47,12 +47,9 @@ impl Contract {
 
     #[private]
     pub fn is_dtoken_caller(&self) -> bool {
-        let matches = self
-            .markets
+        self.markets
             .values()
-            .filter(|profile| profile.dtoken == env::predecessor_account_id())
-            .count();
-        matches == 1
+            .any(|profile| profile.dtoken == env::predecessor_account_id())
     }
 
     pub fn get_markets_list(&self) -> Vec<Market> {
