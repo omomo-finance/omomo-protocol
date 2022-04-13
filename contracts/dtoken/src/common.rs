@@ -26,8 +26,6 @@ pub enum Events {
     LiquidationFailed(AccountId, AccountId, Balance),
 }
 
-const SLIPPAGE_BLOCKS: u128 = 100;
-
 #[derive(Deserialize)]
 #[cfg_attr(not(target_arch = "wasm32"), derive(Debug, Serialize))]
 #[serde(crate = "near_sdk::serde")]
@@ -104,7 +102,7 @@ impl Contract {
         self.total_reserves
     }
 
-    pub fn view_repay_accrued_interest(&mut self, underlying_balance: WBalance) -> AccruedInterestInfo {
+    pub fn get_repay_value(&mut self, underlying_balance: WBalance) -> RepayInfo {
         let borrow_rate: Balance = self.get_borrow_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
@@ -120,14 +118,11 @@ impl Contract {
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
 
-        let slippage =
-            self.get_account_borrows(env::signer_account_id()) * borrow_rate * SLIPPAGE_BLOCKS
-                / RATIO_DECIMALS;
+        let accrued_interest_per_block = user_borrows * borrow_rate / RATIO_DECIMALS;
 
-        AccruedInterestInfo {
-            accrued_interest: accumulated_interest,
-            slippage,
-            total_amount: accumulated_interest + slippage + user_borrows,
+        RepayInfo {
+            accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
+            total_amount: WBalance::from(accumulated_interest + user_borrows),
         }
     }
 }

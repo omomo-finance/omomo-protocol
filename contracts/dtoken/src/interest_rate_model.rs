@@ -11,10 +11,9 @@ pub struct InterestRateModel {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct AccruedInterestInfo {
-    pub accrued_interest: u128,
-    pub slippage: u128,
-    pub total_amount: u128,
+pub struct RepayInfo {
+    pub accrued_interest_per_block: WBalance,
+    pub total_amount: WBalance,
 }
 
 impl InterestRateModel {
