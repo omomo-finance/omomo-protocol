@@ -59,6 +59,7 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use crate::InterestRateModel;
     use general::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
@@ -85,6 +86,7 @@ mod tests {
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel::default(),
         });
 
         contract.set_total_reserves(200);

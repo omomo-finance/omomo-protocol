@@ -49,6 +49,7 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use crate::InterestRateModel;
     use near_sdk::json_types::U128;
 
     use crate::Config;
@@ -62,6 +63,7 @@ mod tests {
             underlying_token_id: "weth".parse().unwrap(),
             owner_id: "dtoken".parse().unwrap(),
             controller_account_id: "controller".parse().unwrap(),
+            interest_rate_model: InterestRateModel::default(),
         });
 
         assert_eq!(dtoken_contract.admin, dtoken_contract.get_admin());

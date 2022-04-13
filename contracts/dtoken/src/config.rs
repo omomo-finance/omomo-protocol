@@ -15,6 +15,9 @@ pub struct Config {
 
     /// The account ID of the controller contract
     pub controller_account_id: AccountId,
+
+    /// The interest rate model with custom values
+    pub interest_rate_model: InterestRateModel,
 }
 
 impl Contract {
