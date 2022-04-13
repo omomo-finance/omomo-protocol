@@ -1,13 +1,14 @@
 use crate::*;
 use near_sdk::env::block_height;
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct InterestRateModel {
-    kink: Ratio,
-    multiplier_per_block: Ratio,
-    base_rate_per_block: Ratio,
-    jump_multiplier_per_block: Ratio,
-    reserve_factor: Ratio,
+    kink: WRatio,
+    multiplier_per_block: WRatio,
+    base_rate_per_block: WRatio,
+    jump_multiplier_per_block: WRatio,
+    reserve_factor: WRatio,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -18,42 +19,42 @@ pub struct RepayInfo {
 
 impl InterestRateModel {
     pub fn get_kink(&self) -> Ratio {
-        self.kink
+        Ratio::from(self.kink)
     }
 
     pub fn get_multiplier_per_block(&self) -> Ratio {
-        self.multiplier_per_block
+        Ratio::from(self.multiplier_per_block)
     }
 
     pub fn get_base_rate_per_block(&self) -> Ratio {
-        self.base_rate_per_block
+        Ratio::from(self.base_rate_per_block)
     }
 
     pub fn get_jump_multiplier_per_block(&self) -> Ratio {
-        self.jump_multiplier_per_block
+        Ratio::from(self.jump_multiplier_per_block)
     }
 
     pub fn get_reserve_factor(&self) -> Ratio {
-        self.reserve_factor
+        Ratio::from(self.reserve_factor)
     }
 
-    pub fn set_kink(&mut self, value: Ratio) {
+    pub fn set_kink(&mut self, value: WRatio) {
         self.kink = value;
     }
 
-    pub fn set_multiplier_per_block(&mut self, value: Ratio) {
+    pub fn set_multiplier_per_block(&mut self, value: WRatio) {
         self.multiplier_per_block = value;
     }
 
-    pub fn set_base_rate_per_block(&mut self, value: Ratio) {
+    pub fn set_base_rate_per_block(&mut self, value: WRatio) {
         self.base_rate_per_block = value;
     }
 
-    pub fn set_jump_multiplier_per_block(&mut self, value: Ratio) {
+    pub fn set_jump_multiplier_per_block(&mut self, value: WRatio) {
         self.jump_multiplier_per_block = value;
     }
 
-    pub fn set_reserve_factor(&mut self, value: Ratio) {
+    pub fn set_reserve_factor(&mut self, value: WRatio) {
         self.reserve_factor = value;
     }
 
@@ -76,18 +77,14 @@ impl InterestRateModel {
     }
 }
 
-fn get_with_ratio_decimals(value: f32) -> Ratio {
-    (value * RATIO_DECIMALS as f32) as Ratio
-}
-
 impl Default for InterestRateModel {
     fn default() -> Self {
         Self {
-            kink: get_with_ratio_decimals(1.0),
-            base_rate_per_block: get_with_ratio_decimals(1.0),
-            multiplier_per_block: get_with_ratio_decimals(1.0),
-            jump_multiplier_per_block: get_with_ratio_decimals(1.0),
-            reserve_factor: get_with_ratio_decimals(0.05),
+            kink: WRatio::from(RATIO_DECIMALS),
+            base_rate_per_block: WRatio::from(RATIO_DECIMALS),
+            multiplier_per_block: WRatio::from(RATIO_DECIMALS),
+            jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS),
+            reserve_factor: WRatio::from(500),
         }
     }
 }
