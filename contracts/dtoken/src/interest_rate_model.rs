@@ -10,6 +10,12 @@ pub struct InterestRateModel {
     reserve_factor: Ratio,
 }
 
+#[derive(BorshDeserialize, BorshSerialize)]
+pub struct RepayInfo {
+    pub accrued_interest_per_block: WBalance,
+    pub total_amount: WBalance,
+}
+
 impl InterestRateModel {
     pub fn get_kink(&self) -> Ratio {
         self.kink
