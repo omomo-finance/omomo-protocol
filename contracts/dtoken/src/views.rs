@@ -5,9 +5,9 @@ use crate::*;
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]
 pub struct MarketData {
-    pub total_supplies: Balance,
-    pub total_borrows: Balance,
-    pub total_reserves: Balance,
+    pub total_supplies: WBalance,
+    pub total_borrows: WBalance,
+    pub total_reserves: WBalance,
     pub exchange_rate_ratio: WRatio,
     pub interest_rate_ratio: WRatio,
     pub borrow_rate_ratio: WRatio,
@@ -47,9 +47,9 @@ impl Contract {
         );
 
         MarketData {
-            total_supplies,
-            total_borrows,
-            total_reserves,
+            total_supplies: WBalance::from(total_supplies),
+            total_borrows: WBalance::from(total_borrows),
+            total_reserves: WBalance::from(total_reserves),
             exchange_rate_ratio: WRatio::from(exchange_rate),
             interest_rate_ratio: WRatio::from(interest_rate),
             borrow_rate_ratio: WRatio::from(borrow_rate),
@@ -101,9 +101,9 @@ mod tests {
         let gotten_md = contract.view_market_data(WBalance::from(1000));
 
         let _expected_md = MarketData {
-            total_supplies: 0,
-            total_borrows: 0,
-            total_reserves: 200,
+            total_supplies: U128(0),
+            total_borrows: U128(0),
+            total_reserves: U128(200),
             exchange_rate_ratio: U128(1000000),
             interest_rate_ratio: U128(0),
             borrow_rate_ratio: U128(10000),
