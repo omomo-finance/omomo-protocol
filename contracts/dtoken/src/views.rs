@@ -55,6 +55,10 @@ impl Contract {
             borrow_rate_ratio: WRatio::from(borrow_rate),
         }
     }
+
+    pub fn view_repay_info(&self, ft_balance: WBalance) -> RepayInfo {
+        self.get_repay_info(ft_balance)
+    }
 }
 
 #[cfg(test)]
