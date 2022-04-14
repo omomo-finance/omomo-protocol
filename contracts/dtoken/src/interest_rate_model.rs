@@ -11,7 +11,8 @@ pub struct InterestRateModel {
     reserve_factor: WRatio,
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct RepayInfo {
     pub accrued_interest_per_block: WBalance,
     pub total_amount: WBalance,

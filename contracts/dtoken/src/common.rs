@@ -102,7 +102,7 @@ impl Contract {
         self.total_reserves
     }
 
-    pub fn get_repay_value(&mut self, underlying_balance: WBalance) -> RepayInfo {
+    pub fn get_repay_info(&self, underlying_balance: WBalance) -> RepayInfo {
         let borrow_rate: Balance = self.get_borrow_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
@@ -116,8 +116,6 @@ impl Contract {
             self.get_accrued_borrow_interest(env::signer_account_id()),
         );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
-
         let accrued_interest_per_block = user_borrows * borrow_rate / RATIO_DECIMALS;
 
         RepayInfo {
