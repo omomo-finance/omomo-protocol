@@ -110,11 +110,16 @@ impl Contract {
         );
         let user_borrows = self.get_account_borrows(env::signer_account_id());
 
-        let borrow_accrued_interest = self.model.calculate_accrued_interest(
-            borrow_rate,
-            user_borrows,
-            self.get_accrued_borrow_interest(env::signer_account_id()),
-        );
+        let borrow_accrued_interest = self
+            .config
+            .get()
+            .unwrap()
+            .interest_rate_model
+            .calculate_accrued_interest(
+                borrow_rate,
+                user_borrows,
+                self.get_accrued_borrow_interest(env::signer_account_id()),
+            );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
         let accrued_interest_per_block = user_borrows * borrow_rate / RATIO_DECIMALS;
 

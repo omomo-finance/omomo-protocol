@@ -66,8 +66,6 @@ pub struct Contract {
     /// Contract configuration object
     config: LazyOption<Config>,
 
-    model: InterestRateModel,
-
     ///User action protection
     mutex: ActionMutex,
 
@@ -225,7 +223,6 @@ impl Contract {
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
-            model: config.interest_rate_model,
             mutex: ActionMutex::default(),
             admin: config.owner_id,
         }
