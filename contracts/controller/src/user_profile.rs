@@ -66,9 +66,7 @@ mod tests {
         let balance: Balance = 100 * ONE_TOKEN;
         let account = AccountId::new_unchecked("bob.near".to_string());
         let mut profile = UserProfile::default();
-        profile
-            .account_supplies
-            .insert(account.clone(), balance);
+        profile.account_supplies.insert(account.clone(), balance);
 
         let wprofile = profile.get_wrapped();
         let supply_balance = wprofile.account_supplies.get(&account).unwrap();

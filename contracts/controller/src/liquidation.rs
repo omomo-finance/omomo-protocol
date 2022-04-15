@@ -57,11 +57,8 @@ impl Contract {
 
         let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
 
-        let supply_amount = self.get_entity_by_token(
-            ActionType::Supply,
-            borrower,
-            borrowing_dtoken,
-        );
+        let supply_amount =
+            self.get_entity_by_token(ActionType::Supply, borrower, borrowing_dtoken);
         let collateral_price = self.prices.get(&collateral_dtoken).unwrap().value.0;
 
         let max_possible_liquidation_amount = Contract::min(
