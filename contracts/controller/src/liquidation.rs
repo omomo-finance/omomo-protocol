@@ -109,6 +109,8 @@ impl Contract {
                 collateral_dtoken.clone(),
             );
 
+
+
             if borrower_supply_amount < amount_for_liquidation.0 {
                 return Err((
                     WBalance::from(amount_for_liquidation.0),
