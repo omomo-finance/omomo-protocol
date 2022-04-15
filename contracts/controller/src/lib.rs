@@ -26,6 +26,7 @@ mod healthfactor;
 mod liquidation;
 mod oraclehook;
 mod prices;
+mod helper;
 pub mod repay;
 pub mod user_profile;
 mod views;
@@ -63,13 +64,13 @@ pub struct Contract {
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
 
-    /// Health Factor
-    pub health_factor_threshold: Ratio,
-
     pub health_threshold: Ratio,
 
     /// Liquidation Incentive
     pub liquidation_incentive: Ratio,
+
+    /// Liquidation Health Factor
+    pub liquidation_health_factor_threshold: Ratio,
 
     /// Reserve Factor
     pub reserve_factor: Percent,
@@ -154,8 +155,8 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            health_factor_threshold: 0,
-            liquidation_incentive: 0,
+            liquidation_incentive: 500,
+            liquidation_health_factor_threshold: 10000,
             reserve_factor: 0,
             health_threshold: 15000,
         }
