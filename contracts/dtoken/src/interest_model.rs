@@ -68,6 +68,8 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use crate::InterestRateModel;
+    use general::WRatio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
 
@@ -82,6 +84,7 @@ mod tests {
             underlying_token_id: underlying_token_account,
             owner_id: user_account,
             controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel::default(),
         })
     }
 
@@ -94,21 +97,25 @@ mod tests {
     #[test]
     fn test_get_borrow_rate() {
         let mut contract = init_test_env();
-        contract.model.set_base_rate_per_block(0);
-        contract.model.set_multiplier_per_block(500);
-        contract.model.set_kink(8000);
-        contract.model.set_jump_multiplier_per_block(10900);
+        contract.model.set_base_rate_per_block(WRatio::from(0));
+        contract.model.set_multiplier_per_block(WRatio::from(500));
+        contract.model.set_kink(WRatio::from(8000));
+        contract
+            .model
+            .set_jump_multiplier_per_block(WRatio::from(10900));
         assert_eq!(contract.get_borrow_rate(U128(20), U128(180), U128(0)), 1490);
     }
 
     #[test]
     fn test_get_supply_rate() {
         let mut contract = init_test_env();
-        contract.model.set_base_rate_per_block(0);
-        contract.model.set_multiplier_per_block(500);
-        contract.model.set_kink(8000);
-        contract.model.set_jump_multiplier_per_block(10900);
-        contract.model.set_reserve_factor(700);
+        contract.model.set_base_rate_per_block(WRatio::from(0));
+        contract.model.set_multiplier_per_block(WRatio::from(500));
+        contract.model.set_kink(WRatio::from(8000));
+        contract
+            .model
+            .set_jump_multiplier_per_block(WRatio::from(10900));
+        contract.model.set_reserve_factor(WRatio::from(700));
         assert_eq!(
             contract.get_supply_rate(
                 U128(20),

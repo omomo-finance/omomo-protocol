@@ -6,6 +6,7 @@ use controller::ContractContract as Controller;
 use controller::{ActionType, Config as cConfig};
 use dtoken::Config as dConfig;
 use dtoken::ContractContract as Dtoken;
+use dtoken::InterestRateModel;
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -215,6 +216,7 @@ pub fn initialize_dtoken(
             underlying_token_id: utoken_account,
             owner_id: droot.account_id(),
             controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel::default()
         }),
         deposit = 0
     )
@@ -245,6 +247,7 @@ pub fn initialize_two_dtokens(
             underlying_token_id: utoken_account1,
             owner_id: droot.account_id(),
             controller_account_id: controller_account.clone(),
+            interest_rate_model: InterestRateModel::default()
         }),
         deposit = 0
     )
@@ -257,6 +260,7 @@ pub fn initialize_two_dtokens(
             underlying_token_id: utoken_account2,
             owner_id: droot.account_id(),
             controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel::default()
         }),
         deposit = 0
     )

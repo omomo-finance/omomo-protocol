@@ -439,6 +439,6 @@ fn scenario_view_accounts() {
         .unwrap();
 
     // borrow on dtoken should be 5 & supply 20
-    assert_eq!(20, user_supply_on_dtoken);
-    assert_eq!(5, user_borrow_on_dtoken);
+    assert_eq!(U128(20), user_supply_on_dtoken);
+    assert_eq!(U128(5), user_borrow_on_dtoken);
 }
