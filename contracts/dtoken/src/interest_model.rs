@@ -31,10 +31,11 @@ impl Contract {
         total_reserves: WBalance,
     ) -> Ratio {
         let util = self.get_util(underlying_balance, total_borrows, total_reserves);
-        let kink = self.model.get_kink();
-        let multiplier_per_block = self.model.get_multiplier_per_block();
-        let base_rate_per_block = self.model.get_base_rate_per_block();
-        let jump_multiplier_per_block = self.model.get_jump_multiplier_per_block();
+        let interest_rate_model = self.config.get().unwrap().interest_rate_model;
+        let kink = interest_rate_model.get_kink();
+        let multiplier_per_block = interest_rate_model.get_multiplier_per_block();
+        let base_rate_per_block = interest_rate_model.get_base_rate_per_block();
+        let jump_multiplier_per_block = interest_rate_model.get_jump_multiplier_per_block();
         min(util, kink) * multiplier_per_block / RATIO_DECIMALS
             + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block
                 / RATIO_DECIMALS
@@ -51,7 +52,7 @@ impl Contract {
             Balance::from(underlying_balance).checked_add(Balance::from(total_borrows));
         assert!(
             sum_balance_borrows.is_some(),
-            "Overflowing occurs while adding undelying balance and total borrows"
+            "Overflowing occurs while adding underlying balance and total borrows"
         );
         let denominator = sum_balance_borrows
             .unwrap()
@@ -96,34 +97,41 @@ mod tests {
 
     #[test]
     fn test_get_borrow_rate() {
-        let mut contract = init_test_env();
-        contract.model.set_base_rate_per_block(WRatio::from(0));
-        contract.model.set_multiplier_per_block(WRatio::from(500));
-        contract.model.set_kink(WRatio::from(8000));
-        contract
-            .model
-            .set_jump_multiplier_per_block(WRatio::from(10900));
-        assert_eq!(contract.get_borrow_rate(U128(20), U128(180), U128(0)), 1490);
+        let contract = init_test_env();
+
+        let mut interest_rate_model = contract.config.get().unwrap().interest_rate_model;
+
+        interest_rate_model.set_base_rate_per_block(WRatio::from(0));
+        interest_rate_model.set_multiplier_per_block(WRatio::from(500));
+        interest_rate_model.set_kink(WRatio::from(8000));
+        interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900));
+
+        assert_eq!(
+            contract.get_borrow_rate(U128(20), U128(180), U128(0)),
+            19000
+        );
     }
 
     #[test]
     fn test_get_supply_rate() {
-        let mut contract = init_test_env();
-        contract.model.set_base_rate_per_block(WRatio::from(0));
-        contract.model.set_multiplier_per_block(WRatio::from(500));
-        contract.model.set_kink(WRatio::from(8000));
-        contract
-            .model
-            .set_jump_multiplier_per_block(WRatio::from(10900));
-        contract.model.set_reserve_factor(WRatio::from(700));
+        let contract = init_test_env();
+
+        let mut interest_rate_model = contract.config.get().unwrap().interest_rate_model;
+
+        interest_rate_model.set_base_rate_per_block(WRatio::from(0));
+        interest_rate_model.set_multiplier_per_block(WRatio::from(500));
+        interest_rate_model.set_kink(WRatio::from(8000));
+        interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900));
+        interest_rate_model.set_reserve_factor(WRatio::from(700));
+
         assert_eq!(
             contract.get_supply_rate(
                 U128(20),
                 U128(180),
                 U128(0),
-                U128(contract.model.get_reserve_factor())
+                U128(interest_rate_model.get_reserve_factor())
             ),
-            1246
+            15903
         );
     }
 }

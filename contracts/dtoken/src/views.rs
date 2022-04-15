@@ -32,7 +32,12 @@ impl Contract {
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
         let exchange_rate = self.get_exchange_rate(ft_balance_of);
-        let reserve_factor = self.model.get_reserve_factor();
+        let reserve_factor = self
+            .config
+            .get()
+            .unwrap()
+            .interest_rate_model
+            .get_reserve_factor();
 
         let interest_rate = self.get_supply_rate(
             ft_balance_of,
