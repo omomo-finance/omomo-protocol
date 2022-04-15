@@ -3,15 +3,16 @@ use crate::*;
 use std::collections::HashMap;
 
 impl Contract {
-    pub fn get_price_sum(&self, map: &HashMap<AccountId, Balance>) -> Balance {
-        let mut result: Balance = 0;
-        for (asset, balance) in map.iter() {
-            let price = self.get_price(asset.clone()).unwrap();
-            result += Percentage::from(Percent::from(price.volatility))
-                .apply_to(Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits));
-        }
+    pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
+        map.iter()
+            .map(|(asset, balance)| {
+                let price = self.get_price(asset.clone()).unwrap();
 
-        result
+                Percentage::from(Percent::from(price.volatility)).apply_to(
+                    Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits),
+                )
+            })
+            .sum()
     }
 
     fn get_account_sum_per_action(&self, user_account: AccountId, action: ActionType) -> Balance {
@@ -30,7 +31,7 @@ impl Contract {
             }
         };
 
-        self.get_price_sum(&map_raw)
+        self.calculate_assets_weighted_price(&map_raw)
     }
 
     pub fn get_potential_health_factor(
@@ -139,26 +140,26 @@ mod tests {
     }
 
     #[test]
-    fn test_get_price_sum_empty_map() {
+    fn test_calculate_assets_weighted_price_sum_empty_map() {
         let (controller_contract, _token_address, _user_account) = init();
 
         let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
         assert_eq!(
-            controller_contract.get_price_sum(&raw_map_empty),
+            controller_contract.calculate_assets_weighted_price(&raw_map_empty),
             0,
             "Test for None Option has been failed"
         );
     }
 
     #[test]
-    fn test_for_get_price_sum() {
+    fn test_for_calculate_assets_weighted_price() {
         let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
         raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
 
         assert_eq!(
-            controller_contract.get_price_sum(&raw_map),
+            controller_contract.calculate_assets_weighted_price(&raw_map),
             160,
             "Test for None Option has been failed"
         );
