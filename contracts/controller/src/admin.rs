@@ -114,17 +114,9 @@ impl Contract {
         self.reserve_factor
     }
 
-    pub fn get_liquidation_incentive(self) -> Ratio {
-        require!(
-            self.is_valid_admin_call(),
-            "this functionality is allowed to be called by admin or contract only"
-        );
-
-        self.liquidation_incentive
-    }
-
-    pub fn get_health_factor_threshold(&self) -> Ratio {
-        self.health_factor_threshold
+    pub fn get_liquidation_incentive(&self) -> Ratio {
+        // TODO: Move this kind of getter that don't require admin rights somewhere else
+        self.liquidation_incentive + 10000
     }
 
     pub fn get_health_threshold(&self) -> Ratio {
@@ -132,12 +124,13 @@ impl Contract {
     }
 
     pub fn set_health_factor_threshold(mut self, value: Ratio) {
+        // TODO: Maybe change name of this funcction
         require!(
             self.is_valid_admin_call(),
             "this functionality is allowed to be called by admin or contract only"
         );
 
-        self.health_factor_threshold = value;
+        self.health_threshold = value;
     }
 
     pub fn set_liquidation_incentive(mut self, value: Ratio) {

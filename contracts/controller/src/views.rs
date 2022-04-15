@@ -13,7 +13,7 @@ pub struct AccountData {
     pub total_supplies_usd: USD,
     pub blocked: bool,
     pub health_factor_ratio: WRatio,
-    pub user_profile: UserProfile,
+    pub user_profile: WrappedUserProfile,
 }
 
 impl Default for AccountData {
@@ -51,7 +51,7 @@ impl Contract {
                 let total_borrows = self.get_total_borrows(user_id.clone());
                 let total_supplies = self.get_total_supplies(user_id.clone());
                 let health_factor = self.get_health_factor(user_id.clone());
-                let user_profile = self.user_profiles.get(user_id).unwrap();
+                let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
                 AccountData {
                     account_id: user_id.clone(),
                     total_borrows_usd: total_borrows,
