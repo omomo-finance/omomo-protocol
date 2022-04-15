@@ -12,6 +12,8 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         assert_eq!(self.get_contract_address(), borrowing_dtoken);
 
+        self.decrease_borrows(borrower.clone(), liquidation_amount);
+
         controller::liquidation(
             borrower.clone(),
             borrowing_dtoken.clone(),
@@ -30,7 +32,7 @@ impl Contract {
             liquidation_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(60),
+            self.terra_gas(80),
         ))
         .into()
     }
@@ -45,6 +47,7 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
+            self.increase_borrows(borrower.clone(), liquidation_amount);
             log!(
                 "{}",
                 Events::LiquidationFailed(liquidator, borrower, Balance::from(liquidation_amount))
@@ -88,10 +91,14 @@ impl Contract {
         }
 
         self.token
-            .internal_transfer(&borrower, &liquidator, amount, None);
+            .internal_transfer(&borrower.clone(), &liquidator, amount, None);
         log!(
             "{}",
-            Events::LiquidationSuccess(liquidator, borrower, Balance::from(liquidation_amount))
+            Events::LiquidationSuccess(
+                liquidator,
+                borrower.clone(),
+                Balance::from(liquidation_amount)
+            )
         );
         PromiseOrValue::Value(U128(0))
     }

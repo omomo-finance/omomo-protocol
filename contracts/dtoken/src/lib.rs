@@ -202,12 +202,14 @@ impl Contract {
         underlying_token_id: AccountId,
         controller_account_id: AccountId,
         initial_exchange_rate: U128,
+        interest_rate_model: InterestRateModel,
     ) -> Self {
         Self::new(Config {
             owner_id,
             underlying_token_id,
             controller_account_id,
             initial_exchange_rate,
+            interest_rate_model,
         })
     }
 
@@ -223,7 +225,7 @@ impl Contract {
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
-            model: InterestRateModel::default(),
+            model: config.interest_rate_model,
             mutex: ActionMutex::default(),
             admin: config.owner_id,
         }
