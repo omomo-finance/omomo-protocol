@@ -1,3 +1,5 @@
+use crate::*;
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::LookupMap;
 use near_sdk::env::block_height;
@@ -8,6 +10,33 @@ const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ActionMutex {
     blocked_accounts: LookupMap<AccountId, BlockHeight>,
+}
+
+#[near_bindgen]
+impl Contract {
+    pub fn mutex_lock(&mut self, action: Actions) {
+        let user = self
+            .user_profiles
+            .get(&env::signer_account_id())
+            .unwrap_or_default();
+
+        require!(
+            user.is_consistent(),
+            format!("Account {} is inconsistent", env::signer_account_id())
+        );
+
+        if !self.mutex.try_lock(&env::signer_account_id()) {
+            panic!(
+                "failed to acquire {} action mutex for account {account}",
+                action,
+                account = env::current_account_id()
+            );
+        }
+    }
+
+    pub fn mutex_unlock(&mut self) {
+        self.mutex.unlock(&env::signer_account_id());
+    }
 }
 
 impl Default for ActionMutex {

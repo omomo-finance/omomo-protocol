@@ -10,6 +10,9 @@ pub struct UserProfile {
 
     /// Dtoken address -> Borrow balance
     pub account_borrows: HashMap<AccountId, Balance>,
+
+    /// The flag which describe account consistency
+    pub is_inconsistent: bool,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -52,6 +55,30 @@ impl UserProfile {
                 .insert(key.clone(), WBalance::from(*value));
         }
         result
+    }
+
+    pub fn is_consistent(&self) -> bool {
+        !self.is_inconsistent
+    }
+
+    pub fn set_consistency(&mut self, consistency: bool) {
+        self.is_inconsistent = !consistency;
+    }
+}
+
+#[near_bindgen]
+impl Contract {
+    /// The method can be called only by Admin, Controller, Dtoken contracts
+    pub fn set_account_consistency(&mut self, account: AccountId, consistency: bool) {
+        require!(
+            self.is_valid_admin_call() || self.is_dtoken_caller(),
+            "This functionality is allowed to be called by admin, contract or dtoken's contract only"
+        );
+
+        self.user_profiles
+            .get(&account)
+            .unwrap_or_default()
+            .set_consistency(consistency);
     }
 }
 

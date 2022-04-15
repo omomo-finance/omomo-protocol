@@ -1,15 +1,20 @@
 use crate::*;
 
-const GAS_FOR_REPAY: Gas = Gas(95_000_000_000_000);
+const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
 impl Contract {
-    pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
+    pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_REPAY,
             "Prepaid gas is not enough for repay flow"
         );
-        self.mutex_account_lock(String::from("repay"));
+        self.mutex_account_lock(Actions::Repay, token_amount, self.terra_gas(140))
+    }
 
+    pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+        if !is_promise_success() {
+            return PromiseOrValue::Value(token_amount);
+        }
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
@@ -20,7 +25,7 @@ impl Contract {
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            self.terra_gas(60),
         ))
         .into()
     }
@@ -41,6 +46,7 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
+
             return PromiseOrValue::Value(token_amount);
         }
 
@@ -51,7 +57,6 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
-
         let borrow_rate: Balance = self.get_borrow_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
@@ -71,7 +76,6 @@ impl Contract {
             );
         let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
-
         require!(
             Balance::from(token_amount) >= borrow_with_rate_amount,
             format!(
@@ -94,7 +98,7 @@ impl Contract {
             U128(borrow_with_rate_amount),
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(5),
+            self.terra_gas(20),
         ))
         .into()
     }

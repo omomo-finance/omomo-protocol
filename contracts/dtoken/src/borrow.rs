@@ -1,7 +1,7 @@
 use crate::*;
 
-const GAS_FOR_BORROW: Gas = Gas(130_000_000_000_000);
-#[near_bindgen]
+const GAS_FOR_BORROW: Gas = Gas(180_000_000_000_000);
+
 impl Contract {
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let borrows = self.get_account_borrows(account.clone());
@@ -20,12 +20,10 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
-        require!(
-            env::prepaid_gas() >= GAS_FOR_BORROW,
-            "Prepaid gas is not enough for borrow flow"
-        );
-        self.mutex_account_lock(String::from("borrow"));
+    pub fn post_borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+        if !is_promise_success() {
+            return PromiseOrValue::Value(token_amount);
+        }
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
@@ -37,9 +35,20 @@ impl Contract {
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(100),
+            self.terra_gas(140),
         ))
         .into()
+    }
+}
+
+#[near_bindgen]
+impl Contract {
+    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+        require!(
+            env::prepaid_gas() >= GAS_FOR_BORROW,
+            "Prepaid gas is not enough for borrow flow"
+        );
+        self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(180))
     }
 
     #[private]
@@ -85,20 +94,19 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
-
         controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(5),
+            self.terra_gas(10),
         )
         .then(ext_self::make_borrow_callback(
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(70),
+            self.terra_gas(80),
         ))
         .into()
     }
@@ -132,7 +140,7 @@ impl Contract {
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            self.terra_gas(50),
         ))
         .into()
     }
@@ -163,7 +171,7 @@ impl Contract {
                 token_amount,
                 env::current_account_id(),
                 NO_DEPOSIT,
-                self.terra_gas(5),
+                self.terra_gas(20),
             ))
             .into()
         }
