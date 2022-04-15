@@ -61,13 +61,14 @@ impl Contract {
         };
 
         let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
+        let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(self.model.get_reserve_factor()),
+            U128(interest_rate_model.get_reserve_factor()),
         );
-        let accrued_supply_interest = self.model.calculate_accrued_interest(
+        let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
             self.get_accrued_supply_interest(env::signer_account_id()),
