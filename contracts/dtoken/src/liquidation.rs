@@ -94,11 +94,7 @@ impl Contract {
             .internal_transfer(&borrower, &liquidator, amount, None);
         log!(
             "{}",
-            Events::LiquidationSuccess(
-                liquidator,
-                borrower,
-                Balance::from(liquidation_amount)
-            )
+            Events::LiquidationSuccess(liquidator, borrower, Balance::from(liquidation_amount))
         );
         PromiseOrValue::Value(U128(0))
     }
