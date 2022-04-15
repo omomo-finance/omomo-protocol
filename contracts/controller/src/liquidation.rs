@@ -53,16 +53,16 @@ impl Contract {
             borrowing_dtoken.clone(),
         );
 
-        let borrow_price = self.prices.get(&borrowing_dtoken.clone()).unwrap().value.0;
+        let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
         let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
 
         let supply_amount = self.get_entity_by_token(
             ActionType::Supply,
-            borrower.clone(),
-            borrowing_dtoken.clone(),
+            borrower,
+            borrowing_dtoken,
         );
-        let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0;
+        let collateral_price = self.prices.get(&collateral_dtoken).unwrap().value.0;
 
         let max_possible_liquidation_amount = Contract::min(
             max_unhealth_repay,
@@ -81,11 +81,11 @@ impl Contract {
         amount_for_liquidation: WBalance,
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
-            return Err((
+            Err((
                 WBalance::from(amount_for_liquidation.0),
                 WBalance::from(0),
                 String::from("User can't be liquidated as he has normal value of health factor"),
-            ));
+            ))
         } else {
             let max_possible_liquidation_amount = self.maximum_possible_liquidation_amount(
                 borrower.clone(),
@@ -128,8 +128,8 @@ impl Contract {
             }
 
             let revenue_amount = self.get_liquidation_revenue(
-                borrowing_dtoken.clone(),
-                collateral_dtoken.clone(),
+                borrowing_dtoken,
+                collateral_dtoken,
                 amount_for_liquidation,
             );
             Ok((amount_for_liquidation, revenue_amount))
