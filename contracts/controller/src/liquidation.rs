@@ -148,7 +148,16 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         // TODO: Add check that only real Dtoken address can call this
         if !is_promise_success() {
-            self.increase_borrows(borrower, _borrowing_dtoken, liquidation_amount);
+            self.increase_borrows(borrower.clone(), _borrowing_dtoken.clone(), liquidation_amount);
+
+            dtoken::increase_borrows(
+                borrower,
+                liquidation_amount,
+                _borrowing_dtoken,
+                NO_DEPOSIT,
+                near_sdk::Gas::ONE_TERA * 8_u64,
+            );
+
             log!("Liquidation failed on borrow_repay call, revert changes...");
             PromiseOrValue::Value(U128(liquidation_amount.0))
         } else {

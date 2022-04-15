@@ -150,7 +150,7 @@ pub fn initialize_two_utokens(
             uroot1.account_id(),
             String::from("Mock Token"),
             String::from("MOCK"),
-            U128(10000)
+            U128(100000000000000)
         ),
         deposit = 0
     )
@@ -167,7 +167,7 @@ pub fn initialize_two_utokens(
             uroot2.account_id(),
             String::from("Mock Token"),
             String::from("MOCK"),
-            U128(10000)
+            U128(100000000000000)
         ),
         deposit = 0
     )
