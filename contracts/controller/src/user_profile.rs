@@ -68,7 +68,7 @@ mod tests {
         let mut profile = UserProfile::default();
         profile
             .account_supplies
-            .insert(account.clone(), balance.clone());
+            .insert(account.clone(), balance);
 
         let wprofile = profile.get_wrapped();
         let supply_balance = wprofile.account_supplies.get(&account).unwrap();
@@ -84,7 +84,7 @@ mod tests {
             "Structures has not similar length"
         );
         assert_eq!(
-            Balance::from(supply_balance.clone()),
+            Balance::from(*supply_balance),
             balance.clone(),
             "Wrapped structure doesn't match to expected value"
         );

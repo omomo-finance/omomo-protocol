@@ -91,12 +91,12 @@ impl Contract {
         }
 
         self.token
-            .internal_transfer(&borrower.clone(), &liquidator, amount, None);
+            .internal_transfer(&borrower, &liquidator, amount, None);
         log!(
             "{}",
             Events::LiquidationSuccess(
                 liquidator,
-                borrower.clone(),
+                borrower,
                 Balance::from(liquidation_amount)
             )
         );
