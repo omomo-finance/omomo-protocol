@@ -173,7 +173,7 @@ impl Contract {
         ) >= self.get_health_threshold()
     }
 
-    pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> USD {
+    pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
                 let price = self.get_price(asset.clone()).unwrap();
@@ -190,7 +190,7 @@ impl Contract {
             .unwrap_or_default()
             .account_supplies;
 
-        self.calculate_assets_price(&supplies)
+        self.calculate_assets_price(&supplies).into()
     }
 
     pub fn get_total_borrows(&self, user_id: AccountId) -> USD {
@@ -200,7 +200,7 @@ impl Contract {
             .unwrap_or_default()
             .account_borrows;
 
-        self.calculate_assets_price(&borrows)
+        self.calculate_assets_price(&borrows).into()
     }
 }
 
