@@ -10,6 +10,9 @@ pub struct UserProfile {
 
     /// Dtoken address -> Borrow balance
     pub account_borrows: HashMap<AccountId, Balance>,
+
+    /// The flag which describe account consistency
+    pub is_inconsistent: bool,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -53,6 +56,30 @@ impl UserProfile {
         }
         result
     }
+
+    pub fn is_consistent(&self) -> bool {
+        !self.is_inconsistent
+    }
+
+    pub fn set_consistency(&mut self, consistency: bool) {
+        self.is_inconsistent = !consistency;
+    }
+}
+
+#[near_bindgen]
+impl Contract {
+    /// The method can be called only by Admin, Controller, Dtoken contracts
+    pub fn set_account_consistency(&mut self, account: AccountId, consistency: bool) {
+        require!(
+            self.is_valid_admin_call() || self.is_dtoken_caller(),
+            "This functionality is allowed to be called by admin, contract or dtoken's contract only"
+        );
+
+        self.user_profiles
+            .get(&account)
+            .unwrap_or_default()
+            .set_consistency(consistency);
+    }
 }
 
 #[cfg(test)]
@@ -66,9 +93,7 @@ mod tests {
         let balance: Balance = 100 * ONE_TOKEN;
         let account = AccountId::new_unchecked("bob.near".to_string());
         let mut profile = UserProfile::default();
-        profile
-            .account_supplies
-            .insert(account.clone(), balance.clone());
+        profile.account_supplies.insert(account.clone(), balance);
 
         let wprofile = profile.get_wrapped();
         let supply_balance = wprofile.account_supplies.get(&account).unwrap();
@@ -84,7 +109,7 @@ mod tests {
             "Structures has not similar length"
         );
         assert_eq!(
-            Balance::from(supply_balance.clone()),
+            Balance::from(*supply_balance),
             balance.clone(),
             "Wrapped structure doesn't match to expected value"
         );

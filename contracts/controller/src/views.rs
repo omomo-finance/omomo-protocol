@@ -47,7 +47,6 @@ impl Contract {
         return user_ids
             .iter()
             .filter(|user_id| self.user_profiles.get(user_id).is_some())
-            // .filter(|_user_id| { return true })
             .map(|user_id| {
                 let total_borrows = self.get_total_borrows(user_id.clone());
                 let total_supplies = self.get_total_supplies(user_id.clone());
