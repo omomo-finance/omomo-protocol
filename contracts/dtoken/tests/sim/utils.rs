@@ -241,7 +241,7 @@ pub fn initialize_dtoken_with_custom_interest_rate(
             underlying_token_id: utoken_account,
             owner_id: droot.account_id(),
             controller_account_id: controller_account,
-            interest_rate_model: InterestRateModel{
+            interest_rate_model: InterestRateModel {
                 kink: U128(8000),
                 multiplier_per_block: U128(500),
                 base_rate_per_block: U128(0),
