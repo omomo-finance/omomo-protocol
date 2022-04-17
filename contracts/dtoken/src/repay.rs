@@ -51,7 +51,7 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
-
+        
         let borrow_rate: Balance = self.get_borrow_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),

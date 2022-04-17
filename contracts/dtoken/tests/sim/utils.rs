@@ -224,6 +224,37 @@ pub fn initialize_dtoken(
     (droot, dtoken)
 }
 
+pub fn initialize_dtoken_with_custom_interest_rate(
+    root: &UserAccount,
+    utoken_account: AccountId,
+    controller_account: AccountId,
+) -> (UserAccount, ContractAccount<dtoken::ContractContract>) {
+    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let (droot, dtoken) = init_dtoken(
+        droot,
+        AccountId::new_unchecked("dtoken_contract".to_string()),
+    );
+    call!(
+        droot,
+        dtoken.new(dConfig {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: utoken_account,
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel{
+                kink: U128(8000),
+                multiplier_per_block: U128(500),
+                base_rate_per_block: U128(0),
+                jump_multiplier_per_block: U128(10900),
+                reserve_factor: U128(500),
+            }
+        }),
+        deposit = 0
+    )
+    .assert_success();
+    (droot, dtoken)
+}
+
 pub fn initialize_two_dtokens(
     root: &UserAccount,
     utoken_account1: AccountId,

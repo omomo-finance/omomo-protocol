@@ -1,7 +1,9 @@
 use crate::utils::{
-    initialize_controller, initialize_dtoken, initialize_utoken, new_user, view_balance,
+    initialize_controller, initialize_dtoken, initialize_dtoken_with_custom_interest_rate,
+    initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
+use dtoken::RepayInfo;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
@@ -138,7 +140,11 @@ fn supply_borrow_repay_withdraw_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (_uroot, utoken) = initialize_utoken(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
+    let (_droot, dtoken) = initialize_dtoken_with_custom_interest_rate(
+        &root,
+        utoken.account_id(),
+        controller.account_id(),
+    );
 
     call!(
         utoken.user_account,
@@ -149,7 +155,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(user.account_id(), U128(300)),
+        utoken.mint(user.account_id(), U128(900)),
         0,
         100000000000000
     );
@@ -237,7 +243,7 @@ fn scenario_borrow_more_than_on_dtoken() {
 #[test]
 fn scenario_supply_borrow_repay_withdraw() {
     // initial dtoken_balance = 100; user_balance = 300;
-    let (dtoken, controller, utoken, user, _) = supply_borrow_repay_withdraw_fixture();
+    let (dtoken, controller, utoken, user, root) = supply_borrow_repay_withdraw_fixture();
 
     let action = "\"Supply\"".to_string();
 
@@ -255,7 +261,7 @@ fn scenario_supply_borrow_repay_withdraw() {
 
     // after supplying
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 285.to_string(), "User balance should be 285");
+    assert_eq!(user_balance, 885.to_string(), "User balance should be 885");
 
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
@@ -268,7 +274,11 @@ fn scenario_supply_borrow_repay_withdraw() {
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 15, "supplied assets should be 15");
 
+    root.borrow_runtime_mut().produce_blocks(100).unwrap();
+
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+
+    root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
     // after borrowing
     let user_balance: u128 =
@@ -286,18 +296,35 @@ fn scenario_supply_borrow_repay_withdraw() {
         "Dtoken balance should be 50"
     );
 
+    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let repay_info = call!(
+        user,
+        dtoken.view_repay_info(U128(dtoken_balance.parse().unwrap())),
+        deposit = 0
+    )
+    .unwrap_json::<RepayInfo>();
+
+    let repay_amount = u128::from(repay_info.total_amount)
+        + u128::from(repay_info.accrued_interest_per_block) * 10;
+
+    let user_balance_before_repay: String =
+        view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
+
     let action = "\"Repay\"".to_string();
 
     call!(
         user,
         utoken.ft_transfer_call(
             dtoken.account_id(),
-            U128(60),
+            U128(repay_amount),
             Some("REPAY".to_string()),
             action
         ),
         deposit = 1
     );
+
+    let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
+    assert_ne!(user_balance, user_balance_before_repay, "Repay wasn`t done");
 
     // after repaying
     let user_borrowed_balance_after_repay: u128 =
@@ -307,12 +334,15 @@ fn scenario_supply_borrow_repay_withdraw() {
         "User borrowed balance should be 0"
     );
 
-    let user_balance_after_repay: String =
+    root.borrow_runtime_mut().produce_blocks(100).unwrap();
+
+    // before withdrawing
+    let user_balance_after_withdraw: String =
         view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
-        user_balance_after_repay,
-        233.to_string(),
-        "User balance should be 233"
+        user_balance_after_withdraw,
+        884.to_string(),
+        "User balance should be 884"
     );
 
     call!(user, dtoken.withdraw(U128(10)), deposit = 0).assert_success();
@@ -322,21 +352,21 @@ fn scenario_supply_borrow_repay_withdraw() {
         view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance_after_withdraw,
-        233.to_string(),
-        "User balance should be 233"
+        885.to_string(),
+        "User balance should be 885"
     );
 
     let user_supply_balance_after_withdraw =
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(
-        user_supply_balance_after_withdraw, 15,
-        "supply balance should be 15"
+        user_supply_balance_after_withdraw, 14,
+        "supply balance should be 14"
     );
 
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
         dtoken_balance,
-        167.to_string(),
-        "After withdraw balance should be 167"
+        115.to_string(),
+        "After withdraw balance should be 115"
     );
 }
