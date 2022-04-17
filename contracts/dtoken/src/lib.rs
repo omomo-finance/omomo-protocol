@@ -10,7 +10,7 @@ use near_sdk::{
 };
 
 #[allow(unused_imports)]
-use general::*;
+pub use general::*;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
@@ -20,7 +20,6 @@ pub use crate::interest_model::*;
 pub use crate::interest_rate_model::*;
 pub use crate::repay::*;
 pub use crate::supply::*;
-pub use crate::user_flow_protection::*;
 pub use crate::user_profile::*;
 pub use crate::withdraw::*;
 
@@ -34,7 +33,6 @@ mod interest_rate_model;
 mod liquidation;
 mod repay;
 mod supply;
-mod user_flow_protection;
 mod user_profile;
 mod views;
 mod withdraw;
@@ -67,9 +65,6 @@ pub struct Contract {
     config: LazyOption<Config>,
 
     model: InterestRateModel,
-
-    ///User action protection
-    mutex: ActionMutex,
 
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
@@ -144,6 +139,9 @@ trait ControllerInterface {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
+    fn mutex_lock(&mut self, action: Actions);
+    fn mutex_unlock(&mut self);
+    fn set_account_consistency(&mut self, account: AccountId, consistency: bool);
 }
 
 #[ext_contract(ext_self)]
@@ -191,6 +189,11 @@ trait InternalTokenInterface {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     );
+    fn mutex_lock_callback(
+        &mut self,
+        action: Actions,
+        amount: WBalance,
+    ) -> PromiseOrValue<WBalance>;
 }
 
 #[near_bindgen]
@@ -226,7 +229,6 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
-            mutex: ActionMutex::default(),
             admin: config.owner_id,
         }
     }

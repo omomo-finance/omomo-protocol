@@ -49,6 +49,8 @@ fn borrow_fixture() -> (
     )
     .assert_success();
 
+    root.borrow_runtime_mut().produce_blocks(100).unwrap();
+
     call!(
         controller.user_account,
         controller.upsert_price(
@@ -242,7 +244,7 @@ fn scenario_borrow_more_than_on_dtoken() {
 
 #[test]
 fn scenario_supply_borrow_repay_withdraw() {
-    // initial dtoken_balance = 100; user_balance = 300;
+    // initial dtoken_balance = 100; user_balance = 900;
     let (dtoken, controller, utoken, user, root) = supply_borrow_repay_withdraw_fixture();
 
     let action = "\"Supply\"".to_string();
@@ -344,6 +346,8 @@ fn scenario_supply_borrow_repay_withdraw() {
         884.to_string(),
         "User balance should be 884"
     );
+
+    root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
     call!(user, dtoken.withdraw(U128(10)), deposit = 0).assert_success();
 

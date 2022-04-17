@@ -15,6 +15,7 @@ pub use crate::liquidation::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
 pub use crate::repay::*;
+pub use crate::user_flow_protection::*;
 pub use crate::user_profile::*;
 pub use crate::views::*;
 
@@ -27,6 +28,7 @@ mod liquidation;
 mod oraclehook;
 mod prices;
 pub mod repay;
+pub mod user_flow_protection;
 pub mod user_profile;
 mod views;
 
@@ -49,7 +51,7 @@ pub struct Contract {
 
     /// User Account ID -> Dtoken address -> Supplies balance
     /// User Account ID -> Dtoken address -> Borrow balance
-    user_profiles: LookupMap<AccountId, UserProfile>,
+    user_profiles: UnorderedMap<AccountId, UserProfile>,
 
     /// Dtoken ID -> Price
     pub prices: LookupMap<AccountId, Price>,
@@ -73,6 +75,9 @@ pub struct Contract {
 
     /// Reserve Factor
     pub reserve_factor: Percent,
+
+    ///User action protection
+    mutex: ActionMutex,
 }
 
 impl Default for Contract {
@@ -143,7 +148,7 @@ impl Contract {
 
         Self {
             markets: UnorderedMap::new(StorageKeys::Markets),
-            user_profiles: LookupMap::new(StorageKeys::UserProfiles),
+            user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             admin: config.owner_id,
@@ -158,6 +163,7 @@ impl Contract {
             liquidation_health_factor_threshold: 10000,
             reserve_factor: 0,
             health_threshold: 15000,
+            mutex: ActionMutex::default(),
         }
     }
 }

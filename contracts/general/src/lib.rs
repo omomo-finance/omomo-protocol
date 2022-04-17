@@ -1,8 +1,9 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
-use near_sdk::near_bindgen;
 use near_sdk::serde::{Deserialize, Serialize};
+use near_sdk::{near_bindgen, AccountId};
 use near_sdk::{Balance, Gas};
+use std::fmt;
 
 pub const NO_DEPOSIT: Balance = 0;
 pub const ONE_YOCTO: Balance = 1;
@@ -38,4 +39,27 @@ pub struct Price {
 
     /// Ticker precision digits number
     pub fraction_digits: Digits,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(Debug)]
+pub enum Actions {
+    Supply,
+    Withdraw,
+    Borrow,
+    Repay,
+    Liquidate {
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        liquidator: AccountId,
+        collateral_dtoken: AccountId,
+        liquidation_amount: WBalance,
+    },
+}
+
+impl fmt::Display for Actions {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
