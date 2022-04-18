@@ -3,7 +3,7 @@ use crate::utils::{
     initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
-use dtoken::RepayInfo;
+use dtoken::{InterestRateModel, RepayInfo};
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
@@ -146,6 +146,13 @@ fn supply_borrow_repay_withdraw_fixture() -> (
         &root,
         utoken.account_id(),
         controller.account_id(),
+        InterestRateModel {
+            kink: U128(8000),
+            multiplier_per_block: U128(500),
+            base_rate_per_block: U128(0),
+            jump_multiplier_per_block: U128(10900),
+            reserve_factor: U128(500),
+        },
     );
 
     call!(
