@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn test_for_get_health_factor() {
+    fn test_for_get_health_factor_threshold() {
         let (mut controller_contract, _token_address, user_account) = init();
 
         let balance: Balance = 50;
@@ -191,6 +191,78 @@ mod tests {
         assert_eq!(
             controller_contract.get_health_factor(user_account),
             (100 * controller_contract.get_health_threshold() / 100),
+            "Health factor calculation has been failed"
+        );
+    }
+
+    #[test]
+    fn test_for_get_health_factor() {
+        let (mut controller_contract, _token_address, user_account) = init();
+
+        let balance: Balance = 200;
+
+        assert_eq!(
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_health_threshold(),
+            "Test for account w/o collaterals and borrows has been failed"
+        );
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(balance),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(50),
+        );
+
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            (32000),
+            "Health factor calculation has been failed"
+        );
+    }
+
+    #[test]
+    fn test_for_get_health_factor_with_changed_price_of_fly() {
+        let (mut controller_contract, _token_address, user_account) = init();
+
+        let balance: Balance = 200;
+
+        assert_eq!(
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_health_threshold(),
+            "Test for account w/o collaterals and borrows has been failed"
+        );
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(balance),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(50),
+        );
+
+        controller_contract.upsert_price(
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            &Price {
+                ticker_id: "wnear".to_string(),
+                value: U128(10000),
+                volatility: U128(100),
+                fraction_digits: 4,
+            },
+        );
+
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            (20000),
             "Health factor calculation has been failed"
         );
     }

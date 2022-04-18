@@ -6,7 +6,6 @@ use controller::ActionType::{Borrow, Supply};
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::AccountId;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
 
 fn liquidation_success_fixture() -> (
@@ -107,12 +106,6 @@ fn liquidation_success_fixture() -> (
     let action = "\"Supply\"".to_string();
 
     call!(
-        user2,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(10), None, action.clone()),
-        deposit = 1
-    );
-
-    call!(
         user1,
         utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
         deposit = 1
@@ -172,14 +165,10 @@ fn scenario_liquidation_success() {
     })
     .to_string();
 
-    print!(
-        "{:?}",
-        call!(
-            user2,
-            utoken1.ft_transfer_call(dtoken1.account_id(), U128(3500), None, action),
-            deposit = 1
-        )
-        .outcome()
+    call!(
+        user2,
+        utoken1.ft_transfer_call(dtoken1.account_id(), U128(3500), None, action),
+        deposit = 1
     );
 
     let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
@@ -207,7 +196,7 @@ fn scenario_liquidation_success() {
     );
 
     assert_eq!(
-        user_balance, 3510,
+        user_balance, 3500,
         "Supply balance on dtoken should be 3510"
     );
 }
@@ -302,4 +291,53 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
         user_borrows, 5,
         "Borrow balance of user should stay the same, because of an error"
     );
+}
+
+#[test]
+fn scenario_liquidation_failed_on_too_much_for_liquidation() {
+    let (dtoken1, dtoken2, controller, utoken1, _utoken2, user1, user2) =
+        liquidation_success_fixture();
+
+    let action = json!({
+        "Liquidate":{
+            "borrower": user1.account_id.as_str(),
+            "borrowing_dtoken": dtoken1.account_id().as_str(),
+            "liquidator": user2.account_id.as_str(),
+            "collateral_dtoken": dtoken2.account_id().as_str(),
+            "liquidation_amount": U128(70000)
+        }
+    })
+    .to_string();
+
+    call!(
+        user2,
+        utoken1.ft_transfer_call(dtoken1.account_id(), U128(70000), None, action),
+        deposit = 1
+    );
+
+    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+    assert_eq!(
+        user_borrows, 40000,
+        "Borrow balance on dtoken should be 40000"
+    );
+
+    let user_borrows: u128 = view_balance(
+        &controller,
+        Borrow,
+        user1.account_id(),
+        dtoken1.account_id(),
+    );
+    assert_eq!(
+        user_borrows, 40000,
+        "Borrow balance on controller should be 40000"
+    );
+
+    let user_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user2.account_id(),
+        dtoken2.account_id(),
+    );
+
+    assert_eq!(user_balance, 0, "Supply balance on dtoken should be 0");
 }
