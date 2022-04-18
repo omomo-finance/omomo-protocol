@@ -1,4 +1,5 @@
 use near_sdk::require;
+use std::collections::HashMap;
 
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 use crate::*;
@@ -172,6 +173,16 @@ impl Contract {
         ) >= self.get_health_threshold()
     }
 
+    pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
+        map.iter()
+            .map(|(asset, balance)| {
+                let price = self.get_price(asset.clone()).unwrap();
+
+                Balance::from(price.value) * balance / ONE_TOKEN
+            })
+            .sum()
+    }
+
     pub fn get_total_supplies(&self, user_id: AccountId) -> USD {
         let supplies = self
             .user_profiles
@@ -179,17 +190,7 @@ impl Contract {
             .unwrap_or_default()
             .account_supplies;
 
-        supplies
-            .iter()
-            .map(|(asset, balance)| {
-                if let Some(price) = self.get_price(asset.clone()) {
-                    (balance * price.value.0) / ONE_TOKEN
-                } else {
-                    0
-                }
-            })
-            .sum::<Balance>()
-            .into()
+        self.calculate_assets_price(&supplies).into()
     }
 
     pub fn get_total_borrows(&self, user_id: AccountId) -> USD {
@@ -199,17 +200,7 @@ impl Contract {
             .unwrap_or_default()
             .account_borrows;
 
-        borrows
-            .iter()
-            .map(|(asset, balance)| {
-                if let Some(price) = self.get_price(asset.clone()) {
-                    (balance * price.value.0) / ONE_TOKEN
-                } else {
-                    0
-                }
-            })
-            .sum::<Balance>()
-            .into()
+        self.calculate_assets_price(&borrows).into()
     }
 }
 

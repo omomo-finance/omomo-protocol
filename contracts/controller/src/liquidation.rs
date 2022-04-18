@@ -1,5 +1,6 @@
 use crate::*;
 use near_sdk::{is_promise_success, log, PromiseOrValue};
+use partial_min_max::min;
 
 #[near_bindgen]
 impl Contract {
@@ -64,7 +65,7 @@ impl Contract {
         );
         let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0;
 
-        let max_possible_liquidation_amount = Contract::min(
+        let max_possible_liquidation_amount = min(
             max_unhealth_repay,
             (RATIO_DECIMALS - self.liquidation_incentive) * supply_amount * collateral_price,
         ) / borrow_price;

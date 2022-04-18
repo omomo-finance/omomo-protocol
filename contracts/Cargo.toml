@@ -13,5 +13,6 @@ members = [
     "general",
     "controller",
     "dtoken",
-    "test-utoken"
+    "test-utoken",
+    "token"
 ]

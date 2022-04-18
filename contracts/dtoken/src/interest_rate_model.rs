@@ -4,14 +4,14 @@ use near_sdk::env::block_height;
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct InterestRateModel {
-    kink: WRatio,
-    multiplier_per_block: WRatio,
-    base_rate_per_block: WRatio,
-    jump_multiplier_per_block: WRatio,
-    reserve_factor: WRatio,
+    pub kink: WRatio,
+    pub multiplier_per_block: WRatio,
+    pub base_rate_per_block: WRatio,
+    pub jump_multiplier_per_block: WRatio,
+    pub reserve_factor: WRatio,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct RepayInfo {
     pub accrued_interest_per_block: WBalance,

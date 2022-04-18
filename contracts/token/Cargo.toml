@@ -1,15 +1,16 @@
 [package]
-name = "controller"
+name = "token"
 version = "0.0.1"
 authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "vladyslav.v@blaize.tech", "orest.o@blaize.tech", "sergii.p@blaize.tech"]
 edition = "2018"
+publish = false
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = "4.0.0-pre.6"
-percentage = "0.1.0"
-assert_matches = "1.5.0"
-general = { path = "../general" }
-partial-min-max = "0.4.0"
+near-sdk = "4.0.0-pre.3"
+near-contract-standards = "4.0.0-pre.6"
+
+[dev-dependencies]
+near-sdk-sim = "3.1.1"
