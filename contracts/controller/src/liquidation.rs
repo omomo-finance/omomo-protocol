@@ -60,7 +60,7 @@ impl Contract {
         let supply_amount = self.get_entity_by_token(
             ActionType::Supply,
             borrower.clone(),
-            borrowing_dtoken.clone(),
+            collateral_dtoken.clone(),
         );
         let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0;
 
@@ -103,24 +103,6 @@ impl Contract {
                 ));
             }
 
-            let borrower_supply_amount = self.get_entity_by_token(
-                ActionType::Supply,
-                borrower.clone(),
-                collateral_dtoken.clone(),
-            );
-
-
-
-            if borrower_supply_amount < amount_for_liquidation.0 {
-                return Err((
-                    WBalance::from(amount_for_liquidation.0),
-                    WBalance::from(borrower_supply_amount),
-                    String::from(
-                        "Borrower collateral amount is not enough to pay it to liquidator",
-                    ),
-                ));
-            }
-
             if liquidator == borrower {
                 return Err((
                     WBalance::from(amount_for_liquidation.0),
@@ -148,7 +130,11 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         // TODO: Add check that only real Dtoken address can call this
         if !is_promise_success() {
-            self.increase_borrows(borrower.clone(), _borrowing_dtoken.clone(), liquidation_amount);
+            self.increase_borrows(
+                borrower.clone(),
+                _borrowing_dtoken.clone(),
+                liquidation_amount,
+            );
 
             dtoken::increase_borrows(
                 borrower,
