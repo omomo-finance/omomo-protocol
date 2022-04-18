@@ -212,68 +212,6 @@ fn scenario_liquidation_success() {
     );
 }
 
-fn liquidation_success_on_single_dtoken_fixture() -> (
-    ContractAccount<dtoken::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
-    UserAccount,
-) {
-    let root = init_simulator(None);
-
-    let user = new_user(&root, "user".parse().unwrap());
-    let (_uroot, utoken) = initialize_utoken(&root);
-    let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken) = initialize_dtoken(&root, utoken.account_id(), controller.account_id());
-
-    call!(
-        utoken.user_account,
-        utoken.mint(dtoken.account_id(), U128(100)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        utoken.user_account,
-        utoken.mint(user.account_id(), U128(300)),
-        0,
-        100000000000000
-    );
-
-    let action = "\"Supply\"".to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dtoken.account_id(),
-            &Price {
-                ticker_id: "weth".to_string(),
-                value: U128(20000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
-
-    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
-
-    let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
-
-    let user_balance: u128 =
-        view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
-
-    assert_eq!(user_balance, 5, "Borrow balance on controller should be 5");
-
-    (dtoken, utoken, user)
-}
-
 fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
@@ -338,38 +276,6 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
 }
 
 #[test]
-fn scenario_liquidation_success_on_single_dtoken() {
-    let (dtoken, utoken, user) = liquidation_success_on_single_dtoken_fixture();
-
-    let action = json!({
-        "Liquidate":{
-            "borrower": user.account_id.as_str(),
-            "borrowing_dtoken": dtoken.account_id().as_str(),
-            "liquidator": "test.testnet",
-            "collateral_dtoken": dtoken.account_id().as_str(),
-            "liquidation_amount": U128(10)
-        }
-    })
-    .to_string();
-
-    call!(
-        user,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(10), None, action),
-        deposit = 1
-    );
-
-    let _user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-
-    let _user_balance: u128 =
-        view!(dtoken.get_account_borrows(AccountId::new_unchecked("test.testnet".to_string())))
-            .unwrap_json();
-
-    // NEAR tests doesn't work with liquidation due some issues
-    //assert_eq!(user_borrows, 0, "Borrow balance on dtoken should be 0");
-    //assert_eq!(user_balance, 10, "Supply balance on dtoken should be 10");
-}
-
-#[test]
 fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
     let (dtoken, utoken, user) = liquidation_failed_on_call_with_wrong_borrow_token_fixture();
 
@@ -391,6 +297,9 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
     )
     .assert_success();
 
-    let _user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
-    //assert_eq!(user_borrows, 3, "Borrow balance of user should stay the same, because of an error");
+    let user_borrows: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(
+        user_borrows, 5,
+        "Borrow balance of user should stay the same, because of an error"
+    );
 }
