@@ -87,7 +87,12 @@ mod tests {
 
     // use crate::borrows_supplies::ActionType::{Borrow, Supply};
 
-    fn init() -> (Contract, AccountId, AccountId) {
+    fn init_price_volatility(
+        near_price: u128,
+        near_volatility: u128,
+        eth_price: u128,
+        eth_volatility: u128,
+    ) -> (Contract, AccountId, AccountId) {
         let (_owner_account, user_account) = (alice(), bob());
 
         let mut controller_contract = Contract::new(Config {
@@ -116,18 +121,24 @@ mod tests {
         );
 
         let mut prices: Vec<Price> = Vec::new();
-        prices.push(Price {
-            ticker_id: ticker_id_near,
-            value: U128(20000),
-            volatility: U128(80),
-            fraction_digits: 4,
-        });
-        prices.push(Price {
-            ticker_id: ticker_id_eth,
-            value: U128(20000),
-            volatility: U128(100),
-            fraction_digits: 4,
-        });
+
+        if near_price != 0 {
+            prices.push(Price {
+                ticker_id: ticker_id_near,
+                value: U128(near_price),
+                volatility: U128(near_volatility),
+                fraction_digits: 4,
+            });
+        }
+
+        if eth_price != 0 {
+            prices.push(Price {
+                ticker_id: ticker_id_eth,
+                value: U128(eth_price),
+                volatility: U128(eth_volatility),
+                fraction_digits: 4,
+            });
+        }
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,
@@ -141,7 +152,8 @@ mod tests {
 
     #[test]
     fn test_calculate_assets_weighted_price_sum_empty_map() {
-        let (controller_contract, _token_address, _user_account) = init();
+        let (controller_contract, _token_address, _user_account) =
+            init_price_volatility(20000, 80, 20000, 100);
 
         let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
         assert_eq!(
@@ -153,7 +165,8 @@ mod tests {
 
     #[test]
     fn test_for_calculate_assets_weighted_price() {
-        let (controller_contract, _token_address, _user_account) = init();
+        let (controller_contract, _token_address, _user_account) =
+            init_price_volatility(20000, 80, 20000, 100);
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
         raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
@@ -167,7 +180,8 @@ mod tests {
 
     #[test]
     fn test_for_get_health_factor() {
-        let (mut controller_contract, _token_address, user_account) = init();
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(20000, 80, 20000, 100);
 
         let balance: Balance = 50;
 
@@ -194,5 +208,161 @@ mod tests {
             (100 * controller_contract.get_health_threshold() / 100),
             "Health factor calculation has been failed"
         );
+    }
+
+    #[test]
+    fn scenario_1() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(0, 0, 10000, 100);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(0),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(0),
+        );
+
+        assert_eq!(
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_health_threshold(),
+            "Test for account w/o collaterals and borrows has been failed"
+        );
+    }
+
+    #[test]
+    fn scenario_2() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(0, 0, 10000, 100);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(100),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(0),
+        );
+
+        // Ratio that represents 150%
+        assert_eq!(controller_contract.get_health_factor(user_account), 15000);
+    }
+
+    #[test]
+    fn scenario_3() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(0, 0, 10000, 100);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(100),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(70),
+        );
+
+        // Ratio that represents 142.85%
+        assert_eq!(controller_contract.get_health_factor(user_account), 14285);
+    }
+
+    #[test]
+    fn scenario_4() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(10000, 100, 10000, 100);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(200),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(100),
+        );
+
+        // Ratio that represents 200%
+        assert_eq!(controller_contract.get_health_factor(user_account), 20000);
+    }
+
+    #[test]
+    fn scenario_5() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(20000, 100, 5000, 100);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(200),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(100),
+        );
+
+        // Ratio that represents 50%
+        assert_eq!(controller_contract.get_health_factor(user_account), 5000);
+    }
+
+    #[test]
+    fn scenario_6() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(10000, 80, 10000, 90);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(200),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(100),
+        );
+
+        // Ratio that represents 225%
+        assert_eq!(controller_contract.get_health_factor(user_account), 22500);
+    }
+
+    #[test]
+    fn scenario_7() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(10000, 80, 11000, 90);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(200),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(50),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(100),
+        );
+
+        // Ratio that represents 153.48%
+        assert_eq!(controller_contract.get_health_factor(user_account), 15348);
     }
 }
