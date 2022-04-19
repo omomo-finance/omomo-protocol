@@ -1,6 +1,6 @@
 use crate::utils::{
     initialize_controller, initialize_dtoken, initialize_dtoken_with_custom_interest_rate,
-    initialize_utoken, new_user, view_balance,
+    initialize_two_dtokens, initialize_two_utokens, initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::{InterestRateModel, RepayInfo};
@@ -185,6 +185,95 @@ fn supply_borrow_repay_withdraw_fixture() -> (
     .assert_success();
 
     (dtoken, controller, utoken, user, root)
+}
+
+fn borrow_with_supply_on_another_dtoken_fixture() -> (
+    ContractAccount<dtoken::ContractContract>,
+    ContractAccount<controller::ContractContract>,
+    ContractAccount<test_utoken::ContractContract>,
+    UserAccount,
+) {
+    let root = init_simulator(None);
+
+    // Initialize
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot1, _uroot2, utoken1, utoken2) = initialize_two_utokens(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken1, dtoken2) = initialize_two_dtokens(
+        &root,
+        utoken1.account_id(),
+        utoken2.account_id(),
+        controller.account_id(),
+    );
+
+    call!(
+        utoken2.user_account,
+        utoken2.mint(dtoken2.account_id(), U128(100000000000)),
+        0,
+        100000000000000
+    );
+
+    call!(
+        utoken1.user_account,
+        utoken1.mint(dtoken1.account_id(), U128(100000000000)),
+        0,
+        100000000000000
+    );
+
+    call!(
+        utoken1.user_account,
+        utoken1.mint(user.account_id(), U128(100000000000)),
+        0,
+        100000000000000
+    );
+
+    call!(
+        utoken2.user_account,
+        utoken2.mint(user.account_id(), U128(100000000000)),
+        0,
+        100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken1.account_id(),
+            &Price {
+                ticker_id: "1weth".to_string(),
+                value: U128(1000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken2.account_id(),
+            &Price {
+                ticker_id: "2weth".to_string(),
+                value: U128(2000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
+        deposit = 1
+    )
+    .assert_success();
+
+    (dtoken1, controller, utoken1, user)
 }
 
 #[test]
@@ -379,5 +468,32 @@ fn scenario_supply_borrow_repay_withdraw() {
         dtoken_balance,
         115.to_string(),
         "After withdraw balance should be 115"
+    );
+}
+
+#[test]
+fn scenario_borrow_with_supply_on_another_dtoken() {
+    let (dtoken1, controller, utoken1, user) = borrow_with_supply_on_another_dtoken_fixture();
+
+    call!(user, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
+
+    let user_balance: U128 = view!(utoken1.ft_balance_of(user.account_id())).unwrap_json::<U128>();
+    assert_eq!(
+        user_balance,
+        U128(100000040000),
+        "User utoken balance should be 100000040000"
+    );
+
+    let user_balance: u128 = view!(dtoken1.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(
+        user_balance, 40000,
+        "Borrow balance on dtoken should be 40000"
+    );
+
+    let user_balance: u128 =
+        view_balance(&controller, Borrow, user.account_id(), dtoken1.account_id());
+    assert_eq!(
+        user_balance, 40000,
+        "Borrow balance on controller should be 40000"
     );
 }
