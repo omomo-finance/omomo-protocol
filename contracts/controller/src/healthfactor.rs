@@ -150,10 +150,61 @@ mod tests {
         (controller_contract, token_address, user_account)
     }
 
+    fn init() -> (Contract, AccountId, AccountId) {
+        let (_owner_account, user_account) = (alice(), bob());
+
+        let mut controller_contract = Contract::new(Config {
+            owner_id: user_account.clone(),
+            oracle_account_id: user_account.clone(),
+        });
+
+        let utoken_address_near = AccountId::new_unchecked("wnear.near".to_string());
+        let dtoken_address_near = AccountId::new_unchecked("dwnear.near".to_string());
+        let ticker_id_near = "wnear".to_string();
+
+        controller_contract.add_market(
+            utoken_address_near,
+            dtoken_address_near,
+            ticker_id_near.clone(),
+        );
+
+        let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
+        let dtoken_address_eth = AccountId::new_unchecked("dweth.near".to_string());
+        let ticker_id_eth = "weth".to_string();
+
+        controller_contract.add_market(
+            utoken_address_eth,
+            dtoken_address_eth,
+            ticker_id_eth.clone(),
+        );
+
+        let mut prices: Vec<Price> = Vec::new();
+        prices.push(Price {
+            ticker_id: ticker_id_near,
+            value: U128(20000),
+            volatility: U128(80),
+            fraction_digits: 4,
+        });
+        prices.push(Price {
+            ticker_id: ticker_id_eth,
+            value: U128(20000),
+            volatility: U128(100),
+            fraction_digits: 4,
+        });
+
+        controller_contract.oracle_on_data(PriceJsonList {
+            block_height: 83452949,
+            price_list: prices,
+        });
+
+        let token_address: AccountId = AccountId::new_unchecked("near".to_string());
+
+        (controller_contract, token_address, user_account)
+    }
+
     #[test]
     fn test_calculate_assets_weighted_price_sum_empty_map() {
-        let (controller_contract, _token_address, _user_account) =
-            init_price_volatility(20000, 80, 20000, 100);
+        let (controller_contract, _token_address, _user_account) = init();
 
         let raw_map_empty: HashMap<AccountId, Balance> = HashMap::new();
         assert_eq!(
@@ -165,8 +216,7 @@ mod tests {
 
     #[test]
     fn test_for_calculate_assets_weighted_price() {
-        let (controller_contract, _token_address, _user_account) =
-            init_price_volatility(20000, 80, 20000, 100);
+        let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
         raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
@@ -180,8 +230,7 @@ mod tests {
 
     #[test]
     fn test_for_get_health_factor() {
-        let (mut controller_contract, _token_address, user_account) =
-            init_price_volatility(20000, 80, 20000, 100);
+        let (mut controller_contract, _token_address, user_account) = init();
 
         let balance: Balance = 50;
 
@@ -211,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_1() {
+    fn test_account_no_collaterals_and_borrows() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -235,7 +284,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_2() {
+    fn test_supply_100eth() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -256,7 +305,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_3() {
+    fn test_supply_100eth_borrow_70eth() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -277,7 +326,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_4() {
+    fn test_supply_200eth_borrow_100near_for_price_1() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 100, 10000, 100);
 
@@ -298,7 +347,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_5() {
+    fn test_supply_200eth_borrow_100near_for_price_2() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(20000, 100, 5000, 100);
 
@@ -319,7 +368,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_6() {
+    fn test_supply_200near_borrow_100near() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 80, 10000, 90);
 
@@ -340,7 +389,7 @@ mod tests {
     }
 
     #[test]
-    fn scenario_7() {
+    fn test_supply_200eth_borrow_50eth_100near() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 80, 11000, 90);
 
