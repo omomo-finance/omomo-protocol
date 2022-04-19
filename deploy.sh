@@ -1,6 +1,9 @@
 # login
 # near login
 
+# build & test
+./build.sh && ./test.sh
+
 # clean up previuos deployment
 near delete weth_beta.nearlend.testnet nearlend.testnet
 near delete dweth_beta.nearlend.testnet nearlend.testnet
