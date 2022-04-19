@@ -61,8 +61,8 @@ impl Contract {
         }
     }
 
-    pub fn view_repay_info(&self, ft_balance: WBalance) -> RepayInfo {
-        self.get_repay_info(ft_balance)
+    pub fn view_repay_info(&self, user_id: AccountId, ft_balance: WBalance) -> RepayInfo {
+        self.get_repay_info(user_id, ft_balance)
     }
 }
 
@@ -73,22 +73,26 @@ mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::testing_env;
+    use near_sdk::{testing_env, Balance, VMContext};
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
 
-    pub fn init_test_env() -> Contract {
+    pub fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .current_account_id(alice().clone())
+            .signer_account_id(alice().clone())
+            .is_view(is_view)
+            .build()
+    }
+
+    pub fn init_test_env(is_admin: bool) -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
-        let context = VMContextBuilder::new()
-            .current_account_id(dtoken_account.clone())
-            .signer_account_id(dtoken_account.clone())
-            .is_view(false)
-            .build();
-
-        testing_env!(context);
+        if is_admin {
+            testing_env!(get_context(false));
+        }
 
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),
@@ -98,14 +102,34 @@ mod tests {
             interest_rate_model: InterestRateModel::default(),
         });
 
-        contract.set_total_reserves(200);
+        if is_admin {
+            contract.set_total_reserves(200);
+        }
 
         contract
     }
 
     #[test]
+    fn test_view_repay_info() {
+        let contract = init_test_env(false);
+
+        let repay = contract.view_repay_info(bob(), WBalance::from(1000));
+
+        assert_eq!(
+            Balance::from(repay.total_amount),
+            0,
+            "RepayInfo structure is not matches to expected"
+        );
+        assert_eq!(
+            Balance::from(repay.accrued_interest_per_block),
+            0,
+            "RepayInfo structure is not matches to expected"
+        );
+    }
+
+    #[test]
     fn test_view_market_data() {
-        let contract = init_test_env();
+        let contract = init_test_env(true);
 
         let gotten_md = contract.view_market_data(WBalance::from(1000));
 
