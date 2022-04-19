@@ -205,7 +205,7 @@ fn scenario_repay() {
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(U128(dtoken_balance.parse().unwrap())),
+        dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
         deposit = 0
     )
     .unwrap_json::<RepayInfo>();
@@ -270,7 +270,7 @@ fn scenario_repay_zero_accrued_interest() {
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(U128(dtoken_balance.parse().unwrap())),
+        dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
         deposit = 0
     )
     .unwrap_json::<RepayInfo>();
