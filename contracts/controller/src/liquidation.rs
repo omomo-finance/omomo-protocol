@@ -54,16 +54,13 @@ impl Contract {
             borrowing_dtoken.clone(),
         );
 
-        let borrow_price = self.prices.get(&borrowing_dtoken.clone()).unwrap().value.0;
+        let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
         let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
 
-        let supply_amount = self.get_entity_by_token(
-            ActionType::Supply,
-            borrower.clone(),
-            collateral_dtoken.clone(),
-        );
-        let collateral_price = self.prices.get(&collateral_dtoken.clone()).unwrap().value.0;
+        let supply_amount =
+            self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
+        let collateral_price = self.prices.get(&collateral_dtoken).unwrap().value.0;
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
@@ -113,8 +110,8 @@ impl Contract {
             }
 
             let revenue_amount = self.get_liquidation_revenue(
-                borrowing_dtoken.clone(),
-                collateral_dtoken.clone(),
+                borrowing_dtoken,
+                collateral_dtoken,
                 amount_for_liquidation,
             );
             Ok((amount_for_liquidation, revenue_amount))
