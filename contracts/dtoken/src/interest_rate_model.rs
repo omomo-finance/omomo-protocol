@@ -1,5 +1,6 @@
 use crate::*;
 use near_sdk::env::block_height;
+use std::fmt;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -16,6 +17,12 @@ pub struct InterestRateModel {
 pub struct RepayInfo {
     pub accrued_interest_per_block: WBalance,
     pub total_amount: WBalance,
+}
+
+impl fmt::Display for RepayInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 impl InterestRateModel {
