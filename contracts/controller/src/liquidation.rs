@@ -79,11 +79,11 @@ impl Contract {
         amount_for_liquidation: WBalance,
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
-            return Err((
+            Err((
                 WBalance::from(amount_for_liquidation.0),
                 WBalance::from(0),
                 String::from("User can't be liquidated as he has normal value of health factor"),
-            ));
+            ))
         } else {
             let max_possible_liquidation_amount = self.maximum_possible_liquidation_amount(
                 borrower.clone(),

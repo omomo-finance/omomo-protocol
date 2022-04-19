@@ -107,7 +107,7 @@ fn liquidation_success_fixture() -> (
 
     call!(
         user1,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action),
         deposit = 1
     )
     .assert_success();
