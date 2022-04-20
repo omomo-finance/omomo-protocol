@@ -149,12 +149,8 @@ impl Contract {
             Balance::from(token_amount) <= existing_supplies,
             "Not enough existing supplies"
         );
-        self.get_potential_health_factor(
-            account,
-            token_address,
-            token_amount,
-            Supply,
-        ) >= self.get_health_threshold()
+        self.get_potential_health_factor(account, token_address, token_amount, Supply)
+            >= self.get_health_threshold()
     }
 
     #[warn(dead_code)]
@@ -165,12 +161,8 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.borrow, "borrowing is paused");
-        self.get_potential_health_factor(
-            account,
-            token_address,
-            token_amount,
-            Borrow,
-        ) >= self.get_health_threshold()
+        self.get_potential_health_factor(account, token_address, token_amount, Borrow)
+            >= self.get_health_threshold()
     }
 
     pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
