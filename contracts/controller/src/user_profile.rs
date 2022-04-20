@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::BlockHeight;
 use std::collections::HashMap;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -11,8 +12,8 @@ pub struct UserProfile {
     /// Dtoken address -> Borrow balance
     pub account_borrows: HashMap<AccountId, Balance>,
 
-    /// The flag which describe account consistency
-    pub is_inconsistent: bool,
+    /// User consistency
+    pub consistency: Consistency,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -24,6 +25,17 @@ pub struct WrappedUserProfile {
 
     /// Dtoken address -> Borrow balance
     pub account_borrows: HashMap<AccountId, WBalance>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(Debug, Default)]
+pub struct Consistency {
+    /// User consistency flag
+    pub is_inconsistent: bool,
+
+    /// Block that represents the time when consistency was affected
+    pub block_height: BlockHeight,
 }
 
 impl UserProfile {
@@ -58,18 +70,24 @@ impl UserProfile {
     }
 
     pub fn is_consistent(&self) -> bool {
-        !self.is_inconsistent
+        !self.consistency.is_inconsistent
     }
 
-    pub fn set_consistency(&mut self, consistency: bool) {
-        self.is_inconsistent = !consistency;
+    pub fn set_consistency(&mut self, consistency: bool, block: BlockHeight) {
+        self.consistency.is_inconsistent = !consistency;
+        self.consistency.block_height = block;
     }
 }
 
 #[near_bindgen]
 impl Contract {
     /// The method can be called only by Admin, Controller, Dtoken contracts
-    pub fn set_account_consistency(&mut self, account: AccountId, consistency: bool) {
+    pub fn set_account_consistency(
+        &mut self,
+        account: AccountId,
+        consistency: bool,
+        block: BlockHeight,
+    ) {
         require!(
             self.is_valid_admin_call() || self.is_dtoken_caller(),
             "This functionality is allowed to be called by admin, contract or dtoken's contract only"
@@ -78,7 +96,7 @@ impl Contract {
         self.user_profiles
             .get(&account)
             .unwrap_or_default()
-            .set_consistency(consistency);
+            .set_consistency(consistency, block);
     }
 }
 
