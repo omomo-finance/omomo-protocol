@@ -1,4 +1,5 @@
 use general::NO_DEPOSIT;
+use near_sdk::env::block_height;
 use near_sdk::{env, require, AccountId, Balance};
 
 use crate::*;
@@ -30,6 +31,7 @@ impl Contract {
         controller::set_account_consistency(
             account,
             false,
+            block_height(),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),
