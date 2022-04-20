@@ -152,7 +152,7 @@ impl Contract {
         self.get_potential_health_factor(
             account,
             token_address,
-            Balance::from(token_amount),
+            token_amount,
             Supply,
         ) >= self.get_health_threshold()
     }
@@ -168,7 +168,7 @@ impl Contract {
         self.get_potential_health_factor(
             account,
             token_address,
-            Balance::from(token_amount),
+            token_amount,
             Borrow,
         ) >= self.get_health_threshold()
     }

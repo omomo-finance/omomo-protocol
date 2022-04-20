@@ -1,6 +1,7 @@
 use crate::utils::{
     initialize_controller, initialize_dtoken, initialize_dtoken_with_custom_interest_rate,
-    initialize_two_dtokens, initialize_two_utokens, initialize_utoken, new_user, view_balance,
+    initialize_two_dtokens, initialize_two_dtokens_with_custom_interest_rate,
+    initialize_two_utokens, initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::{InterestRateModel, RepayInfo};
@@ -199,11 +200,21 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (_uroot1, _uroot2, utoken1, utoken2) = initialize_two_utokens(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken1, dtoken2) = initialize_two_dtokens(
+
+    let interest_model = InterestRateModel {
+        kink: U128(0),
+        multiplier_per_block: U128(0),
+        base_rate_per_block: U128(0),
+        jump_multiplier_per_block: U128(0),
+        reserve_factor: U128(0),
+    };
+    let (_droot, dtoken1, dtoken2) = initialize_two_dtokens_with_custom_interest_rate(
         &root,
         utoken1.account_id(),
         utoken2.account_id(),
         controller.account_id(),
+        interest_model.clone(),
+        interest_model,
     );
 
     call!(
@@ -215,7 +226,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
 
     call!(
         utoken1.user_account,
-        utoken1.mint(dtoken1.account_id(), U128(100000000000)),
+        utoken1.mint(dtoken1.account_id(), U128(100000)),
         0,
         100000000000000
     );
@@ -475,9 +486,22 @@ fn scenario_supply_borrow_repay_withdraw() {
 fn scenario_borrow_with_supply_on_another_dtoken() {
     let (dtoken1, controller, utoken1, user) = borrow_with_supply_on_another_dtoken_fixture();
 
+    let res_potential: u128 = view!(controller.get_potential_health_factor(
+        user.account_id(),
+        dtoken1.account_id(),
+        U128(40000),
+        Borrow
+    ))
+    .unwrap_json();
+    assert_eq!(res_potential, 30000);
+
     call!(user, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
 
+    let res: u128 = view!(controller.get_health_factor(user.account_id())).unwrap_json();
+    assert_eq!(res, 30000);
+
     let user_balance: U128 = view!(utoken1.ft_balance_of(user.account_id())).unwrap_json::<U128>();
+
     assert_eq!(
         user_balance,
         U128(100000040000),

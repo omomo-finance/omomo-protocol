@@ -293,3 +293,49 @@ pub fn initialize_two_dtokens(
     .assert_success();
     (droot, dtoken1, dtoken2)
 }
+
+pub fn initialize_two_dtokens_with_custom_interest_rate(
+    root: &UserAccount,
+    utoken_account1: AccountId,
+    utoken_account2: AccountId,
+    controller_account: AccountId,
+    interest_model1: InterestRateModel,
+    interest_model2: InterestRateModel,
+) -> (
+    UserAccount,
+    ContractAccount<dtoken::ContractContract>,
+    ContractAccount<dtoken::ContractContract>,
+) {
+    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let (droot, dtoken1, dtoken2) = init_two_dtokens(
+        droot,
+        AccountId::new_unchecked("dtoken_contract1".to_string()),
+        AccountId::new_unchecked("dtoken_contract2".to_string()),
+    );
+    call!(
+        droot,
+        dtoken1.new(dConfig {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: utoken_account1,
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account.clone(),
+            interest_rate_model: interest_model1
+        }),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        droot,
+        dtoken2.new(dConfig {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: utoken_account2,
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account,
+            interest_rate_model: interest_model2
+        }),
+        deposit = 0
+    )
+    .assert_success();
+    (droot, dtoken1, dtoken2)
+}
