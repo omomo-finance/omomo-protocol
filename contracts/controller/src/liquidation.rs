@@ -76,7 +76,6 @@ impl Contract {
         }
     }
 }
-}
 
 impl Contract {
     pub fn get_liquidation_revenue(
