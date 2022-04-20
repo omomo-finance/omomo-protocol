@@ -182,10 +182,6 @@ impl Contract {
     }
 
     pub fn get_user_profile(&self, user_id: AccountId) -> UserProfile {
-        require!(
-            self.is_valid_admin_call(),
-            "this functionality is allowed to be called by admin or contract only"
-        );
         self.user_profiles.get(&user_id).unwrap_or_default()
     }
 }
