@@ -122,23 +122,19 @@ mod tests {
 
         let mut prices: Vec<Price> = Vec::new();
 
-        if near_price != 0 {
-            prices.push(Price {
-                ticker_id: ticker_id_near,
-                value: U128(near_price),
-                volatility: U128(near_volatility),
-                fraction_digits: 4,
-            });
-        }
+        prices.push(Price {
+            ticker_id: ticker_id_near,
+            value: U128(near_price),
+            volatility: U128(near_volatility),
+            fraction_digits: 4,
+        });
 
-        if eth_price != 0 {
-            prices.push(Price {
-                ticker_id: ticker_id_eth,
-                value: U128(eth_price),
-                volatility: U128(eth_volatility),
-                fraction_digits: 4,
-            });
-        }
+        prices.push(Price {
+            ticker_id: ticker_id_eth,
+            value: U128(eth_price),
+            volatility: U128(eth_volatility),
+            fraction_digits: 4,
+        });
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,
