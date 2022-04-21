@@ -10,6 +10,7 @@ pub struct InterestRateModel {
     pub base_rate_per_block: WRatio,
     pub jump_multiplier_per_block: WRatio,
     pub reserve_factor: WRatio,
+    pub rewards_config: Vec<RewardSetting>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
@@ -44,6 +45,10 @@ impl InterestRateModel {
 
     pub fn get_reserve_factor(&self) -> Ratio {
         Ratio::from(self.reserve_factor)
+    }
+
+    pub fn get_rewards_config(&self) -> Vec<RewardSetting> {
+        self.rewards_config.clone()
     }
 
     pub fn set_kink(&mut self, value: WRatio) {
@@ -93,6 +98,7 @@ impl Default for InterestRateModel {
             multiplier_per_block: WRatio::from(RATIO_DECIMALS),
             jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS),
             reserve_factor: WRatio::from(500),
+            rewards_config: Vec::new(),
         }
     }
 }
@@ -133,5 +139,10 @@ impl Contract {
         let mut user = self.user_profiles.get(&account).unwrap_or_default();
         user.borrow_interest = accrued_interest;
         self.user_profiles.insert(&account, &user);
+    }
+
+    #[private]
+    pub fn set_rewards_config(&mut self, rewards_config: Vec<RewardSetting>) {
+        self.model.rewards_config = rewards_config;
     }
 }

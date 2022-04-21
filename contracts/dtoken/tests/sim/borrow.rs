@@ -152,6 +152,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
             base_rate_per_block: U128(0),
             jump_multiplier_per_block: U128(10900),
             reserve_factor: U128(500),
+            rewards_config: Vec::new(),
         },
     );
 
