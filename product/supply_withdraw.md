@@ -2,17 +2,15 @@
 
 ## How do I deposit
 
-1. Connect your wallet by clicking on the Connect Wallet button on the main page of the application.&#x20;
-2. Find an asset you’d like to supply and click the Supply button. Then, select the amount you wish to deposit in a pop-up window and submit your transaction.&#x20;
+1. Connect your wallet by clicking on the Connect Wallet button on the main page of the application.
+2. Find an asset you’d like to supply and click the Supply button. Then, select the amount you wish to deposit in a pop-up window and submit your transaction.
 3. Once the transaction is confirmed, your deposit is successfully registered, and you start earning interest on the supplied amount.
 
 ## How do I earn?
 
 Once your deposit is registered and supplied, you start getting rewards in dTokens.
 
-All dTokens holders receive incentives that evolve with market conditions. You can learn more about incentivization and earning interest with Nearlend in the Interest Rate Model chapter.
-
-
+All dTokens holders receive incentives that evolve with market conditions. You can learn more about incentivization and earning interest with OMOMO in the Interest Rate Model chapter.
 
 ## How does deposit work?
 
@@ -28,10 +26,10 @@ You can deposit any amount you want, there are no limits. Still, it's important 
 
 You can withdraw deposited funds anytime.
 
-1. Open the main page of the application.&#x20;
-2. Select the asset you would like to withdraw and click the Supply button.&#x20;
-3. In the pop-up window, go to the Withdraw tab and select the amount of dTokens you wish to withdraw.&#x20;
-4. Submit the transaction and wait a few minutes for confirmation. Check your wallet as you receive the confirmation and find your assets.&#x20;
+1. Open the main page of the application.
+2. Select the asset you would like to withdraw and click the Supply button.
+3. In the pop-up window, go to the Withdraw tab and select the amount of dTokens you wish to withdraw.
+4. Submit the transaction and wait a few minutes for confirmation. Check your wallet as you receive the confirmation and find your assets.
 5. In case the transaction fails, try again or contact our team.
 
 ## How does withdrawal work?

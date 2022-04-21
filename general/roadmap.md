@@ -2,7 +2,7 @@
 
 ## Timeline and plans
 
-Nearlend MVP development is an ongoing process, which is planned for Q1-Q2 2022. The working MVP will include all basic operations for the limited number of markets and provide the liquidation mechanism with partly automated internal processes.
+OMOMO MVP development is an ongoing process, which is planned for Q1-Q2 2022. The working MVP will include all basic operations for the limited number of markets and provide the liquidation mechanism with partly automated internal processes.
 
 ## Closest roadmap
 
@@ -14,7 +14,7 @@ Nearlend MVP development is an ongoing process, which is planned for Q1-Q2 2022.
 * Add initial markets for NEAR and popular stablecoins
 * Implement price feeds by directly connecting the app to a DEX
 * Implement the initial interest rate model
-* Develop Nearlend native token and integrate basic tokenomics
+* Develop OMOMO native token and integrate basic tokenomics
 * Develop reserves system
 
 ### **MVP launch (Q2 2022)**
@@ -26,7 +26,7 @@ Nearlend MVP development is an ongoing process, which is planned for Q1-Q2 2022.
 * Integrate native token incentivization
 * Expand collateralization to include several markets
 * Expand the number of the markets
-* Develop Nearlend DAO
+* Develop OMOMO DAO
 * Expand the existing tokenomics and token utility
 
 ### **Phase 3 (end of Q3 – Q4 2022)**
@@ -36,4 +36,3 @@ Nearlend MVP development is an ongoing process, which is planned for Q1-Q2 2022.
 * Add third-party protocol integrations to get DeFi strategies for the liquidity
 * Implement automated operations
 * Become a full-fledged DeFi 2.0 protocol in all aspects
-
