@@ -13,19 +13,18 @@ use near_sdk::{
 pub use general::*;
 
 pub use crate::borrow::*;
-pub use crate::reward::*;
 pub use crate::common::*;
 pub use crate::config::*;
 pub use crate::ft::*;
 pub use crate::interest_model::*;
 pub use crate::interest_rate_model::*;
 pub use crate::repay::*;
+pub use crate::reward::*;
 pub use crate::supply::*;
 pub use crate::user_profile::*;
 pub use crate::withdraw::*;
 
 mod admin;
-mod reward;
 mod borrow;
 mod common;
 mod config;
@@ -34,6 +33,7 @@ mod interest_model;
 mod interest_rate_model;
 mod liquidation;
 mod repay;
+mod reward;
 mod supply;
 mod user_profile;
 mod views;
