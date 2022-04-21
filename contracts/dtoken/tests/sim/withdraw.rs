@@ -419,7 +419,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
     (dtoken2, controller, utoken2, user)
 }
 
-fn withdraw_failed_with_borrow_on_another_dtoken_fixure() -> (
+fn withdraw_failed_due_to_low_health_factor_fixure() -> (
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<controller::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
@@ -725,9 +725,8 @@ fn scenario_withdraw_with_borrow_on_another_dtoken() {
 }
 
 #[test]
-fn scenario_withdraw_failed_with_borrow_on_another_dtoken() {
-    let (dtoken2, controller, utoken2, user) =
-        withdraw_failed_with_borrow_on_another_dtoken_fixure();
+fn scenario_withdraw_failed_due_to_low_health_factor() {
+    let (dtoken2, controller, utoken2, user) = withdraw_failed_due_to_low_health_factor_fixure();
 
     let dtoken_balance: U128 =
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
