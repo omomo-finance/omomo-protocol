@@ -180,6 +180,10 @@ impl Contract {
             MethodType::Borrow => self.is_action_paused.borrow = false,
         }
     }
+
+    pub fn get_user_profile(&self, user_id: AccountId) -> UserProfile {
+        self.user_profiles.get(&user_id).unwrap_or_default()
+    }
 }
 
 #[cfg(test)]

@@ -143,7 +143,12 @@ trait ControllerInterface {
     );
     fn mutex_lock(&mut self, action: Actions);
     fn mutex_unlock(&mut self);
-    fn set_account_consistency(&mut self, account: AccountId, consistency: bool);
+    fn set_account_consistency(
+        &mut self,
+        account: AccountId,
+        consistency: bool,
+        block: BlockHeight,
+    );
 }
 
 #[ext_contract(ext_self)]

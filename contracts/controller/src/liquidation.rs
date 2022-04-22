@@ -8,7 +8,7 @@ impl Contract {
         &mut self,
         borrower: AccountId,
         borrowing_dtoken: AccountId,
-        _liquidator: AccountId,
+        liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     ) {
@@ -16,7 +16,7 @@ impl Contract {
         let res = self.is_liquidation_allowed(
             borrower,
             borrowing_dtoken,
-            _liquidator,
+            liquidator,
             collateral_dtoken,
             liquidation_amount,
         );
@@ -25,6 +25,46 @@ impl Contract {
         }
     }
 
+    pub fn on_debt_repaying_callback(
+        &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+    ) -> PromiseOrValue<U128> {
+        // TODO: Add check that only real Dtoken address can call this
+        if !is_promise_success() {
+            self.increase_borrows(borrower, borrowing_dtoken, liquidation_amount);
+            log!("Liquidation failed on borrow_repay call, revert changes...");
+            PromiseOrValue::Value(U128(liquidation_amount.0))
+        } else {
+            self.decrease_supplies(
+                borrower.clone(),
+                collateral_dtoken.clone(),
+                liquidation_amount,
+            );
+
+            self.increase_supplies(
+                liquidator.clone(),
+                collateral_dtoken.clone(),
+                liquidation_amount,
+            );
+
+            dtoken::swap_supplies(
+                borrower,
+                liquidator,
+                liquidation_amount,
+                collateral_dtoken,
+                NO_DEPOSIT,
+                near_sdk::Gas::ONE_TERA * 8_u64,
+            )
+            .into()
+        }
+    }
+}
+
+impl Contract {
     pub fn get_liquidation_revenue(
         &self,
         borrowing_dtoken: AccountId,
@@ -131,44 +171,6 @@ impl Contract {
                 amount_for_liquidation,
             );
             Ok((amount_for_liquidation, revenue_amount))
-        }
-    }
-
-    pub fn on_debt_repaying_callback(
-        &mut self,
-        borrower: AccountId,
-        _borrowing_dtoken: AccountId,
-        collateral_dtoken: AccountId,
-        liquidator: AccountId,
-        liquidation_amount: WBalance,
-    ) -> PromiseOrValue<U128> {
-        // TODO: Add check that only real Dtoken address can call this
-        if !is_promise_success() {
-            self.increase_borrows(borrower, _borrowing_dtoken, liquidation_amount);
-            log!("Liquidation failed on borrow_repay call, revert changes...");
-            PromiseOrValue::Value(U128(liquidation_amount.0))
-        } else {
-            self.decrease_supplies(
-                borrower.clone(),
-                collateral_dtoken.clone(),
-                liquidation_amount,
-            );
-
-            self.increase_supplies(
-                liquidator.clone(),
-                collateral_dtoken.clone(),
-                liquidation_amount,
-            );
-
-            dtoken::swap_supplies(
-                borrower,
-                liquidator,
-                liquidation_amount,
-                collateral_dtoken,
-                NO_DEPOSIT,
-                near_sdk::Gas::ONE_TERA * 8_u64,
-            )
-            .into()
         }
     }
 }

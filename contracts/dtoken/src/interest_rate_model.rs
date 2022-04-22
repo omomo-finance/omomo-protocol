@@ -2,7 +2,7 @@ use crate::*;
 use near_sdk::env::block_height;
 use std::fmt;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct InterestRateModel {
     pub kink: WRatio,

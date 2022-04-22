@@ -64,6 +64,10 @@ impl Contract {
     pub fn view_repay_info(&self, user_id: AccountId, ft_balance: WBalance) -> RepayInfo {
         self.get_repay_info(user_id, ft_balance)
     }
+
+    pub fn view_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
+        self.get_exchange_rate(underlying_balance)
+    }
 }
 
 #[cfg(test)]
