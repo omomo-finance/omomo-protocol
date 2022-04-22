@@ -146,3 +146,46 @@ impl Contract {
         self.model.rewards_config = rewards_config;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use near_sdk::json_types::U128;
+    use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use near_sdk::AccountId;
+
+    use crate::InterestRateModel;
+    use crate::{Config, Contract, RewardSetting, VestingPlans};
+
+    pub fn init_test_env() -> (Contract, AccountId) {
+        let (owner_account, token_address) = (alice(), bob());
+
+        let near_contract = Contract::new(Config {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: "weth".parse().unwrap(),
+            owner_id: owner_account,
+            controller_account_id: "controller".parse().unwrap(),
+            interest_rate_model: InterestRateModel::default(),
+        });
+
+        (near_contract, token_address)
+    }
+
+    #[test]
+    fn test_for_reward_config_getter_setter() {
+        let (mut near_contract, token_address) = init_test_env();
+        let reward_setting = RewardSetting {
+            token: token_address.clone(),
+            reward_per_day: 20,
+            lock_time: 100,
+            penalty: 500,
+            vesting: VestingPlans::None,
+        };
+
+        let mut rewards_config = Vec::new();
+        rewards_config.push(reward_setting);
+
+        near_contract.set_rewards_config(rewards_config);
+        assert_eq!(near_contract.model.get_rewards_config().len(), 1);
+        assert_eq!(near_contract.model.rewards_config[0].token, token_address);
+    }
+}
