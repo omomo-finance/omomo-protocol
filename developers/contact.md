@@ -1,9 +1,8 @@
 # Contact us
 
-|         |                  |
-| ------- | ---------------- |
-| Medium  | medium           |
-| Web     | omomo.io         |
-| Twitter | @omomo           |
-| Email   | support@omomo.io |
-| Discord | #discord\_omomo  |
+|         |                                                       |
+| ------- | ----------------------------------------------------- |
+| Medium  | [medium](https://medium.com/omomo)                    |
+| Web     | [omomo.finance](http://www.omomo.finance)             |
+| Twitter | [@omomo\_finance](https://twitter.com/omomo\_finance) |
+| Email   | [contact@omomo.finance](mailto:contact@omomo.finance) |
