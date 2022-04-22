@@ -150,7 +150,7 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::AccountId;
 
     use crate::InterestRateModel;
@@ -186,6 +186,9 @@ mod tests {
 
         near_contract.set_rewards_config(rewards_config);
         assert_eq!(near_contract.model.get_rewards_config().len(), 1);
-        assert_eq!(near_contract.model.rewards_config[0].token, token_address);
+        assert_eq!(
+            near_contract.model.get_rewards_config()[0].token,
+            token_address
+        );
     }
 }
