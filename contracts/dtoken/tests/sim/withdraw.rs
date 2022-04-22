@@ -317,6 +317,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
         base_rate_per_block: U128(0),
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
+        rewards_config: Vec::new(),
     };
     let (_droot, dtoken1, dtoken2) = initialize_two_dtokens_with_custom_interest_rate(
         &root,
@@ -438,6 +439,7 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
         base_rate_per_block: U128(0),
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
+        rewards_config: Vec::new(),
     };
     let (_droot, dtoken1, dtoken2) = initialize_two_dtokens_with_custom_interest_rate(
         &root,

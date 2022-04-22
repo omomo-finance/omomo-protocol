@@ -165,7 +165,7 @@ impl Contract {
 
 impl fmt::Display for Events {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &*self {
+        match self {
             Events::BorrowFailedToGetUnderlyingBalance(
                 account,
                 balance,

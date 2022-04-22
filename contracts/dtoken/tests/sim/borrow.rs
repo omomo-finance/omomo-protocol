@@ -153,6 +153,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
             base_rate_per_block: U128(0),
             jump_multiplier_per_block: U128(10900),
             reserve_factor: U128(500),
+            rewards_config: Vec::new(),
         },
     );
 
@@ -207,6 +208,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
         base_rate_per_block: U128(0),
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
+        rewards_config: Vec::new(),
     };
     let (_droot, dtoken1, dtoken2) = initialize_two_dtokens_with_custom_interest_rate(
         &root,
