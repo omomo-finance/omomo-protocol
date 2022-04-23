@@ -88,8 +88,8 @@ impl Contract {
         let potential_borrow = (supplies.0 / self.get_health_threshold()) - gotten_borrow.0;
         let ticker_price = self.get_price_by_ticker(ticker_id);
 
-        let amount = (potential_borrow / ticker_price).into();
-        amount
+
+        (potential_borrow / ticker_price).into()
     }
 
     pub fn view_withdraw_max(&self, ticker_id: String) -> WBalance {
@@ -99,8 +99,8 @@ impl Contract {
         let max_withdraw = supplies.0 - (borrows.0 * self.get_health_threshold());
         let ticker_price = self.get_price_by_ticker(ticker_id);
 
-        let amount = (max_withdraw / ticker_price).into();
-        amount
+
+        (max_withdraw / ticker_price).into()
     }
 }
 
