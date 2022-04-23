@@ -67,6 +67,41 @@ impl Contract {
     pub fn view_prices(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
         self.get_prices_for_dtokens(dtokens)
     }
+
+    pub fn get_price_by_ticker(&self, ticker: String) -> u128 {
+        self.prices
+            .iter()
+            .map(|(_, market)| {
+                if market.ticker_id == ticker {
+                    market.value.0
+                } else {
+                    0u128
+                }
+            })
+            .sum()
+    }
+
+    pub fn view_borrow_max(&self, ticker_id: String) -> WBalance {
+        let supplies = self.get_total_supplies(env::signer_account_id());
+        let gotten_borrow = self.get_total_borrows(env::signer_account_id());
+
+        let potential_borrow = (supplies.0 / self.get_health_threshold()) - gotten_borrow.0;
+        let ticker_price = self.get_price_by_ticker(ticker_id);
+
+        let amount = (potential_borrow / ticker_price).into();
+        amount
+    }
+
+    pub fn view_withdraw_max(&self, ticker_id: String) -> WBalance {
+        let supplies = self.get_total_supplies(env::signer_account_id());
+        let borrows = self.get_total_borrows(env::signer_account_id());
+
+        let max_withdraw = supplies.0 - (borrows.0 * self.get_health_threshold());
+        let ticker_price = self.get_price_by_ticker(ticker_id);
+
+        let amount = (max_withdraw / ticker_price).into();
+        amount
+    }
 }
 
 #[cfg(test)]
