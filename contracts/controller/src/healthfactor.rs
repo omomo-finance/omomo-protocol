@@ -257,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn test_account_no_collaterals_and_borrows() {
+    fn test_health_factor_wo_s_or_b() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn test_supply_100eth() {
+    fn test_health_factor_with_supply() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn test_supply_100eth_borrow_70eth() {
+    fn test_health_factor_with_supply_and_borrow_scenario_1() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -323,7 +323,7 @@ mod tests {
     }
 
     #[test]
-    fn test_supply_200eth_borrow_100near_for_price_1() {
+    fn test_health_factor_with_supply_and_borrow_scenario_2() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 100, 10000, 100);
 
@@ -344,7 +344,7 @@ mod tests {
     }
 
     #[test]
-    fn test_supply_200eth_borrow_100near_for_price_2() {
+    fn test_health_factor_with_supply_and_borrow_scenario_3() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(20000, 100, 5000, 100);
 
@@ -365,7 +365,7 @@ mod tests {
     }
 
     #[test]
-    fn test_supply_200near_borrow_100near() {
+    fn test_health_factor_with_supply_and_borrow_scenario_4() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 80, 10000, 90);
 
@@ -386,7 +386,7 @@ mod tests {
     }
 
     #[test]
-    fn test_supply_200eth_borrow_50eth_100near() {
+    fn test_health_factor_with_supply_and_multi_borrow() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 80, 11000, 90);
 
