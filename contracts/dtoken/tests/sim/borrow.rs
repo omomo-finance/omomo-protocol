@@ -48,7 +48,7 @@ fn borrow_fixture() -> (
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
@@ -65,7 +65,7 @@ fn borrow_fixture() -> (
         ),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     (dtoken, controller, utoken, user)
 }
@@ -109,7 +109,7 @@ fn borrow_more_than_on_dtoken_fixture() -> (
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     call!(
         controller.user_account,
@@ -124,7 +124,7 @@ fn borrow_more_than_on_dtoken_fixture() -> (
         ),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
@@ -184,7 +184,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
         ),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     (dtoken, controller, utoken, user, root)
 }
@@ -260,7 +260,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
         ),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     call!(
         controller.user_account,
@@ -275,7 +275,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
         ),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     let action = "\"Supply\"".to_string();
 
@@ -284,7 +284,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
         utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     (dtoken1, controller, utoken1, user)
 }
@@ -368,7 +368,7 @@ fn scenario_supply_borrow_repay_withdraw() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     // after supplying
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
@@ -413,7 +413,7 @@ fn scenario_supply_borrow_repay_withdraw() {
         dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
         deposit = 0
     )
-        .unwrap_json::<RepayInfo>();
+    .unwrap_json::<RepayInfo>();
 
     let repay_amount = u128::from(repay_info.total_amount)
         + u128::from(repay_info.accrued_interest_per_block) * 10;
@@ -494,7 +494,7 @@ fn scenario_borrow_with_supply_on_another_dtoken() {
         U128(40000),
         Borrow
     ))
-        .unwrap_json();
+    .unwrap_json();
     assert_eq!(res_potential, 30000);
 
     call!(user, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
