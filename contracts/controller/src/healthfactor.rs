@@ -274,7 +274,7 @@ mod tests {
         );
 
         assert_eq!(
-            controller_contract.get_health_factor(user_account),
+            controller_contract.get_health_factor(user_account.clone()),
             controller_contract.get_health_threshold(),
             "Test for account w/o collaterals and borrows has been failed"
         );

@@ -84,8 +84,8 @@ mod tests {
 
     pub fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
-            .current_account_id(alice())
-            .signer_account_id(alice())
+            .current_account_id(alice().clone())
+            .signer_account_id(alice().clone())
             .is_view(is_view)
             .build()
     }
