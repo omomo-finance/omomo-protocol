@@ -60,6 +60,7 @@ fn repay_fixture() -> (
             base_rate_per_block: U128(0),
             jump_multiplier_per_block: U128(10900),
             reserve_factor: U128(500),
+            rewards_config: Vec::new(),
         },
     );
 
@@ -117,6 +118,7 @@ fn repay_zero_accrued_interest_fixture() -> (
             base_rate_per_block: U128(0),
             jump_multiplier_per_block: U128(0),
             reserve_factor: U128(0),
+            rewards_config: Vec::new(),
         },
     );
 

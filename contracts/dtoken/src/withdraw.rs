@@ -133,7 +133,7 @@ impl Contract {
             dtoken_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(50),
+            self.terra_gas(30),
         ))
         .into()
     }
@@ -165,7 +165,7 @@ impl Contract {
                 token_amount,
                 env::current_account_id(),
                 NO_DEPOSIT,
-                self.terra_gas(20),
+                self.terra_gas(10),
             ))
             .into()
         }
