@@ -88,7 +88,6 @@ impl Contract {
         let potential_borrow = (supplies.0 / self.get_health_threshold()) - gotten_borrow.0;
         let ticker_price = self.get_price_by_ticker(ticker_id);
 
-
         (potential_borrow / ticker_price).into()
     }
 
@@ -98,7 +97,6 @@ impl Contract {
 
         let max_withdraw = supplies.0 - (borrows.0 * self.get_health_threshold());
         let ticker_price = self.get_price_by_ticker(ticker_id);
-
 
         (max_withdraw / ticker_price).into()
     }
