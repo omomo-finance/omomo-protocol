@@ -154,6 +154,12 @@ fn supply_fixture() -> (
 
     call!(
         controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
+
+    call!(
+        controller.user_account,
         controller.upsert_price(
             dtoken.account_id(),
             &Price {

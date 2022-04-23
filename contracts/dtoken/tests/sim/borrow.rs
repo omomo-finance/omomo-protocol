@@ -36,6 +36,12 @@ fn borrow_fixture() -> (
         100000000000000
     );
 
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
+
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -95,6 +101,12 @@ fn borrow_more_than_on_dtoken_fixture() -> (
         utoken.mint(user.account_id(), U128(30)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     let action = "\"Supply\"".to_string();
@@ -169,6 +181,12 @@ fn supply_borrow_repay_withdraw_fixture() -> (
         utoken.mint(user.account_id(), U128(900)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     call!(
@@ -249,6 +267,16 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
 
     call!(
         controller.user_account,
+        controller.add_market(
+            utoken1.account_id(),
+            dtoken1.account_id(),
+            "1weth".to_string()
+        ),
+        deposit = 0
+    );
+
+    call!(
+        controller.user_account,
         controller.upsert_price(
             dtoken1.account_id(),
             &Price {
@@ -261,6 +289,16 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
         deposit = 0
     )
     .assert_success();
+
+    call!(
+        controller.user_account,
+        controller.add_market(
+            utoken2.account_id(),
+            dtoken2.account_id(),
+            "2weth".to_string()
+        ),
+        deposit = 0
+    );
 
     call!(
         controller.user_account,

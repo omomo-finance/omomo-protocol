@@ -60,6 +60,16 @@ fn liquidation_success_fixture() -> (
         100000000000000
     );
 
+    call!(
+        controller.user_account,
+        controller.add_market(
+            utoken1.account_id(),
+            dtoken1.account_id(),
+            "1weth".to_string()
+        ),
+        deposit = 0
+    );
+
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -125,6 +135,12 @@ fn liquidation_success_on_single_dtoken_fixture() -> (
         100000000000000
     );
 
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
+
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -185,6 +201,12 @@ fn liquidation_failed_no_collateral_fixture() -> (
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     let action = "\"Supply\"".to_string();
@@ -248,6 +270,17 @@ fn liquidation_failed_on_not_enough_amount_to_liquidate_fixture() -> (
         0,
         100000000000000
     );
+
+    call!(
+        controller.user_account,
+        controller.add_market(
+            utoken.account_id(),
+            dtoken.account_id(),
+            "1weth".to_string()
+        ),
+        deposit = 0
+    );
+
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -303,6 +336,12 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     call!(

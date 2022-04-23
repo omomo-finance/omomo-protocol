@@ -34,6 +34,12 @@ fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContrac
         100000000000000
     );
 
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
+
     (dtoken, user)
 }
 
@@ -79,6 +85,12 @@ fn withdraw_more_fixture() -> (
         100000000000000
     )
     .assert_success();
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
 
     call!(
         user,
@@ -143,6 +155,12 @@ fn withdraw_less_same_fixture() -> (
     .assert_success();
 
     call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
+
+    call!(
         user,
         utoken.ft_transfer(
             dtoken.account_id(),
@@ -200,6 +218,11 @@ fn supply_borrow_withdraw_fixture() -> (
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
+    );
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     call!(
@@ -358,6 +381,26 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
 
     call!(
         controller.user_account,
+        controller.add_market(
+            utoken1.account_id(),
+            dtoken1.account_id(),
+            "1weth".to_string()
+        ),
+        deposit = 0
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(
+            utoken2.account_id(),
+            dtoken2.account_id(),
+            "2weth".to_string()
+        ),
+        deposit = 0
+    );
+
+    call!(
+        controller.user_account,
         controller.upsert_price(
             dtoken1.account_id(),
             &Price {
@@ -476,6 +519,26 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
         utoken2.mint(user.account_id(), U128(100000000000)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(
+            utoken1.account_id(),
+            dtoken1.account_id(),
+            "1weth".to_string()
+        ),
+        deposit = 0
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(
+            utoken2.account_id(),
+            dtoken2.account_id(),
+            "2weth".to_string()
+        ),
+        deposit = 0
     );
 
     call!(

@@ -35,6 +35,12 @@ fn repay_no_borrow_fixture() -> (
         100000000000000
     );
 
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
+    );
+
     (dtoken, utoken, user)
 }
 
@@ -76,6 +82,12 @@ fn repay_fixture() -> (
         utoken.mint(user.account_id(), U128(800)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     call!(
@@ -134,6 +146,12 @@ fn repay_zero_accrued_interest_fixture() -> (
         utoken.mint(user.account_id(), U128(800)),
         0,
         100000000000000
+    );
+
+    call!(
+        controller.user_account,
+        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
+        deposit = 0
     );
 
     call!(
