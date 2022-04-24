@@ -1,5 +1,5 @@
 use crate::utils::{
-    assert_failure, initialize_controller, initialize_dtoken, initialize_two_dtokens,
+    assert_failure, initialize_controller, initialize_dtoken,
     initialize_two_dtokens_with_custom_interest_rate, initialize_two_utokens, initialize_utoken,
     new_user, view_balance,
 };

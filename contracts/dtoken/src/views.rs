@@ -68,6 +68,10 @@ impl Contract {
     pub fn view_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
         self.get_exchange_rate(underlying_balance)
     }
+
+    pub fn view_user_rewards(&self, account_id: AccountId) -> Vec<Reward> {
+        self.get_user_rewards(account_id)
+    }
 }
 
 #[cfg(test)]

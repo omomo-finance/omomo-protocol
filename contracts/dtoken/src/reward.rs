@@ -9,6 +9,25 @@ pub enum VestingPlans {
 
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
+pub struct Reward {
+    /// Unique id
+    pub id: String,
+
+    /// Token address
+    pub token: AccountId,
+
+    /// Reward token amount === RewardSetting.reward_per_day * (user_staker / total_stake) * (staked_blocks / blocks_per_day)
+    pub amount: Balance,
+
+    /// BlockHeight when lock will be released
+    pub locked_till: BlockHeight,
+
+    /// RewardSetting.penalty
+    pub penalty: Ratio,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
 pub struct RewardSetting {
     /// Token address
     pub token: AccountId,
@@ -25,4 +44,36 @@ pub struct RewardSetting {
 
     /// Vesting plan type
     pub vesting: VestingPlans,
+}
+
+impl Contract {
+    pub fn get_user_rewards(&self, account_id: AccountId) -> Vec<Reward> {
+        self.rewards
+            .get(&account_id)
+            .expect("This user doesn`t have rewards")
+    }
+}
+
+#[near_bindgen]
+impl Contract {
+    pub fn adjust_rewards(&mut self, account_id: AccountId, reward: Reward) {
+        if self.rewards.get(&account_id).is_none() {
+            self.rewards.insert(&account_id, &[reward].to_vec());
+        } else {
+            let mut user_rewards = self.rewards.get(&account_id).unwrap();
+            user_rewards.push(reward);
+        }
+    }
+
+    pub fn remove_reward(&mut self, account_id: AccountId, reward_id: String) {
+        let mut user_rewards = self
+            .rewards
+            .get(&account_id)
+            .expect("This user doesn`t have rewards");
+        let reward_index = user_rewards
+            .iter()
+            .position(|x| *x.id == reward_id)
+            .unwrap();
+        user_rewards.remove(reward_index);
+    }
 }

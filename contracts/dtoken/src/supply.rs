@@ -1,4 +1,6 @@
 use crate::*;
+use nanoid::nanoid;
+use near_sdk::env::block_height;
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
@@ -77,12 +79,26 @@ impl Contract {
             U128(self.total_reserves),
             U128(interest_rate_model.get_reserve_factor()),
         );
+        let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
-            self.get_accrued_supply_interest(env::signer_account_id()),
+            accrued_interest.clone(),
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
+
+        for reward_setting in self.model.rewards_config.clone().iter() {
+            let reward_amount = reward_setting.reward_per_day /* * user.stake / self.token.total_supply * ((block_height() - accrued_interest.last_recalculation_block) as u128/ blocks_per_day)*/;
+            let reward = Reward {
+                id: nanoid!(),
+                token: reward_setting.token.clone(),
+                amount: reward_amount,
+                locked_till: accrued_interest.last_recalculation_block
+                    + reward_setting.lock_time as u64,
+                penalty: reward_setting.penalty,
+            };
+            self.adjust_rewards(env::signer_account_id(), reward);
+        }
 
         // Dtokens minting and adding them to the user account
         self.mint(self.get_signer_address(), dtoken_amount.into());
