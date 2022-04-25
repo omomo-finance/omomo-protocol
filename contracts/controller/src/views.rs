@@ -81,21 +81,21 @@ impl Contract {
             .sum()
     }
 
-    pub fn view_borrow_max(&self, ticker_id: String) -> WBalance {
-        let supplies = self.get_total_supplies(env::signer_account_id());
-        let gotten_borrow = self.get_total_borrows(env::signer_account_id());
+    pub fn view_borrow_max(&self, user_id: AccountId, ticker_id: String) -> WBalance {
+        let supplies = self.get_total_supplies(user_id.clone());
+        let gotten_borrow = self.get_total_borrows(user_id.clone());
 
-        let potential_borrow = (supplies.0 / self.get_health_threshold()) - gotten_borrow.0;
+        let potential_borrow = (supplies.0 / self.health_threshold) - gotten_borrow.0;
         let ticker_price = self.get_price_by_ticker(ticker_id);
 
         (potential_borrow / ticker_price).into()
     }
 
-    pub fn view_withdraw_max(&self, ticker_id: String) -> WBalance {
-        let supplies = self.get_total_supplies(env::signer_account_id());
-        let borrows = self.get_total_borrows(env::signer_account_id());
+    pub fn view_withdraw_max(&self, user_id: AccountId, ticker_id: String) -> WBalance {
+        let supplies = self.get_total_supplies(user_id.clone());
+        let borrows = self.get_total_borrows(user_id.clone());
 
-        let max_withdraw = supplies.0 - (borrows.0 * self.get_health_threshold());
+        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold);
         let ticker_price = self.get_price_by_ticker(ticker_id);
 
         (max_withdraw / ticker_price).into()
@@ -104,7 +104,7 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
-    use crate::ActionType::Supply;
+    use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
     use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
@@ -239,6 +239,49 @@ mod tests {
             result[0].health_factor_ratio,
             U128(15000),
             "View accounts health factor check has been failed"
+        );
+    }
+
+    #[test]
+    fn test_view_withdraw_max() {
+        let (mut near_contract, token_address, user) = init_test_env();
+
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            token_address.clone(),
+            500000 * ONE_TOKEN,
+        );
+
+        // we are able to withdraw all the supplied funds
+        assert_eq!(
+            U128(500000),
+            near_contract.view_withdraw_max(user.clone(), "wnear".to_string())
+        );
+    }
+
+    #[test]
+    fn test_view_borrow_max() {
+        let (mut near_contract, token_address, user) = init_test_env();
+
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            token_address.clone(),
+            1000000 * ONE_TOKEN,
+        );
+
+        near_contract.set_entity_by_token(
+            Borrow,
+            user.clone(),
+            token_address.clone(),
+            10 * ONE_TOKEN,
+        );
+
+        // we still have some tokens to borrow
+        assert_eq!(
+            U128(56),
+            near_contract.view_borrow_max(user.clone(), "wnear".to_string())
         );
     }
 }
