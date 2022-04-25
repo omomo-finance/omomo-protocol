@@ -246,12 +246,7 @@ mod tests {
     fn test_view_withdraw_max() {
         let (mut near_contract, token_address, user) = init_test_env();
 
-        near_contract.set_entity_by_token(
-            Supply,
-            user.clone(),
-            token_address,
-            500000 * ONE_TOKEN,
-        );
+        near_contract.set_entity_by_token(Supply, user.clone(), token_address, 500000 * ONE_TOKEN);
 
         // we are able to withdraw all the supplied funds
         assert_eq!(
@@ -271,12 +266,7 @@ mod tests {
             1000000 * ONE_TOKEN,
         );
 
-        near_contract.set_entity_by_token(
-            Borrow,
-            user.clone(),
-            token_address,
-            10 * ONE_TOKEN,
-        );
+        near_contract.set_entity_by_token(Borrow, user.clone(), token_address, 10 * ONE_TOKEN);
 
         // we still have some tokens to borrow
         assert_eq!(
