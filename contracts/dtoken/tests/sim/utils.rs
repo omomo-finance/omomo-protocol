@@ -1,5 +1,6 @@
 use near_sdk::json_types::U128;
 use near_sdk::AccountId;
+use near_sdk_sim::types::RawStateChangesWithTrieKey;
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 
 use controller::ContractContract as Controller;
@@ -338,4 +339,17 @@ pub fn initialize_two_dtokens_with_custom_interest_rate(
     )
     .assert_success();
     (droot, dtoken1, dtoken2)
+}
+
+pub fn add_market(
+    controller: &ContractAccount<controller::ContractContract>,
+    utoken_id: AccountId,
+    dtoken_id: AccountId,
+    ticker_id: String,
+) {
+    call!(
+        controller.user_account,
+        controller.add_market(utoken_id, dtoken_id, ticker_id),
+        deposit = 0
+    );
 }
