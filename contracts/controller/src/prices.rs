@@ -16,6 +16,20 @@ impl Contract {
     pub fn get_price(&self, dtoken_id: AccountId) -> Option<Price> {
         self.prices.get(&dtoken_id)
     }
+
+    pub fn get_price_by_ticker(&self, ticker: String) -> Price {
+        let mut result = vec![];
+
+        for (_, price) in self
+            .prices
+            .iter()
+            .filter(|(_, market)| market.ticker_id == ticker)
+        {
+            result.push(price);
+        }
+
+        result.pop().unwrap()
+    }
 }
 
 #[near_bindgen]

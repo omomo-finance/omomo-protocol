@@ -68,25 +68,12 @@ impl Contract {
         self.get_prices_for_dtokens(dtokens)
     }
 
-    pub fn get_price_by_ticker(&self, ticker: String) -> u128 {
-        self.prices
-            .iter()
-            .map(|(_, market)| {
-                if market.ticker_id == ticker {
-                    market.value.0
-                } else {
-                    0u128
-                }
-            })
-            .sum()
-    }
-
     pub fn view_borrow_max(&self, user_id: AccountId, ticker_id: String) -> WBalance {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
         let potential_borrow = (supplies.0 / self.health_threshold) - gotten_borrow.0;
-        let ticker_price = self.get_price_by_ticker(ticker_id);
+        let ticker_price = self.get_price_by_ticker(ticker_id).value.0;
 
         (potential_borrow / ticker_price).into()
     }
@@ -96,7 +83,7 @@ impl Contract {
         let borrows = self.get_total_borrows(user_id);
 
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold);
-        let ticker_price = self.get_price_by_ticker(ticker_id);
+        let ticker_price = self.get_price_by_ticker(ticker_id).value.0;
 
         (max_withdraw / ticker_price).into()
     }
