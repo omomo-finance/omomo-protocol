@@ -83,7 +83,7 @@ impl Contract {
 
     pub fn view_borrow_max(&self, user_id: AccountId, ticker_id: String) -> WBalance {
         let supplies = self.get_total_supplies(user_id.clone());
-        let gotten_borrow = self.get_total_borrows(user_id.clone());
+        let gotten_borrow = self.get_total_borrows(user_id);
 
         let potential_borrow = (supplies.0 / self.health_threshold) - gotten_borrow.0;
         let ticker_price = self.get_price_by_ticker(ticker_id);
@@ -93,7 +93,7 @@ impl Contract {
 
     pub fn view_withdraw_max(&self, user_id: AccountId, ticker_id: String) -> WBalance {
         let supplies = self.get_total_supplies(user_id.clone());
-        let borrows = self.get_total_borrows(user_id.clone());
+        let borrows = self.get_total_borrows(user_id);
 
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold);
         let ticker_price = self.get_price_by_ticker(ticker_id);
@@ -249,14 +249,14 @@ mod tests {
         near_contract.set_entity_by_token(
             Supply,
             user.clone(),
-            token_address.clone(),
+            token_address,
             500000 * ONE_TOKEN,
         );
 
         // we are able to withdraw all the supplied funds
         assert_eq!(
             U128(500000),
-            near_contract.view_withdraw_max(user.clone(), "wnear".to_string())
+            near_contract.view_withdraw_max(user, "wnear".to_string())
         );
     }
 
@@ -274,14 +274,14 @@ mod tests {
         near_contract.set_entity_by_token(
             Borrow,
             user.clone(),
-            token_address.clone(),
+            token_address,
             10 * ONE_TOKEN,
         );
 
         // we still have some tokens to borrow
         assert_eq!(
             U128(56),
-            near_contract.view_borrow_max(user.clone(), "wnear".to_string())
+            near_contract.view_borrow_max(user, "wnear".to_string())
         );
     }
 }
