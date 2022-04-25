@@ -91,7 +91,7 @@ impl Contract {
         for reward_setting in self.model.rewards_config.clone().iter() {
             let reward_amount = self.calculate_reward_amount(
                 env::signer_account_id(),
-                &reward_setting,
+                reward_setting,
                 current_block_height,
                 accrued_interest.last_recalculation_block,
             );
