@@ -1,5 +1,5 @@
 use crate::utils::{
-    assert_failure, initialize_controller, initialize_dtoken, initialize_two_dtokens,
+    add_market, assert_failure, initialize_controller, initialize_dtoken, initialize_two_dtokens,
     initialize_two_dtokens_with_custom_interest_rate, initialize_two_utokens, initialize_utoken,
     new_user, view_balance,
 };
@@ -34,10 +34,11 @@ fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContrac
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     (dtoken, user)
@@ -86,10 +87,11 @@ fn withdraw_more_fixture() -> (
     )
     .assert_success();
 
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
@@ -154,10 +156,11 @@ fn withdraw_less_same_fixture() -> (
     )
     .assert_success();
 
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
@@ -219,10 +222,12 @@ fn supply_borrow_withdraw_fixture() -> (
         0,
         100000000000000
     );
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
@@ -379,24 +384,18 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(
-            utoken1.account_id(),
-            dtoken1.account_id(),
-            "1weth".to_string()
-        ),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken1.account_id(),
+        dtoken1.account_id(),
+        "1weth".to_string(),
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(
-            utoken2.account_id(),
-            dtoken2.account_id(),
-            "2weth".to_string()
-        ),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken2.account_id(),
+        dtoken2.account_id(),
+        "2weth".to_string(),
     );
 
     call!(
@@ -521,24 +520,18 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(
-            utoken1.account_id(),
-            dtoken1.account_id(),
-            "1weth".to_string()
-        ),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken1.account_id(),
+        dtoken1.account_id(),
+        "1weth".to_string(),
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(
-            utoken2.account_id(),
-            dtoken2.account_id(),
-            "2weth".to_string()
-        ),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken2.account_id(),
+        dtoken2.account_id(),
+        "2weth".to_string(),
     );
 
     call!(

@@ -1,7 +1,8 @@
 use crate::utils::{
-    initialize_controller, initialize_dtoken, initialize_dtoken_with_custom_interest_rate,
-    initialize_two_dtokens, initialize_two_dtokens_with_custom_interest_rate,
-    initialize_two_utokens, initialize_utoken, new_user, view_balance,
+    add_market, initialize_controller, initialize_dtoken,
+    initialize_dtoken_with_custom_interest_rate, initialize_two_dtokens,
+    initialize_two_dtokens_with_custom_interest_rate, initialize_two_utokens, initialize_utoken,
+    new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::{InterestRateModel, RepayInfo};
@@ -36,10 +37,11 @@ fn borrow_fixture() -> (
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     let action = "\"Supply\"".to_string();
@@ -103,10 +105,11 @@ fn borrow_more_than_on_dtoken_fixture() -> (
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     let action = "\"Supply\"".to_string();
@@ -183,10 +186,11 @@ fn supply_borrow_repay_withdraw_fixture() -> (
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(utoken.account_id(), dtoken.account_id(), "weth".to_string()),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
@@ -265,14 +269,11 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
         100000000000000
     );
 
-    call!(
-        controller.user_account,
-        controller.add_market(
-            utoken1.account_id(),
-            dtoken1.account_id(),
-            "1weth".to_string()
-        ),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken1.account_id(),
+        dtoken1.account_id(),
+        "1weth".to_string(),
     );
 
     call!(
@@ -290,14 +291,11 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
     )
     .assert_success();
 
-    call!(
-        controller.user_account,
-        controller.add_market(
-            utoken2.account_id(),
-            dtoken2.account_id(),
-            "2weth".to_string()
-        ),
-        deposit = 0
+    add_market(
+        &controller,
+        utoken2.account_id(),
+        dtoken2.account_id(),
+        "2weth".to_string(),
     );
 
     call!(
