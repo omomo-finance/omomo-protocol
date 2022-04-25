@@ -21,6 +21,11 @@ impl Contract {
             .unwrap_or_default();
 
         require!(
+            self.is_market_registered(env::predecessor_account_id()),
+            format!("Market {} is not registered", env::predecessor_account_id())
+        );
+
+        require!(
             user.is_consistent(),
             format!("Account {} is inconsistent", env::signer_account_id())
         );
