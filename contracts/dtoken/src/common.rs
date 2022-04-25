@@ -141,16 +141,14 @@ impl Contract {
                 reward_setting.reward_per_period.amount.0
                     * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
                         / self.get_total_supplies())
-                    * ((current_block - last_recalculation_block)
-                        / BLOCK_PER_DAY) as u128
+                    * ((current_block - last_recalculation_block) / BLOCK_PER_DAY) as u128
                     / 10u128.pow(8)
             }
             RewardPeriod::Week => {
                 reward_setting.reward_per_period.amount.0
                     * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
                         / self.get_total_supplies())
-                    * ((current_block - last_recalculation_block)
-                        / BLOCK_PER_WEEK) as u128
+                    * ((current_block - last_recalculation_block) / BLOCK_PER_WEEK) as u128
                     / 10u128.pow(8)
             }
         }
