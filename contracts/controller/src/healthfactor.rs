@@ -257,7 +257,7 @@ mod tests {
     }
 
     #[test]
-    fn test_health_factor_wo_s_or_b() {
+    fn test_health_factor_without_supply_or_borrow() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn test_health_factor_with_supply_and_borrow_scenario_1() {
+    fn test_health_factor_with_supply_and_borrow() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(0, 0, 10000, 100);
 
@@ -323,7 +323,40 @@ mod tests {
     }
 
     #[test]
-    fn test_health_factor_with_supply_and_borrow_scenario_2() {
+    fn test_health_factor_increasing_supply() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(10000, 100, 10000, 100);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(100),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dwnear.near".to_string()),
+            WBalance::from(100),
+        );
+
+        // Ratio that represents 100%
+        assert_eq!(
+            controller_contract.get_health_factor(user_account.clone()),
+            10000
+        );
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(100),
+        );
+
+        // Ratio that represents 200%
+        assert_eq!(controller_contract.get_health_factor(user_account), 20000);
+    }
+
+    #[test]
+    fn test_health_factor_updating_price() {
         let (mut controller_contract, _token_address, user_account) =
             init_price_volatility(10000, 100, 10000, 100);
 
@@ -340,34 +373,37 @@ mod tests {
         );
 
         // Ratio that represents 200%
-        assert_eq!(controller_contract.get_health_factor(user_account), 20000);
-    }
-
-    #[test]
-    fn test_health_factor_with_supply_and_borrow_scenario_3() {
-        let (mut controller_contract, _token_address, user_account) =
-            init_price_volatility(20000, 100, 5000, 100);
-
-        controller_contract.increase_supplies(
-            user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
-            WBalance::from(200),
+        assert_eq!(
+            controller_contract.get_health_factor(user_account.clone()),
+            20000
         );
 
-        controller_contract.increase_borrows(
-            user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
-            WBalance::from(100),
-        );
+        controller_contract.oracle_on_data(PriceJsonList {
+            block_height: 83452949,
+            price_list: vec![
+                Price {
+                    ticker_id: "wnear".to_string(),
+                    value: U128(20000),
+                    volatility: U128(100),
+                    fraction_digits: 4,
+                },
+                Price {
+                    ticker_id: "weth".to_string(),
+                    value: U128(5000),
+                    volatility: U128(100),
+                    fraction_digits: 4,
+                },
+            ],
+        });
 
         // Ratio that represents 50%
         assert_eq!(controller_contract.get_health_factor(user_account), 5000);
     }
 
     #[test]
-    fn test_health_factor_with_supply_and_borrow_scenario_4() {
+    fn test_health_factor_updating_volatility() {
         let (mut controller_contract, _token_address, user_account) =
-            init_price_volatility(10000, 80, 10000, 90);
+            init_price_volatility(10000, 100, 10000, 100);
 
         controller_contract.increase_supplies(
             user_account.clone(),
@@ -380,6 +416,30 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
         );
+
+        // Ratio that represents 200%
+        assert_eq!(
+            controller_contract.get_health_factor(user_account.clone()),
+            20000
+        );
+
+        controller_contract.oracle_on_data(PriceJsonList {
+            block_height: 83452949,
+            price_list: vec![
+                Price {
+                    ticker_id: "wnear".to_string(),
+                    value: U128(10000),
+                    volatility: U128(80),
+                    fraction_digits: 4,
+                },
+                Price {
+                    ticker_id: "weth".to_string(),
+                    value: U128(10000),
+                    volatility: U128(90),
+                    fraction_digits: 4,
+                },
+            ],
+        });
 
         // Ratio that represents 225%
         assert_eq!(controller_contract.get_health_factor(user_account), 22500);
