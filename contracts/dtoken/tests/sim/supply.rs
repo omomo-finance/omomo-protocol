@@ -5,8 +5,8 @@ use controller::ActionType::Supply;
 use general::Price;
 
 use crate::utils::{
-    assert_failure, initialize_controller, initialize_dtoken, initialize_utoken, new_user,
-    view_balance,
+    add_market, assert_failure, initialize_controller, initialize_dtoken, initialize_utoken,
+    new_user, view_balance,
 };
 
 fn supply_error_command_fixture() -> (
@@ -150,6 +150,13 @@ fn supply_fixture() -> (
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
+    );
+
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
