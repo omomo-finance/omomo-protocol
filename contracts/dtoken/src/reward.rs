@@ -7,6 +7,13 @@ pub enum VestingPlans {
     Linear,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum RewardPeriod {
+    Day,
+    Week,
+}
+
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Reward {
@@ -17,7 +24,7 @@ pub struct Reward {
     pub token: AccountId,
 
     /// Reward token amount === RewardSetting.reward_per_day * (user_staker / total_stake) * (staked_blocks / blocks_per_day)
-    pub amount: Balance,
+    pub amount: WBalance,
 
     /// BlockHeight when lock will be released
     pub locked_till: BlockHeight,
@@ -33,10 +40,10 @@ pub struct RewardSetting {
     pub token: AccountId,
 
     /// Rewards token count per day
-    pub reward_per_day: Balance,
+    pub reward_per_period: RewardAmount,
 
     /// Lock block count      
-    pub lock_time: u128,
+    pub lock_time: BlockHeight,
 
     /// Percents of the locked tokens will be confiscated in case of an urgent claim. Possible values [0 .. 1] * 10^4
     /// When it's equal 1 === Unable for urgent unlock
@@ -44,6 +51,13 @@ pub struct RewardSetting {
 
     /// Vesting plan type
     pub vesting: VestingPlans,
+}
+
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct RewardAmount {
+    pub period: RewardPeriod,
+    pub amount: WBalance,
 }
 
 impl Contract {
@@ -56,7 +70,7 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn adjust_rewards(&mut self, account_id: AccountId, reward: Reward) {
+    pub fn adjust_reward(&mut self, account_id: AccountId, reward: Reward) {
         if self.rewards.get(&account_id).is_none() {
             self.rewards.insert(&account_id, &[reward].to_vec());
         } else {

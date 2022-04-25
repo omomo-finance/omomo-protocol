@@ -87,17 +87,20 @@ impl Contract {
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
+        let current_block_height = block_height();
         for reward_setting in self.model.rewards_config.clone().iter() {
-            let reward_amount = reward_setting.reward_per_day /* * user.stake / self.token.total_supply * ((block_height() - accrued_interest.last_recalculation_block) as u128/ blocks_per_day)*/;
+            let reward_amount = match reward_setting.reward_per_period.period {
+                RewardPeriod::Day => reward_setting.reward_per_period.amount.0,
+                RewardPeriod::Week => reward_setting.reward_per_period.amount.0,
+            };
             let reward = Reward {
                 id: nanoid!(),
                 token: reward_setting.token.clone(),
-                amount: reward_amount,
-                locked_till: accrued_interest.last_recalculation_block
-                    + reward_setting.lock_time as u64,
+                amount: WBalance::from(reward_amount),
+                locked_till: current_block_height + reward_setting.lock_time,
                 penalty: reward_setting.penalty,
             };
-            self.adjust_rewards(env::signer_account_id(), reward);
+            self.adjust_reward(env::signer_account_id(), reward);
         }
 
         // Dtokens minting and adding them to the user account
