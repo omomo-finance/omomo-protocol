@@ -89,10 +89,12 @@ impl Contract {
 
         let current_block_height = block_height();
         for reward_setting in self.model.rewards_config.clone().iter() {
-            let reward_amount = match reward_setting.reward_per_period.period {
-                RewardPeriod::Day => reward_setting.reward_per_period.amount.0,
-                RewardPeriod::Week => reward_setting.reward_per_period.amount.0,
-            };
+            let reward_amount = self.calculate_reward_amount(
+                env::signer_account_id(),
+                &reward_setting,
+                current_block_height,
+                accrued_interest.last_recalculation_block,
+            );
             let reward = Reward {
                 id: nanoid!(),
                 token: reward_setting.token.clone(),

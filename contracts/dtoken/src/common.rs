@@ -1,6 +1,9 @@
 use crate::*;
 use std::fmt;
 
+const BLOCK_PER_DAY: BlockHeight = 72000;
+const BLOCK_PER_WEEK: BlockHeight = 1048896;
+
 pub enum Events {
     BorrowFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
     BorrowFailedToInceaseBorrowOnController(AccountId, Balance),
@@ -123,6 +126,33 @@ impl Contract {
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
             total_amount: WBalance::from(accumulated_interest + user_borrows),
+        }
+    }
+
+    pub fn calculate_reward_amount(
+        &self,
+        account_id: AccountId,
+        reward_setting: &RewardSetting,
+        current_block: BlockHeight,
+        last_recalculation_block: BlockHeight,
+    ) -> Balance {
+        match reward_setting.reward_per_period.period {
+            RewardPeriod::Day => {
+                reward_setting.reward_per_period.amount.0
+                    * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
+                        / self.get_total_supplies())
+                    * ((current_block - last_recalculation_block)
+                        / BLOCK_PER_DAY) as u128
+                    / 10u128.pow(8)
+            }
+            RewardPeriod::Week => {
+                reward_setting.reward_per_period.amount.0
+                    * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
+                        / self.get_total_supplies())
+                    * ((current_block - last_recalculation_block)
+                        / BLOCK_PER_WEEK) as u128
+                    / 10u128.pow(8)
+            }
         }
     }
 }
