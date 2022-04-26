@@ -33,12 +33,12 @@ mod interest_model;
 mod interest_rate_model;
 mod liquidation;
 mod repay;
+mod reserve;
 mod reward;
 mod supply;
 mod user_profile;
 mod views;
 mod withdraw;
-mod reserve;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {

@@ -28,7 +28,7 @@ pub enum Events {
     LiquidationSuccess(AccountId, AccountId, Balance),
     LiquidationFailed(AccountId, AccountId, Balance),
 
-    ReserveFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId)
+    ReserveFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
 }
 
 impl Contract {
@@ -180,7 +180,6 @@ impl Contract {
             Actions::Withdraw => self.post_withdraw(amount),
             Actions::Supply => self.post_supply(amount),
             Actions::Borrow => self.post_borrow(amount),
-            Actions::Reserve => self.post_reserve(amount),
             _ => {
                 panic!("Incorrect action at mutex lock callback")
             }
