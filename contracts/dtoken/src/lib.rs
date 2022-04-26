@@ -43,6 +43,7 @@ mod withdraw;
 enum StorageKeys {
     Config,
     UserProfiles,
+    UserRewards,
 }
 
 #[near_bindgen]
@@ -70,6 +71,9 @@ pub struct Contract {
 
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
+
+    /// Users rewards
+    rewards: UnorderedMap<AccountId, Vec<Reward>>,
 }
 
 impl Default for Contract {
@@ -237,6 +241,7 @@ impl Contract {
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
             admin: config.owner_id,
+            rewards: UnorderedMap::new(StorageKeys::UserRewards),
         }
     }
 }

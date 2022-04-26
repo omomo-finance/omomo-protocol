@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Default, BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(Default, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AccruedInterest {
     pub last_recalculation_block: BlockHeight,

@@ -1,6 +1,9 @@
 use crate::*;
 use std::fmt;
 
+const BLOCK_PER_DAY: BlockHeight = 72000;
+const BLOCK_PER_WEEK: BlockHeight = 1048896;
+
 pub enum Events {
     BorrowFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
     BorrowFailedToInceaseBorrowOnController(AccountId, Balance),
@@ -124,6 +127,25 @@ impl Contract {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
             total_amount: WBalance::from(accumulated_interest + user_borrows),
         }
+    }
+
+    pub fn calculate_reward_amount(
+        &self,
+        account_id: AccountId,
+        reward_setting: &RewardSetting,
+        current_block: BlockHeight,
+        last_recalculation_block: BlockHeight,
+    ) -> Balance {
+        let blocks_per_period = match reward_setting.reward_per_period.period {
+            RewardPeriod::Day => BLOCK_PER_DAY,
+            RewardPeriod::Week => BLOCK_PER_WEEK,
+        };
+        reward_setting.reward_per_period.amount.0
+            * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
+                / self.get_total_supplies())
+            * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
+                as u128
+            / 10u128.pow(16)
     }
 }
 
@@ -279,5 +301,53 @@ impl fmt::Display for Events {
                 liquidator, borrower, amount_liquidate
             ),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::RewardAmount;
+    use crate::RewardPeriod::Day;
+    use crate::{Config, Contract};
+    use crate::{InterestRateModel, RewardSetting, VestingPlans};
+    use near_sdk::json_types::U128;
+    use near_sdk::test_utils::test_env::{alice, bob, carol};
+
+    pub fn init_test_env() -> Contract {
+        let (dtoken_account, underlying_token_account, controller_account) =
+            (alice(), bob(), carol());
+
+        let contract = Contract::new(Config {
+            initial_exchange_rate: U128(1000000),
+            underlying_token_id: underlying_token_account,
+            owner_id: dtoken_account,
+            controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel::default(),
+        });
+
+        contract
+    }
+
+    #[test]
+    fn test_calculate_reward_amount() {
+        let mut contract = init_test_env();
+
+        contract.mint(bob(), U128(100));
+        contract.mint(carol(), U128(1000));
+
+        let reward_setting = RewardSetting {
+            token: alice(),
+            reward_per_period: RewardAmount {
+                period: Day,
+                amount: U128(1000000),
+            },
+            lock_time: 20000,
+            penalty: 1000,
+            vesting: VestingPlans::None,
+        };
+
+        let reward_amount = contract.calculate_reward_amount(bob(), &reward_setting, 300, 100);
+
+        assert_eq!(reward_amount, 252);
     }
 }
