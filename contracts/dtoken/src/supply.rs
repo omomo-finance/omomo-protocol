@@ -87,8 +87,7 @@ impl Contract {
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         let current_block_height = block_height();
-        let mut unique_id = 0;
-        for reward_setting in self.model.rewards_config.clone().iter() {
+        for (unique_id, reward_setting) in self.model.rewards_config.clone().iter().enumerate() {
             let reward_amount = self.calculate_reward_amount(
                 env::signer_account_id(),
                 reward_setting,
@@ -103,7 +102,6 @@ impl Contract {
                 penalty: reward_setting.penalty,
             };
             self.adjust_reward(env::signer_account_id(), reward);
-            unique_id += 1
         }
 
         // Dtokens minting and adding them to the user account
