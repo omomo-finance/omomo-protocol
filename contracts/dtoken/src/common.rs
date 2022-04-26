@@ -143,7 +143,8 @@ impl Contract {
         reward_setting.reward_per_period.amount.0
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
                 / self.get_total_supplies())
-            * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period) as u128
+            * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
+                as u128
             / 10u128.pow(16)
     }
 }
@@ -303,21 +304,20 @@ impl fmt::Display for Events {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use crate::{InterestRateModel, RewardSetting, VestingPlans};
-    use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::{alice, bob, carol};
     use crate::RewardAmount;
     use crate::RewardPeriod::Day;
     use crate::{Config, Contract};
+    use crate::{InterestRateModel, RewardSetting, VestingPlans};
+    use near_sdk::json_types::U128;
+    use near_sdk::test_utils::test_env::{alice, bob, carol};
 
     pub fn init_test_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
-        let mut contract = Contract::new(Config {
+        let contract = Contract::new(Config {
             initial_exchange_rate: U128(1000000),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
@@ -339,7 +339,7 @@ mod tests {
             token: alice(),
             reward_per_period: RewardAmount {
                 period: Day,
-                amount: U128(1000000)
+                amount: U128(1000000),
             },
             lock_time: 20000,
             penalty: 1000,
@@ -349,6 +349,5 @@ mod tests {
         let reward_amount = contract.calculate_reward_amount(bob(), &reward_setting, 300, 100);
 
         assert_eq!(reward_amount, 252);
-
     }
 }
