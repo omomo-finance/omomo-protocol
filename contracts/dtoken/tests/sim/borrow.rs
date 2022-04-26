@@ -1,8 +1,7 @@
 use crate::utils::{
     add_market, initialize_controller, initialize_dtoken,
-    initialize_dtoken_with_custom_interest_rate,
-    initialize_two_dtokens_with_custom_interest_rate, initialize_two_utokens, initialize_utoken,
-    new_user, view_balance,
+    initialize_dtoken_with_custom_interest_rate, initialize_two_dtokens_with_custom_interest_rate,
+    initialize_two_utokens, initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::{InterestRateModel, RepayInfo};
