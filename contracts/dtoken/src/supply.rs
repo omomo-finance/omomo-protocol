@@ -1,5 +1,4 @@
 use crate::*;
-use nanoid::nanoid;
 use near_sdk::env::block_height;
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
@@ -88,6 +87,7 @@ impl Contract {
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         let current_block_height = block_height();
+        let mut unique_id = 0;
         for reward_setting in self.model.rewards_config.clone().iter() {
             let reward_amount = self.calculate_reward_amount(
                 env::signer_account_id(),
@@ -96,13 +96,14 @@ impl Contract {
                 accrued_interest.last_recalculation_block,
             );
             let reward = Reward {
-                id: nanoid!(),
+                id: format!("{}{}", env::block_timestamp_ms(), unique_id),
                 token: reward_setting.token.clone(),
                 amount: WBalance::from(reward_amount),
                 locked_till: current_block_height + reward_setting.lock_time,
                 penalty: reward_setting.penalty,
             };
             self.adjust_reward(env::signer_account_id(), reward);
+            unique_id += 1
         }
 
         // Dtokens minting and adding them to the user account
