@@ -67,11 +67,31 @@ impl Contract {
     pub fn view_prices(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
         self.get_prices_for_dtokens(dtokens)
     }
+
+    pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
+        let supplies = self.get_total_supplies(user_id.clone());
+        let gotten_borrow = self.get_total_borrows(user_id);
+
+        let potential_borrow = (supplies.0 / self.health_threshold) - gotten_borrow.0;
+        let price = self.get_price(dtoken_id).unwrap().value.0;
+
+        (potential_borrow / price).into()
+    }
+
+    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
+        let supplies = self.get_total_supplies(user_id.clone());
+        let borrows = self.get_total_borrows(user_id);
+
+        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold);
+        let price = self.get_price(dtoken_id).unwrap().value.0;
+
+        (max_withdraw / price).into()
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ActionType::Supply;
+    use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
     use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
@@ -207,5 +227,45 @@ mod tests {
             U128(15000),
             "View accounts health factor check has been failed"
         );
+    }
+
+    #[test]
+    fn test_view_withdraw_max() {
+        let (mut near_contract, token_address, user) = init_test_env();
+
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            token_address.clone(),
+            500000 * ONE_TOKEN,
+        );
+
+        // we are able to withdraw all the supplied funds
+        assert_eq!(
+            U128(500000),
+            near_contract.view_withdraw_max(user, token_address)
+        );
+    }
+
+    #[test]
+    fn test_view_borrow_max() {
+        let (mut near_contract, token_address, user) = init_test_env();
+
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            token_address.clone(),
+            1000000 * ONE_TOKEN,
+        );
+
+        near_contract.set_entity_by_token(
+            Borrow,
+            user.clone(),
+            token_address.clone(),
+            10 * ONE_TOKEN,
+        );
+
+        // we still have some tokens to borrow
+        assert_eq!(U128(56), near_contract.view_borrow_max(user, token_address));
     }
 }
