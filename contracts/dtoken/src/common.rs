@@ -136,22 +136,15 @@ impl Contract {
         current_block: BlockHeight,
         last_recalculation_block: BlockHeight,
     ) -> Balance {
-        match reward_setting.reward_per_period.period {
-            RewardPeriod::Day => {
-                reward_setting.reward_per_period.amount.0
-                    * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-                        / self.get_total_supplies())
-                    * ((current_block - last_recalculation_block) / BLOCK_PER_DAY) as u128
-                    / 10u128.pow(8)
-            }
-            RewardPeriod::Week => {
-                reward_setting.reward_per_period.amount.0
-                    * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-                        / self.get_total_supplies())
-                    * ((current_block - last_recalculation_block) / BLOCK_PER_WEEK) as u128
-                    / 10u128.pow(8)
-            }
-        }
+        let blocks_per_period = match reward_setting.reward_per_period.period {
+            RewardPeriod::Day => BLOCK_PER_DAY,
+            RewardPeriod::Week => BLOCK_PER_WEEK,
+        };
+        reward_setting.reward_per_period.amount.0
+            * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
+                / self.get_total_supplies())
+            * ((current_block - last_recalculation_block) / blocks_per_period) as u128
+            / 10u128.pow(8)
     }
 }
 
