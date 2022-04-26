@@ -56,6 +56,7 @@ pub enum Actions {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     },
+    Reserve,
 }
 
 impl fmt::Display for Actions {

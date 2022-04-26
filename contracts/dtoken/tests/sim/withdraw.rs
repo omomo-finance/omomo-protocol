@@ -1,5 +1,5 @@
 use crate::utils::{
-    add_market, assert_failure, initialize_controller, initialize_dtoken, initialize_two_dtokens,
+    add_market, assert_failure, initialize_controller, initialize_dtoken,
     initialize_two_dtokens_with_custom_interest_rate, initialize_two_utokens, initialize_utoken,
     new_user, view_balance,
 };
@@ -77,7 +77,7 @@ fn withdraw_more_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         user,
@@ -85,7 +85,7 @@ fn withdraw_more_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     add_market(
         &controller,
@@ -146,7 +146,7 @@ fn withdraw_less_same_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         user,
@@ -154,7 +154,7 @@ fn withdraw_less_same_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     add_market(
         &controller,
@@ -187,7 +187,7 @@ fn withdraw_less_same_fixture() -> (
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
@@ -243,7 +243,7 @@ fn supply_borrow_withdraw_fixture() -> (
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     (dtoken, controller, utoken, user)
 }
@@ -282,7 +282,7 @@ fn withdraw_error_transfer_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         dtoken.user_account,
@@ -290,7 +290,7 @@ fn withdraw_error_transfer_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         dtoken.user_account,
@@ -298,7 +298,7 @@ fn withdraw_error_transfer_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         user,
@@ -306,7 +306,7 @@ fn withdraw_error_transfer_fixture() -> (
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         user,
@@ -411,7 +411,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         controller.user_account,
@@ -426,7 +426,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     let action = "\"Supply\"".to_string();
 
@@ -435,7 +435,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
         utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     call!(user, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
 
@@ -547,7 +547,7 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     call!(
         controller.user_account,
@@ -562,7 +562,7 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     let action = "\"Supply\"".to_string();
 
@@ -571,7 +571,7 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
         utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     call!(user, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
 
@@ -657,7 +657,7 @@ fn scenario_supply_borrow_withdraw() {
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
@@ -708,7 +708,7 @@ fn scenario_view_accounts() {
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 
     let action = "\"Supply\"".to_string();
 
@@ -722,7 +722,7 @@ fn scenario_view_accounts() {
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
@@ -761,7 +761,7 @@ fn scenario_withdraw_with_borrow_on_another_dtoken() {
         U128(token_amount),
         Supply
     ))
-    .unwrap_json();
+        .unwrap_json();
     assert_eq!(res_potential, 27857);
 
     call!(user, dtoken2.withdraw(U128(dtoken_amount)), deposit = 0).assert_success();
@@ -798,7 +798,7 @@ fn scenario_withdraw_failed_due_to_low_health_factor() {
         U128(token_amount),
         Supply
     ))
-    .unwrap_json();
+        .unwrap_json();
     assert_eq!(res_potential, 8572);
 
     call!(user, dtoken2.withdraw(U128(dtoken_amount)), deposit = 0).assert_success();

@@ -17,7 +17,7 @@ impl Contract {
         self.admin = account;
     }
 
-    fn is_valid_admin_call(&self) -> bool {
+    pub fn is_valid_admin_call(&self) -> bool {
         env::signer_account_id() == self.admin
             || env::signer_account_id() == env::current_account_id()
     }
@@ -47,6 +47,9 @@ impl Contract {
         self.total_reserves = amount;
         self.get_total_reserves()
     }
+
+
+
 }
 
 #[cfg(test)]

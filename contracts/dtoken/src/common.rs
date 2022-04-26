@@ -24,6 +24,8 @@ pub enum Events {
 
     LiquidationSuccess(AccountId, AccountId, Balance),
     LiquidationFailed(AccountId, AccountId, Balance),
+
+    ReserveFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId)
 }
 
 impl Contract {
@@ -156,6 +158,7 @@ impl Contract {
             Actions::Withdraw => self.post_withdraw(amount),
             Actions::Supply => self.post_supply(amount),
             Actions::Borrow => self.post_borrow(amount),
+            Actions::Reserve => self.post_reserve(amount),
             _ => {
                 panic!("Incorrect action at mutex lock callback")
             }
@@ -277,6 +280,16 @@ impl fmt::Display for Events {
                 f,
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationFailed", "data": {{"liquidator_account_id": "{}", "borrower_account_id": {},"amount": "{}"}}}}"#,
                 liquidator, borrower, amount_liquidate
+            ),
+            Events::ReserveFailedToGetUnderlyingBalance(
+                account,
+                balance,
+                contract_id,
+                underlying_token_id,
+            ) => write!(
+                f,
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "ReserveFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
+                account, balance, contract_id, underlying_token_id
             ),
         }
     }

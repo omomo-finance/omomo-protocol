@@ -1,6 +1,5 @@
 use near_sdk::json_types::U128;
 use near_sdk::AccountId;
-use near_sdk_sim::types::RawStateChangesWithTrieKey;
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 
 use controller::ContractContract as Controller;
