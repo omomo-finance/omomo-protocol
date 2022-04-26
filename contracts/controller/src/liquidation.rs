@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{is_promise_success, log, PromiseOrValue};
+use near_sdk::{is_promise_success, PromiseOrValue};
 use partial_min_max::min;
 
 #[near_bindgen]
@@ -11,8 +11,11 @@ impl Contract {
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
-    ) {
-        // TODO: Add check that this function was called by real Dtoken that we store somewhere in self.markets
+    ) -> WBalance {
+        require!(
+            self.is_valid_admin_call() || self.is_dtoken_caller(),
+            "This functionality is allowed to be called by admin, contract or dtoken's contract only"
+        );
         let res = self.is_liquidation_allowed(
             borrower,
             borrowing_dtoken,
@@ -23,6 +26,8 @@ impl Contract {
         if res.is_err() {
             panic!("Liquidation failed on controller, {:?}", res.unwrap_err());
         }
+        let (_, liquidation_revenue_amount) = res.unwrap();
+        liquidation_revenue_amount
     }
 
     pub fn on_debt_repaying_callback(
@@ -32,8 +37,12 @@ impl Contract {
         collateral_dtoken: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
+        liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        // TODO: Add check that only real Dtoken address can call this
+        require!(
+            self.is_valid_admin_call() || self.is_dtoken_caller(),
+            "This method is allowed to be called by admin, contract or dtoken's contract only"
+        );
         if !is_promise_success() {
             self.increase_borrows(
                 borrower.clone(),
@@ -48,26 +57,26 @@ impl Contract {
                 NO_DEPOSIT,
                 near_sdk::Gas::ONE_TERA * 8_u64,
             );
-
-            log!("Liquidation failed on borrow_repay call, revert changes...");
+            // TODO: create fallback flow
+            // panic!("Liquidation failed on borrow_repay call, revert changes...");
             PromiseOrValue::Value(U128(liquidation_amount.0))
         } else {
             self.decrease_supplies(
                 borrower.clone(),
                 collateral_dtoken.clone(),
-                liquidation_amount,
+                liquidation_revenue_amount,
             );
 
             self.increase_supplies(
                 liquidator.clone(),
                 collateral_dtoken.clone(),
-                liquidation_amount,
+                liquidation_revenue_amount,
             );
 
             dtoken::swap_supplies(
                 borrower,
                 liquidator,
-                liquidation_amount,
+                liquidation_revenue_amount,
                 collateral_dtoken,
                 NO_DEPOSIT,
                 near_sdk::Gas::ONE_TERA * 8_u64,
@@ -82,13 +91,13 @@ impl Contract {
         &self,
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
-        amount_for_liquidation: WBalance,
+        liquidation_amount: WBalance,
     ) -> WBalance {
         WBalance::from(
             self.get_liquidation_incentive()
-                * amount_for_liquidation.0
+                * liquidation_amount.0
                 * self.prices.get(&borrowing_dtoken).unwrap().value.0
-                / self.prices.get(&collateral_dtoken).unwrap().value.0,
+                / (self.prices.get(&collateral_dtoken).unwrap().value.0 * RATIO_DECIMALS),
         )
     }
 
@@ -129,11 +138,11 @@ impl Contract {
         borrowing_dtoken: AccountId,
         liquidator: AccountId,
         collateral_dtoken: AccountId,
-        amount_for_liquidation: WBalance,
+        liquidation_amount: WBalance,
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
             Err((
-                WBalance::from(amount_for_liquidation.0),
+                WBalance::from(liquidation_amount.0),
                 WBalance::from(0),
                 String::from("User can't be liquidated as he has normal value of health factor"),
             ))
@@ -144,9 +153,9 @@ impl Contract {
                 collateral_dtoken.clone(),
             );
 
-            if max_possible_liquidation_amount.0 < amount_for_liquidation.0 {
+            if max_possible_liquidation_amount.0 <= liquidation_amount.0 {
                 return Err((
-                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(liquidation_amount.0),
                     WBalance::from(max_possible_liquidation_amount.0),
                     String::from(
                         "Max possible liquidation amount cannot be less than liquidation amount",
@@ -156,7 +165,7 @@ impl Contract {
 
             if liquidator == borrower {
                 return Err((
-                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(liquidation_amount.0),
                     WBalance::from(max_possible_liquidation_amount.0),
                     String::from("Liquidation cannot liquidate his on borrow"),
                 ));
@@ -165,9 +174,9 @@ impl Contract {
             let revenue_amount = self.get_liquidation_revenue(
                 borrowing_dtoken,
                 collateral_dtoken,
-                amount_for_liquidation,
+                liquidation_amount,
             );
-            Ok((amount_for_liquidation, revenue_amount))
+            Ok((liquidation_amount, revenue_amount))
         }
     }
 }

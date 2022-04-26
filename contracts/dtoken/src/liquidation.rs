@@ -12,8 +12,6 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         assert_eq!(self.get_contract_address(), borrowing_dtoken);
 
-        self.decrease_borrows(borrower.clone(), liquidation_amount);
-
         controller::liquidation(
             borrower.clone(),
             borrowing_dtoken.clone(),
@@ -52,8 +50,17 @@ impl Contract {
                 "{}",
                 Events::LiquidationFailed(liquidator, borrower, Balance::from(liquidation_amount))
             );
-            env::abort();
+            env::panic_str("Revenue amount is not available!");
         }
+
+        let liquidation_revenue_amount: WBalance = match env::promise_result(0) {
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+            _ => env::panic_str("Revenue amount is not available!"),
+        };
+
+        self.decrease_borrows(borrower.clone(), liquidation_amount);
 
         controller::repay_borrows(
             borrower.clone(),
@@ -69,6 +76,7 @@ impl Contract {
             collateral_dtoken,
             liquidator,
             liquidation_amount,
+            liquidation_revenue_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(20),
@@ -80,11 +88,15 @@ impl Contract {
         &mut self,
         borrower: AccountId,
         liquidator: AccountId,
-        liquidation_amount: WBalance,
+        liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(env::predecessor_account_id(), self.get_controller_address());
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.get_controller_address(),
+            "This method can be called only from controller contract"
+        );
 
-        let amount = liquidation_amount.0;
+        let amount = liquidation_revenue_amount.0;
 
         if !self.token.accounts.contains_key(&liquidator) {
             self.token.internal_register_account(&liquidator);
@@ -94,7 +106,11 @@ impl Contract {
             .internal_transfer(&borrower, &liquidator, amount, None);
         log!(
             "{}",
-            Events::LiquidationSuccess(liquidator, borrower, Balance::from(liquidation_amount))
+            Events::LiquidationSuccess(
+                liquidator,
+                borrower,
+                Balance::from(liquidation_revenue_amount)
+            )
         );
         PromiseOrValue::Value(U128(0))
     }

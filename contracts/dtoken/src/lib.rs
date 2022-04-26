@@ -130,6 +130,7 @@ trait ControllerInterface {
         collateral_dtoken: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
+        liquidation_revenue_amount: WBalance,
     );
     fn liquidation(
         &mut self,
