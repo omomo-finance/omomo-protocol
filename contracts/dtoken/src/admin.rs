@@ -47,9 +47,6 @@ impl Contract {
         self.total_reserves = amount;
         self.get_total_reserves()
     }
-
-
-
 }
 
 #[cfg(test)]

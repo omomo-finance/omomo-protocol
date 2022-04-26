@@ -28,7 +28,7 @@ pub enum Events {
     LiquidationSuccess(AccountId, AccountId, Balance),
     LiquidationFailed(AccountId, AccountId, Balance),
 
-    ReserveFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId)
+    ReserveFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
 }
 
 impl Contract {
@@ -180,7 +180,6 @@ impl Contract {
             Actions::Withdraw => self.post_withdraw(amount),
             Actions::Supply => self.post_supply(amount),
             Actions::Borrow => self.post_borrow(amount),
-            Actions::Reserve => self.post_reserve(amount),
             _ => {
                 panic!("Incorrect action at mutex lock callback")
             }
@@ -330,15 +329,13 @@ mod tests {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
-        let contract = Contract::new(Config {
+        Contract::new(Config {
             initial_exchange_rate: U128(1000000),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
-        });
-
-        contract
+        })
     }
 
     #[test]
