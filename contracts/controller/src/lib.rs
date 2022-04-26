@@ -1,5 +1,5 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LazyOption, UnorderedMap};
+use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::{env, ext_contract, near_bindgen, require, AccountId, Balance, BorshStorageKey};
 
 #[allow(unused_imports)]
@@ -54,7 +54,7 @@ pub struct Contract {
     user_profiles: UnorderedMap<AccountId, UserProfile>,
 
     /// Dtoken ID -> Price
-    pub prices: UnorderedMap<AccountId, Price>,
+    pub prices: LookupMap<AccountId, Price>,
 
     /// Contract configuration object
     pub config: LazyOption<Config>,
@@ -149,7 +149,7 @@ impl Contract {
         Self {
             markets: UnorderedMap::new(StorageKeys::Markets),
             user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
-            prices: UnorderedMap::new(StorageKeys::Prices),
+            prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             admin: config.owner_id,
             is_action_paused: ActionStatus {
