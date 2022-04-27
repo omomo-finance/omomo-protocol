@@ -20,13 +20,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::reserve_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(50),
-        ))
-        .into()
+            .then(ext_self::reserve_balance_of_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(50),
+            ))
+            .into()
     }
 
     fn set_total_reserve(&mut self, amount: Balance) -> Balance {
@@ -56,10 +56,10 @@ impl Contract {
                     self.get_underlying_contract_address()
                 )
             );
-            PromiseOrValue::Value(token_amount)
+            return PromiseOrValue::Value(token_amount);
         }
 
         self.increase_reserve(token_amount);
-        PromiseOrValue::Value(U128(0))
+        return PromiseOrValue::Value(U128(0));
     }
 }
