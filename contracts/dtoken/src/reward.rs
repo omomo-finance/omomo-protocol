@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::Promise;
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -89,5 +90,48 @@ impl Contract {
             .position(|x| *x.id == reward_id)
             .unwrap();
         user_rewards.remove(reward_index);
+    }
+
+    pub fn claim_reward(&mut self, account_id: AccountId, reward_id: String) -> Promise {
+        assert!(
+            self.rewards.get(&account_id).is_none(),
+            "This user has no rewards"
+        );
+        let rewards = self.rewards.get(&account_id).unwrap();
+        assert_eq!(rewards.len(), 0, "This user has no rewards");
+        let reward_index = rewards.iter().position(|x| *x.id == reward_id).unwrap();
+        let reward = rewards[reward_index].clone();
+
+        underlying_token::ft_transfer(
+            account_id.clone(),
+            reward.amount,
+            Some(format!(
+                "Borrow with token_amount {}",
+                Balance::from(reward.amount)
+            )),
+            reward.token.clone(),
+            ONE_YOCTO,
+            self.terra_gas(10),
+        )
+        .then(ext_self::reward_ft_transfer_callback(
+            reward_index,
+            account_id,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        ))
+    }
+
+    pub fn reward_ft_transfer_callback(&mut self, reward_index: usize, account_id: AccountId) {
+        if !is_promise_success() {
+            log!(format!(
+                "There is an error transferring token to account {}",
+                account_id
+            ));
+        }
+        self.rewards.get(&account_id).unwrap().remove(reward_index);
+        if self.rewards.len() == 0 {
+            self.rewards.remove(&account_id);
+        }
     }
 }

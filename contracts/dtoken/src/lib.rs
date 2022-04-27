@@ -161,6 +161,8 @@ trait InternalTokenInterface {
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
+    fn reward_ft_transfer_callback(&mut self, reward_index: usize, account_id: AccountId);
+
     fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
