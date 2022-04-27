@@ -329,15 +329,13 @@ mod tests {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
-        let contract = Contract::new(Config {
+        Contract::new(Config {
             initial_exchange_rate: U128(1000000),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
-        });
-
-        contract
+        })
     }
 
     #[test]

@@ -9,7 +9,10 @@ impl Contract {
             "Prepaid gas is not enough for reserve flow"
         );
 
-        require!(self.is_valid_admin_call());
+        require!(
+            self.is_valid_admin_call(),
+            "Reserve action can be called by admin only"
+        );
 
         underlying_token::ft_balance_of(
             env::current_account_id(),
