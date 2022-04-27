@@ -56,7 +56,7 @@ impl Contract {
                     self.get_underlying_contract_address()
                 )
             );
-            PromiseOrValue::Value(token_amount);
+            PromiseOrValue::Value(token_amount)
         }
 
         self.increase_reserve(token_amount);
