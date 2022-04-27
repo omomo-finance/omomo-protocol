@@ -98,7 +98,7 @@ impl Contract {
             "This user has no rewards"
         );
         let rewards = self.rewards.get(&account_id).unwrap();
-        assert_eq!(rewards.len(), 0, "This user has no rewards");
+        assert!(rewards.is_empty(), "This user has no rewards");
         let reward_index = rewards.iter().position(|x| *x.id == reward_id).unwrap();
         let reward = rewards[reward_index].clone();
 
@@ -109,7 +109,7 @@ impl Contract {
                 "Claim reward with token_amount {}",
                 Balance::from(reward.amount)
             )),
-            reward.token.clone(),
+            reward.token,
             ONE_YOCTO,
             self.terra_gas(10),
         )
@@ -130,7 +130,7 @@ impl Contract {
             ));
         }
         self.rewards.get(&account_id).unwrap().remove(reward_index);
-        if self.rewards.len() == 0 {
+        if self.rewards.get(&account_id).unwrap().is_empty() {
             self.rewards.remove(&account_id);
         }
     }
