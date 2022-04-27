@@ -106,7 +106,7 @@ impl Contract {
             account_id.clone(),
             reward.amount,
             Some(format!(
-                "Borrow with token_amount {}",
+                "Claim reward with token_amount {}",
                 Balance::from(reward.amount)
             )),
             reward.token.clone(),
