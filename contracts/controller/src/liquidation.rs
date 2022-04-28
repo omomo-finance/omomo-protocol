@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{is_promise_success, PromiseOrValue};
+use near_sdk::PromiseOrValue;
 use partial_min_max::min;
 
 #[near_bindgen]
@@ -11,7 +11,7 @@ impl Contract {
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
-    ) -> WBalance {
+    ) -> PromiseOrValue<WBalance> {
         require!(
             self.is_valid_admin_call() || self.is_dtoken_caller(),
             "This functionality is allowed to be called by admin, contract or dtoken's contract only"
@@ -27,13 +27,13 @@ impl Contract {
             panic!("Liquidation failed on controller, {:?}", res.unwrap_err());
         }
         let (_, liquidation_revenue_amount) = res.unwrap();
-        liquidation_revenue_amount
+        PromiseOrValue::Value(liquidation_revenue_amount)
     }
 
-    pub fn on_debt_repaying_callback(
+    pub fn liquidation_repay_and_swap(
         &mut self,
         borrower: AccountId,
-        _borrowing_dtoken: AccountId,
+        borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
@@ -43,46 +43,18 @@ impl Contract {
             self.is_valid_admin_call() || self.is_dtoken_caller(),
             "This method is allowed to be called by admin, contract or dtoken's contract only"
         );
-        if !is_promise_success() {
-            self.increase_borrows(
-                borrower.clone(),
-                _borrowing_dtoken.clone(),
-                liquidation_amount,
-            );
-
-            dtoken::increase_borrows(
-                borrower,
-                liquidation_amount,
-                _borrowing_dtoken,
-                NO_DEPOSIT,
-                near_sdk::Gas::ONE_TERA * 8_u64,
-            );
-            // TODO: create fallback flow
-            // panic!("Liquidation failed on borrow_repay call, revert changes...");
-            PromiseOrValue::Value(U128(liquidation_amount.0))
-        } else {
-            self.decrease_supplies(
-                borrower.clone(),
-                collateral_dtoken.clone(),
-                liquidation_revenue_amount,
-            );
-
-            self.increase_supplies(
-                liquidator.clone(),
-                collateral_dtoken.clone(),
-                liquidation_revenue_amount,
-            );
-
-            dtoken::swap_supplies(
-                borrower,
-                liquidator,
-                liquidation_revenue_amount,
-                collateral_dtoken,
-                NO_DEPOSIT,
-                near_sdk::Gas::ONE_TERA * 8_u64,
-            )
-            .into()
-        }
+        self.repay_borrows(borrower.clone(), borrowing_dtoken, liquidation_amount);
+        self.decrease_supplies(
+            borrower.clone(),
+            collateral_dtoken.clone(),
+            liquidation_revenue_amount,
+        );
+        self.increase_supplies(
+            liquidator.clone(),
+            collateral_dtoken.clone(),
+            liquidation_revenue_amount,
+        );
+        PromiseOrValue::Value(U128(0))
     }
 }
 

@@ -25,8 +25,8 @@ impl Contract {
         .then(ext_self::liquidate_callback(
             borrower,
             borrowing_dtoken,
-            liquidator,
             collateral_dtoken,
+            liquidator,
             liquidation_amount,
             env::current_account_id(),
             NO_DEPOSIT,
@@ -62,40 +62,35 @@ impl Contract {
 
         self.decrease_borrows(borrower.clone(), liquidation_amount);
 
-        controller::repay_borrows(
+        controller::liquidation_repay_and_swap(
             borrower.clone(),
-            self.get_contract_address(),
-            U128(liquidation_amount.0),
-            self.get_controller_address(),
-            NO_DEPOSIT,
-            self.terra_gas(20),
-        )
-        .then(controller::on_debt_repaying_callback(
-            borrower,
             borrowing_dtoken,
             collateral_dtoken,
-            liquidator,
+            liquidator.clone(),
             liquidation_amount,
-            liquidation_revenue_amount,
+            liquidation_revenue_amount.clone(),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(20),
+            self.terra_gas(40),
+        )
+        .then(ext_self::liquidation_repay_and_swap_callback(
+            borrower,
+            liquidator,
+            liquidation_revenue_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(10),
         ))
         .into()
     }
 
-    pub fn swap_supplies(
+    #[private]
+    pub fn liquidation_repay_and_swap_callback(
         &mut self,
         borrower: AccountId,
         liquidator: AccountId,
         liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        assert_eq!(
-            env::predecessor_account_id(),
-            self.get_controller_address(),
-            "This method can be called only from controller contract"
-        );
-
         let amount = liquidation_revenue_amount.0;
 
         if !self.token.accounts.contains_key(&liquidator) {

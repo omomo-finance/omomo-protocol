@@ -1,6 +1,6 @@
 use crate::utils::{
-    initialize_controller, initialize_dtoken, initialize_two_dtokens, initialize_two_utokens,
-    initialize_utoken, new_user, view_balance,
+    add_market, initialize_controller, initialize_dtoken, initialize_two_dtokens,
+    initialize_two_utokens, initialize_utoken, mint_tokens, new_user, set_price, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use general::Price;
@@ -20,101 +20,74 @@ fn liquidation_success_fixture() -> (
     let root = init_simulator(None);
 
     // Initialize
-    let user1 = new_user(&root, "user1".parse().unwrap());
-    let user2 = new_user(&root, "user2".parse().unwrap());
-    let (_uroot1, _uroot2, utoken1, utoken2) = initialize_two_utokens(&root);
+    let borrower = new_user(&root, "borrower".parse().unwrap());
+    let liquidator = new_user(&root, "liquidator".parse().unwrap());
+    let (_uroot1, _uroot2, weth, wnear) = initialize_two_utokens(&root);
     let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dtoken1, dtoken2) = initialize_two_dtokens(
+    let (_droot, dweth, dwnear) = initialize_two_dtokens(
         &root,
-        utoken1.account_id(),
-        utoken2.account_id(),
+        weth.account_id(),
+        wnear.account_id(),
         controller.account_id(),
     );
 
-    call!(
-        utoken1.user_account,
-        utoken1.mint(dtoken1.account_id(), U128(100000000000)),
-        0,
-        100000000000000
+    let mint_amount = U128(100000000000);
+    mint_tokens(&weth, dweth.account_id(), mint_amount.clone());
+    mint_tokens(&wnear, dwnear.account_id(), mint_amount.clone());
+    mint_tokens(&weth, borrower.account_id(), mint_amount.clone());
+    mint_tokens(&wnear, liquidator.account_id(), mint_amount.clone());
+    mint_tokens(&weth, liquidator.account_id(), mint_amount.clone());
+    mint_tokens(&wnear, borrower.account_id(), mint_amount.clone());
+    mint_tokens(&wnear, borrower.account_id(), mint_amount.clone());
+
+    add_market(
+        &controller,
+        weth.account_id(),
+        dweth.account_id(),
+        "weth".to_string(),
     );
 
-    call!(
-        utoken2.user_account,
-        utoken2.mint(dtoken2.account_id(), U128(100000000000)),
-        0,
-        100000000000000
+    add_market(
+        &controller,
+        wnear.account_id(),
+        dwnear.account_id(),
+        "wnear".to_string(),
     );
 
-    call!(
-        utoken1.user_account,
-        utoken1.mint(user1.account_id(), U128(100000000000)),
-        0,
-        100000000000000
+    set_price(
+        &controller,
+        dweth.account_id(),
+        &Price {
+            ticker_id: "weth".to_string(),
+            value: U128(2000),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
     );
 
-    call!(
-        utoken2.user_account,
-        utoken2.mint(user2.account_id(), U128(100000000000)),
-        0,
-        100000000000000
+    set_price(
+        &controller,
+        dwnear.account_id(),
+        &Price {
+            ticker_id: "wnear".to_string(),
+            value: U128(2000),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
     );
-
-    call!(
-        utoken1.user_account,
-        utoken1.mint(user2.account_id(), U128(100000000000)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        utoken2.user_account,
-        utoken2.mint(user1.account_id(), U128(100000000000)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dtoken1.account_id(),
-            &Price {
-                ticker_id: "1weth".to_string(),
-                value: U128(2000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
-
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dtoken2.account_id(),
-            &Price {
-                ticker_id: "2weth".to_string(),
-                value: U128(2000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
 
     let action = "\"Supply\"".to_string();
 
     call!(
-        user1,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action),
+        borrower,
+        wnear.ft_transfer_call(dwnear.account_id(), U128(60000), None, action),
         deposit = 1
     )
     .assert_success();
 
-    call!(user1, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
+    call!(borrower, dweth.borrow(U128(40000)), deposit = 0).assert_success();
 
-    let user_balance: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+    let user_balance: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_balance, 40000,
         "Borrow balance on dtoken should be 40000"
@@ -123,8 +96,8 @@ fn liquidation_success_fixture() -> (
     let user_balance: u128 = view_balance(
         &controller,
         Borrow,
-        user1.account_id(),
-        dtoken1.account_id(),
+        borrower.account_id(),
+        dweth.account_id(),
     );
     assert_eq!(
         user_balance, 40000,
@@ -134,9 +107,9 @@ fn liquidation_success_fixture() -> (
     call!(
         controller.user_account,
         controller.upsert_price(
-            dtoken2.account_id(),
+            dwnear.account_id(),
             &Price {
-                ticker_id: "2weth".to_string(),
+                ticker_id: "wnear".to_string(),
                 value: U128(1200),
                 volatility: U128(100),
                 fraction_digits: 4
@@ -146,32 +119,33 @@ fn liquidation_success_fixture() -> (
     )
     .assert_success();
 
-    (dtoken1, dtoken2, controller, utoken1, utoken2, user1, user2)
+    (dweth, dwnear, controller, weth, wnear, borrower, liquidator)
 }
 
 #[test]
 fn scenario_liquidation_success() {
-    let (dtoken1, dtoken2, controller, utoken1, _utoken2, user1, user2) =
+    let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) =
         liquidation_success_fixture();
 
+    let amount = U128(3500);
     let action = json!({
         "Liquidate":{
-            "borrower": user1.account_id.as_str(),
-            "borrowing_dtoken": dtoken1.account_id().as_str(),
-            "liquidator": user2.account_id.as_str(),
-            "collateral_dtoken": dtoken2.account_id().as_str(),
-            "liquidation_amount": U128(3500)
+            "borrower": borrower.account_id.as_str(),
+            "borrowing_dtoken": dweth.account_id().as_str(),
+            "collateral_dtoken": dwnear.account_id().as_str(),
         }
     })
     .to_string();
 
     call!(
-        user2,
-        utoken1.ft_transfer_call(dtoken1.account_id(), U128(3500), None, action),
+        liquidator,
+        weth.ft_transfer_call(dweth.account_id(), amount.clone(), None, action),
         deposit = 1
-    );
+    )
+    .assert_success();
 
-    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+    let user_borrows: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+
     assert_eq!(
         user_borrows, 36500,
         "Borrow balance on dtoken should be 36500"
@@ -180,8 +154,8 @@ fn scenario_liquidation_success() {
     let user_borrows: u128 = view_balance(
         &controller,
         Borrow,
-        user1.account_id(),
-        dtoken1.account_id(),
+        borrower.account_id(),
+        dweth.account_id(),
     );
     assert_eq!(
         user_borrows, 36500,
@@ -191,14 +165,57 @@ fn scenario_liquidation_success() {
     let user_balance: u128 = view_balance(
         &controller,
         Supply,
-        user2.account_id(),
-        dtoken2.account_id(),
+        liquidator.account_id(),
+        dwnear.account_id(),
     );
 
     assert_eq!(
-        user_balance, 3500,
-        "Supply balance on dtoken should be 3510"
+        user_balance, 6125,
+        "Supply balance on dtoken should be 6125"
     );
+
+    // call!(
+    //     controller.user_account,
+    //     dweth.liquidate(
+    //         borrower.account_id(),
+    //         dweth.account_id(),
+    //         liquidator.account_id(),
+    //         dwnear.account_id(),
+    //         amount
+    //     ),
+    //     0,
+    //     300000000000000
+    // )
+    // .assert_success();
+
+    // call!(
+    //     dweth.user_account,
+    //     controller.liquidation(
+    //         borrower.account_id(),
+    //         dweth.account_id(),
+    //         liquidator.account_id(),
+    //         dwnear.account_id(),
+    //         amount
+    //     ),
+    //     0,
+    //     300000000000000
+    // )
+    // .assert_success();
+
+    // call!(
+    //     dweth.user_account,
+    //     controller.liquidation_repay_and_swap(
+    //         borrower.account_id(),
+    //         dweth.account_id(),
+    //         dwnear.account_id(),
+    //         liquidator.account_id(),
+    //         amount,
+    //         U128(6125)
+    //     ),
+    //     0,
+    //     300000000000000
+    // )
+    // .assert_success();
 }
 
 fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
@@ -272,9 +289,7 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
         "Liquidate":{
             "borrower": user.account_id.as_str(),
             "borrowing_dtoken": "test.testnet",
-            "liquidator": "test.testnet",
             "collateral_dtoken": dtoken.account_id().as_str(),
-            "liquidation_amount": U128(5)
         }
     })
     .to_string();
@@ -295,27 +310,26 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
 
 #[test]
 fn scenario_liquidation_failed_on_too_much_for_liquidation() {
-    let (dtoken1, dtoken2, controller, utoken1, _utoken2, user1, user2) =
+    let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) =
         liquidation_success_fixture();
 
+    let amount = U128(70000);
     let action = json!({
         "Liquidate":{
-            "borrower": user1.account_id.as_str(),
-            "borrowing_dtoken": dtoken1.account_id().as_str(),
-            "liquidator": user2.account_id.as_str(),
-            "collateral_dtoken": dtoken2.account_id().as_str(),
-            "liquidation_amount": U128(70000)
+            "borrower": borrower.account_id.as_str(),
+            "borrowing_dtoken": dweth.account_id().as_str(),
+            "collateral_dtoken": dwnear.account_id().as_str(),
         }
     })
     .to_string();
 
     call!(
-        user2,
-        utoken1.ft_transfer_call(dtoken1.account_id(), U128(70000), None, action),
+        liquidator,
+        weth.ft_transfer_call(dweth.account_id(), amount, None, action),
         deposit = 1
     );
 
-    let user_borrows: u128 = view!(dtoken1.get_account_borrows(user1.account_id())).unwrap_json();
+    let user_borrows: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_borrows, 40000,
         "Borrow balance on dtoken should be 40000"
@@ -324,8 +338,8 @@ fn scenario_liquidation_failed_on_too_much_for_liquidation() {
     let user_borrows: u128 = view_balance(
         &controller,
         Borrow,
-        user1.account_id(),
-        dtoken1.account_id(),
+        borrower.account_id(),
+        dweth.account_id(),
     );
     assert_eq!(
         user_borrows, 40000,
@@ -335,8 +349,8 @@ fn scenario_liquidation_failed_on_too_much_for_liquidation() {
     let user_balance: u128 = view_balance(
         &controller,
         Supply,
-        user2.account_id(),
-        dtoken2.account_id(),
+        liquidator.account_id(),
+        dwnear.account_id(),
     );
 
     assert_eq!(user_balance, 0, "Supply balance on dtoken should be 0");
