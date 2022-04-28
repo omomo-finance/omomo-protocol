@@ -68,21 +68,21 @@ impl Contract {
             .get(&account_id)
             .expect("This user doesn`t have rewards")
     }
+
+    pub fn adjust_reward(&mut self, account_id: AccountId, reward: Reward) {
+        if self.rewards.get(&account_id).is_none() {
+            let mut new_reward = HashMap::new();
+            new_reward.insert(reward.id.clone(), reward);
+            self.rewards.insert(&account_id, &new_reward);
+        } else {
+            let mut user_rewards = self.rewards.get(&account_id).unwrap();
+            user_rewards.insert(reward.id.clone(), reward);
+        }
+    }
 }
 
 #[near_bindgen]
 impl Contract {
-    pub fn adjust_reward(&mut self, account_id: AccountId, reward_id: String, reward: Reward) {
-        if self.rewards.get(&account_id).is_none() {
-            let mut new_reward = HashMap::new();
-            new_reward.insert(reward_id, reward);
-            self.rewards.insert(&account_id, &new_reward);
-        } else {
-            let mut user_rewards = self.rewards.get(&account_id).unwrap();
-            user_rewards.insert(reward_id, reward);
-        }
-    }
-
     pub fn remove_reward(&mut self, account_id: AccountId, reward_id: String) {
         let mut user_rewards = self
             .rewards
@@ -95,11 +95,19 @@ impl Contract {
         let account_id = env::signer_account_id();
         let rewards = self.rewards.get(&account_id).unwrap();
         assert!(rewards.is_empty(), "This user has no rewards");
-        let reward = rewards.get(&reward_id).unwrap();
+        let reward = rewards
+            .get(&reward_id)
+            .expect("There is no such id in user rewards");
         assert!(
             reward.locked_till >= block_height(),
             "The reward is currently locked"
         );
+        let reward = self
+            .rewards
+            .get(&account_id)
+            .unwrap()
+            .remove(&reward_id)
+            .unwrap();
 
         underlying_token::ft_transfer(
             account_id.clone(),
@@ -113,7 +121,7 @@ impl Contract {
             self.terra_gas(10),
         )
         .then(ext_self::reward_ft_transfer_callback(
-            reward_id,
+            reward,
             account_id,
             env::current_account_id(),
             NO_DEPOSIT,
@@ -121,16 +129,39 @@ impl Contract {
         ))
     }
 
-    pub fn reward_ft_transfer_callback(&mut self, reward_id: String, account_id: AccountId) {
+    pub fn reward_ft_transfer_callback(&mut self, reward: Reward, account_id: AccountId) {
         if !is_promise_success() {
+            self.adjust_reward(env::signer_account_id(), reward);
             log!(format!(
                 "There is an error transferring token to account {}",
                 account_id
             ));
         }
-        self.rewards.get(&account_id).unwrap().remove(&reward_id);
         if self.rewards.get(&account_id).unwrap().is_empty() {
             self.rewards.remove(&account_id);
         }
+    }
+
+    pub fn unlock_reward(&mut self, reward_id: String) {
+        let account_id = env::signer_account_id();
+        let rewards = self.rewards.get(&account_id).unwrap();
+        assert!(rewards.is_empty(), "This user has no rewards");
+        let reward = rewards.get(&reward_id).unwrap();
+        assert!(
+            reward.locked_till < block_height(),
+            "The reward is currently locked"
+        );
+        let new_reward = Reward {
+            id: reward.id.clone(),
+            token: reward.token.clone(),
+            amount: WBalance::from(reward.amount.0 * reward.penalty / RATIO_DECIMALS),
+            locked_till: block_height(),
+            penalty: reward.penalty,
+        };
+
+        self.rewards
+            .get(&account_id)
+            .unwrap()
+            .insert(reward_id, new_reward);
     }
 }

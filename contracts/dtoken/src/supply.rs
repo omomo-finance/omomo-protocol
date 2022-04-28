@@ -94,15 +94,14 @@ impl Contract {
                 current_block_height,
                 accrued_interest.last_recalculation_block,
             );
-            let reward_id = format!("{}{}", env::block_timestamp_ms(), unique_id);
             let reward = Reward {
-                id: reward_id.clone(),
+                id: format!("{}{}", env::block_timestamp_ms(), unique_id),
                 token: reward_setting.token.clone(),
                 amount: WBalance::from(reward_amount),
                 locked_till: current_block_height + reward_setting.lock_time,
                 penalty: reward_setting.penalty,
             };
-            self.adjust_reward(env::signer_account_id(), reward_id, reward);
+            self.adjust_reward(env::signer_account_id(), reward);
         }
 
         // Dtokens minting and adding them to the user account
