@@ -19,6 +19,7 @@ pub use crate::ft::*;
 pub use crate::interest_model::*;
 pub use crate::interest_rate_model::*;
 pub use crate::repay::*;
+pub use crate::reward::*;
 pub use crate::supply::*;
 pub use crate::user_profile::*;
 pub use crate::withdraw::*;
@@ -32,6 +33,7 @@ mod interest_model;
 mod interest_rate_model;
 mod liquidation;
 mod repay;
+mod reward;
 mod supply;
 mod user_profile;
 mod views;
@@ -41,6 +43,7 @@ mod withdraw;
 enum StorageKeys {
     Config,
     UserProfiles,
+    UserRewards,
 }
 
 #[near_bindgen]
@@ -68,6 +71,9 @@ pub struct Contract {
 
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
+
+    /// Users rewards
+    rewards: UnorderedMap<AccountId, Vec<Reward>>,
 }
 
 impl Default for Contract {
@@ -241,6 +247,7 @@ impl Contract {
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
             admin: config.owner_id,
+            rewards: UnorderedMap::new(StorageKeys::UserRewards),
         }
     }
 }

@@ -3,13 +3,17 @@ use crate::*;
 use std::collections::HashMap;
 
 impl Contract {
+    pub fn is_market_registered(&self, dtoken: AccountId) -> bool {
+        self.get_markets_list()
+            .iter()
+            .any(|market| market.dtoken == dtoken)
+    }
+
     pub fn get_prices_for_dtokens(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
         let mut result = HashMap::new();
         for dtoken in dtokens {
-            if self.prices.contains_key(&dtoken) {
-                if let Some(price) = self.get_price(dtoken.clone()) {
-                    result.insert(dtoken, price);
-                }
+            if let Some(price) = self.get_price(dtoken.clone()) {
+                result.insert(dtoken, price);
             }
         }
         result
@@ -31,7 +35,6 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
-
     use assert_matches::assert_matches;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::AccountId;

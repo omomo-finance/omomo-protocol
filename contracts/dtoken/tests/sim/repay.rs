@@ -1,6 +1,6 @@
 use crate::utils::{
-    initialize_controller, initialize_dtoken, initialize_dtoken_with_custom_interest_rate,
-    initialize_utoken, new_user, view_balance,
+    add_market, initialize_controller, initialize_dtoken,
+    initialize_dtoken_with_custom_interest_rate, initialize_utoken, new_user, view_balance,
 };
 use controller::ActionType::Borrow;
 use dtoken::{InterestRateModel, RepayInfo};
@@ -35,6 +35,12 @@ fn repay_no_borrow_fixture() -> (
         100000000000000
     );
 
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
+    );
     (dtoken, utoken, user)
 }
 
@@ -60,6 +66,7 @@ fn repay_fixture() -> (
             base_rate_per_block: U128(0),
             jump_multiplier_per_block: U128(10900),
             reserve_factor: U128(500),
+            rewards_config: Vec::new(),
         },
     );
 
@@ -75,6 +82,13 @@ fn repay_fixture() -> (
         utoken.mint(user.account_id(), U128(800)),
         0,
         100000000000000
+    );
+
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
@@ -117,6 +131,7 @@ fn repay_zero_accrued_interest_fixture() -> (
             base_rate_per_block: U128(0),
             jump_multiplier_per_block: U128(0),
             reserve_factor: U128(0),
+            rewards_config: Vec::new(),
         },
     );
 
@@ -132,6 +147,13 @@ fn repay_zero_accrued_interest_fixture() -> (
         utoken.mint(user.account_id(), U128(800)),
         0,
         100000000000000
+    );
+
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(

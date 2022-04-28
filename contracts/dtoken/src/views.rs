@@ -64,6 +64,14 @@ impl Contract {
     pub fn view_repay_info(&self, user_id: AccountId, ft_balance: WBalance) -> RepayInfo {
         self.get_repay_info(user_id, ft_balance)
     }
+
+    pub fn view_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
+        self.get_exchange_rate(underlying_balance)
+    }
+
+    pub fn view_user_rewards(&self, account_id: AccountId) -> Vec<Reward> {
+        self.get_user_rewards(account_id)
+    }
 }
 
 #[cfg(test)]
@@ -80,8 +88,8 @@ mod tests {
 
     pub fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
-            .current_account_id(alice().clone())
-            .signer_account_id(alice().clone())
+            .current_account_id(alice())
+            .signer_account_id(alice())
             .is_view(is_view)
             .build()
     }

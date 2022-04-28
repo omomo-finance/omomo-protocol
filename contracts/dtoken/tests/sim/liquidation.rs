@@ -76,6 +76,13 @@ fn liquidation_success_fixture() -> (
         },
     );
 
+    add_market(
+        &controller,
+        utoken1.account_id(),
+        dtoken1.account_id(),
+        "1weth".to_string(),
+    );
+
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -174,48 +181,6 @@ fn scenario_liquidation_success() {
         "Supply balance on dtoken should be 6125"
     );
 
-    // call!(
-    //     controller.user_account,
-    //     dweth.liquidate(
-    //         borrower.account_id(),
-    //         dweth.account_id(),
-    //         liquidator.account_id(),
-    //         dwnear.account_id(),
-    //         amount
-    //     ),
-    //     0,
-    //     300000000000000
-    // )
-    // .assert_success();
-
-    // call!(
-    //     dweth.user_account,
-    //     controller.liquidation(
-    //         borrower.account_id(),
-    //         dweth.account_id(),
-    //         liquidator.account_id(),
-    //         dwnear.account_id(),
-    //         amount
-    //     ),
-    //     0,
-    //     300000000000000
-    // )
-    // .assert_success();
-
-    // call!(
-    //     dweth.user_account,
-    //     controller.liquidation_repay_and_swap(
-    //         borrower.account_id(),
-    //         dweth.account_id(),
-    //         dwnear.account_id(),
-    //         liquidator.account_id(),
-    //         amount,
-    //         U128(6125)
-    //     ),
-    //     0,
-    //     300000000000000
-    // )
-    // .assert_success();
 }
 
 fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
@@ -242,6 +207,13 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
+    );
+
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
     );
 
     call!(
