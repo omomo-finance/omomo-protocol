@@ -8,6 +8,7 @@ use near_sdk::{
     env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BlockHeight,
     BorshStorageKey, Gas, PromiseOrValue, PromiseResult,
 };
+use std::collections::HashMap;
 
 #[allow(unused_imports)]
 pub use general::*;
@@ -73,7 +74,7 @@ pub struct Contract {
     pub admin: AccountId,
 
     /// Users rewards
-    rewards: UnorderedMap<AccountId, Vec<Reward>>,
+    rewards: UnorderedMap<AccountId, HashMap<String, Reward>>,
 }
 
 impl Default for Contract {
@@ -161,7 +162,7 @@ trait InternalTokenInterface {
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
-    fn reward_ft_transfer_callback(&mut self, reward_index: usize, account_id: AccountId);
+    fn reward_ft_transfer_callback(&mut self, reward_index: String, account_id: AccountId);
 
     fn borrow_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
