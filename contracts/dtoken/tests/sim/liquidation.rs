@@ -76,13 +76,6 @@ fn liquidation_success_fixture() -> (
         },
     );
 
-    add_market(
-        &controller,
-        utoken1.account_id(),
-        dtoken1.account_id(),
-        "1weth".to_string(),
-    );
-
     let action = "\"Supply\"".to_string();
 
     call!(
@@ -180,7 +173,6 @@ fn scenario_liquidation_success() {
         user_balance, 6125,
         "Supply balance on dtoken should be 6125"
     );
-
 }
 
 fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
@@ -207,13 +199,6 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
         utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
-    );
-
-    add_market(
-        &controller,
-        utoken.account_id(),
-        dtoken.account_id(),
-        "weth".to_string(),
     );
 
     call!(
