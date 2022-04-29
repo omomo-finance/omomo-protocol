@@ -1,5 +1,5 @@
-use general::ratio::{Ratio, RATIO_DECIMALS};
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 const GAS_FOR_WITHDRAW: Gas = Gas(180_000_000_000_000);
 

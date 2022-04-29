@@ -1,7 +1,7 @@
 use crate::*;
 
-use std::collections::HashMap;
 use general::ratio::{Ratio, RATIO_DECIMALS};
+use std::collections::HashMap;
 
 impl Contract {
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {

@@ -2,8 +2,8 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near_bindgen, require, AccountId};
 use std::collections::HashMap;
 
-use general::Percent;
 use general::ratio::Ratio;
+use general::Percent;
 
 use crate::*;
 

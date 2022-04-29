@@ -1,5 +1,5 @@
-use general::ratio::Ratio;
 use crate::*;
+use general::ratio::Ratio;
 
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
