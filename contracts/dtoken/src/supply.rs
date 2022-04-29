@@ -1,5 +1,6 @@
 use crate::*;
 use near_sdk::env::block_height;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 

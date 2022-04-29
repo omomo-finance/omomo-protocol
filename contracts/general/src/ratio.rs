@@ -4,6 +4,9 @@ use std::cmp::{max_by, min_by, Ordering};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
+
+pub const RATIO_DECIMALS: Ratio = Ratio(10u128.pow(4));
+
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, Copy)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Ratio(pub u128);
@@ -66,22 +69,22 @@ impl Ord for Ratio {
     }
 
     fn max(self, other: Self) -> Self
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         max_by(self, other, Ord::cmp)
     }
 
     fn min(self, other: Self) -> Self
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         min_by(self, other, Ord::cmp)
     }
 
     fn clamp(self, min: Self, max: Self) -> Self
-    where
-        Self: Sized,
+        where
+            Self: Sized,
     {
         assert!(min <= max);
         if self < min {

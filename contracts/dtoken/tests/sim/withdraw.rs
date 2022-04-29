@@ -6,10 +6,12 @@ use crate::utils::{
 use controller::AccountData;
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
-use general::{Price, RATIO_DECIMALS};
 use near_sdk::json_types::U128;
 use near_sdk::test_utils::test_env::bob;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use general::ratio::RATIO_DECIMALS;
+use general::Price;
+
 
 fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);

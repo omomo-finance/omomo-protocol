@@ -1,5 +1,6 @@
 use crate::*;
 use std::cmp::{max, min};
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 const MAX_RESERVE_FACTOR_VALUE: Ratio = RATIO_DECIMALS;
 
@@ -70,9 +71,10 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
-    use general::{Ratio, WRatio};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use general::ratio::Ratio;
+    use general::WRatio;
 
     use crate::{Config, Contract};
 

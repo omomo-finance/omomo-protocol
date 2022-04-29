@@ -6,12 +6,11 @@ use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 use near_sdk::{Balance, Gas};
-use crate::ratio::Ratio;
 
 pub const NO_DEPOSIT: Balance = 0;
 pub const ONE_YOCTO: Balance = 1;
 pub const TGAS: Gas = near_sdk::Gas::ONE_TERA;
-pub const RATIO_DECIMALS: Ratio = Ratio(10u128.pow(4));
+
 
 pub const ONE_TOKEN: u128 = 10u128.pow(24);
 

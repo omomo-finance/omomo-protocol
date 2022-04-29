@@ -1,6 +1,7 @@
 use crate::*;
 use near_sdk::{is_promise_success, log, PromiseOrValue};
 use partial_min_max::min;
+use general::ratio::RATIO_DECIMALS;
 
 #[near_bindgen]
 impl Contract {

@@ -1,3 +1,4 @@
+use general::ratio::Ratio;
 use crate::*;
 
 const GAS_FOR_BORROW: Gas = Gas(180_000_000_000_000);

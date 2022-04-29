@@ -1,4 +1,6 @@
+use general::ratio::Ratio;
 use crate::*;
+
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
 #[serde(crate = "near_sdk::serde")]

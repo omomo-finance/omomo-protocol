@@ -8,6 +8,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
 use general::*;
+use general::ratio::Ratio;
 
 pub use crate::borrows_supplies::*;
 pub use crate::config::*;

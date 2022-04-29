@@ -1,3 +1,4 @@
+use general::ratio::Ratio;
 use crate::*;
 
 #[near_bindgen]
