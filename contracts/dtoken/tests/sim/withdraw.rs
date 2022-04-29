@@ -432,7 +432,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
 
     call!(
         user,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action),
         deposit = 1
     )
     .assert_success();
@@ -568,7 +568,7 @@ fn withdraw_failed_due_to_low_health_factor_fixure() -> (
 
     call!(
         user,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action),
         deposit = 1
     )
     .assert_success();

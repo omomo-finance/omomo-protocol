@@ -100,7 +100,7 @@ impl Contract {
                 token: reward_setting.token.clone(),
                 amount: WBalance::from(reward_amount),
                 locked_till: current_block_height + reward_setting.lock_time,
-                penalty: reward_setting.penalty.clone(),
+                penalty: reward_setting.penalty,
             };
             self.adjust_reward(env::signer_account_id(), reward);
         }

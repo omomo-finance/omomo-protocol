@@ -85,7 +85,7 @@ impl Contract {
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
     ) -> WBalance {
-        let unhealth_factor = self.liquidation_health_factor_threshold.clone()
+        let unhealth_factor = self.liquidation_health_factor_threshold
             - self.get_health_factor(borrower.clone());
 
         let borrow_amount = self.get_entity_by_token(
@@ -105,7 +105,7 @@ impl Contract {
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (RATIO_DECIMALS.0 - self.liquidation_incentive.clone().0)
+            (RATIO_DECIMALS.0 - self.liquidation_incentive.0)
                 * supply_amount
                 * collateral_price,
         ) / borrow_price;
