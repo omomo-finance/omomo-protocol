@@ -23,7 +23,7 @@ impl Default for AccountData {
             total_borrows_usd: U128(0),
             total_supplies_usd: U128(0),
             blocked: false,
-            health_factor_ratio: WRatio::from(RATIO_DECIMALS),
+            health_factor_ratio: WRatio::from(RATIO_DECIMALS.0),
             user_profile: Default::default(),
         }
     }
@@ -57,7 +57,7 @@ impl Contract {
                     total_borrows_usd: total_borrows,
                     total_supplies_usd: total_supplies,
                     blocked: false,
-                    health_factor_ratio: WRatio::from(health_factor),
+                    health_factor_ratio: WRatio::from(health_factor.0),
                     user_profile,
                 }
             })
@@ -72,7 +72,7 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
-        let potential_borrow = (supplies.0 / self.health_threshold) - gotten_borrow.0;
+        let potential_borrow = (supplies.0 / self.health_threshold.0) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
         (potential_borrow / price).into()
@@ -82,7 +82,7 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let borrows = self.get_total_borrows(user_id);
 
-        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold);
+        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
         (max_withdraw / price).into()

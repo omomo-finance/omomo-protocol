@@ -28,23 +28,23 @@ impl fmt::Display for RepayInfo {
 
 impl InterestRateModel {
     pub fn get_kink(&self) -> Ratio {
-        Ratio::from(self.kink)
+        Ratio(self.kink.0)
     }
 
     pub fn get_multiplier_per_block(&self) -> Ratio {
-        Ratio::from(self.multiplier_per_block)
+        Ratio(self.multiplier_per_block.0)
     }
 
     pub fn get_base_rate_per_block(&self) -> Ratio {
-        Ratio::from(self.base_rate_per_block)
+        Ratio(self.base_rate_per_block.0)
     }
 
     pub fn get_jump_multiplier_per_block(&self) -> Ratio {
-        Ratio::from(self.jump_multiplier_per_block)
+        Ratio(self.jump_multiplier_per_block.0)
     }
 
     pub fn get_reserve_factor(&self) -> Ratio {
-        Ratio::from(self.reserve_factor)
+        Ratio(self.reserve_factor.0)
     }
 
     pub fn get_rewards_config(&self) -> Vec<RewardSetting> {
@@ -79,9 +79,9 @@ impl InterestRateModel {
     ) -> AccruedInterest {
         let current_block_height = block_height();
         let accrued_rate = total_borrow
-            * borrow_rate
+            * borrow_rate.0
             * (current_block_height - accrued_interest.last_recalculation_block) as u128
-            / RATIO_DECIMALS;
+            / RATIO_DECIMALS.0;
 
         AccruedInterest {
             accumulated_interest: accrued_interest.accumulated_interest + accrued_rate,
@@ -93,10 +93,10 @@ impl InterestRateModel {
 impl Default for InterestRateModel {
     fn default() -> Self {
         Self {
-            kink: WRatio::from(RATIO_DECIMALS),
-            base_rate_per_block: WRatio::from(RATIO_DECIMALS),
-            multiplier_per_block: WRatio::from(RATIO_DECIMALS),
-            jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS),
+            kink: WRatio::from(RATIO_DECIMALS.0),
+            base_rate_per_block: WRatio::from(RATIO_DECIMALS.0),
+            multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
+            jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
             reserve_factor: WRatio::from(500),
             rewards_config: Vec::new(),
         }
@@ -149,6 +149,7 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use general::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::AccountId;
@@ -180,7 +181,7 @@ mod tests {
                 amount: U128(20),
             },
             lock_time: 100,
-            penalty: 500,
+            penalty: Ratio(500),
             vesting: VestingPlans::None,
         };
 

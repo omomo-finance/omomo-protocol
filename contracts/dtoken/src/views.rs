@@ -43,7 +43,7 @@ impl Contract {
             ft_balance_of,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
-            WBalance::from(reserve_factor),
+            WBalance::from(reserve_factor.0),
         );
         let borrow_rate = self.get_borrow_rate(
             ft_balance_of,
@@ -55,9 +55,9 @@ impl Contract {
             total_supplies: WBalance::from(total_supplies),
             total_borrows: WBalance::from(total_borrows),
             total_reserves: WBalance::from(total_reserves),
-            exchange_rate_ratio: WRatio::from(exchange_rate),
-            interest_rate_ratio: WRatio::from(interest_rate),
-            borrow_rate_ratio: WRatio::from(borrow_rate),
+            exchange_rate_ratio: WRatio::from(exchange_rate.0),
+            interest_rate_ratio: WRatio::from(interest_rate.0),
+            borrow_rate_ratio: WRatio::from(borrow_rate.0),
         }
     }
 

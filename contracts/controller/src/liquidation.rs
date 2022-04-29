@@ -72,7 +72,7 @@ impl Contract {
         amount_for_liquidation: WBalance,
     ) -> WBalance {
         WBalance::from(
-            self.get_liquidation_incentive()
+            self.get_liquidation_incentive().0
                 * amount_for_liquidation.0
                 * self.prices.get(&borrowing_dtoken).unwrap().value.0
                 / self.prices.get(&collateral_dtoken).unwrap().value.0,
@@ -85,8 +85,8 @@ impl Contract {
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
     ) -> WBalance {
-        let unhealth_factor =
-            self.liquidation_health_factor_threshold - self.get_health_factor(borrower.clone());
+        let unhealth_factor = self.liquidation_health_factor_threshold.clone()
+            - self.get_health_factor(borrower.clone());
 
         let borrow_amount = self.get_entity_by_token(
             ActionType::Borrow,
@@ -96,7 +96,8 @@ impl Contract {
 
         let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
-        let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
+        let max_unhealth_repay =
+            unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
 
         let supply_amount =
             self.get_entity_by_token(ActionType::Supply, borrower, borrowing_dtoken);
@@ -104,7 +105,9 @@ impl Contract {
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (RATIO_DECIMALS - self.liquidation_incentive) * supply_amount * collateral_price,
+            (RATIO_DECIMALS.0 - self.liquidation_incentive.clone().0)
+                * supply_amount
+                * collateral_price,
         ) / borrow_price;
 
         WBalance::from(max_possible_liquidation_amount as u128)

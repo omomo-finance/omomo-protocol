@@ -57,11 +57,13 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
-        let borrow_rate: Balance = self.get_borrow_rate(
-            U128(balance_of - Balance::from(token_amount)),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-        );
+        let borrow_rate: Balance = self
+            .get_borrow_rate(
+                U128(balance_of - Balance::from(token_amount)),
+                U128(self.get_total_borrows()),
+                U128(self.total_reserves),
+            )
+            .0;
         let borrow_amount = self.get_account_borrows(env::signer_account_id());
 
         let borrow_accrued_interest = self
@@ -70,7 +72,7 @@ impl Contract {
             .unwrap()
             .interest_rate_model
             .calculate_accrued_interest(
-                borrow_rate,
+                Ratio(borrow_rate),
                 self.get_account_borrows(env::signer_account_id()),
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );

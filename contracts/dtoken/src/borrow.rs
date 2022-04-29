@@ -78,18 +78,20 @@ impl Contract {
                 .into(),
         };
 
-        let borrow_rate: Balance = self.get_borrow_rate(
-            U128(balance_of),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-        );
+        let borrow_rate: Balance = self
+            .get_borrow_rate(
+                U128(balance_of),
+                U128(self.get_total_borrows()),
+                U128(self.total_reserves),
+            )
+            .0;
         let borrow_accrued_interest = self
             .config
             .get()
             .unwrap()
             .interest_rate_model
             .calculate_accrued_interest(
-                borrow_rate,
+                Ratio(borrow_rate),
                 self.get_account_borrows(env::signer_account_id()),
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
@@ -116,7 +118,7 @@ impl Contract {
         if !is_promise_success() {
             log!(
                 "{}",
-                Events::BorrowFailedToInceaseBorrowOnController(
+                Events::BorrowFailedToIncreaseBorrowOnController(
                     env::signer_account_id(),
                     Balance::from(token_amount)
                 )

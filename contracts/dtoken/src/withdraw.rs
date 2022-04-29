@@ -66,7 +66,7 @@ impl Contract {
             U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor()),
+            U128(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -75,7 +75,7 @@ impl Contract {
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
-        let token_amount: Balance = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+        let token_amount: Balance = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate.0;
 
         controller::withdraw_supplies(
             env::signer_account_id(),

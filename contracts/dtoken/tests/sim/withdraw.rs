@@ -753,7 +753,7 @@ fn scenario_withdraw_with_borrow_on_another_dtoken() {
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
     let exchange_rate: u128 = view!(dtoken2.view_exchange_rate(dtoken_balance)).unwrap_json();
     let dtoken_amount: u128 = 5000;
-    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
     let res_potential: u128 = view!(controller.get_potential_health_factor(
         user.account_id(),
@@ -790,7 +790,7 @@ fn scenario_withdraw_failed_due_to_low_health_factor() {
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
     let exchange_rate: u128 = view!(dtoken2.view_exchange_rate(dtoken_balance)).unwrap_json();
     let dtoken_amount: u128 = 50000;
-    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
     let res_potential: u128 = view!(controller.get_potential_health_factor(
         user.account_id(),
