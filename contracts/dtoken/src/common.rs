@@ -1,5 +1,6 @@
 use crate::*;
 use std::fmt;
+use near_contract_standards::fungible_token::core::FungibleTokenCore;
 
 const BLOCK_PER_DAY: BlockHeight = 72000;
 const BLOCK_PER_WEEK: BlockHeight = 1048896;
@@ -182,6 +183,14 @@ impl Contract {
                 panic!("Incorrect action at mutex lock callback")
             }
         }
+    }
+
+    pub fn ft_total_supply(&self) -> U128 {
+        self.token.ft_total_supply()
+    }
+
+    pub fn ft_balance_of(&self, account_id: AccountId) -> U128 {
+        self.token.ft_balance_of(account_id)
     }
 }
 

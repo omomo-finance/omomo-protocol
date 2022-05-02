@@ -88,7 +88,7 @@ impl Contract {
             self.get_controller_address(),
             "This method can be called only from controller contract"
         );
-        let amount = liquidation_revenue_amount.0;
+        let amount: Balance = liquidation_revenue_amount.into();
 
         if !self.token.accounts.contains_key(&liquidator) {
             self.token.internal_register_account(&liquidator);
