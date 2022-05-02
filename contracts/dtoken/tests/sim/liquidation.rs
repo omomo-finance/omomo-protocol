@@ -3,10 +3,17 @@ use crate::utils::{
     initialize_two_utokens, initialize_utoken, mint_tokens, new_user, set_price, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
-use general::Price;
+use general::{Price, RATIO_DECIMALS};
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
+use near_sdk::Balance;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+
+const BORROWER_SUPPLY: Balance = 60000;
+const BORROWER_BORROW: Balance = 40000;
+const MINT_BALANCE: Balance = 100000000000;
+const START_PRICE: Balance = 2000;
+const CHANGED_PRICE: Balance = 1200;
 
 fn liquidation_success_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -31,7 +38,7 @@ fn liquidation_success_fixture() -> (
         controller.account_id(),
     );
 
-    let mint_amount = U128(100000000000);
+    let mint_amount = U128(MINT_BALANCE);
     mint_tokens(&weth, dweth.account_id(), mint_amount.clone());
     mint_tokens(&wnear, dwnear.account_id(), mint_amount.clone());
     mint_tokens(&weth, borrower.account_id(), mint_amount.clone());
@@ -59,7 +66,7 @@ fn liquidation_success_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(2000),
+            value: U128(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -70,7 +77,7 @@ fn liquidation_success_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(2000),
+            value: U128(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -80,17 +87,18 @@ fn liquidation_success_fixture() -> (
 
     call!(
         borrower,
-        wnear.ft_transfer_call(dwnear.account_id(), U128(60000), None, action),
+        wnear.ft_transfer_call(dwnear.account_id(), U128(BORROWER_SUPPLY), None, action),
         deposit = 1
     )
     .assert_success();
 
-    call!(borrower, dweth.borrow(U128(40000)), deposit = 0).assert_success();
+    call!(borrower, dweth.borrow(U128(BORROWER_BORROW)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
-        user_balance, 40000,
-        "Borrow balance on dtoken should be 40000"
+        user_balance, BORROWER_BORROW,
+        "Borrow balance on dtoken should be {}",
+        BORROWER_BORROW
     );
 
     let user_balance: u128 = view_balance(
@@ -100,8 +108,9 @@ fn liquidation_success_fixture() -> (
         dweth.account_id(),
     );
     assert_eq!(
-        user_balance, 40000,
-        "Borrow balance on controller should be 40000"
+        user_balance, BORROWER_BORROW,
+        "Borrow balance on controller should be {}",
+        BORROWER_BORROW
     );
 
     call!(
@@ -110,7 +119,7 @@ fn liquidation_success_fixture() -> (
             dwnear.account_id(),
             &Price {
                 ticker_id: "wnear".to_string(),
-                value: U128(1200),
+                value: U128(CHANGED_PRICE),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -144,11 +153,28 @@ fn scenario_liquidation_success() {
     )
     .assert_success();
 
-    let user_borrows: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+    let weth_ft_balance_of_for_dweth: U128 =
+        view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();
 
     assert_eq!(
-        user_borrows, 36500,
-        "Borrow balance on dtoken should be 36500"
+        Balance::from(weth_ft_balance_of_for_dweth),
+        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount.clone())),
+        "dweth_balance_of_on_weth balance of should be {}",
+        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount.clone()))
+    );
+
+    let user_borrows: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+
+    let borrow_balance = BORROWER_BORROW - Balance::from(amount.clone());
+
+    let revenue_amount: Balance =
+        (10500 * Balance::from(amount.clone()) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS);
+
+    assert_eq!(
+        user_borrows,
+        borrow_balance.clone(),
+        "Borrow balance on dtoken should be {}",
+        borrow_balance.clone()
     );
 
     let user_borrows: u128 = view_balance(
@@ -158,8 +184,10 @@ fn scenario_liquidation_success() {
         dweth.account_id(),
     );
     assert_eq!(
-        user_borrows, 36500,
-        "Borrow balance on controller should be 36500"
+        user_borrows,
+        borrow_balance.clone(),
+        "Borrow balance on controller should be {}",
+        borrow_balance
     );
 
     let user_balance: u128 = view_balance(
@@ -170,8 +198,30 @@ fn scenario_liquidation_success() {
     );
 
     assert_eq!(
-        user_balance, 6125,
-        "Supply balance on dtoken should be 6125"
+        user_balance,
+        revenue_amount.clone(),
+        "Supply balance on dtoken should be {}",
+        revenue_amount.clone()
+    );
+
+    let borrower_dwnear_balance: U128 =
+        view!(dwnear.ft_balance_of(borrower.account_id())).unwrap_json();
+
+    assert_eq!(
+        Balance::from(borrower_dwnear_balance),
+        BORROWER_SUPPLY - revenue_amount.clone(),
+        "Borrower balance on dtokn ft should be {}",
+        BORROWER_SUPPLY - revenue_amount.clone()
+    );
+
+    let liquidator_dwnear_balance: U128 =
+        view!(dwnear.ft_balance_of(liquidator.account_id())).unwrap_json();
+
+    assert_eq!(
+        Balance::from(liquidator_dwnear_balance),
+        revenue_amount.clone(),
+        "Liquidator balance on utoken should be {}",
+        revenue_amount.clone()
     );
 }
 
@@ -295,8 +345,8 @@ fn scenario_liquidation_failed_on_too_much_for_liquidation() {
 
     let user_borrows: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
-        user_borrows, 40000,
-        "Borrow balance on dtoken should be 40000"
+        user_borrows, BORROWER_BORROW,
+        "Borrow balance on dtoken should be BORROWER_BORROW"
     );
 
     let user_borrows: u128 = view_balance(
@@ -306,8 +356,8 @@ fn scenario_liquidation_failed_on_too_much_for_liquidation() {
         dweth.account_id(),
     );
     assert_eq!(
-        user_borrows, 40000,
-        "Borrow balance on controller should be 40000"
+        user_borrows, BORROWER_BORROW,
+        "Borrow balance on controller should be BORROWER_BORROW"
     );
 
     let user_balance: u128 = view_balance(

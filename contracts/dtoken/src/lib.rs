@@ -200,12 +200,6 @@ trait InternalTokenInterface {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     );
-    fn liquidation_repay_and_swap_callback(
-        &mut self,
-        borrower: AccountId,
-        liquidator: AccountId,
-        liquidation_revenue_amount: WBalance,
-    ) -> PromiseOrValue<WBalance>;
     fn mutex_lock_callback(
         &mut self,
         action: Actions,

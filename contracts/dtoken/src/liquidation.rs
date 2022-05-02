@@ -1,6 +1,6 @@
 use crate::*;
+use near_sdk::promise_result_as_success;
 
-#[near_bindgen]
 impl Contract {
     pub fn liquidate(
         &mut self,
@@ -34,7 +34,10 @@ impl Contract {
         ))
         .into()
     }
+}
 
+#[near_bindgen]
+impl Contract {
     #[private]
     pub fn liquidate_callback(
         &mut self,
@@ -44,54 +47,48 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        if !is_promise_success() {
-            self.increase_borrows(borrower.clone(), liquidation_amount);
-            log!(
-                "{}",
-                Events::LiquidationFailed(liquidator, borrower, Balance::from(liquidation_amount))
-            );
-            env::panic_str("Revenue amount is not available!");
-        }
+        let err_message = format!(
+            "Revenue amount is not available! liquidator_account_id: {}, borrower_account_id: {}, amount: {}",
+            liquidator,
+            borrower,
+            Balance::from(liquidation_amount)
+        );
+        require!(is_promise_success(), &err_message);
 
-        let liquidation_revenue_amount: WBalance = match env::promise_result(0) {
-            PromiseResult::Successful(result) => {
-                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
-            }
-            _ => env::panic_str("Revenue amount is not available!"),
-        };
+        let result = promise_result_as_success();
+        require!(result.is_some(), err_message);
+
+        let liquidation_revenue_amount: WBalance =
+            near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).unwrap();
 
         self.decrease_borrows(borrower.clone(), liquidation_amount);
 
         controller::liquidation_repay_and_swap(
-            borrower.clone(),
+            borrower,
             borrowing_dtoken,
             collateral_dtoken,
-            liquidator.clone(),
+            liquidator,
             liquidation_amount,
             liquidation_revenue_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(40),
         )
-        .then(ext_self::liquidation_repay_and_swap_callback(
-            borrower,
-            liquidator,
-            liquidation_revenue_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        ))
         .into()
     }
 
-    #[private]
-    pub fn liquidation_repay_and_swap_callback(
+    pub fn swap_supplies(
         &mut self,
         borrower: AccountId,
         liquidator: AccountId,
         liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        let amount = liquidation_revenue_amount.0;
+        assert_eq!(
+            env::predecessor_account_id(),
+            self.get_controller_address(),
+            "This method can be called only from controller contract"
+        );
+        let amount: Balance = liquidation_revenue_amount.into();
 
         if !self.token.accounts.contains_key(&liquidator) {
             self.token.internal_register_account(&liquidator);
@@ -99,6 +96,7 @@ impl Contract {
 
         self.token
             .internal_transfer(&borrower, &liquidator, amount, None);
+
         log!(
             "{}",
             Events::LiquidationSuccess(
