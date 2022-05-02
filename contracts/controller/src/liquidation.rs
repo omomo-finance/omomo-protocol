@@ -13,7 +13,7 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> PromiseOrValue<WBalance> {
         require!(
-            self.is_valid_admin_call() || self.is_dtoken_caller(),
+            self.is_dtoken_caller(),
             "This functionality is allowed to be called by admin, contract or dtoken's contract only"
         );
         let res = self.is_liquidation_allowed(
@@ -40,17 +40,26 @@ impl Contract {
         liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         require!(
-            self.is_valid_admin_call() || self.is_dtoken_caller(),
-            "This method is allowed to be called by admin, contract or dtoken's contract only"
+            self.is_dtoken_caller(),
+            "This method is allowed to be called by dtoken contract only"
         );
         self.repay_borrows(borrower.clone(), borrowing_dtoken, liquidation_amount);
         self.decrease_supplies(
-            borrower,
+            borrower.clone(),
             collateral_dtoken.clone(),
             liquidation_revenue_amount,
         );
-        self.increase_supplies(liquidator, collateral_dtoken, liquidation_revenue_amount);
-        PromiseOrValue::Value(U128(0))
+        self.increase_supplies(liquidator.clone(), collateral_dtoken.clone(), liquidation_revenue_amount);
+
+        dtoken::swap_supplies(
+            borrower,
+            liquidator,
+            liquidation_revenue_amount,
+            collateral_dtoken,
+            NO_DEPOSIT,
+            near_sdk::Gas::ONE_TERA * 8_u64,
+        )
+        .into()
     }
 }
 

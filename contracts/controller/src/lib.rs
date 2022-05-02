@@ -122,6 +122,13 @@ pub trait OraclePriceHandlerHook {
 
 #[ext_contract(dtoken)]
 trait DtokenInterface {
+    fn swap_supplies(
+        &mut self,
+        borrower: AccountId,
+        liquidator: AccountId,
+        liquidation_revenue_amount: WBalance,
+    ) -> PromiseOrValue<U128>;
+
     fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance;
 }
 

@@ -173,6 +173,8 @@ fn scenario_liquidation_success() {
         user_balance, 6125,
         "Supply balance on dtoken should be 6125"
     );
+
+    //TODO: add assert for collateral token balance for liquidator
 }
 
 fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
