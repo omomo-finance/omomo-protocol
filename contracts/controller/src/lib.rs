@@ -8,6 +8,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
 use general::*;
+use general::percent::Percent;
 
 pub use crate::borrows_supplies::*;
 pub use crate::config::*;
@@ -161,7 +162,7 @@ impl Contract {
             },
             liquidation_incentive: 500,
             liquidation_health_factor_threshold: 10000,
-            reserve_factor: 0,
+            reserve_factor: Percent(0),
             health_threshold: 15000,
             mutex: ActionMutex::default(),
         }
