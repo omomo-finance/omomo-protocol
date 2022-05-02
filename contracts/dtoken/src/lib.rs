@@ -23,6 +23,7 @@ pub use crate::repay::*;
 pub use crate::reward::*;
 pub use crate::supply::*;
 pub use crate::user_profile::*;
+pub use crate::views::*;
 pub use crate::withdraw::*;
 
 mod admin;
