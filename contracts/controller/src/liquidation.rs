@@ -45,15 +45,11 @@ impl Contract {
         );
         self.repay_borrows(borrower.clone(), borrowing_dtoken, liquidation_amount);
         self.decrease_supplies(
-            borrower.clone(),
+            borrower,
             collateral_dtoken.clone(),
             liquidation_revenue_amount,
         );
-        self.increase_supplies(
-            liquidator.clone(),
-            collateral_dtoken.clone(),
-            liquidation_revenue_amount,
-        );
+        self.increase_supplies(liquidator, collateral_dtoken, liquidation_revenue_amount);
         PromiseOrValue::Value(U128(0))
     }
 }

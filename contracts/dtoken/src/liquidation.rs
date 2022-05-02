@@ -54,9 +54,9 @@ impl Contract {
         }
 
         let liquidation_revenue_amount: WBalance = match env::promise_result(0) {
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
-                .unwrap()
-                .into(),
+            PromiseResult::Successful(result) => {
+                near_sdk::serde_json::from_slice::<U128>(&result).unwrap()
+            }
             _ => env::panic_str("Revenue amount is not available!"),
         };
 
@@ -68,7 +68,7 @@ impl Contract {
             collateral_dtoken,
             liquidator.clone(),
             liquidation_amount,
-            liquidation_revenue_amount.clone(),
+            liquidation_revenue_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(40),

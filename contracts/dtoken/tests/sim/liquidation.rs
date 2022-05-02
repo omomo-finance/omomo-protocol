@@ -216,6 +216,13 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
     )
     .assert_success();
 
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
+    );
+
     let action = "\"Supply\"".to_string();
 
     call!(
