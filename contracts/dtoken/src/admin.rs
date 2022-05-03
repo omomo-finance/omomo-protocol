@@ -61,7 +61,6 @@ mod tests {
 
     use super::*;
 
-
     pub fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
             .current_account_id(alice())
@@ -92,7 +91,6 @@ mod tests {
 
         contract
     }
-
 
     #[test]
     fn set_get_admin() {
