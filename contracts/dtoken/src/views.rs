@@ -175,14 +175,4 @@ mod tests {
             "Borrow rate values check has been failed"
         );
     }
-
-    #[test]
-    fn test_increase_total_reserve() {
-        let mut contract = init_test_env(true);
-
-        contract.increase_reserve(U128(300));
-
-        // 200 is initial total_reserve set up in init_test_env
-        assert_eq!(U128(200 + 300), contract.view_total_reserves());
-    }
 }

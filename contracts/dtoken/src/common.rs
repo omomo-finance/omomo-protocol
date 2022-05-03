@@ -27,8 +27,6 @@ pub enum Events {
 
     LiquidationSuccess(AccountId, AccountId, Balance),
     LiquidationFailed(AccountId, AccountId, Balance),
-
-    ReserveFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
 }
 
 impl Contract {
@@ -75,14 +73,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            gas,
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                gas,
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -144,9 +142,9 @@ impl Contract {
         };
         reward_setting.reward_per_period.amount.0
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-                / self.get_total_supplies())
+            / self.get_total_supplies())
             * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-                as u128
+            as u128
             / 10u128.pow(16)
     }
 }
@@ -301,16 +299,6 @@ impl fmt::Display for Events {
                 f,
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationFailed", "data": {{"liquidator_account_id": "{}", "borrower_account_id": {},"amount": "{}"}}}}"#,
                 liquidator, borrower, amount_liquidate
-            ),
-            Events::ReserveFailedToGetUnderlyingBalance(
-                account,
-                balance,
-                contract_id,
-                underlying_token_id,
-            ) => write!(
-                f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "ReserveFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
-                account, balance, contract_id, underlying_token_id
             ),
         }
     }
