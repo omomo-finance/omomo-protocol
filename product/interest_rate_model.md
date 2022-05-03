@@ -4,6 +4,20 @@ description: Interest rate model in Nearlend is similar to Compound protocol.
 
 # Interest rate model
 
+## Exchange rate
+
+$$
+xrate = 
+\begin{cases} 
+     \text{if TotalSupply > 0,}\ \frac{MarketBalance + TotalBorrows - TotalReserves}{TotalSupply}\\ 
+    \text{if TotalSupply = 0,}\ {InitialExchangeRate}\\ 
+\end{cases}
+\\
+\text{where InitialExchangeRate = 1}\
+$$
+
+
+
 ## The utilization rate
 
 The interest rate in Nearlend is determined as a function of a metric known as the utilization rate. It signifies the percentage of money borrowed out of the total amount supplied.
