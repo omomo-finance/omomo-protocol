@@ -14,6 +14,7 @@ pub struct InterestRateModel {
     pub rewards_config: Vec<RewardSetting>,
 }
 
+#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct RepayInfo {

@@ -70,7 +70,7 @@ impl Contract {
         self.get_exchange_rate(underlying_balance)
     }
 
-    pub fn view_user_rewards(&self, account_id: AccountId) -> Vec<Reward> {
+    pub fn view_user_rewards(&self, account_id: AccountId) -> HashMap<String, Reward> {
         self.get_user_rewards(account_id)
     }
 }
