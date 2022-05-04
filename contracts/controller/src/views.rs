@@ -76,7 +76,7 @@ impl Contract {
             (supplies.0 * RATIO_DECIMALS / self.health_threshold) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (potential_borrow / price).into()
+        (potential_borrow / price * ONE_TOKEN).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -86,7 +86,7 @@ impl Contract {
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold / RATIO_DECIMALS);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (max_withdraw / price).into()
+        (max_withdraw / price * ONE_TOKEN).into()
     }
 }
 
@@ -243,7 +243,7 @@ mod tests {
 
         // we are able to withdraw all the supplied funds hence 5 NEAR
         assert_eq!(
-            U128(5),
+            U128(5 * ONE_TOKEN),
             near_contract.view_withdraw_max(user, token_address)
         );
     }
@@ -274,6 +274,6 @@ mod tests {
         // hence we have 33 - 10 = 23 left to borrow not to violate health threshold
 
         // we still have some tokens to borrow  23 Near
-        assert_eq!(U128(23), near_contract.view_borrow_max(user, token_address));
+        assert_eq!(U128(23 * ONE_TOKEN), near_contract.view_borrow_max(user, token_address));
     }
 }
