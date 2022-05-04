@@ -72,7 +72,8 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
-        let potential_borrow = (supplies.0 * RATIO_DECIMALS / self.health_threshold) - gotten_borrow.0;
+        let potential_borrow =
+            (supplies.0 * RATIO_DECIMALS / self.health_threshold) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
         (potential_borrow / price).into()
@@ -241,7 +242,10 @@ mod tests {
         );
 
         // we are able to withdraw all the supplied funds hence 5 NEAR
-        assert_eq!(U128(5), near_contract.view_withdraw_max(user, token_address));
+        assert_eq!(
+            U128(5),
+            near_contract.view_withdraw_max(user, token_address)
+        );
     }
 
     #[test]
