@@ -75,7 +75,9 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
         let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
-        let new_total_reserve = self.get_total_reserves() + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor() / RATIO_DECIMALS;
+        let new_total_reserve = self.get_total_reserves()
+            + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor()
+                / RATIO_DECIMALS;
 
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
         self.set_total_reserves(new_total_reserve);
