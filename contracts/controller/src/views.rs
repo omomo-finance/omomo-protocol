@@ -274,6 +274,9 @@ mod tests {
         // hence we have 33 - 10 = 23 left to borrow not to violate health threshold
 
         // we still have some tokens to borrow  23 Near
-        assert_eq!(U128(23 * ONE_TOKEN), near_contract.view_borrow_max(user, token_address));
+        assert_eq!(
+            U128(23 * ONE_TOKEN),
+            near_contract.view_borrow_max(user, token_address)
+        );
     }
 }
