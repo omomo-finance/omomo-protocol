@@ -47,7 +47,7 @@ near call weth_beta.nearlend.testnet mint '{"account_id": "dweth_beta.nearlend.t
 # fund dwnear_beta.nearlend.testnet
 near call wnear_beta.nearlend.testnet mint '{"account_id": "dwnear_beta.nearlend.testnet", "amount": "1000000000"}' --accountId nearlend.testnet
 # fund dweth_beta.nearlend.testnet
-near call weth_beta.nearlend.testnet mint '{"account_id": "dusdt_beta.nearlend.testnet", "amount": "1000000000"}' --accountId nearlend.testnet
+near call usdt_beta.nearlend.testnet mint '{"account_id": "dusdt_beta.nearlend.testnet", "amount": "1000000000"}' --accountId nearlend.testnet
 
 # register market
 near call controller_beta.nearlend.testnet add_market '{"asset_id": "weth_beta.nearlend.testnet", "dtoken": "dweth_beta.nearlend.testnet", "ticker_id": "weth"}' --accountId nearlend.testnet
