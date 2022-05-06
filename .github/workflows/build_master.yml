@@ -16,7 +16,8 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: wasm32-unknown-unknown
+          toolchain: stable
+          target: wasm32-unknown-unknown
       - name: apply
         run: |
           echo "${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY}}" > ${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}
