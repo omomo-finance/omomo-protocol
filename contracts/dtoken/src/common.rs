@@ -70,7 +70,6 @@ impl Contract {
         total_reserves: Balance,
         total_supplies: Balance,
     ) -> Ratio {
-        // initial exchange rate with 0 supply pointed in config while deploying contract
         if total_supplies == 0 {
             return self.initial_exchange_rate;
         }
