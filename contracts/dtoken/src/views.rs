@@ -31,7 +31,8 @@ impl Contract {
         let total_supplies = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
-        let exchange_rate = self.get_exchange_rate(ft_balance_of, total_borrows, total_reserves, total_supplies);
+        let exchange_rate =
+            self.get_exchange_rate(ft_balance_of, total_borrows, total_reserves, total_supplies);
         let reserve_factor = self
             .config
             .get()
@@ -66,7 +67,12 @@ impl Contract {
     }
 
     pub fn view_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
-        self.get_exchange_rate(underlying_balance, self.get_total_borrows(), self.get_total_reserves(), self.get_total_supplies())
+        self.get_exchange_rate(
+            underlying_balance,
+            self.get_total_borrows(),
+            self.get_total_reserves(),
+            self.get_total_supplies(),
+        )
     }
 
     pub fn view_user_rewards(&self, account_id: AccountId) -> HashMap<String, Reward> {

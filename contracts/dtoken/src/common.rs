@@ -29,7 +29,6 @@ pub enum Events {
     LiquidationFailed(AccountId, AccountId, Balance),
 }
 
-
 impl Contract {
     pub fn get_controller_address(&self) -> AccountId {
         let config: Config = self.get_contract_config();
@@ -49,17 +48,33 @@ impl Contract {
         self.underlying_token.clone()
     }
 
-    pub fn get_exchange_rate(&self, underlying_balance: WBalance, total_borrows: Balance, total_reserves: Balance, total_supplies: Balance) -> Ratio {
-        self.calculate_exchange_rate(underlying_balance, total_borrows, total_reserves, total_supplies)
+    pub fn get_exchange_rate(
+        &self,
+        underlying_balance: WBalance,
+        total_borrows: Balance,
+        total_reserves: Balance,
+        total_supplies: Balance,
+    ) -> Ratio {
+        self.calculate_exchange_rate(
+            underlying_balance,
+            total_borrows,
+            total_reserves,
+            total_supplies,
+        )
     }
 
-    fn calculate_exchange_rate(&self, underlying_balance: WBalance, total_borrows: Balance, total_reserves: Balance, total_supplies: Balance) -> Ratio {
+    fn calculate_exchange_rate(
+        &self,
+        underlying_balance: WBalance,
+        total_borrows: Balance,
+        total_reserves: Balance,
+        total_supplies: Balance,
+    ) -> Ratio {
         // initial exchange rate with 0 supply pointed in config while deploying contract
         if total_supplies == 0 {
             return self.initial_exchange_rate;
         }
-        (Balance::from(underlying_balance) + total_borrows - total_reserves)
-            * RATIO_DECIMALS
+        (Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS
             / total_supplies
     }
 
@@ -79,14 +94,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -148,9 +163,9 @@ impl Contract {
         };
         reward_setting.reward_per_period.amount.0
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-            / self.get_total_supplies())
+                / self.get_total_supplies())
             * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-            as u128
+                as u128
             / 10u128.pow(16)
     }
 }
@@ -355,7 +370,6 @@ mod tests {
         assert_eq!(reward_amount, 252);
     }
 
-
     #[test]
     fn test_exchange_rate_initial_state() {
         let contract = init_env();
@@ -365,9 +379,10 @@ mod tests {
         let total_supplies = 0;
 
         // Ratio that represents xrate = 1
-        assert_eq!(10000, contract.get_exchange_rate(U128(10_000), total_borrows,
-                                                     total_reserves,
-                                                     total_supplies));
+        assert_eq!(
+            10000,
+            contract.get_exchange_rate(U128(10_000), total_borrows, total_reserves, total_supplies)
+        );
     }
 
     #[test]
@@ -380,9 +395,10 @@ mod tests {
         let total_supplies = 1000;
 
         // Ratio that represents xrate = 1
-        assert_eq!(10000, contract.get_exchange_rate(U128(11_000), total_borrows,
-                                                     total_reserves,
-                                                     total_supplies));
+        assert_eq!(
+            10000,
+            contract.get_exchange_rate(U128(11_000), total_borrows, total_reserves, total_supplies)
+        );
     }
 
     #[test]
@@ -395,9 +411,10 @@ mod tests {
         let total_supplies = 1000;
 
         // Ratio that represents xrate = 1
-        assert_eq!(10000, contract.get_exchange_rate(U128(10_000), total_borrows,
-                                                     total_reserves,
-                                                     total_supplies));
+        assert_eq!(
+            10000,
+            contract.get_exchange_rate(U128(10_000), total_borrows, total_reserves, total_supplies)
+        );
     }
 
     #[test]
@@ -410,11 +427,11 @@ mod tests {
         let total_supplies = 1000;
 
         // Ratio that represents xrate = 1.05
-        assert_eq!(10500, contract.get_exchange_rate(U128(11_050), total_borrows,
-                                                     total_reserves,
-                                                     total_supplies));
+        assert_eq!(
+            10500,
+            contract.get_exchange_rate(U128(11_050), total_borrows, total_reserves, total_supplies)
+        );
     }
-
 
     #[test]
     fn test_exchange_rate_after_withdraw() {
@@ -426,8 +443,14 @@ mod tests {
         let total_supplies = 0;
 
         // Ratio that represents xrate = 1
-        assert_eq!(10000, contract.get_exchange_rate(U128(10_002.5 as u128), total_borrows,
-                                                     total_reserves as u128,
-                                                     total_supplies));
+        assert_eq!(
+            10000,
+            contract.get_exchange_rate(
+                U128(10_002.5 as u128),
+                total_borrows,
+                total_reserves as u128,
+                total_supplies
+            )
+        );
     }
 }

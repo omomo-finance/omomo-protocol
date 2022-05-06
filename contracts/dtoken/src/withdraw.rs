@@ -13,13 +13,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::withdraw_balance_of_callback(
-                Balance::from(dtoken_amount),
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(140),
-            ))
-            .into()
+        .then(ext_self::withdraw_balance_of_callback(
+            Balance::from(dtoken_amount),
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(140),
+        ))
+        .into()
     }
 }
 
@@ -60,7 +60,12 @@ impl Contract {
                 .into(),
         };
 
-        let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of), self.get_total_borrows(), self.get_total_reserves(), self.get_total_supplies());
+        let exchange_rate: Ratio = self.get_exchange_rate(
+            WBalance::from(balance_of),
+            self.get_total_borrows(),
+            self.get_total_reserves(),
+            self.get_total_supplies(),
+        );
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of),
@@ -85,15 +90,15 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-            .then(ext_self::withdraw_supplies_callback(
-                env::signer_account_id(),
-                token_amount.into(),
-                dtoken_amount.into(),
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(80),
-            ))
-            .into()
+        .then(ext_self::withdraw_supplies_callback(
+            env::signer_account_id(),
+            token_amount.into(),
+            dtoken_amount.into(),
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(80),
+        ))
+        .into()
     }
 
     #[private]
@@ -128,14 +133,14 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-            .then(ext_self::withdraw_ft_transfer_call_callback(
-                token_amount,
-                dtoken_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(30),
-            ))
-            .into()
+        .then(ext_self::withdraw_ft_transfer_call_callback(
+            token_amount,
+            dtoken_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(30),
+        ))
+        .into()
     }
 
     #[private]
@@ -161,13 +166,13 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-                .then(ext_self::withdraw_increase_supplies_callback(
-                    token_amount,
-                    env::current_account_id(),
-                    NO_DEPOSIT,
-                    self.terra_gas(10),
-                ))
-                .into()
+            .then(ext_self::withdraw_increase_supplies_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ))
+            .into()
         }
     }
 
