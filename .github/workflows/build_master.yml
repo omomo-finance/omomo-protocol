@@ -1,0 +1,20 @@
+name: omomo-protocol build automatically
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    types: [closed]
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v3
+      - name: apply
+        run: |
+          echo "${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY}}" > ${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}
+          ./deploy.sh --keyPath=${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}
