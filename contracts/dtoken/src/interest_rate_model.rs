@@ -41,7 +41,6 @@ impl fmt::Display for WithdrawInfo {
     }
 }
 
-
 impl InterestRateModel {
     pub fn get_kink(&self) -> Ratio {
         Ratio::from(self.kink)
