@@ -53,7 +53,8 @@ impl Contract {
                 let total_borrows = self.get_total_borrows(user_id.clone());
                 let total_supplies = self.get_total_supplies(user_id.clone());
 
-                let total_available_borrows_usd = (total_supplies.0 * RATIO_DECIMALS / self.health_threshold).into();
+                let total_available_borrows_usd =
+                    (total_supplies.0 * RATIO_DECIMALS / self.health_threshold).into();
 
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
