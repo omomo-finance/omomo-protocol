@@ -35,6 +35,7 @@ mod interest_model;
 mod interest_rate_model;
 mod liquidation;
 mod repay;
+mod reserve;
 mod reward;
 mod supply;
 mod user_profile;
