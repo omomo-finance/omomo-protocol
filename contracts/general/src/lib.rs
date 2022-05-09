@@ -54,6 +54,7 @@ pub enum Actions {
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
     },
+    Reserve,
 }
 
 impl fmt::Display for Actions {
