@@ -73,14 +73,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            gas,
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                gas,
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -129,6 +129,30 @@ impl Contract {
         }
     }
 
+
+    pub fn get_withdraw_info(&self, account_id: AccountId, balance_of: Balance) -> WithdrawInfo {
+        let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
+        let interest_rate_model = self.config.get().unwrap().interest_rate_model;
+        let supply_rate: Ratio = self.get_supply_rate(
+            U128(balance_of),
+            U128(self.get_total_borrows()),
+            U128(self.total_reserves),
+            U128(interest_rate_model.get_reserve_factor()),
+        );
+        let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
+            supply_rate,
+            self.get_supplies_by_account(account_id.clone()),
+            self.get_accrued_supply_interest(account_id.clone()),
+        );
+        let total_interest = self.get_accrued_supply_interest(account_id).accumulated_interest + accrued_supply_interest.accumulated_interest;
+
+        WithdrawInfo {
+            exchange_rate,
+            total_interest,
+        }
+    }
+
+
     pub fn calculate_reward_amount(
         &self,
         account_id: AccountId,
@@ -142,9 +166,9 @@ impl Contract {
         };
         reward_setting.reward_per_period.amount.0
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-                / self.get_total_supplies())
+            / self.get_total_supplies())
             * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-                as u128
+            as u128
             / 10u128.pow(16)
     }
 }
