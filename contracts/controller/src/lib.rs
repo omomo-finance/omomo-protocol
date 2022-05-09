@@ -126,8 +126,10 @@ trait DtokenInterface {
         &mut self,
         borrower: AccountId,
         liquidator: AccountId,
-        liquidation_amount: WBalance,
+        liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128>;
+
+    fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance;
 }
 
 #[near_bindgen]
