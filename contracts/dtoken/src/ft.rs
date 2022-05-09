@@ -44,6 +44,7 @@ impl FungibleTokenReceiver for Contract {
                 collateral_dtoken,
                 amount,
             ),
+            Actions::Reserve => self.reserve(amount),
             _ => {
                 panic!("Incorrect action in transfer")
             }
