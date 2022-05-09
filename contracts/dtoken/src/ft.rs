@@ -36,15 +36,13 @@ impl FungibleTokenReceiver for Contract {
             Actions::Liquidate {
                 borrower,
                 borrowing_dtoken,
-                liquidator,
                 collateral_dtoken,
-                liquidation_amount,
             } => self.liquidate(
                 borrower,
                 borrowing_dtoken,
-                liquidator,
+                env::signer_account_id(),
                 collateral_dtoken,
-                liquidation_amount,
+                amount,
             ),
             _ => {
                 panic!("Incorrect action in transfer")

@@ -113,7 +113,11 @@ impl Contract {
 
         assert!(
             Balance::from(token_amount) <= existing_supplies,
-            "Not enough existing supplies"
+            "Not enough existing supplies for {} with supplies {} {} {}",
+            account,
+            existing_supplies,
+            token_address,
+            Balance::from(token_amount)
         );
         let decreased_supplies: Balance = existing_supplies - Balance::from(token_amount);
 
@@ -147,7 +151,8 @@ impl Contract {
             self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         assert!(
             Balance::from(token_amount) <= existing_supplies,
-            "Not enough existing supplies"
+            "Not enough existing supplies for {}",
+            account
         );
         self.get_potential_health_factor(account, token_address, token_amount, Supply)
             >= self.get_health_threshold()

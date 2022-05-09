@@ -226,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn test_for_get_health_factor() {
+    fn test_for_get_health_factor_threshold() {
         let (mut controller_contract, _token_address, user_account) = init();
 
         let balance: Balance = 50;

@@ -23,7 +23,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> Balance {
         assert!(
-            self.is_repay_allowed(account_id.clone(), token_address.clone(), token_amount,),
+            self.is_repay_allowed(account_id.clone(), token_address.clone(), token_amount),
             "repay operation is not allowed for account {} on market {}, repay amount {}",
             account_id,
             token_address,
