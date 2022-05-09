@@ -185,6 +185,7 @@ trait InternalTokenInterface {
         user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
+        whole_amount: WBalance,
     ) -> PromiseOrValue<WBalance>;
     fn withdraw_ft_transfer_call_callback(
         &mut self,

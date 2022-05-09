@@ -670,8 +670,8 @@ fn scenario_supply_borrow_withdraw() {
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
         dtoken_balance,
-        114.to_string(),
-        "After withdraw balance should be 114"
+        96.to_string(),
+        "After withdraw balance should be 96"
     );
 }
 
