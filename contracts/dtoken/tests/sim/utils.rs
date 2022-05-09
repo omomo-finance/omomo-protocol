@@ -7,6 +7,7 @@ use controller::{ActionType, Config as cConfig};
 use dtoken::Config as dConfig;
 use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
+use general::Price;
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -150,7 +151,7 @@ pub fn initialize_two_utokens(
             uroot1.account_id(),
             String::from("Mock Token"),
             String::from("MOCK"),
-            U128(10000)
+            U128(100000000000000)
         ),
         deposit = 0
     )
@@ -167,7 +168,7 @@ pub fn initialize_two_utokens(
             uroot2.account_id(),
             String::from("Mock Token"),
             String::from("MOCK"),
-            U128(10000)
+            U128(100000000000000)
         ),
         deposit = 0
     )
@@ -351,4 +352,30 @@ pub fn add_market(
         controller.add_market(utoken_id, dtoken_id, ticker_id),
         deposit = 0
     );
+}
+
+pub fn mint_tokens(
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    receiver: AccountId,
+    amount: U128,
+) {
+    call!(
+        utoken.user_account,
+        utoken.mint(receiver, amount),
+        0,
+        100000000000000
+    );
+}
+
+pub fn set_price(
+    controller: &ContractAccount<controller::ContractContract>,
+    dtoken_id: AccountId,
+    price: &Price,
+) {
+    call!(
+        controller.user_account,
+        controller.upsert_price(dtoken_id, price),
+        deposit = 0
+    )
+    .assert_success();
 }
