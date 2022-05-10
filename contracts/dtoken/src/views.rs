@@ -72,6 +72,10 @@ impl Contract {
     pub fn view_user_rewards(&self, account_id: AccountId) -> HashMap<String, Reward> {
         self.get_user_rewards(account_id)
     }
+
+    pub fn view_withdraw_info(&self, account_id: AccountId, balance_of: Balance) -> WithdrawInfo {
+        self.get_withdraw_info(account_id, balance_of)
+    }
 }
 
 #[cfg(test)]
@@ -173,6 +177,25 @@ mod tests {
         assert_eq!(
             &gotten_md.borrow_rate_ratio, &_expected_md.borrow_rate_ratio,
             "Borrow rate values check has been failed"
+        );
+    }
+
+    #[test]
+    fn test_view_withdraw_info() {
+        let contract = init_test_env(false);
+
+        let withdraw_info = contract.view_withdraw_info(bob(), 1000);
+
+        // total interest should be 0
+        // exchange_rate = initial_exchange_rate = 1000000
+
+        assert_eq!(
+            withdraw_info.exchange_rate, 1000000,
+            "Withdraw exchange_rate is not matches to expected"
+        );
+        assert_eq!(
+            withdraw_info.total_interest, 0,
+            "Withdraw total_interest is not matches to expected"
         );
     }
 }
