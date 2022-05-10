@@ -214,6 +214,7 @@ mod tests {
         );
         let result = near_contract.view_accounts(accounts);
 
+
         assert_eq!(result.len(), 1, "View accounts response doesn't match");
         assert_eq!(
             result[0].account_id,
@@ -230,6 +231,14 @@ mod tests {
             U128(100 * 20000),
             "View accounts total supplies check has been failed"
         );
+
+        assert_eq!(
+            result[0].total_available_borrows_usd,
+            // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
+            U128(100 * 20000 * 10000 / 15000),
+            "View accounts total supplies check has been failed"
+        );
+
         assert_eq!(
             result[0].health_factor_ratio,
             U128(15000),
