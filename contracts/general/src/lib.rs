@@ -52,10 +52,9 @@ pub enum Actions {
     Liquidate {
         borrower: AccountId,
         borrowing_dtoken: AccountId,
-        liquidator: AccountId,
         collateral_dtoken: AccountId,
-        liquidation_amount: WBalance,
     },
+    Reserve,
 }
 
 impl fmt::Display for Actions {
