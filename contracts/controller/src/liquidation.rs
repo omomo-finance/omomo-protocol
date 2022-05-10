@@ -1,7 +1,7 @@
 use crate::*;
+use general::ratio::RATIO_DECIMALS;
 use near_sdk::PromiseOrValue;
 use partial_min_max::min;
-use general::ratio::RATIO_DECIMALS;
 
 #[near_bindgen]
 impl Contract {
@@ -100,7 +100,8 @@ impl Contract {
 
         let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
-        let max_unhealth_repay = unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
+        let max_unhealth_repay =
+            unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
 
         let supply_amount =
             self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());

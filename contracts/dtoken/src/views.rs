@@ -1,5 +1,5 @@
-use general::ratio::Ratio;
 use crate::*;
+use general::ratio::Ratio;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -82,12 +82,12 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
+    use general::ratio::Ratio;
     use general::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, Balance, VMContext};
-    use general::ratio::Ratio;
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
@@ -203,7 +203,8 @@ mod tests {
         // exchange_rate = initial_exchange_rate = 1000000
 
         assert_eq!(
-            withdraw_info.exchange_rate, Ratio(1000000),
+            withdraw_info.exchange_rate,
+            Ratio(1000000),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(

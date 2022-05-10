@@ -1,7 +1,7 @@
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use near_sdk::env::block_height;
 use near_sdk::Promise;
-use general::ratio::{Ratio, RATIO_DECIMALS};
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
 #[serde(crate = "near_sdk::serde")]

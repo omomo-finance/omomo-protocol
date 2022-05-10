@@ -1,7 +1,7 @@
 use crate::*;
 
-use std::collections::HashMap;
 use general::ratio::{Ratio, RATIO_DECIMALS};
+use std::collections::HashMap;
 
 impl Contract {
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
@@ -299,7 +299,10 @@ mod tests {
         );
 
         // Ratio that represents 150%
-        assert_eq!(controller_contract.get_health_factor(user_account), Ratio(15000));
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(15000)
+        );
     }
 
     #[test]
@@ -320,7 +323,10 @@ mod tests {
         );
 
         // Ratio that represents 142.85%
-        assert_eq!(controller_contract.get_health_factor(user_account), Ratio(14285));
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(14285)
+        );
     }
 
     #[test]
@@ -353,7 +359,10 @@ mod tests {
         );
 
         // Ratio that represents 200%
-        assert_eq!(controller_contract.get_health_factor(user_account), Ratio(20000));
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(20000)
+        );
     }
 
     #[test]
@@ -398,7 +407,10 @@ mod tests {
         });
 
         // Ratio that represents 50%
-        assert_eq!(controller_contract.get_health_factor(user_account), Ratio(5000));
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(5000)
+        );
     }
 
     #[test]
@@ -443,7 +455,10 @@ mod tests {
         });
 
         // Ratio that represents 225%
-        assert_eq!(controller_contract.get_health_factor(user_account), Ratio(22500));
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(22500)
+        );
     }
 
     #[test]
@@ -470,6 +485,9 @@ mod tests {
         );
 
         // Ratio that represents 153.48%
-        assert_eq!(controller_contract.get_health_factor(user_account), Ratio(15348));
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(15348)
+        );
     }
 }

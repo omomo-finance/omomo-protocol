@@ -1,7 +1,7 @@
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use std::fmt;
-use general::ratio::{Ratio, RATIO_DECIMALS};
 
 const BLOCK_PER_DAY: BlockHeight = 72000;
 const BLOCK_PER_WEEK: BlockHeight = 1048896;
@@ -54,9 +54,11 @@ impl Contract {
         if self.token.total_supply == 0 {
             return Ratio(self.initial_exchange_rate);
         }
-        Ratio((Balance::from(underlying_balance) + self.get_total_borrows() - self.total_reserves)
-            * RATIO_DECIMALS.0
-            / self.token.total_supply)
+        Ratio(
+            (Balance::from(underlying_balance) + self.get_total_borrows() - self.total_reserves)
+                * RATIO_DECIMALS.0
+                / self.token.total_supply,
+        )
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
@@ -347,9 +349,9 @@ mod tests {
     use crate::RewardPeriod::Day;
     use crate::{Config, Contract};
     use crate::{InterestRateModel, RewardSetting, VestingPlans};
+    use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use general::ratio::Ratio;
 
     pub fn init_test_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =

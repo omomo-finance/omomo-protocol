@@ -1,6 +1,6 @@
 use crate::*;
-use near_sdk::env::block_height;
 use general::ratio::{Ratio, RATIO_DECIMALS};
+use near_sdk::env::block_height;
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
@@ -69,8 +69,9 @@ impl Contract {
             }
         };
 
-        let exchange_rate: Balance =
-            self.get_exchange_rate((balance_of - Balance::from(token_amount)).into()).0;
+        let exchange_rate: Balance = self
+            .get_exchange_rate((balance_of - Balance::from(token_amount)).into())
+            .0;
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS.0;
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(

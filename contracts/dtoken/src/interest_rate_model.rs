@@ -1,7 +1,7 @@
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use near_sdk::env::block_height;
 use std::fmt;
-use general::ratio::{Ratio, RATIO_DECIMALS};
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -167,10 +167,10 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::AccountId;
-    use general::ratio::Ratio;
 
     use crate::{Config, Contract, RewardAmount, RewardSetting, VestingPlans};
     use crate::{InterestRateModel, RewardPeriod};
