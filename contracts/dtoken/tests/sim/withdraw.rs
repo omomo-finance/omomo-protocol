@@ -661,18 +661,20 @@ fn scenario_supply_borrow_withdraw() {
 
     call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
 
-    call!(user, dtoken.withdraw(U128(10)), deposit = 0).assert_success();
+    let dtoken_balance_before: U128 =
+        view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let exchange_rate: u128 = view!(dtoken.view_exchange_rate(dtoken_balance_before)).unwrap_json();
+    let dtoken_amount: u128 = 10;
+    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+
+    call!(user, dtoken.withdraw(U128(dtoken_amount)), deposit = 0).assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 19, "Balance should be 19");
 
-    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
-    assert_eq!(
-        dtoken_balance,
-        114.to_string(),
-        "After withdraw balance should be 114"
-    );
+    let dtoken_balance: U128 = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    assert!(dtoken_balance.0 < dtoken_balance_before.0 - token_amount);
 }
 
 #[test]
