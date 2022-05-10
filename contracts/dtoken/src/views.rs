@@ -179,4 +179,25 @@ mod tests {
             "Borrow rate values check has been failed"
         );
     }
+
+    #[test]
+    fn test_view_withdraw_info() {
+        let contract = init_test_env(false);
+
+        let withdraw_info = contract.view_withdraw_info(bob(), 1000);
+
+        // total interest should be 0
+        // exchange_rate = initial_exchange_rate = 1000000
+
+        assert_eq!(
+            withdraw_info.exchange_rate,
+            1000000,
+            "Withdraw exchange_rate is not matches to expected"
+        );
+        assert_eq!(
+            withdraw_info.total_interest,
+            0,
+            "Withdraw total_interest is not matches to expected"
+        );
+    }
 }
