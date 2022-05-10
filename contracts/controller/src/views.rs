@@ -11,6 +11,7 @@ pub struct AccountData {
     pub account_id: AccountId,
     pub total_borrows_usd: USD,
     pub total_supplies_usd: USD,
+    pub total_available_borrows_usd: USD,
     pub blocked: bool,
     pub health_factor_ratio: WRatio,
     pub user_profile: WrappedUserProfile,
@@ -22,6 +23,7 @@ impl Default for AccountData {
             account_id: AccountId::new_unchecked("".to_string()),
             total_borrows_usd: U128(0),
             total_supplies_usd: U128(0),
+            total_available_borrows_usd: U128(0),
             blocked: false,
             health_factor_ratio: WRatio::from(RATIO_DECIMALS),
             user_profile: Default::default(),
@@ -50,11 +52,16 @@ impl Contract {
             .map(|user_id| {
                 let total_borrows = self.get_total_borrows(user_id.clone());
                 let total_supplies = self.get_total_supplies(user_id.clone());
+
+                let total_available_borrows_usd =
+                    (total_supplies.0 * RATIO_DECIMALS / self.health_threshold).into();
+
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
                 AccountData {
                     account_id: user_id.clone(),
                     total_borrows_usd: total_borrows,
+                    total_available_borrows_usd,
                     total_supplies_usd: total_supplies,
                     blocked: false,
                     health_factor_ratio: WRatio::from(health_factor),
@@ -223,6 +230,14 @@ mod tests {
             U128(100 * 20000),
             "View accounts total supplies check has been failed"
         );
+
+        assert_eq!(
+            result[0].total_available_borrows_usd,
+            // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
+            U128(100 * 20000 * 10000 / 15000),
+            "View accounts total supplies check has been failed"
+        );
+
         assert_eq!(
             result[0].health_factor_ratio,
             U128(15000),
