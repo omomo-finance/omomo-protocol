@@ -214,7 +214,6 @@ mod tests {
         );
         let result = near_contract.view_accounts(accounts);
 
-
         assert_eq!(result.len(), 1, "View accounts response doesn't match");
         assert_eq!(
             result[0].account_id,

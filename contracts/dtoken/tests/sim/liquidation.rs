@@ -39,13 +39,13 @@ fn liquidation_success_fixture() -> (
     );
 
     let mint_amount = U128(MINT_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), mint_amount.clone());
-    mint_tokens(&wnear, dwnear.account_id(), mint_amount.clone());
-    mint_tokens(&weth, borrower.account_id(), mint_amount.clone());
-    mint_tokens(&wnear, liquidator.account_id(), mint_amount.clone());
-    mint_tokens(&weth, liquidator.account_id(), mint_amount.clone());
-    mint_tokens(&wnear, borrower.account_id(), mint_amount.clone());
-    mint_tokens(&wnear, borrower.account_id(), mint_amount.clone());
+    mint_tokens(&weth, dweth.account_id(), mint_amount);
+    mint_tokens(&wnear, dwnear.account_id(), mint_amount);
+    mint_tokens(&weth, borrower.account_id(), mint_amount);
+    mint_tokens(&wnear, liquidator.account_id(), mint_amount);
+    mint_tokens(&weth, liquidator.account_id(), mint_amount);
+    mint_tokens(&wnear, borrower.account_id(), mint_amount);
+    mint_tokens(&wnear, borrower.account_id(), mint_amount);
 
     add_market(
         &controller,
@@ -148,7 +148,7 @@ fn scenario_liquidation_success() {
 
     call!(
         liquidator,
-        weth.ft_transfer_call(dweth.account_id(), amount.clone(), None, action),
+        weth.ft_transfer_call(dweth.account_id(), amount, None, action),
         deposit = 1
     )
     .assert_success();
@@ -158,17 +158,17 @@ fn scenario_liquidation_success() {
 
     assert_eq!(
         Balance::from(weth_ft_balance_of_for_dweth),
-        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount.clone())),
+        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount)),
         "dweth_balance_of_on_weth balance of should be {}",
-        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount.clone()))
+        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount))
     );
 
     let user_borrows: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
 
-    let borrow_balance = BORROWER_BORROW - Balance::from(amount.clone());
+    let borrow_balance = BORROWER_BORROW - Balance::from(amount);
 
     let revenue_amount: Balance =
-        (10500 * Balance::from(amount.clone()) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS);
+        (10500 * Balance::from(amount) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS);
 
     assert_eq!(
         user_borrows,
@@ -209,9 +209,9 @@ fn scenario_liquidation_success() {
 
     assert_eq!(
         Balance::from(borrower_dwnear_balance),
-        BORROWER_SUPPLY - revenue_amount.clone(),
+        BORROWER_SUPPLY - revenue_amount,
         "Borrower balance on dtokn ft should be {}",
-        BORROWER_SUPPLY - revenue_amount.clone()
+        BORROWER_SUPPLY - revenue_amount
     );
 
     let liquidator_dwnear_balance: U128 =
