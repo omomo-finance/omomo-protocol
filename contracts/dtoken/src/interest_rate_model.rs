@@ -29,6 +29,20 @@ impl fmt::Display for RepayInfo {
     }
 }
 
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct WithdrawInfo {
+    pub exchange_rate: Ratio,
+    pub total_interest: Balance,
+}
+
+impl fmt::Display for WithdrawInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl InterestRateModel {
     pub fn get_kink(&self) -> Ratio {
         Ratio::from(self.kink)

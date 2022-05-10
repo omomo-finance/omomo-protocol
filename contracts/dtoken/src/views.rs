@@ -72,6 +72,10 @@ impl Contract {
     pub fn view_user_rewards(&self, account_id: AccountId) -> HashMap<String, Reward> {
         self.get_user_rewards(account_id)
     }
+
+    pub fn view_withdraw_info(&self, account_id: AccountId, balance_of: Balance) -> WithdrawInfo {
+        self.get_withdraw_info(account_id, balance_of)
+    }
 }
 
 #[cfg(test)]
