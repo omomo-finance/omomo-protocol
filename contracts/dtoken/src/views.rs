@@ -190,13 +190,11 @@ mod tests {
         // exchange_rate = initial_exchange_rate = 1000000
 
         assert_eq!(
-            withdraw_info.exchange_rate,
-            1000000,
+            withdraw_info.exchange_rate, 1000000,
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(
-            withdraw_info.total_interest,
-            0,
+            withdraw_info.total_interest, 0,
             "Withdraw total_interest is not matches to expected"
         );
     }
