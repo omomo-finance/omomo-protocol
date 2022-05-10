@@ -19,6 +19,8 @@ pub struct InterestRateModel {
 pub struct RepayInfo {
     pub accrued_interest_per_block: WBalance,
     pub total_amount: WBalance,
+    pub borrow_amount: WBalance,
+    pub accumulated_interest: WBalance,
 }
 
 impl fmt::Display for RepayInfo {

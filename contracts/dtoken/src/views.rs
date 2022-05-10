@@ -128,12 +128,23 @@ mod tests {
         let repay = contract.view_repay_info(bob(), WBalance::from(1000));
 
         assert_eq!(
+            // as there are no borrows yet accrued_interest_per_block = 0
+            Balance::from(repay.accrued_interest_per_block),
+            0,
+            "RepayInfo structure is not matches to expected"
+        );
+        assert_eq!(
             Balance::from(repay.total_amount),
             0,
             "RepayInfo structure is not matches to expected"
         );
         assert_eq!(
-            Balance::from(repay.accrued_interest_per_block),
+            Balance::from(repay.borrow_amount),
+            0,
+            "RepayInfo structure is not matches to expected"
+        );
+        assert_eq!(
+            Balance::from(repay.accumulated_interest),
             0,
             "RepayInfo structure is not matches to expected"
         );
