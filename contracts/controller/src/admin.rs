@@ -2,7 +2,9 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near_bindgen, require, AccountId};
 use std::collections::HashMap;
 
-use general::{Percent, Ratio};
+use general::{Percent};
+use general::ratio::Ratio;
+
 
 use crate::*;
 
@@ -117,7 +119,7 @@ impl Contract {
     pub fn get_liquidation_incentive(&self) -> Ratio {
         // TODO: Move this kind of getter that don't require admin rights somewhere else
         // incentive % + 100 %
-        self.liquidation_incentive + 10000
+        self.liquidation_incentive + Ratio(10000)
     }
 
     pub fn get_health_threshold(&self) -> Ratio {

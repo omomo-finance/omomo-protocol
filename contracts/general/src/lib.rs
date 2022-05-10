@@ -1,3 +1,5 @@
+pub mod ratio;
+
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -8,14 +10,12 @@ use std::fmt;
 pub const NO_DEPOSIT: Balance = 0;
 pub const ONE_YOCTO: Balance = 1;
 pub const TGAS: Gas = near_sdk::Gas::ONE_TERA;
-pub const RATIO_DECIMALS: u128 = 10u128.pow(4);
 pub const ONE_TOKEN: u128 = 10u128.pow(24);
 
 pub type WBalance = U128;
 
 pub type USD = U128;
 
-pub type Ratio = u128;
 pub type WRatio = U128;
 
 pub type Percent = u128;

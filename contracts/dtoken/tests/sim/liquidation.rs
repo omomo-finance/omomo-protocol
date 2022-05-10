@@ -3,7 +3,8 @@ use crate::utils::{
     initialize_two_utokens, initialize_utoken, mint_tokens, new_user, set_price, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
-use general::{Price, RATIO_DECIMALS};
+use general::ratio::RATIO_DECIMALS;
+use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::Balance;
@@ -168,7 +169,7 @@ fn scenario_liquidation_success() {
     let borrow_balance = BORROWER_BORROW - Balance::from(amount);
 
     let revenue_amount: Balance =
-        (10500 * Balance::from(amount) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS);
+        (10500 * Balance::from(amount) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
 
     assert_eq!(
         user_borrows,

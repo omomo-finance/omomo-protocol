@@ -1,6 +1,7 @@
 use crate::*;
 use near_sdk::env::block_height;
 use near_sdk::Promise;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -154,7 +155,7 @@ impl Contract {
         let new_reward = Reward {
             id: reward.id.clone(),
             token: reward.token.clone(),
-            amount: WBalance::from(reward.amount.0 * reward.penalty / RATIO_DECIMALS),
+            amount: WBalance::from(reward.amount.0 * reward.penalty.0 / RATIO_DECIMALS.0),
             locked_till: block_height(),
             penalty: reward.penalty,
         };
