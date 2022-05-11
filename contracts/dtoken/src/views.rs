@@ -27,11 +27,11 @@ impl Contract {
         WBalance::from(self.get_total_reserves())
     }
 
-    pub fn view_market_data(&self, ft_balance_of: WBalance) -> MarketData {
+    pub fn view_market_data(&self, ft_balance: WBalance) -> MarketData {
         let total_supplies = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
-        let exchange_rate = self.get_exchange_rate(ft_balance_of);
+        let exchange_rate = self.get_exchange_rate(ft_balance);
         let reserve_factor = self
             .config
             .get()
@@ -40,13 +40,13 @@ impl Contract {
             .get_reserve_factor();
 
         let interest_rate = self.get_supply_rate(
-            ft_balance_of,
+            ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
             WBalance::from(reserve_factor),
         );
         let borrow_rate = self.get_borrow_rate(
-            ft_balance_of,
+            ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
         );
@@ -65,16 +65,16 @@ impl Contract {
         self.get_repay_info(user_id, ft_balance)
     }
 
-    pub fn view_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
-        self.get_exchange_rate(underlying_balance)
+    pub fn view_exchange_rate(&self, ft_balance: WBalance) -> Ratio {
+        self.get_exchange_rate(ft_balance)
     }
 
-    pub fn view_user_rewards(&self, account_id: AccountId) -> HashMap<String, Reward> {
-        self.get_user_rewards(account_id)
+    pub fn view_user_rewards(&self, user_id: AccountId) -> HashMap<String, Reward> {
+        self.get_user_rewards(user_id)
     }
 
-    pub fn view_withdraw_info(&self, account_id: AccountId, balance_of: Balance) -> WithdrawInfo {
-        self.get_withdraw_info(account_id, balance_of)
+    pub fn view_withdraw_info(&self, user_id: AccountId, ft_balance: WBalance) -> WithdrawInfo {
+        self.get_withdraw_info(user_id, ft_balance)
     }
 }
 
@@ -195,7 +195,7 @@ mod tests {
     fn test_view_withdraw_info() {
         let contract = init_test_env(false);
 
-        let withdraw_info = contract.view_withdraw_info(bob(), 1000);
+        let withdraw_info = contract.view_withdraw_info(bob(), U128(1000));
 
         // total interest should be 0
         // exchange_rate = initial_exchange_rate = 1000000
