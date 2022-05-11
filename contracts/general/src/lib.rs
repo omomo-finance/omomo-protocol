@@ -1,3 +1,6 @@
+pub mod percent;
+
+use crate::percent::WPercent;
 pub mod ratio;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -17,9 +20,6 @@ pub type WBalance = U128;
 pub type USD = U128;
 
 pub type WRatio = U128;
-
-pub type Percent = u128;
-pub type WPercent = U128;
 
 pub type Digits = u32;
 

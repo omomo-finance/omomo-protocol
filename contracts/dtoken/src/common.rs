@@ -51,6 +51,25 @@ impl Contract {
     }
 
     pub fn get_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
+        let total_borrows = self.get_total_borrows();
+        let total_reserves = self.get_total_reserves();
+        let total_supplies = self.get_total_supplies();
+
+        self.calculate_exchange_rate(
+            underlying_balance,
+            total_borrows,
+            total_reserves,
+            total_supplies,
+        )
+    }
+
+    fn calculate_exchange_rate(
+        &self,
+        underlying_balance: WBalance,
+        total_borrows: Balance,
+        total_reserves: Balance,
+        total_supplies: Balance,
+    ) -> Ratio {
         if self.token.total_supply == 0 {
             return Ratio(self.initial_exchange_rate);
         }
@@ -135,22 +154,26 @@ impl Contract {
         }
     }
 
-    pub fn get_withdraw_info(&self, account_id: AccountId, balance_of: Balance) -> WithdrawInfo {
-        let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
+        pub fn get_withdraw_info(
+        &self,
+        user_id: AccountId,
+        underlying_balance: WBalance,
+    ) -> WithdrawInfo {
+        let exchange_rate: Ratio = self.get_exchange_rate(underlying_balance);
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
-            U128(balance_of),
+            underlying_balance,
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
             U128(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
-            self.get_supplies_by_account(account_id.clone()),
-            self.get_accrued_supply_interest(account_id.clone()),
+            self.get_supplies_by_account(user_id.clone()),
+            self.get_accrued_supply_interest(user_id.clone()),
         );
         let total_interest = self
-            .get_accrued_supply_interest(account_id)
+            .get_accrued_supply_interest(user_id)
             .accumulated_interest
             + accrued_supply_interest.accumulated_interest;
 
@@ -353,12 +376,12 @@ mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
 
-    pub fn init_test_env() -> Contract {
+    pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(1000000),
+            initial_exchange_rate: U128(10000),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -368,7 +391,7 @@ mod tests {
 
     #[test]
     fn test_calculate_reward_amount() {
-        let mut contract = init_test_env();
+        let mut contract = init_env();
 
         contract.mint(bob(), U128(100));
         contract.mint(carol(), U128(1000));
@@ -387,5 +410,109 @@ mod tests {
         let reward_amount = contract.calculate_reward_amount(bob(), &reward_setting, 300, 100);
 
         assert_eq!(reward_amount, 252);
+    }
+
+    #[test]
+    fn test_exchange_rate_initial_state() {
+        let contract = init_env();
+
+        let total_reserves = 10_000;
+        let total_borrows = 0;
+        let total_supplies = 0;
+
+        // Ratio that represents xrate = 1
+        assert_eq!(
+            10000,
+            contract.calculate_exchange_rate(
+                U128(10_000),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
+        );
+    }
+
+    #[test]
+    fn test_exchange_rate_after_supply() {
+        let contract = init_env();
+
+        // supply 1000 tokens
+        let total_reserves = 10_000;
+        let total_borrows = 0;
+        let total_supplies = 1000;
+
+        // Ratio that represents xrate = 1
+        assert_eq!(
+            10000,
+            contract.calculate_exchange_rate(
+                U128(11_000),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
+        );
+    }
+
+    #[test]
+    fn test_exchange_rate_after_borrow() {
+        let contract = init_env();
+
+        // borrow 1000 tokens
+        let total_reserves = 10_000;
+        let total_borrows = 1000;
+        let total_supplies = 1000;
+
+        // Ratio that represents xrate = 1
+        assert_eq!(
+            10000,
+            contract.calculate_exchange_rate(
+                U128(10_000),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
+        );
+    }
+
+    #[test]
+    fn test_exchange_rate_after_repay() {
+        let contract = init_env();
+
+        // repay 1000 borrows and 50 debt
+        let total_reserves = 10_000;
+        let total_borrows = 0;
+        let total_supplies = 1000;
+
+        // Ratio that represents xrate = 1.05
+        assert_eq!(
+            10500,
+            contract.calculate_exchange_rate(
+                U128(11_050),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
+        );
+    }
+
+    #[test]
+    fn test_exchange_rate_after_withdraw() {
+        let contract = init_env();
+
+        // withdraw all supplies
+        let total_reserves = 10_002.5;
+        let total_borrows = 0;
+        let total_supplies = 0;
+
+        // Ratio that represents xrate = 1
+        assert_eq!(
+            10000,
+            contract.calculate_exchange_rate(
+                U128(10_002.5 as u128),
+                total_borrows,
+                total_reserves as u128,
+                total_supplies,
+            )
+        );
     }
 }

@@ -9,7 +9,7 @@ impl Contract {
             .map(|(asset, balance)| {
                 let price = self.get_price(asset.clone()).unwrap();
 
-                Percentage::from(Percent::from(price.volatility)).apply_to(
+                Percentage::from(price.volatility.0).apply_to(
                     Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits),
                 )
             })
@@ -61,7 +61,7 @@ impl Contract {
         let mut borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
 
         let price = self.get_price(token_address).unwrap();
-        let usd_amount = Percentage::from(Percent::from(price.volatility)).apply_to(
+        let usd_amount = Percentage::from(price.volatility.0).apply_to(
             Balance::from(price.value) * Balance::from(amount) / 10u128.pow(price.fraction_digits),
         );
         match action {

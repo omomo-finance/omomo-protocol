@@ -8,6 +8,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
 use general::ratio::Ratio;
+use general::percent::Percent;
 use general::*;
 
 pub use crate::borrows_supplies::*;
@@ -164,7 +165,7 @@ impl Contract {
             },
             liquidation_incentive: Ratio(500),
             liquidation_health_factor_threshold: Ratio(10000),
-            reserve_factor: 0,
+            reserve_factor: Percent(0),
             health_threshold: Ratio(15000),
             mutex: ActionMutex::default(),
         }
