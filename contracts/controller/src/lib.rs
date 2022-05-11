@@ -7,8 +7,8 @@ use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
-use general::ratio::Ratio;
 use general::percent::Percent;
+use general::ratio::Ratio;
 use general::*;
 
 pub use crate::borrows_supplies::*;

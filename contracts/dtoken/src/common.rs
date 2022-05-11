@@ -73,10 +73,11 @@ impl Contract {
         if total_supplies == 0 {
             return Ratio(self.initial_exchange_rate);
         }
-        Ratio((Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS.0
-            / total_supplies)
+        Ratio(
+            (Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS.0
+                / total_supplies,
+        )
     }
-
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas
@@ -94,14 +95,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -194,9 +195,9 @@ impl Contract {
         };
         reward_setting.reward_per_period.amount.0
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-            / self.get_total_supplies())
+                / self.get_total_supplies())
             * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-            as u128
+                as u128
             / 10u128.pow(16)
     }
 }
