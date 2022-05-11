@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use std::fmt;
 
@@ -7,7 +8,7 @@ const BLOCK_PER_WEEK: BlockHeight = 1048896;
 
 pub enum Events {
     BorrowFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
-    BorrowFailedToInceaseBorrowOnController(AccountId, Balance),
+    BorrowFailedToIncreaseBorrowOnController(AccountId, Balance),
     BorrowSuccess(AccountId, Balance),
     BorrowFailedToFallback(AccountId, Balance),
     BorrowFallbackSuccess(AccountId, Balance),
@@ -17,7 +18,7 @@ pub enum Events {
     RepaySuccess(AccountId, Balance),
 
     SupplyFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
-    SupplyFailedToInceaseSupplyOnController(AccountId, Balance),
+    SupplyFailedToIncreaseSupplyOnController(AccountId, Balance),
     SupplySuccess(AccountId, Balance),
 
     WithdrawFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
@@ -70,10 +71,12 @@ impl Contract {
         total_supplies: Balance,
     ) -> Ratio {
         if total_supplies == 0 {
-            return self.initial_exchange_rate;
+            return Ratio(self.initial_exchange_rate);
         }
-        (Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS
-            / total_supplies
+        Ratio(
+            (Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS.0
+                / total_supplies,
+        )
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
@@ -122,7 +125,7 @@ impl Contract {
     }
 
     pub fn get_repay_info(&self, user_id: AccountId, underlying_balance: WBalance) -> RepayInfo {
-        let borrow_rate: Balance = self.get_borrow_rate(
+        let borrow_rate = self.get_borrow_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
@@ -140,7 +143,7 @@ impl Contract {
                 self.get_accrued_borrow_interest(user_id),
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        let accrued_interest_per_block = user_borrows * borrow_rate / RATIO_DECIMALS;
+        let accrued_interest_per_block = user_borrows * borrow_rate.0 / RATIO_DECIMALS.0;
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
@@ -161,7 +164,7 @@ impl Contract {
             underlying_balance,
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor()),
+            U128(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -256,7 +259,7 @@ impl fmt::Display for Events {
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
                 account, balance, contract_id, underlying_token_id
             ),
-            Events::BorrowFailedToInceaseBorrowOnController(account, balance) => write!(
+            Events::BorrowFailedToIncreaseBorrowOnController(account, balance) => write!(
                 f,
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToInceaseBorrowOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to make borrow for {} on {} token amount"}}}}"#,
                 account, balance, account, balance
@@ -306,7 +309,7 @@ impl fmt::Display for Events {
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
                 account, balance, contract_id, underlying_token_id
             ),
-            Events::SupplyFailedToInceaseSupplyOnController(account, balance) => write!(
+            Events::SupplyFailedToIncreaseSupplyOnController(account, balance) => write!(
                 f,
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToInceaseSupplyOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} supply balance of {} on controller"}}}}"#,
                 account, balance, account, balance
@@ -368,6 +371,7 @@ mod tests {
     use crate::RewardPeriod::Day;
     use crate::{Config, Contract};
     use crate::{InterestRateModel, RewardSetting, VestingPlans};
+    use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
 
@@ -398,7 +402,7 @@ mod tests {
                 amount: U128(1000000),
             },
             lock_time: 20000,
-            penalty: 1000,
+            penalty: Ratio(1000),
             vesting: VestingPlans::None,
         };
 
@@ -417,12 +421,12 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            10000,
+            Ratio(10000),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
                 total_reserves,
-                total_supplies
+                total_supplies,
             )
         );
     }
@@ -438,12 +442,12 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            10000,
+            Ratio(10000),
             contract.calculate_exchange_rate(
                 U128(11_000),
                 total_borrows,
                 total_reserves,
-                total_supplies
+                total_supplies,
             )
         );
     }
@@ -459,12 +463,12 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            10000,
+            Ratio(10000),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
                 total_reserves,
-                total_supplies
+                total_supplies,
             )
         );
     }
@@ -480,12 +484,12 @@ mod tests {
 
         // Ratio that represents xrate = 1.05
         assert_eq!(
-            10500,
+            Ratio(10500),
             contract.calculate_exchange_rate(
                 U128(11_050),
                 total_borrows,
                 total_reserves,
-                total_supplies
+                total_supplies,
             )
         );
     }
@@ -501,7 +505,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            10000,
+            Ratio(10000),
             contract.calculate_exchange_rate(
                 U128(10_002.5 as u128),
                 total_borrows,

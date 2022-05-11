@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::RATIO_DECIMALS;
 use near_sdk::PromiseOrValue;
 use partial_min_max::min;
 
@@ -75,10 +76,10 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> WBalance {
         WBalance::from(
-            self.get_liquidation_incentive()
+            self.get_liquidation_incentive().0
                 * liquidation_amount.0
                 * self.prices.get(&borrowing_dtoken).unwrap().value.0
-                / (self.prices.get(&collateral_dtoken).unwrap().value.0 * RATIO_DECIMALS),
+                / (self.prices.get(&collateral_dtoken).unwrap().value.0 * RATIO_DECIMALS.0),
         )
     }
 
@@ -99,7 +100,8 @@ impl Contract {
 
         let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
-        let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
+        let max_unhealth_repay =
+            unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
 
         let supply_amount =
             self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
@@ -107,10 +109,10 @@ impl Contract {
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (RATIO_DECIMALS - self.liquidation_incentive) * supply_amount * collateral_price,
+            (RATIO_DECIMALS - self.liquidation_incentive).0 * supply_amount * collateral_price,
         ) / borrow_price;
 
-        WBalance::from(max_possible_liquidation_amount as u128)
+        WBalance::from(max_possible_liquidation_amount)
     }
 
     pub fn is_liquidation_allowed(

@@ -6,7 +6,8 @@ use crate::utils::{
 use controller::AccountData;
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
-use general::{Price, RATIO_DECIMALS};
+use general::ratio::RATIO_DECIMALS;
+use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::test_utils::test_env::bob;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
@@ -665,7 +666,7 @@ fn scenario_supply_borrow_withdraw() {
         view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let exchange_rate: u128 = view!(dtoken.view_exchange_rate(dtoken_balance_before)).unwrap_json();
     let dtoken_amount: u128 = 10;
-    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
     call!(user, dtoken.withdraw(U128(dtoken_amount)), deposit = 0).assert_success();
 
@@ -755,7 +756,7 @@ fn scenario_withdraw_with_borrow_on_another_dtoken() {
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
     let exchange_rate: u128 = view!(dtoken2.view_exchange_rate(dtoken_balance)).unwrap_json();
     let dtoken_amount: u128 = 5000;
-    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
     let res_potential: u128 = view!(controller.get_potential_health_factor(
         user.account_id(),
@@ -792,7 +793,7 @@ fn scenario_withdraw_failed_due_to_low_health_factor() {
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
     let exchange_rate: u128 = view!(dtoken2.view_exchange_rate(dtoken_balance)).unwrap_json();
     let dtoken_amount: u128 = 50000;
-    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+    let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
     let res_potential: u128 = view!(controller.get_potential_health_factor(
         user.account_id(),
