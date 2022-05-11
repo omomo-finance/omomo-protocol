@@ -132,7 +132,11 @@ impl Contract {
         }
     }
 
-    pub fn get_withdraw_info(&self, user_id: AccountId, underlying_balance: WBalance) -> WithdrawInfo {
+    pub fn get_withdraw_info(
+        &self,
+        user_id: AccountId,
+        underlying_balance: WBalance,
+    ) -> WithdrawInfo {
         let exchange_rate: Ratio = self.get_exchange_rate(underlying_balance);
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
