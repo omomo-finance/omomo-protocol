@@ -49,11 +49,7 @@ impl Contract {
         self.underlying_token.clone()
     }
 
-    pub fn get_exchange_rate(
-        &self,
-        underlying_balance: WBalance,
-    ) -> Ratio {
-
+    pub fn get_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
         let total_supplies = self.get_total_supplies();
@@ -96,14 +92,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -165,9 +161,9 @@ impl Contract {
         };
         reward_setting.reward_per_period.amount.0
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-            / self.get_total_supplies())
+                / self.get_total_supplies())
             * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-            as u128
+                as u128
             / 10u128.pow(16)
     }
 }
@@ -391,7 +387,12 @@ mod tests {
         // Ratio that represents xrate = 1
         assert_eq!(
             10000,
-            contract.calculate_exchange_rate(U128(10_000), total_borrows, total_reserves, total_supplies)
+            contract.calculate_exchange_rate(
+                U128(10_000),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
         );
     }
 
@@ -407,7 +408,12 @@ mod tests {
         // Ratio that represents xrate = 1
         assert_eq!(
             10000,
-            contract.calculate_exchange_rate(U128(11_000), total_borrows, total_reserves, total_supplies)
+            contract.calculate_exchange_rate(
+                U128(11_000),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
         );
     }
 
@@ -423,7 +429,12 @@ mod tests {
         // Ratio that represents xrate = 1
         assert_eq!(
             10000,
-            contract.calculate_exchange_rate(U128(10_000), total_borrows, total_reserves, total_supplies)
+            contract.calculate_exchange_rate(
+                U128(10_000),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
         );
     }
 
@@ -439,7 +450,12 @@ mod tests {
         // Ratio that represents xrate = 1.05
         assert_eq!(
             10500,
-            contract.calculate_exchange_rate(U128(11_050), total_borrows, total_reserves, total_supplies)
+            contract.calculate_exchange_rate(
+                U128(11_050),
+                total_borrows,
+                total_reserves,
+                total_supplies
+            )
         );
     }
 
