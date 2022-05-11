@@ -1,7 +1,8 @@
 pub mod percent;
+pub mod ratio;
 
 use crate::percent::WPercent;
-pub mod ratio;
+
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
