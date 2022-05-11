@@ -1,3 +1,6 @@
+pub mod percent;
+
+use crate::percent::WPercent;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -17,9 +20,6 @@ pub type USD = U128;
 
 pub type Ratio = u128;
 pub type WRatio = U128;
-
-pub type Percent = u128;
-pub type WPercent = U128;
 
 pub type Digits = u32;
 
