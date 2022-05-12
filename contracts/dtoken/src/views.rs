@@ -83,11 +83,11 @@ impl Contract {
 mod tests {
     use crate::InterestRateModel;
     use general::ratio::Ratio;
-    use general::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, Balance, VMContext};
+    use general::wbalance::WBalance;
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
@@ -159,9 +159,9 @@ mod tests {
         let gotten_md = contract.view_market_data(WBalance::from(1000));
 
         let _expected_md = MarketData {
-            total_supplies: U128(0),
-            total_borrows: U128(0),
-            total_reserves: U128(200),
+            total_supplies:  WBalance::from(0),
+            total_borrows:  WBalance::from(0),
+            total_reserves:  WBalance::from(200),
             exchange_rate_ratio: U128(1000000),
             interest_rate_ratio: U128(0),
             borrow_rate_ratio: U128(10000),
@@ -197,7 +197,7 @@ mod tests {
     fn test_view_withdraw_info() {
         let contract = init_test_env(false);
 
-        let withdraw_info = contract.view_withdraw_info(bob(), U128(1000));
+        let withdraw_info = contract.view_withdraw_info(bob(), WBalance::from(1000));
 
         // total interest should be 0
         // exchange_rate = initial_exchange_rate = 1000000

@@ -63,7 +63,7 @@ mod tests {
         let price = Price {
             // adding price of Near
             ticker_id: "wnear".to_string(),
-            value: U128(20),
+            value:  WBalance::from(20),
             volatility: U128(100),
             fraction_digits: 4,
         };

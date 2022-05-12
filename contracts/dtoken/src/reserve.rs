@@ -3,7 +3,7 @@ use crate::*;
 const GAS_FOR_RESERVE: Gas = Gas(120_000_000_000_000);
 
 impl Contract {
-    pub fn reserve(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn reserve(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_RESERVE,
             "Prepaid gas is not enough for reserve flow"

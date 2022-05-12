@@ -59,7 +59,7 @@ impl Contract {
         require!(result.is_some(), err_message);
 
         let liquidation_revenue_amount: WBalance =
-            near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).unwrap();
+            WBalance(near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).unwrap());
 
         self.decrease_borrows(borrower.clone(), liquidation_amount);
 

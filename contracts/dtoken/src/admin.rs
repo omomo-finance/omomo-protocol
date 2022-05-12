@@ -113,9 +113,9 @@ mod tests {
     fn test_increase_total_reserve() {
         let mut contract = init(true);
 
-        contract.increase_reserve(U128(300));
+        contract.increase_reserve(WBalance::from(300));
 
         // 200 is initial total_reserve set up in init_test_env
-        assert_eq!(U128(200 + 300), contract.view_total_reserves());
+        assert_eq!( WBalance::from(200 + 300), contract.view_total_reserves());
     }
 }

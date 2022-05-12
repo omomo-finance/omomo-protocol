@@ -1,3 +1,4 @@
+use near_sdk::Balance;
 use crate::utils::{
     add_market, initialize_controller, initialize_dtoken,
     initialize_dtoken_with_custom_interest_rate, initialize_utoken, new_user, view_balance,
@@ -7,6 +8,7 @@ use dtoken::{InterestRateModel, RepayInfo};
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use general::wbalance::WBalance;
 
 fn repay_no_borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -97,7 +99,7 @@ fn repay_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20000),
+                value:  WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -162,7 +164,7 @@ fn repay_zero_accrued_interest_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20000),
+                value:  WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -220,14 +222,14 @@ fn scenario_repay() {
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(WBalance::from(5)), deposit = 0).assert_success();
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let dtoken_balance: Balance = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
+        dtoken.view_repay_info(user.account_id(), WBalance::from(dtoken_balance)),
         deposit = 0
     )
     .unwrap_json::<RepayInfo>();
@@ -235,7 +237,7 @@ fn scenario_repay() {
     let repay_amount = u128::from(repay_info.total_amount)
         + u128::from(repay_info.accrued_interest_per_block) * 10;
 
-    let user_balance_before_repay: String =
+    let user_balance_before_repay: Balance =
         view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
 
     let action = "\"Repay\"".to_string();
@@ -252,7 +254,7 @@ fn scenario_repay() {
     )
     .assert_success();
 
-    let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
+    let user_balance: Balance = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
     assert_ne!(user_balance, user_balance_before_repay, "Repay wasn`t done");
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
@@ -285,14 +287,14 @@ fn scenario_repay_zero_accrued_interest() {
 
     let borrow_amount = 5;
 
-    call!(user, dtoken.borrow(U128(borrow_amount)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(WBalance::from(borrow_amount)), deposit = 0).assert_success();
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let dtoken_balance: Balance = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
+        dtoken.view_repay_info(user.account_id(), WBalance::from(dtoken_balance)),
         deposit = 0
     )
     .unwrap_json::<RepayInfo>();

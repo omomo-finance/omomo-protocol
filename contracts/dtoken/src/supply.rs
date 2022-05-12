@@ -5,7 +5,7 @@ use near_sdk::env::block_height;
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
 impl Contract {
-    pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_SUPPLY,
             "Prepaid gas is not enough for supply flow"
@@ -75,10 +75,10 @@ impl Contract {
         let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS.0;
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
-            U128(balance_of - Balance::from(token_amount)),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            WBalance::from(balance_of - Balance::from(token_amount)),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
+            WBalance::from(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
@@ -125,7 +125,7 @@ impl Contract {
         )
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
-            U128(dtoken_amount),
+            WBalance::from(dtoken_amount),
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(20),
@@ -139,7 +139,7 @@ impl Contract {
         &mut self,
         amount: WBalance,
         dtoken_amount: WBalance,
-    ) -> PromiseOrValue<U128> {
+    ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
                 "{}",
@@ -158,6 +158,6 @@ impl Contract {
             Events::SupplySuccess(env::signer_account_id(), Balance::from(amount))
         );
         self.mutex_account_unlock();
-        PromiseOrValue::Value(U128(0))
+        PromiseOrValue::Value(WBalance::from(0))
     }
 }

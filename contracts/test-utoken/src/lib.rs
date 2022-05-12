@@ -158,49 +158,32 @@ mod tests {
     }
 
     #[test]
-    fn test_transfer() {
-        let mut context = get_context(accounts(2));
-        testing_env!(context.build());
+    fn test_try_transfer() {
+        let (mut context, _, mut contract) = init();
 
-        let mut contract = Contract::new_default_meta(
-            accounts(2),
-            String::from("Mock Token"),
-            String::from("MOCK"),
-            TOTAL_SUPPLY.into(),
-        );
+        let bob: AccountId = "bob.near".parse().unwrap();
+        let freddie: AccountId = "freddie.near".parse().unwrap();
 
-        testing_env!(context
-            .storage_usage(env::storage_usage())
-            .attached_deposit(contract.storage_balance_bounds().min.into())
-            .predecessor_account_id(accounts(1))
-            .build());
-        // Paying for account registration, aka storage deposit
-        contract.storage_deposit(None, None);
+        contract.mint(freddie.clone(), U128(100));
+
+        contract.token.internal_register_account(&bob.clone());
+
+        assert_eq!(contract.ft_balance_of(freddie.clone()), U128(100));
+        assert_eq!(contract.ft_balance_of(bob.clone()), U128(0));
+
 
         testing_env!(context
-            .storage_usage(env::storage_usage())
-            .attached_deposit(1)
-            .predecessor_account_id(accounts(2))
-            .build());
+        .predecessor_account_id(freddie.clone())
+        .attached_deposit(1)
+        .build());
 
-        let transferred_tokens = TOTAL_SUPPLY / 100;
         contract.ft_transfer(
-            accounts(1),
-            transferred_tokens.into(),
-            Some("you have received some tokens bro".to_string()),
+            bob.clone(),
+            10.into(),
+            Some("i have transferred to bob that has no tokens yet (hence isn't registered)".to_string()),
         );
 
-        testing_env!(context
-            .storage_usage(env::storage_usage())
-            .account_balance(env::account_balance())
-            .is_view(true)
-            .attached_deposit(0)
-            .build());
-
-        assert_eq!(
-            contract.ft_balance_of(accounts(2)).0,
-            (TOTAL_SUPPLY - transferred_tokens)
-        );
-        assert_eq!(contract.ft_balance_of(accounts(1)).0, transferred_tokens);
+        assert_eq!(contract.ft_balance_of(freddie.clone()), U128(90));
+        assert_eq!(contract.ft_balance_of(bob.clone()), U128(10));
     }
 }

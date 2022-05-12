@@ -26,7 +26,7 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
@@ -64,10 +64,10 @@ impl Contract {
         let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
-            U128(balance_of),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            WBalance::from(balance_of),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
+            WBalance::from(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,

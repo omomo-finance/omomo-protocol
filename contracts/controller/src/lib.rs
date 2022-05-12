@@ -10,6 +10,7 @@ use percentage::Percentage;
 use general::percent::Percent;
 use general::ratio::Ratio;
 use general::*;
+use general::wbalance::WBalance;
 
 pub use crate::borrows_supplies::*;
 pub use crate::config::*;

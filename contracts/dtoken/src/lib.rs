@@ -12,6 +12,7 @@ use std::collections::HashMap;
 
 #[allow(unused_imports)]
 pub use general::*;
+use general::wbalance::WBalance;
 
 pub use crate::borrow::*;
 pub use crate::common::*;

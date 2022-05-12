@@ -64,7 +64,7 @@ impl Contract {
             NO_DEPOSIT,
             near_sdk::Gas::ONE_TERA * 8_u64,
         )
-        .into()
+            .into()
     }
 }
 
@@ -77,10 +77,10 @@ impl Contract {
     ) -> WBalance {
         WBalance::from(
             self.get_liquidation_incentive().0
-                * liquidation_amount.0
-                * self.prices.get(&borrowing_dtoken).unwrap().value.0
-                / (self.prices.get(&collateral_dtoken).unwrap().value.0 * RATIO_DECIMALS.0),
-        )
+                * Balance::from(liquidation_amount
+                * self.prices.get(&borrowing_dtoken).unwrap().value
+                / (self.prices.get(&collateral_dtoken).unwrap().value))
+                * RATIO_DECIMALS.0)
     }
 
     pub fn maximum_possible_liquidation_amount(
@@ -101,7 +101,7 @@ impl Contract {
         let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
         let max_unhealth_repay =
-            unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
+            unhealth_factor.0 * borrow_amount * borrow_price.0 / RATIO_DECIMALS.0;
 
         let supply_amount =
             self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
@@ -109,8 +109,8 @@ impl Contract {
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (RATIO_DECIMALS - self.liquidation_incentive).0 * supply_amount * collateral_price,
-        ) / borrow_price;
+            (RATIO_DECIMALS - self.liquidation_incentive).0 * supply_amount * collateral_price.0,
+        ) / borrow_price.0;
 
         WBalance::from(max_possible_liquidation_amount)
     }
@@ -125,7 +125,7 @@ impl Contract {
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
             Err((
-                WBalance::from(liquidation_amount.0),
+                liquidation_amount,
                 WBalance::from(0),
                 String::from("User can't be liquidated as he has normal value of health factor"),
             ))
@@ -136,10 +136,10 @@ impl Contract {
                 collateral_dtoken.clone(),
             );
 
-            if max_possible_liquidation_amount.0 <= liquidation_amount.0 {
+            if max_possible_liquidation_amount <= liquidation_amount {
                 return Err((
-                    WBalance::from(liquidation_amount.0),
-                    WBalance::from(max_possible_liquidation_amount.0),
+                    liquidation_amount,
+                    max_possible_liquidation_amount,
                     String::from(
                         "Max possible liquidation amount cannot be less than liquidation amount",
                     ),
@@ -148,8 +148,8 @@ impl Contract {
 
             if liquidator == borrower {
                 return Err((
-                    WBalance::from(liquidation_amount.0),
-                    WBalance::from(max_possible_liquidation_amount.0),
+                    liquidation_amount,
+                    max_possible_liquidation_amount,
                     String::from("Liquidation cannot liquidate his on borrow"),
                 ));
             }

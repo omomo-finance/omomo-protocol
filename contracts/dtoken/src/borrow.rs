@@ -7,14 +7,14 @@ impl Contract {
         let borrows = self.get_account_borrows(account.clone());
         let new_borrows = borrows - Balance::from(token_amount);
 
-        self.set_account_borrows(account, U128(new_borrows))
+        self.set_account_borrows(account, WBalance::from(new_borrows))
     }
 
     pub fn increase_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let borrows: Balance = self.get_account_borrows(account.clone());
         let new_borrows = borrows + Balance::from(token_amount);
 
-        self.set_account_borrows(account, U128(new_borrows))
+        self.set_account_borrows(account, WBalance::from(new_borrows))
     }
 }
 
@@ -43,7 +43,7 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
@@ -79,9 +79,9 @@ impl Contract {
         };
 
         let borrow_rate = self.get_borrow_rate(
-            U128(balance_of),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            WBalance::from(balance_of),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
         );
         let borrow_accrued_interest = self
             .config

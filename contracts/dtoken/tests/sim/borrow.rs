@@ -8,6 +8,8 @@ use dtoken::{InterestRateModel, RepayInfo};
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use near_sdk_sim::types::Balance;
+use general::wbalance::WBalance;
 
 fn borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -65,7 +67,7 @@ fn borrow_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20000),
+                value:  WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -131,7 +133,7 @@ fn borrow_more_than_on_dtoken_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20000),
+                value:  WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -198,7 +200,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20000),
+                value:  WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -281,7 +283,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
             dtoken1.account_id(),
             &Price {
                 ticker_id: "1weth".to_string(),
-                value: U128(1000),
+                value:  WBalance::from(1000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -303,7 +305,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
             dtoken2.account_id(),
             &Price {
                 ticker_id: "2weth".to_string(),
-                value: U128(2000),
+                value:  WBalance::from(2000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -328,7 +330,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
 fn scenario_borrow() {
     let (dtoken, controller, utoken, user) = borrow_fixture();
 
-    call!(user, dtoken.borrow(U128(10)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(WBalance::from(10)), deposit = 0).assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
@@ -362,7 +364,7 @@ fn scenario_borrow() {
 fn scenario_borrow_more_than_on_dtoken() {
     let (dtoken, controller, utoken, user) = borrow_more_than_on_dtoken_fixture();
 
-    call!(user, dtoken.borrow(U128(60)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(WBalance::from(60)), deposit = 0).assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
@@ -422,7 +424,7 @@ fn scenario_supply_borrow_repay_withdraw() {
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(WBalance::from(5)), deposit = 0).assert_success();
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
@@ -442,10 +444,10 @@ fn scenario_supply_borrow_repay_withdraw() {
         "Dtoken balance should be 50"
     );
 
-    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let dtoken_balance: Balance = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
+        dtoken.view_repay_info(user.account_id(), WBalance::from(dtoken_balance)),
         deposit = 0
     )
     .unwrap_json::<RepayInfo>();
@@ -493,7 +495,7 @@ fn scenario_supply_borrow_repay_withdraw() {
 
     root.borrow_runtime_mut().produce_blocks(100).unwrap();
 
-    call!(user, dtoken.withdraw(U128(10)), deposit = 0).assert_success();
+    call!(user, dtoken.withdraw(WBalance::from(10)), deposit = 0).assert_success();
 
     // after withdrawing
     let user_balance_after_withdraw: String =
@@ -526,13 +528,13 @@ fn scenario_borrow_with_supply_on_another_dtoken() {
     let res_potential: u128 = view!(controller.get_potential_health_factor(
         user.account_id(),
         dtoken1.account_id(),
-        U128(40000),
+        WBalance::from(40000),
         Borrow
     ))
     .unwrap_json();
     assert_eq!(res_potential, 30000);
 
-    call!(user, dtoken1.borrow(U128(40000)), deposit = 0).assert_success();
+    call!(user, dtoken1.borrow(WBalance::from(40000)), deposit = 0).assert_success();
 
     let res: u128 = view!(controller.get_health_factor(user.account_id())).unwrap_json();
     assert_eq!(res, 30000);

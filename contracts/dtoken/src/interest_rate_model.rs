@@ -171,6 +171,7 @@ mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::AccountId;
+    use general::wbalance::WBalance;
 
     use crate::{Config, Contract, RewardAmount, RewardSetting, VestingPlans};
     use crate::{InterestRateModel, RewardPeriod};
@@ -196,7 +197,7 @@ mod tests {
             token: token_address.clone(),
             reward_per_period: RewardAmount {
                 period: RewardPeriod::Day,
-                amount: U128(20),
+                amount:  WBalance::from(20),
             },
             lock_time: 100,
             penalty: Ratio(500),

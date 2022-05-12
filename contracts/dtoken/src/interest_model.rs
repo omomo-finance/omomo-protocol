@@ -1,6 +1,7 @@
 use crate::*;
 use general::ratio::{Ratio, RATIO_DECIMALS};
 use std::cmp::{max, min};
+use general::wbalance::WBalance;
 
 const MAX_RESERVE_FACTOR_VALUE: Ratio = RATIO_DECIMALS;
 
@@ -18,7 +19,7 @@ impl Contract {
             "Reserve factor should be less {}",
             MAX_RESERVE_FACTOR_VALUE
         );
-        let rest_of_supply_factor = RATIO_DECIMALS - Ratio(reserve_factor.0);
+        let rest_of_supply_factor = RATIO_DECIMALS - Ratio(Balance::from(reserve_factor));
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
@@ -75,6 +76,7 @@ mod tests {
     use general::WRatio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use general::wbalance::WBalance;
 
     use crate::{Config, Contract};
 
@@ -94,7 +96,7 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
-        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), Ratio(9000));
+        assert_eq!(contract.get_util(WBalance::from(20), WBalance::from(180), WBalance::from(0)), Ratio(9000));
     }
 
     #[test]
@@ -109,7 +111,7 @@ mod tests {
         interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900));
 
         assert_eq!(
-            contract.get_borrow_rate(U128(20), U128(180), U128(0)),
+            contract.get_borrow_rate(WBalance::from(20), WBalance::from(180), WBalance::from(0)),
             Ratio(19000)
         );
     }
@@ -128,10 +130,10 @@ mod tests {
 
         assert_eq!(
             contract.get_supply_rate(
-                U128(20),
-                U128(180),
-                U128(0),
-                U128(interest_rate_model.get_reserve_factor().0)
+                WBalance::from(20),
+                WBalance::from(180),
+                WBalance::from(0),
+                WBalance::from(interest_rate_model.get_reserve_factor().0)
             ),
             Ratio(15903)
         );

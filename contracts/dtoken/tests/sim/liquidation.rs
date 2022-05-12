@@ -9,6 +9,7 @@ use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::Balance;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use general::wbalance::WBalance;
 
 const BORROWER_SUPPLY: Balance = 60000;
 const BORROWER_BORROW: Balance = 40000;
@@ -67,7 +68,7 @@ fn liquidation_success_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(START_PRICE),
+            value:  WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -78,7 +79,7 @@ fn liquidation_success_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(START_PRICE),
+            value:  WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -93,7 +94,7 @@ fn liquidation_success_fixture() -> (
     )
     .assert_success();
 
-    call!(borrower, dweth.borrow(U128(BORROWER_BORROW)), deposit = 0).assert_success();
+    call!(borrower, dweth.borrow( WBalance::from(BORROWER_BORROW)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
@@ -120,7 +121,7 @@ fn liquidation_success_fixture() -> (
             dwnear.account_id(),
             &Price {
                 ticker_id: "wnear".to_string(),
-                value: U128(CHANGED_PRICE),
+                value:  WBalance::from(CHANGED_PRICE),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -258,7 +259,7 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value: U128(20000),
+                value:  WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -288,7 +289,7 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
     )
     .assert_success();
 
-    call!(user, dtoken.borrow(U128(5)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow( WBalance::from(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");
