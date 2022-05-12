@@ -158,7 +158,7 @@ impl Contract {
         user_id: AccountId,
         underlying_balance: WBalance,
     ) -> WithdrawInfo {
-        let exchange_rate: Ratio = self.get_exchange_rate(underlying_balance);
+        let exchange_rate = U128::from(self.get_exchange_rate(underlying_balance).0);
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             underlying_balance,
@@ -171,10 +171,10 @@ impl Contract {
             self.get_supplies_by_account(user_id.clone()),
             self.get_accrued_supply_interest(user_id.clone()),
         );
-        let total_interest = self
+        let total_interest = U128::from(self
             .get_accrued_supply_interest(user_id)
             .accumulated_interest
-            + accrued_supply_interest.accumulated_interest;
+            + accrued_supply_interest.accumulated_interest);
 
         WithdrawInfo {
             exchange_rate,
@@ -393,14 +393,14 @@ mod tests {
     fn test_calculate_reward_amount() {
         let mut contract = init_env();
 
-        contract.mint(bob(),  WBalance::from(100));
-        contract.mint(carol(),  WBalance::from(1000));
+        contract.mint(bob(), WBalance::from(100));
+        contract.mint(carol(), WBalance::from(1000));
 
         let reward_setting = RewardSetting {
             token: alice(),
             reward_per_period: RewardAmount {
                 period: Day,
-                amount:  WBalance::from(1000000),
+                amount: WBalance::from(1000000),
             },
             lock_time: 20000,
             penalty: Ratio(1000),

@@ -146,14 +146,14 @@ fn scenario_liquidation_success() {
             "collateral_dtoken": dwnear.account_id().as_str(),
         }
     })
-    .to_string();
+        .to_string();
 
     call!(
         liquidator,
         weth.ft_transfer_call(dweth.account_id(), amount, None, action),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     let weth_ft_balance_of_for_dweth: U128 =
         view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();

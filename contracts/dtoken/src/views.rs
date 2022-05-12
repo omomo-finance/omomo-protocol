@@ -82,7 +82,6 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
-    use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
@@ -204,11 +203,11 @@ mod tests {
 
         assert_eq!(
             withdraw_info.exchange_rate,
-            Ratio(1000000),
+            U128(1000000),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(
-            withdraw_info.total_interest, 0,
+            withdraw_info.total_interest, U128(0),
             "Withdraw total_interest is not matches to expected"
         );
     }

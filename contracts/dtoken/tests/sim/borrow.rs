@@ -8,7 +8,6 @@ use dtoken::{InterestRateModel, RepayInfo};
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
-use near_sdk_sim::types::Balance;
 use general::wbalance::WBalance;
 
 fn borrow_fixture() -> (
@@ -405,7 +404,7 @@ fn scenario_supply_borrow_repay_withdraw() {
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     // after supplying
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
@@ -444,13 +443,13 @@ fn scenario_supply_borrow_repay_withdraw() {
         "Dtoken balance should be 50"
     );
 
-    let dtoken_balance: Balance = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(user.account_id(), WBalance::from(dtoken_balance)),
+        dtoken.view_repay_info(user.account_id(), WBalance(U128(dtoken_balance.parse().unwrap()))),
         deposit = 0
     )
-    .unwrap_json::<RepayInfo>();
+        .unwrap_json::<RepayInfo>();
 
     let repay_amount = u128::from(repay_info.total_amount)
         + u128::from(repay_info.accrued_interest_per_block) * 10;
