@@ -1,6 +1,6 @@
 use general::NO_DEPOSIT;
 use near_sdk::env::block_height;
-use near_sdk::{env, require, AccountId, Balance};
+use near_sdk::{env, require, AccountId};
 
 use crate::*;
 
@@ -36,16 +36,6 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         );
-    }
-
-    pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
-        // require!(
-        //     self.is_valid_admin_call(),
-        //     "This functionality is allowed to be called by admin or contract only"
-        // );
-
-        self.total_reserves = amount;
-        self.get_total_reserves()
     }
 }
 
