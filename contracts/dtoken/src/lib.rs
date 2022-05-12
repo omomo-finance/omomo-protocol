@@ -10,9 +10,9 @@ use near_sdk::{
 };
 use std::collections::HashMap;
 
+use general::wbalance::WBalance;
 #[allow(unused_imports)]
 pub use general::*;
-use general::wbalance::WBalance;
 
 pub use crate::borrow::*;
 pub use crate::common::*;

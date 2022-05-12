@@ -95,14 +95,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -171,10 +171,11 @@ impl Contract {
             self.get_supplies_by_account(user_id.clone()),
             self.get_accrued_supply_interest(user_id.clone()),
         );
-        let total_interest = U128::from(self
-            .get_accrued_supply_interest(user_id)
-            .accumulated_interest
-            + accrued_supply_interest.accumulated_interest);
+        let total_interest = U128::from(
+            self.get_accrued_supply_interest(user_id)
+                .accumulated_interest
+                + accrued_supply_interest.accumulated_interest,
+        );
 
         WithdrawInfo {
             exchange_rate,
@@ -195,9 +196,9 @@ impl Contract {
         };
         Balance::from(reward_setting.reward_per_period.amount)
             * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-            / self.get_total_supplies())
+                / self.get_total_supplies())
             * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-            as u128
+                as u128
             / 10u128.pow(16)
     }
 }
@@ -372,9 +373,9 @@ mod tests {
     use crate::{Config, Contract};
     use crate::{InterestRateModel, RewardSetting, VestingPlans};
     use general::ratio::Ratio;
+    use general::wbalance::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use general::wbalance::WBalance;
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =

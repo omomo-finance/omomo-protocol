@@ -4,12 +4,12 @@ use crate::utils::{
 };
 use controller::ActionType::{Borrow, Supply};
 use general::ratio::RATIO_DECIMALS;
+use general::wbalance::WBalance;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::Balance;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
-use general::wbalance::WBalance;
 
 const BORROWER_SUPPLY: Balance = 60000;
 const BORROWER_BORROW: Balance = 40000;
@@ -68,7 +68,7 @@ fn liquidation_success_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value:  WBalance::from(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -79,7 +79,7 @@ fn liquidation_success_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value:  WBalance::from(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -94,7 +94,12 @@ fn liquidation_success_fixture() -> (
     )
     .assert_success();
 
-    call!(borrower, dweth.borrow( WBalance::from(BORROWER_BORROW)), deposit = 0).assert_success();
+    call!(
+        borrower,
+        dweth.borrow(WBalance::from(BORROWER_BORROW)),
+        deposit = 0
+    )
+    .assert_success();
 
     let user_balance: u128 = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
@@ -121,7 +126,7 @@ fn liquidation_success_fixture() -> (
             dwnear.account_id(),
             &Price {
                 ticker_id: "wnear".to_string(),
-                value:  WBalance::from(CHANGED_PRICE),
+                value: WBalance::from(CHANGED_PRICE),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -146,14 +151,14 @@ fn scenario_liquidation_success() {
             "collateral_dtoken": dwnear.account_id().as_str(),
         }
     })
-        .to_string();
+    .to_string();
 
     call!(
         liquidator,
         weth.ft_transfer_call(dweth.account_id(), amount, None, action),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     let weth_ft_balance_of_for_dweth: U128 =
         view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();
@@ -259,7 +264,7 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value:  WBalance::from(20000),
+                value: WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -289,7 +294,7 @@ fn liquidation_failed_on_call_with_wrong_borrow_token_fixture() -> (
     )
     .assert_success();
 
-    call!(user, dtoken.borrow( WBalance::from(5)), deposit = 0).assert_success();
+    call!(user, dtoken.borrow(WBalance::from(5)), deposit = 0).assert_success();
 
     let user_balance: u128 = view!(dtoken.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 5, "Borrow balance on dtoken should be 5");

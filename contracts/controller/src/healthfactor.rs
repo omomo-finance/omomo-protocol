@@ -133,7 +133,7 @@ mod tests {
 
         prices.push(Price {
             ticker_id: ticker_id_eth,
-            value:  WBalance::from(eth_price),
+            value: WBalance::from(eth_price),
             volatility: U128(eth_volatility),
             fraction_digits: 4,
         });
@@ -179,13 +179,13 @@ mod tests {
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
             ticker_id: ticker_id_near,
-            value:  WBalance::from(20000),
+            value: WBalance::from(20000),
             volatility: U128(80),
             fraction_digits: 4,
         });
         prices.push(Price {
             ticker_id: ticker_id_eth,
-            value:  WBalance::from(20000),
+            value: WBalance::from(20000),
             volatility: U128(100),
             fraction_digits: 4,
         });
@@ -393,13 +393,13 @@ mod tests {
             price_list: vec![
                 Price {
                     ticker_id: "wnear".to_string(),
-                    value:  WBalance::from(20000),
+                    value: WBalance::from(20000),
                     volatility: U128(100),
                     fraction_digits: 4,
                 },
                 Price {
                     ticker_id: "weth".to_string(),
-                    value:  WBalance::from(5000),
+                    value: WBalance::from(5000),
                     volatility: U128(100),
                     fraction_digits: 4,
                 },
@@ -441,13 +441,13 @@ mod tests {
             price_list: vec![
                 Price {
                     ticker_id: "wnear".to_string(),
-                    value:  WBalance::from(10000),
+                    value: WBalance::from(10000),
                     volatility: U128(80),
                     fraction_digits: 4,
                 },
                 Price {
                     ticker_id: "weth".to_string(),
-                    value:  WBalance::from(10000),
+                    value: WBalance::from(10000),
                     volatility: U128(90),
                     fraction_digits: 4,
                 },

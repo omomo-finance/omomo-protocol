@@ -5,10 +5,10 @@ use crate::utils::{
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::{InterestRateModel, RepayInfo};
+use general::wbalance::WBalance;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
-use general::wbalance::WBalance;
 
 fn borrow_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -66,7 +66,7 @@ fn borrow_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value:  WBalance::from(20000),
+                value: WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -132,7 +132,7 @@ fn borrow_more_than_on_dtoken_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value:  WBalance::from(20000),
+                value: WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -199,7 +199,7 @@ fn supply_borrow_repay_withdraw_fixture() -> (
             dtoken.account_id(),
             &Price {
                 ticker_id: "weth".to_string(),
-                value:  WBalance::from(20000),
+                value: WBalance::from(20000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -282,7 +282,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
             dtoken1.account_id(),
             &Price {
                 ticker_id: "1weth".to_string(),
-                value:  WBalance::from(1000),
+                value: WBalance::from(1000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -304,7 +304,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
             dtoken2.account_id(),
             &Price {
                 ticker_id: "2weth".to_string(),
-                value:  WBalance::from(2000),
+                value: WBalance::from(2000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -404,7 +404,7 @@ fn scenario_supply_borrow_repay_withdraw() {
         ),
         deposit = 1
     )
-        .assert_success();
+    .assert_success();
 
     // after supplying
     let user_balance: String = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
@@ -446,10 +446,13 @@ fn scenario_supply_borrow_repay_withdraw() {
     let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     let repay_info = call!(
         user,
-        dtoken.view_repay_info(user.account_id(), WBalance(U128(dtoken_balance.parse().unwrap()))),
+        dtoken.view_repay_info(
+            user.account_id(),
+            WBalance(U128(dtoken_balance.parse().unwrap()))
+        ),
         deposit = 0
     )
-        .unwrap_json::<RepayInfo>();
+    .unwrap_json::<RepayInfo>();
 
     let repay_amount = u128::from(repay_info.total_amount)
         + u128::from(repay_info.accrued_interest_per_block) * 10;

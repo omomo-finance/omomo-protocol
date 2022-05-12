@@ -7,11 +7,11 @@ use controller::AccountData;
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
 use general::ratio::RATIO_DECIMALS;
+use general::wbalance::WBalance;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::test_utils::test_env::bob;
 use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
-use general::wbalance::WBalance;
 
 fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
@@ -24,14 +24,14 @@ fn withdraw_with_no_supply_fixture() -> (ContractAccount<dtoken::ContractContrac
 
     call!(
         utoken.user_account,
-        utoken.mint(dtoken.account_id(),  U128(0)),
+        utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
         utoken.user_account,
-        utoken.mint(user.account_id(),  U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
@@ -61,7 +61,7 @@ fn withdraw_more_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(dtoken.account_id(),  U128(0)),
+        utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
@@ -75,7 +75,7 @@ fn withdraw_more_fixture() -> (
 
     call!(
         dtoken.user_account,
-        dtoken.mint(user.account_id(),  WBalance::from(20)),
+        dtoken.mint(user.account_id(), WBalance::from(20)),
         0,
         100000000000000
     )
@@ -130,21 +130,21 @@ fn withdraw_less_same_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(dtoken.account_id(),  U128(0)),
+        utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
         utoken.user_account,
-        utoken.mint(user.account_id(),  U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
         dtoken.user_account,
-        dtoken.mint(user.account_id(),  WBalance::from(20)),
+        dtoken.mint(user.account_id(), WBalance::from(20)),
         0,
         100000000000000
     )
@@ -213,14 +213,14 @@ fn supply_borrow_withdraw_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(dtoken.account_id(),  U128(100)),
+        utoken.mint(dtoken.account_id(), U128(100)),
         0,
         100000000000000
     );
 
     call!(
         utoken.user_account,
-        utoken.mint(user.account_id(),  U128(300)),
+        utoken.mint(user.account_id(), U128(300)),
         0,
         100000000000000
     );
@@ -266,21 +266,21 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         utoken.user_account,
-        utoken.mint(dtoken.account_id(),  U128(0)),
+        utoken.mint(dtoken.account_id(), U128(0)),
         0,
         100000000000000
     );
 
     call!(
         utoken.user_account,
-        utoken.mint(user.account_id(),  U128(20)),
+        utoken.mint(user.account_id(), U128(20)),
         0,
         100000000000000
     );
 
     call!(
         dtoken.user_account,
-        dtoken.mint(user.account_id(),  WBalance::from(3)),
+        dtoken.mint(user.account_id(), WBalance::from(3)),
         0,
         100000000000000
     )
@@ -288,7 +288,7 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         dtoken.user_account,
-        dtoken.mint(user.account_id(),  WBalance::from(7)),
+        dtoken.mint(user.account_id(), WBalance::from(7)),
         0,
         100000000000000
     )
@@ -296,7 +296,7 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         dtoken.user_account,
-        dtoken.mint(user.account_id(),  WBalance::from(10)),
+        dtoken.mint(user.account_id(), WBalance::from(10)),
         0,
         100000000000000
     )
@@ -304,7 +304,7 @@ fn withdraw_error_transfer_fixture() -> (
 
     call!(
         user,
-        controller.increase_supplies(user.account_id(), dtoken.account_id(),  WBalance::from(20)),
+        controller.increase_supplies(user.account_id(), dtoken.account_id(), WBalance::from(20)),
         0,
         100000000000000
     )
@@ -360,28 +360,28 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
 
     call!(
         utoken2.user_account,
-        utoken2.mint(dtoken2.account_id(),  U128(10000)),
+        utoken2.mint(dtoken2.account_id(), U128(10000)),
         0,
         100000000000000
     );
 
     call!(
         utoken1.user_account,
-        utoken1.mint(dtoken1.account_id(),  U128(1000000)),
+        utoken1.mint(dtoken1.account_id(), U128(1000000)),
         0,
         100000000000000
     );
 
     call!(
         utoken1.user_account,
-        utoken1.mint(user.account_id(),  U128(100000000000)),
+        utoken1.mint(user.account_id(), U128(100000000000)),
         0,
         100000000000000
     );
 
     call!(
         utoken2.user_account,
-        utoken2.mint(user.account_id(),  U128(100000000000)),
+        utoken2.mint(user.account_id(), U128(100000000000)),
         0,
         100000000000000
     );
@@ -406,7 +406,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
             dtoken1.account_id(),
             &Price {
                 ticker_id: "1weth".to_string(),
-                value:  WBalance::from(1000),
+                value: WBalance::from(1000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -421,7 +421,7 @@ fn withdraw_with_borrow_on_another_dtoken_fixure() -> (
             dtoken2.account_id(),
             &Price {
                 ticker_id: "2weth".to_string(),
-                value:  WBalance::from(2000),
+                value: WBalance::from(2000),
                 volatility: U128(100),
                 fraction_digits: 4
             }
@@ -665,11 +665,17 @@ fn scenario_supply_borrow_withdraw() {
 
     let dtoken_balance_before: U128 =
         view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
-    let exchange_rate: u128 = view!(dtoken.view_exchange_rate(WBalance(dtoken_balance_before))).unwrap_json();
+    let exchange_rate: u128 =
+        view!(dtoken.view_exchange_rate(WBalance(dtoken_balance_before))).unwrap_json();
     let dtoken_amount: u128 = 10;
     let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
-    call!(user, dtoken.withdraw(WBalance::from(dtoken_amount)), deposit = 0).assert_success();
+    call!(
+        user,
+        dtoken.withdraw(WBalance::from(dtoken_amount)),
+        deposit = 0
+    )
+    .assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dtoken.account_id());
@@ -755,7 +761,8 @@ fn scenario_withdraw_with_borrow_on_another_dtoken() {
 
     let dtoken_balance: U128 =
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
-    let exchange_rate: u128 = view!(dtoken2.view_exchange_rate(WBalance(dtoken_balance))).unwrap_json();
+    let exchange_rate: u128 =
+        view!(dtoken2.view_exchange_rate(WBalance(dtoken_balance))).unwrap_json();
     let dtoken_amount: u128 = 5000;
     let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
@@ -768,7 +775,12 @@ fn scenario_withdraw_with_borrow_on_another_dtoken() {
     .unwrap_json();
     assert_eq!(res_potential, 27857);
 
-    call!(user, dtoken2.withdraw(WBalance::from(dtoken_amount)), deposit = 0).assert_success();
+    call!(
+        user,
+        dtoken2.withdraw(WBalance::from(dtoken_amount)),
+        deposit = 0
+    )
+    .assert_success();
 
     let res: u128 = view!(controller.get_health_factor(user.account_id())).unwrap_json();
     assert_eq!(res, 27857);
@@ -792,7 +804,8 @@ fn scenario_withdraw_failed_due_to_low_health_factor() {
 
     let dtoken_balance: U128 =
         view!(utoken2.ft_balance_of(dtoken2.account_id())).unwrap_json::<U128>();
-    let exchange_rate: u128 = view!(dtoken2.view_exchange_rate(WBalance(dtoken_balance))).unwrap_json();
+    let exchange_rate: u128 =
+        view!(dtoken2.view_exchange_rate(WBalance(dtoken_balance))).unwrap_json();
     let dtoken_amount: u128 = 50000;
     let token_amount: u128 = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate;
 
@@ -805,7 +818,12 @@ fn scenario_withdraw_failed_due_to_low_health_factor() {
     .unwrap_json();
     assert_eq!(res_potential, 8572);
 
-    call!(user, dtoken2.withdraw(WBalance::from(dtoken_amount)), deposit = 0).assert_success();
+    call!(
+        user,
+        dtoken2.withdraw(WBalance::from(dtoken_amount)),
+        deposit = 0
+    )
+    .assert_success();
 
     let user_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dtoken2.account_id());

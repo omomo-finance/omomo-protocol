@@ -83,7 +83,7 @@ impl FungibleTokenMetadataProvider for Contract {
 mod tests {
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::test_utils::{accounts, VMContextBuilder};
-    use near_sdk::{env, testing_env, Balance};
+    use near_sdk::{testing_env, Balance};
 
     use super::*;
 
@@ -166,24 +166,26 @@ mod tests {
 
         contract.mint(freddie.clone(), U128(100));
 
-        contract.token.internal_register_account(&bob.clone());
+        contract.token.internal_register_account(&bob);
 
         assert_eq!(contract.ft_balance_of(freddie.clone()), U128(100));
         assert_eq!(contract.ft_balance_of(bob.clone()), U128(0));
 
-
         testing_env!(context
-        .predecessor_account_id(freddie.clone())
-        .attached_deposit(1)
-        .build());
+            .predecessor_account_id(freddie.clone())
+            .attached_deposit(1)
+            .build());
 
         contract.ft_transfer(
             bob.clone(),
             10.into(),
-            Some("i have transferred to bob that has no tokens yet (hence isn't registered)".to_string()),
+            Some(
+                "i have transferred to bob that has no tokens yet (hence isn't registered)"
+                    .to_string(),
+            ),
         );
 
-        assert_eq!(contract.ft_balance_of(freddie.clone()), U128(90));
-        assert_eq!(contract.ft_balance_of(bob.clone()), U128(10));
+        assert_eq!(contract.ft_balance_of(freddie), U128(90));
+        assert_eq!(contract.ft_balance_of(bob), U128(10));
     }
 }

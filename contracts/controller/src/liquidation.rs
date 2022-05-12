@@ -64,7 +64,7 @@ impl Contract {
             NO_DEPOSIT,
             near_sdk::Gas::ONE_TERA * 8_u64,
         )
-            .into()
+        .into()
     }
 }
 
@@ -77,10 +77,12 @@ impl Contract {
     ) -> WBalance {
         WBalance::from(
             self.get_liquidation_incentive().0
-                * Balance::from(liquidation_amount
-                * self.prices.get(&borrowing_dtoken).unwrap().value
-                / (self.prices.get(&collateral_dtoken).unwrap().value))
-                * RATIO_DECIMALS.0)
+                * Balance::from(
+                    liquidation_amount * self.prices.get(&borrowing_dtoken).unwrap().value
+                        / (self.prices.get(&collateral_dtoken).unwrap().value),
+                )
+                * RATIO_DECIMALS.0,
+        )
     }
 
     pub fn maximum_possible_liquidation_amount(

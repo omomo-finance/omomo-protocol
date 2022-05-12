@@ -1,7 +1,7 @@
 use crate::*;
 use general::ratio::{Ratio, RATIO_DECIMALS};
-use std::cmp::{max, min};
 use general::wbalance::WBalance;
+use std::cmp::{max, min};
 
 const MAX_RESERVE_FACTOR_VALUE: Ratio = RATIO_DECIMALS;
 
@@ -73,10 +73,10 @@ impl Contract {
 mod tests {
     use crate::InterestRateModel;
     use general::ratio::Ratio;
+    use general::wbalance::WBalance;
     use general::WRatio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use general::wbalance::WBalance;
 
     use crate::{Config, Contract};
 
@@ -96,7 +96,10 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
-        assert_eq!(contract.get_util(WBalance::from(20), WBalance::from(180), WBalance::from(0)), Ratio(9000));
+        assert_eq!(
+            contract.get_util(WBalance::from(20), WBalance::from(180), WBalance::from(0)),
+            Ratio(9000)
+        );
     }
 
     #[test]

@@ -155,7 +155,9 @@ impl Contract {
         let new_reward = Reward {
             id: reward.id.clone(),
             token: reward.token.clone(),
-            amount: WBalance::from(Balance::from(reward.amount) * reward.penalty.0 / RATIO_DECIMALS.0),
+            amount: WBalance::from(
+                Balance::from(reward.amount) * reward.penalty.0 / RATIO_DECIMALS.0,
+            ),
             locked_till: block_height(),
             penalty: reward.penalty,
         };

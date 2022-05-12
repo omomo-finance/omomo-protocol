@@ -82,11 +82,11 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
+    use general::wbalance::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, Balance, VMContext};
-    use general::wbalance::WBalance;
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
@@ -158,9 +158,9 @@ mod tests {
         let gotten_md = contract.view_market_data(WBalance::from(1000));
 
         let _expected_md = MarketData {
-            total_supplies:  WBalance::from(0),
-            total_borrows:  WBalance::from(0),
-            total_reserves:  WBalance::from(200),
+            total_supplies: WBalance::from(0),
+            total_borrows: WBalance::from(0),
+            total_reserves: WBalance::from(200),
             exchange_rate_ratio: U128(1000000),
             interest_rate_ratio: U128(0),
             borrow_rate_ratio: U128(10000),
@@ -207,7 +207,8 @@ mod tests {
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(
-            withdraw_info.total_interest, U128(0),
+            withdraw_info.total_interest,
+            U128(0),
             "Withdraw total_interest is not matches to expected"
         );
     }
