@@ -316,7 +316,7 @@ fn borrow_with_supply_on_another_dtoken_fixture() -> (
 
     call!(
         user,
-        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action.clone()),
+        utoken2.ft_transfer_call(dtoken2.account_id(), U128(60000), None, action),
         deposit = 1
     )
     .assert_success();

@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 const GAS_FOR_WITHDRAW: Gas = Gas(180_000_000_000_000);
 
@@ -66,16 +67,18 @@ impl Contract {
             U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor()),
+            U128(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(env::signer_account_id()),
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
-        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
-        let token_amount: Balance = dtoken_amount * RATIO_DECIMALS / exchange_rate;
+        let token_amount: Balance = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate.0;
+        let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
+
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         controller::withdraw_supplies(
             env::signer_account_id(),
@@ -89,6 +92,7 @@ impl Contract {
             env::signer_account_id(),
             token_amount.into(),
             dtoken_amount.into(),
+            whole_amount.into(),
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(80),
@@ -102,6 +106,7 @@ impl Contract {
         user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
+        whole_amount: WBalance,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
@@ -119,10 +124,10 @@ impl Contract {
         // Cross-contract call to market token
         underlying_token::ft_transfer(
             user_account,
-            token_amount,
+            whole_amount,
             Some(format!(
                 "Withdraw with token_amount {}",
-                Balance::from(token_amount)
+                Balance::from(whole_amount)
             )),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
@@ -151,6 +156,7 @@ impl Contract {
                 "{}",
                 Events::WithdrawSuccess(env::signer_account_id(), Balance::from(dtoken_amount))
             );
+            self.set_accrued_supply_interest(env::signer_account_id(), AccruedInterest::default());
             PromiseOrValue::Value(dtoken_amount)
         } else {
             controller::increase_supplies(

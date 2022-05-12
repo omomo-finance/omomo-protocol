@@ -1,5 +1,6 @@
 use crate::*;
-use near_sdk::{is_promise_success, log, PromiseOrValue};
+use general::ratio::RATIO_DECIMALS;
+use near_sdk::PromiseOrValue;
 use partial_min_max::min;
 
 #[near_bindgen]
@@ -11,8 +12,11 @@ impl Contract {
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
-    ) {
-        // TODO: Add check that this function was called by real Dtoken that we store somewhere in self.markets
+    ) -> PromiseOrValue<WBalance> {
+        require!(
+            self.is_dtoken_caller(),
+            "This functionality is allowed to be called by admin, contract or dtoken's contract only"
+        );
         let res = self.is_liquidation_allowed(
             borrower,
             borrowing_dtoken,
@@ -23,44 +27,44 @@ impl Contract {
         if res.is_err() {
             panic!("Liquidation failed on controller, {:?}", res.unwrap_err());
         }
+        let (_, liquidation_revenue_amount) = res.unwrap();
+        PromiseOrValue::Value(liquidation_revenue_amount)
     }
 
-    pub fn on_debt_repaying_callback(
+    pub fn liquidation_repay_and_swap(
         &mut self,
         borrower: AccountId,
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
+        liquidation_revenue_amount: WBalance,
     ) -> PromiseOrValue<U128> {
-        // TODO: Add check that only real Dtoken address can call this
-        if !is_promise_success() {
-            self.increase_borrows(borrower, borrowing_dtoken, liquidation_amount);
-            log!("Liquidation failed on borrow_repay call, revert changes...");
-            PromiseOrValue::Value(U128(liquidation_amount.0))
-        } else {
-            self.decrease_supplies(
-                borrower.clone(),
-                collateral_dtoken.clone(),
-                liquidation_amount,
-            );
+        require!(
+            self.is_dtoken_caller(),
+            "This method is allowed to be called by dtoken contract only"
+        );
+        self.repay_borrows(borrower.clone(), borrowing_dtoken, liquidation_amount);
+        self.decrease_supplies(
+            borrower.clone(),
+            collateral_dtoken.clone(),
+            liquidation_revenue_amount,
+        );
+        self.increase_supplies(
+            liquidator.clone(),
+            collateral_dtoken.clone(),
+            liquidation_revenue_amount,
+        );
 
-            self.increase_supplies(
-                liquidator.clone(),
-                collateral_dtoken.clone(),
-                liquidation_amount,
-            );
-
-            dtoken::swap_supplies(
-                borrower,
-                liquidator,
-                liquidation_amount,
-                collateral_dtoken,
-                NO_DEPOSIT,
-                near_sdk::Gas::ONE_TERA * 8_u64,
-            )
-            .into()
-        }
+        dtoken::swap_supplies(
+            borrower,
+            liquidator,
+            liquidation_revenue_amount,
+            collateral_dtoken,
+            NO_DEPOSIT,
+            near_sdk::Gas::ONE_TERA * 8_u64,
+        )
+        .into()
     }
 }
 
@@ -69,13 +73,13 @@ impl Contract {
         &self,
         borrowing_dtoken: AccountId,
         collateral_dtoken: AccountId,
-        amount_for_liquidation: WBalance,
+        liquidation_amount: WBalance,
     ) -> WBalance {
         WBalance::from(
-            self.get_liquidation_incentive()
-                * amount_for_liquidation.0
+            self.get_liquidation_incentive().0
+                * liquidation_amount.0
                 * self.prices.get(&borrowing_dtoken).unwrap().value.0
-                / self.prices.get(&collateral_dtoken).unwrap().value.0,
+                / (self.prices.get(&collateral_dtoken).unwrap().value.0 * RATIO_DECIMALS.0),
         )
     }
 
@@ -96,18 +100,19 @@ impl Contract {
 
         let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
-        let max_unhealth_repay = unhealth_factor * borrow_amount * borrow_price / RATIO_DECIMALS;
+        let max_unhealth_repay =
+            unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
 
         let supply_amount =
-            self.get_entity_by_token(ActionType::Supply, borrower, borrowing_dtoken);
+            self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
         let collateral_price = self.prices.get(&collateral_dtoken).unwrap().value.0;
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (RATIO_DECIMALS - self.liquidation_incentive) * supply_amount * collateral_price,
+            (RATIO_DECIMALS - self.liquidation_incentive).0 * supply_amount * collateral_price,
         ) / borrow_price;
 
-        WBalance::from(max_possible_liquidation_amount as u128)
+        WBalance::from(max_possible_liquidation_amount)
     }
 
     pub fn is_liquidation_allowed(
@@ -116,11 +121,11 @@ impl Contract {
         borrowing_dtoken: AccountId,
         liquidator: AccountId,
         collateral_dtoken: AccountId,
-        amount_for_liquidation: WBalance,
+        liquidation_amount: WBalance,
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
             Err((
-                WBalance::from(amount_for_liquidation.0),
+                WBalance::from(liquidation_amount.0),
                 WBalance::from(0),
                 String::from("User can't be liquidated as he has normal value of health factor"),
             ))
@@ -131,9 +136,9 @@ impl Contract {
                 collateral_dtoken.clone(),
             );
 
-            if max_possible_liquidation_amount.0 < amount_for_liquidation.0 {
+            if max_possible_liquidation_amount.0 <= liquidation_amount.0 {
                 return Err((
-                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(liquidation_amount.0),
                     WBalance::from(max_possible_liquidation_amount.0),
                     String::from(
                         "Max possible liquidation amount cannot be less than liquidation amount",
@@ -141,25 +146,9 @@ impl Contract {
                 ));
             }
 
-            let borrower_supply_amount = self.get_entity_by_token(
-                ActionType::Supply,
-                borrower.clone(),
-                collateral_dtoken.clone(),
-            );
-
-            if borrower_supply_amount < amount_for_liquidation.0 {
-                return Err((
-                    WBalance::from(amount_for_liquidation.0),
-                    WBalance::from(borrower_supply_amount),
-                    String::from(
-                        "Borrower collateral amount is not enough to pay it to liquidator",
-                    ),
-                ));
-            }
-
             if liquidator == borrower {
                 return Err((
-                    WBalance::from(amount_for_liquidation.0),
+                    WBalance::from(liquidation_amount.0),
                     WBalance::from(max_possible_liquidation_amount.0),
                     String::from("Liquidation cannot liquidate his on borrow"),
                 ));
@@ -168,9 +157,9 @@ impl Contract {
             let revenue_amount = self.get_liquidation_revenue(
                 borrowing_dtoken,
                 collateral_dtoken,
-                amount_for_liquidation,
+                liquidation_amount,
             );
-            Ok((amount_for_liquidation, revenue_amount))
+            Ok((liquidation_amount, revenue_amount))
         }
     }
 }

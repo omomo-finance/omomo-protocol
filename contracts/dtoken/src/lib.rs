@@ -35,6 +35,7 @@ mod interest_model;
 mod interest_rate_model;
 mod liquidation;
 mod repay;
+mod reserve;
 mod reward;
 mod supply;
 mod user_profile;
@@ -131,21 +132,22 @@ trait ControllerInterface {
         token_address: AccountId,
         token_amount: WBalance,
     );
-    fn on_debt_repaying_callback(
-        &mut self,
-        borrower: AccountId,
-        _borrowing_dtoken: AccountId,
-        collateral_dtoken: AccountId,
-        liquidator: AccountId,
-        liquidation_amount: WBalance,
-    );
     fn liquidation(
         &mut self,
         borrower: AccountId,
         borrowing_dtoken: AccountId,
-        _liquidator: AccountId,
+        liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
+    );
+    fn liquidation_repay_and_swap(
+        &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+        liquidation_revenue_amount: WBalance,
     );
     fn mutex_lock(&mut self, action: Actions);
     fn mutex_unlock(&mut self);
@@ -185,6 +187,7 @@ trait InternalTokenInterface {
         user_account: AccountId,
         token_amount: WBalance,
         dtoken_amount: WBalance,
+        whole_amount: WBalance,
     ) -> PromiseOrValue<WBalance>;
     fn withdraw_ft_transfer_call_callback(
         &mut self,
@@ -195,13 +198,12 @@ trait InternalTokenInterface {
         &mut self,
         token_amount: WBalance,
     ) -> PromiseOrValue<WBalance>;
-
     fn liquidate_callback(
         &mut self,
         borrower: AccountId,
         borrowing_dtoken: AccountId,
-        liquidator: AccountId,
         collateral_dtoken: AccountId,
+        liquidator: AccountId,
         liquidation_amount: WBalance,
     );
     fn mutex_lock_callback(

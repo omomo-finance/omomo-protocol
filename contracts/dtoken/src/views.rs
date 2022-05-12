@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::Ratio;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -27,11 +28,11 @@ impl Contract {
         WBalance::from(self.get_total_reserves())
     }
 
-    pub fn view_market_data(&self, ft_balance_of: WBalance) -> MarketData {
+    pub fn view_market_data(&self, ft_balance: WBalance) -> MarketData {
         let total_supplies = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
-        let exchange_rate = self.get_exchange_rate(ft_balance_of);
+        let exchange_rate = self.get_exchange_rate(ft_balance);
         let reserve_factor = self
             .config
             .get()
@@ -40,13 +41,13 @@ impl Contract {
             .get_reserve_factor();
 
         let interest_rate = self.get_supply_rate(
-            ft_balance_of,
+            ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
-            WBalance::from(reserve_factor),
+            WBalance::from(reserve_factor.0),
         );
         let borrow_rate = self.get_borrow_rate(
-            ft_balance_of,
+            ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
         );
@@ -55,9 +56,9 @@ impl Contract {
             total_supplies: WBalance::from(total_supplies),
             total_borrows: WBalance::from(total_borrows),
             total_reserves: WBalance::from(total_reserves),
-            exchange_rate_ratio: WRatio::from(exchange_rate),
-            interest_rate_ratio: WRatio::from(interest_rate),
-            borrow_rate_ratio: WRatio::from(borrow_rate),
+            exchange_rate_ratio: WRatio::from(exchange_rate.0),
+            interest_rate_ratio: WRatio::from(interest_rate.0),
+            borrow_rate_ratio: WRatio::from(borrow_rate.0),
         }
     }
 
@@ -65,18 +66,23 @@ impl Contract {
         self.get_repay_info(user_id, ft_balance)
     }
 
-    pub fn view_exchange_rate(&self, underlying_balance: WBalance) -> Ratio {
-        self.get_exchange_rate(underlying_balance)
+    pub fn view_exchange_rate(&self, ft_balance: WBalance) -> Ratio {
+        self.get_exchange_rate(ft_balance)
     }
 
-    pub fn view_user_rewards(&self, account_id: AccountId) -> HashMap<String, Reward> {
-        self.get_user_rewards(account_id)
+    pub fn view_user_rewards(&self, user_id: AccountId) -> HashMap<String, Reward> {
+        self.get_user_rewards(user_id)
+    }
+
+    pub fn view_withdraw_info(&self, user_id: AccountId, ft_balance: WBalance) -> WithdrawInfo {
+        self.get_withdraw_info(user_id, ft_balance)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
+    use general::ratio::Ratio;
     use general::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
@@ -124,12 +130,23 @@ mod tests {
         let repay = contract.view_repay_info(bob(), WBalance::from(1000));
 
         assert_eq!(
+            // as there are no borrows yet accrued_interest_per_block = 0
+            Balance::from(repay.accrued_interest_per_block),
+            0,
+            "RepayInfo structure is not matches to expected"
+        );
+        assert_eq!(
             Balance::from(repay.total_amount),
             0,
             "RepayInfo structure is not matches to expected"
         );
         assert_eq!(
-            Balance::from(repay.accrued_interest_per_block),
+            Balance::from(repay.borrow_amount),
+            0,
+            "RepayInfo structure is not matches to expected"
+        );
+        assert_eq!(
+            Balance::from(repay.accumulated_interest),
             0,
             "RepayInfo structure is not matches to expected"
         );
@@ -173,6 +190,26 @@ mod tests {
         assert_eq!(
             &gotten_md.borrow_rate_ratio, &_expected_md.borrow_rate_ratio,
             "Borrow rate values check has been failed"
+        );
+    }
+
+    #[test]
+    fn test_view_withdraw_info() {
+        let contract = init_test_env(false);
+
+        let withdraw_info = contract.view_withdraw_info(bob(), U128(1000));
+
+        // total interest should be 0
+        // exchange_rate = initial_exchange_rate = 1000000
+
+        assert_eq!(
+            withdraw_info.exchange_rate,
+            Ratio(1000000),
+            "Withdraw exchange_rate is not matches to expected"
+        );
+        assert_eq!(
+            withdraw_info.total_interest, 0,
+            "Withdraw total_interest is not matches to expected"
         );
     }
 }

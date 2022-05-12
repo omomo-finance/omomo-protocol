@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::RATIO_DECIMALS;
 use std::collections::HashMap;
 
 use crate::admin::Market;
@@ -11,6 +12,7 @@ pub struct AccountData {
     pub account_id: AccountId,
     pub total_borrows_usd: USD,
     pub total_supplies_usd: USD,
+    pub total_available_borrows_usd: USD,
     pub blocked: bool,
     pub health_factor_ratio: WRatio,
     pub user_profile: WrappedUserProfile,
@@ -22,8 +24,9 @@ impl Default for AccountData {
             account_id: AccountId::new_unchecked("".to_string()),
             total_borrows_usd: U128(0),
             total_supplies_usd: U128(0),
+            total_available_borrows_usd: U128(0),
             blocked: false,
-            health_factor_ratio: WRatio::from(RATIO_DECIMALS),
+            health_factor_ratio: WRatio::from(RATIO_DECIMALS.0),
             user_profile: Default::default(),
         }
     }
@@ -50,14 +53,19 @@ impl Contract {
             .map(|user_id| {
                 let total_borrows = self.get_total_borrows(user_id.clone());
                 let total_supplies = self.get_total_supplies(user_id.clone());
+
+                let total_available_borrows_usd =
+                    (total_supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0).into();
+
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
                 AccountData {
                     account_id: user_id.clone(),
                     total_borrows_usd: total_borrows,
+                    total_available_borrows_usd,
                     total_supplies_usd: total_supplies,
                     blocked: false,
-                    health_factor_ratio: WRatio::from(health_factor),
+                    health_factor_ratio: WRatio::from(health_factor.0),
                     user_profile,
                 }
             })
@@ -72,20 +80,21 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
-        let potential_borrow = (supplies.0 / self.health_threshold) - gotten_borrow.0;
+        let potential_borrow =
+            (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (potential_borrow / price).into()
+        (potential_borrow / price * ONE_TOKEN).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
         let supplies = self.get_total_supplies(user_id.clone());
         let borrows = self.get_total_borrows(user_id);
 
-        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold);
+        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (max_withdraw / price).into()
+        (max_withdraw / price * ONE_TOKEN).into()
     }
 }
 
@@ -222,6 +231,14 @@ mod tests {
             U128(100 * 20000),
             "View accounts total supplies check has been failed"
         );
+
+        assert_eq!(
+            result[0].total_available_borrows_usd,
+            // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
+            U128(100 * 20000 * 10000 / 15000),
+            "View accounts total supplies check has been failed"
+        );
+
         assert_eq!(
             result[0].health_factor_ratio,
             U128(15000),
@@ -237,12 +254,12 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            500000 * ONE_TOKEN,
+            5 * ONE_TOKEN, // in yocto == 5 Near
         );
 
-        // we are able to withdraw all the supplied funds
+        // we are able to withdraw all the supplied funds hence 5 NEAR
         assert_eq!(
-            U128(500000),
+            U128(5 * ONE_TOKEN),
             near_contract.view_withdraw_max(user, token_address)
         );
     }
@@ -255,17 +272,27 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            1000000 * ONE_TOKEN,
+            50 * ONE_TOKEN, // in yocto == 50 Near
         );
 
         near_contract.set_entity_by_token(
             Borrow,
             user.clone(),
             token_address.clone(),
-            10 * ONE_TOKEN,
+            10 * ONE_TOKEN, // in yocto == 10 Near
         );
 
-        // we still have some tokens to borrow
-        assert_eq!(U128(56), near_contract.view_borrow_max(user, token_address));
+        // max_withdraw = (50 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 466_666;
+        // amount = 466_666 / 20_000 = 23
+
+        // as we borrow and supply same token the easiest way to check is
+        // 50 (supplied) / 1.5 (health threshold) = 33
+        // hence we have 33 - 10 = 23 left to borrow not to violate health threshold
+
+        // we still have some tokens to borrow  23 Near
+        assert_eq!(
+            U128(23 * ONE_TOKEN),
+            near_contract.view_borrow_max(user, token_address)
+        );
     }
 }

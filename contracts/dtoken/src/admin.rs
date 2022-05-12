@@ -17,7 +17,7 @@ impl Contract {
         self.admin = account;
     }
 
-    fn is_valid_admin_call(&self) -> bool {
+    pub fn is_valid_admin_call(&self) -> bool {
         env::signer_account_id() == self.admin
             || env::signer_account_id() == env::current_account_id()
     }
@@ -42,12 +42,46 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
+    use general::ratio::Ratio;
     use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::bob;
+    use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, VMContext};
 
     use crate::Config;
 
     use super::*;
+
+    pub fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .current_account_id(alice())
+            .signer_account_id(alice())
+            .is_view(is_view)
+            .build()
+    }
+
+    pub fn init(is_admin: bool) -> Contract {
+        let (dtoken_account, underlying_token_account, controller_account) =
+            (alice(), bob(), carol());
+
+        if is_admin {
+            testing_env!(get_context(false));
+        }
+
+        let mut contract = Contract::new(Config {
+            initial_exchange_rate: U128(1000000),
+            underlying_token_id: underlying_token_account,
+            owner_id: dtoken_account,
+            controller_account_id: controller_account,
+            interest_rate_model: InterestRateModel::default(),
+        });
+
+        if is_admin {
+            contract.set_total_reserves(200);
+        }
+
+        contract
+    }
 
     #[test]
     fn set_get_admin() {
@@ -77,10 +111,20 @@ mod tests {
         });
         dtoken_contract.mint(bob(), U128(1000));
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, 200000);
+        assert_eq!(exchange_rate, Ratio(200000));
 
         dtoken_contract.set_total_reserves(10000);
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, 100000);
+        assert_eq!(exchange_rate, Ratio(100000));
+    }
+
+    #[test]
+    fn test_increase_total_reserve() {
+        let mut contract = init(true);
+
+        contract.increase_reserve(U128(300));
+
+        // 200 is initial total_reserve set up in init_test_env
+        assert_eq!(U128(200 + 300), contract.view_total_reserves());
     }
 }
