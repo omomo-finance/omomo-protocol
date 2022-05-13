@@ -30,6 +30,10 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
         );
+        assert!(
+            Balance::from(dtoken_amount) > 0,
+            "Amount should be a positive number"
+        );
         self.mutex_account_lock(Actions::Withdraw, dtoken_amount, GAS_FOR_WITHDRAW)
     }
 
@@ -73,7 +77,6 @@ impl Contract {
             self.get_supplies_by_account(env::signer_account_id()),
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
-
         let token_amount: Balance = dtoken_amount * RATIO_DECIMALS / exchange_rate;
         let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
 

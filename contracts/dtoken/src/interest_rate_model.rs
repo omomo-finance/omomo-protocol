@@ -110,11 +110,11 @@ impl InterestRateModel {
 impl Default for InterestRateModel {
     fn default() -> Self {
         Self {
-            kink: WRatio::from(RATIO_DECIMALS),
-            base_rate_per_block: WRatio::from(RATIO_DECIMALS),
-            multiplier_per_block: WRatio::from(RATIO_DECIMALS),
-            jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS),
-            reserve_factor: WRatio::from(500),
+            kink: WRatio::from(0),
+            base_rate_per_block: WRatio::from(0),
+            multiplier_per_block: WRatio::from(0),
+            jump_multiplier_per_block: WRatio::from(0),
+            reserve_factor: WRatio::from(0),
             rewards_config: Vec::new(),
         }
     }

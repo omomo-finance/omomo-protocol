@@ -1,5 +1,5 @@
 use near_sdk::json_types::U128;
-use near_sdk::AccountId;
+use near_sdk::{AccountId, Balance};
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 
 use controller::ContractContract as Controller;
@@ -61,6 +61,41 @@ pub fn init_two_dtokens(
     );
 
     (root, contract1, contract2)
+}
+
+pub fn init_three_dtokens(
+    root: UserAccount,
+    token1_id: AccountId,
+    token2_id: AccountId,
+    token3_id: AccountId,
+) -> (
+    UserAccount,
+    ContractAccount<Dtoken>,
+    ContractAccount<Dtoken>,
+    ContractAccount<Dtoken>,
+) {
+    let contract1 = deploy!(
+        contract: Dtoken,
+        contract_id: token1_id,
+        bytes: &DTOKEN_WASM_BYTES,
+        signer_account: root
+    );
+
+    let contract2 = deploy!(
+        contract: Dtoken,
+        contract_id: token2_id,
+        bytes: &DTOKEN_WASM_BYTES,
+        signer_account: root
+    );
+
+    let contract3 = deploy!(
+        contract: Dtoken,
+        contract_id: token3_id,
+        bytes: &DTOKEN_WASM_BYTES,
+        signer_account: root
+    );
+
+    (root, contract1, contract2, contract3)
 }
 
 pub fn init_utoken(
@@ -175,6 +210,70 @@ pub fn initialize_two_utokens(
     .assert_success();
 
     (uroot1, uroot2, utoken1, utoken2)
+}
+
+pub fn initialize_three_utokens(
+    root: &UserAccount,
+) -> (
+    UserAccount,
+    UserAccount,
+    UserAccount,
+    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<test_utoken::ContractContract>,
+) {
+    let uroot1 = root.create_user("utoken1".parse().unwrap(), 1200000000000000000000000000000);
+    let (uroot1, utoken1) = init_utoken(
+        uroot1,
+        AccountId::new_unchecked("utoken_contract1".to_string()),
+    );
+    call!(
+        uroot1,
+        utoken1.new_default_meta(
+            uroot1.account_id(),
+            String::from("Mock Token"),
+            String::from("MOCK"),
+            U128(100000000000000)
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    let uroot2 = root.create_user("utoken2".parse().unwrap(), 1200000000000000000000000000000);
+    let (uroot2, utoken2) = init_utoken(
+        uroot2,
+        AccountId::new_unchecked("utoken_contract2".to_string()),
+    );
+    call!(
+        uroot2,
+        utoken2.new_default_meta(
+            uroot2.account_id(),
+            String::from("Mock Token"),
+            String::from("MOCK"),
+            U128(100000000000000)
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    let uroot3 = root.create_user("utoken3".parse().unwrap(), 1200000000000000000000000000000);
+    let (uroot3, utoken3) = init_utoken(
+        uroot3,
+        AccountId::new_unchecked("utoken_contract3".to_string()),
+    );
+    call!(
+        uroot3,
+        utoken3.new_default_meta(
+            uroot3.account_id(),
+            String::from("Mock Token"),
+            String::from("MOCK"),
+            U128(100000000000000)
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    (uroot1, uroot2, uroot3, utoken1, utoken2, utoken3)
 }
 
 pub fn initialize_controller(
@@ -341,6 +440,69 @@ pub fn initialize_two_dtokens_with_custom_interest_rate(
     (droot, dtoken1, dtoken2)
 }
 
+pub fn initialize_three_dtokens_with_custom_interest_rate(
+    root: &UserAccount,
+    utoken_account1: AccountId,
+    utoken_account2: AccountId,
+    utoken_account3: AccountId,
+    controller_account: AccountId,
+    interest_model1: InterestRateModel,
+    interest_model2: InterestRateModel,
+    interest_model3: InterestRateModel,
+) -> (
+    UserAccount,
+    ContractAccount<dtoken::ContractContract>,
+    ContractAccount<dtoken::ContractContract>,
+    ContractAccount<dtoken::ContractContract>,
+) {
+    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let (droot, dtoken1, dtoken2, dtoken3) = init_three_dtokens(
+        droot,
+        AccountId::new_unchecked("dtoken_contract1".to_string()),
+        AccountId::new_unchecked("dtoken_contract2".to_string()),
+        AccountId::new_unchecked("dtoken_contract3".to_string()),
+    );
+    call!(
+        droot,
+        dtoken1.new(dConfig {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: utoken_account1,
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account.clone(),
+            interest_rate_model: interest_model1
+        }),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        droot,
+        dtoken2.new(dConfig {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: utoken_account2,
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account.clone(),
+            interest_rate_model: interest_model2
+        }),
+        deposit = 0
+    )
+    .assert_success();
+
+    call!(
+        droot,
+        dtoken3.new(dConfig {
+            initial_exchange_rate: U128(10000),
+            underlying_token_id: utoken_account3,
+            owner_id: droot.account_id(),
+            controller_account_id: controller_account,
+            interest_rate_model: interest_model3
+        }),
+        deposit = 0
+    )
+    .assert_success();
+    (droot, dtoken1, dtoken2, dtoken3)
+}
+
 pub fn add_market(
     controller: &ContractAccount<controller::ContractContract>,
     utoken_id: AccountId,
@@ -378,4 +540,26 @@ pub fn set_price(
         deposit = 0
     )
     .assert_success();
+}
+
+pub fn supply(
+    user: &UserAccount,
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    dtoken: AccountId,
+    amount: Balance,
+) -> ExecutionResult {
+    let action = "\"Supply\"".to_string();
+    call!(
+        user,
+        utoken.ft_transfer_call(dtoken, U128(amount), Some("SUPPLY".to_string()), action),
+        deposit = 1
+    )
+}
+
+pub fn borrow(
+    user: &UserAccount,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+    amount: Balance,
+) -> ExecutionResult {
+    call!(user, dtoken.borrow(U128(amount)), deposit = 0)
 }
