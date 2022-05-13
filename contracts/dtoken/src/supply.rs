@@ -4,7 +4,6 @@ use near_sdk::env::block_height;
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
-#[near_bindgen]
 impl Contract {
     pub fn supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
