@@ -1,15 +1,17 @@
-use near_sdk::json_types::U128;
-use near_sdk_sim::{call, init_simulator, ContractAccount, UserAccount};
+use dtoken::InterestRateModel;
+use near_sdk::{json_types::U128, Balance};
+use near_sdk_sim::{init_simulator, ContractAccount, UserAccount};
 
 use general::Price;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_dtoken, initialize_utoken,
-    new_user, supply, 
+    mint_tokens, new_user, set_price, supply,
 };
 
-const WNEAR_BALANCE: u128 = 50;
-const SUPPLY_AMOUNT: u128 = 100;
+const WNEAR_BALANCE: Balance = 50;
+const SUPPLY_AMOUNT: Balance = 100;
+const START_PRICE: Balance = 10000;
 
 fn supply_not_enough_tokens_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -19,23 +21,17 @@ fn supply_not_enough_tokens_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot, wnear) = initialize_utoken(&root);
-    let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dwnear) = initialize_dtoken(&root, wnear.account_id(), controller.account_id());
-
-    call!(
-        uroot,
-        wnear.mint(dwnear.account_id(), U128(100)),
-        0,
-        100000000000000
+    let wnear = initialize_utoken(&root);
+    let controller = initialize_controller(&root);
+    let dwnear = initialize_dtoken(
+        &root,
+        wnear.account_id(),
+        controller.account_id(),
+        InterestRateModel::default(),
     );
 
-    call!(
-        uroot,
-        wnear.mint(user.account_id(), U128(WNEAR_BALANCE)),
-        0,
-        100000000000000
-    );
+    mint_tokens(&wnear, dwnear.account_id(), U128(100));
+    mint_tokens(&wnear, user.account_id(), U128(WNEAR_BALANCE));
 
     add_market(
         &controller,
@@ -44,20 +40,16 @@ fn supply_not_enough_tokens_fixture() -> (
         "wnear".to_string(),
     );
 
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dwnear.account_id(),
-            &Price {
-                ticker_id: "wnear".to_string(),
-                value: U128(10000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
+    set_price(
+        &controller,
+        dwnear.account_id(),
+        &Price {
+            ticker_id: "wnear".to_string(),
+            value: U128(START_PRICE),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
+    );
 
     (dwnear, wnear, user)
 }

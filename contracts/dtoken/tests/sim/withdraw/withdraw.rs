@@ -1,14 +1,17 @@
 use crate::utils::{
-    add_market, initialize_controller, initialize_dtoken, initialize_utoken, new_user, view_balance, supply,
+    add_market, initialize_controller, initialize_dtoken, initialize_utoken, mint_tokens, new_user,
+    set_price, supply, view_balance, withdraw,
 };
 use controller::ActionType::Supply;
+use dtoken::InterestRateModel;
 use general::Price;
-use near_sdk::json_types::U128;
-use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use near_sdk::{json_types::U128, Balance};
+use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
-const WETH_AMOUNT: u128 = 100;
+const WETH_AMOUNT: Balance = 100;
+const START_PRICE: Balance = 10000;
 
-fn supply_borrow_withdraw_fixture() -> (
+fn withdraw_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<controller::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
@@ -17,23 +20,17 @@ fn supply_borrow_withdraw_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (_uroot, weth) = initialize_utoken(&root);
-    let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dweth) = initialize_dtoken(&root, weth.account_id(), controller.account_id());
-
-    call!(
-        weth.user_account,
-        weth.mint(dweth.account_id(), U128(100)),
-        0,
-        100000000000000
+    let weth = initialize_utoken(&root);
+    let controller = initialize_controller(&root);
+    let dweth = initialize_dtoken(
+        &root,
+        weth.account_id(),
+        controller.account_id(),
+        InterestRateModel::default(),
     );
 
-    call!(
-        weth.user_account,
-        weth.mint(user.account_id(), U128(WETH_AMOUNT)),
-        0,
-        100000000000000
-    );
+    mint_tokens(&weth, dweth.account_id(), U128(100));
+    mint_tokens(&weth, user.account_id(), U128(WETH_AMOUNT));
 
     add_market(
         &controller,
@@ -42,20 +39,16 @@ fn supply_borrow_withdraw_fixture() -> (
         "weth".to_string(),
     );
 
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dweth.account_id(),
-            &Price {
-                ticker_id: "weth".to_string(),
-                value: U128(10000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
+    set_price(
+        &controller,
+        dweth.account_id(),
+        &Price {
+            ticker_id: "weth".to_string(),
+            value: U128(START_PRICE),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
+    );
 
     supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
 
@@ -64,9 +57,9 @@ fn supply_borrow_withdraw_fixture() -> (
 
 #[test]
 fn scenario_withdraw() {
-    let (dweth, controller, weth, user) = supply_borrow_withdraw_fixture();
+    let (dweth, controller, weth, user) = withdraw_fixture();
 
-    call!(user, dweth.withdraw(U128(WETH_AMOUNT)), deposit = 0).assert_success();
+    withdraw(&user, &dweth, WETH_AMOUNT).assert_success();
 
     let user_supply_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());

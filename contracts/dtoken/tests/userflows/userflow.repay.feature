@@ -34,7 +34,7 @@ Scenario: User Bob repay to digital token DWNEAR 0 tokens - negative flow  <Amou
 
 Scenario: User Bob repay 100 WBTC to digital token DWBTC with no borrow - positive flow  <Success flow>
 	Given User Bob and DWBTC contract
-	When User Bob repay to digital token DWBTC 0 tokens
+	When User Bob repay to digital token DWBTC 100 tokens
 	Then Success flow expected
 	And User balance is 100 WBTC - <No funds have been debited>
 

@@ -1,5 +1,6 @@
 use crate::*;
 
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use std::collections::HashMap;
 
 impl Contract {
@@ -8,7 +9,7 @@ impl Contract {
             .map(|(asset, balance)| {
                 let price = self.get_price(asset.clone()).unwrap();
 
-                Percentage::from(Percent::from(price.volatility)).apply_to(
+                Percentage::from(price.volatility.0).apply_to(
                     Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits),
                 )
             })
@@ -42,7 +43,7 @@ impl Contract {
         let borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
 
         if borrows != 0 {
-            collaterals * RATIO_DECIMALS / borrows
+            Ratio(collaterals * RATIO_DECIMALS.0 / borrows)
         } else {
             self.get_health_threshold()
         }
@@ -60,7 +61,7 @@ impl Contract {
         let mut borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
 
         let price = self.get_price(token_address).unwrap();
-        let usd_amount = Percentage::from(Percent::from(price.volatility)).apply_to(
+        let usd_amount = Percentage::from(price.volatility.0).apply_to(
             Balance::from(price.value) * Balance::from(amount) / 10u128.pow(price.fraction_digits),
         );
         match action {
@@ -73,7 +74,7 @@ impl Contract {
         }
 
         if borrows != 0 {
-            collaterals * RATIO_DECIMALS / borrows
+            Ratio(collaterals * RATIO_DECIMALS.0 / borrows)
         } else {
             self.get_health_threshold()
         }
@@ -251,7 +252,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            (100 * controller_contract.get_health_threshold() / 100),
+            Ratio(100) * controller_contract.get_health_threshold() / Ratio(100),
             "Health factor calculation has been failed"
         );
     }
@@ -298,7 +299,10 @@ mod tests {
         );
 
         // Ratio that represents 150%
-        assert_eq!(controller_contract.get_health_factor(user_account), 15000);
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(15000)
+        );
     }
 
     #[test]
@@ -319,7 +323,10 @@ mod tests {
         );
 
         // Ratio that represents 142.85%
-        assert_eq!(controller_contract.get_health_factor(user_account), 14285);
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(14285)
+        );
     }
 
     #[test]
@@ -342,7 +349,7 @@ mod tests {
         // Ratio that represents 100%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            10000
+            Ratio(10000)
         );
 
         controller_contract.increase_supplies(
@@ -352,7 +359,10 @@ mod tests {
         );
 
         // Ratio that represents 200%
-        assert_eq!(controller_contract.get_health_factor(user_account), 20000);
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(20000)
+        );
     }
 
     #[test]
@@ -375,7 +385,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            20000
+            Ratio(20000)
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -397,7 +407,10 @@ mod tests {
         });
 
         // Ratio that represents 50%
-        assert_eq!(controller_contract.get_health_factor(user_account), 5000);
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(5000)
+        );
     }
 
     #[test]
@@ -420,7 +433,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            20000
+            Ratio(20000)
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -442,7 +455,10 @@ mod tests {
         });
 
         // Ratio that represents 225%
-        assert_eq!(controller_contract.get_health_factor(user_account), 22500);
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(22500)
+        );
     }
 
     #[test]
@@ -469,6 +485,9 @@ mod tests {
         );
 
         // Ratio that represents 153.48%
-        assert_eq!(controller_contract.get_health_factor(user_account), 15348);
+        assert_eq!(
+            controller_contract.get_health_factor(user_account),
+            Ratio(15348)
+        );
     }
 }

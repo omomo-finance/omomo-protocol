@@ -1,9 +1,9 @@
 use crate::utils::{
-    add_market, assert_failure, borrow, initialize_controller, initialize_three_dtokens,
-    initialize_three_utokens, mint_tokens, new_user, repay, supply, view_balance, set_price,
+    add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
+    mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
-use dtoken::InterestRateModel;
+use dtoken::{InterestRateModel, WRatio};
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
@@ -27,15 +27,23 @@ fn repay_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear, wbtc) = initialize_three_utokens(&root);
     let controller = initialize_controller(&root);
+    let interest_rate_model = InterestRateModel {
+        kink: WRatio::from(0),
+        base_rate_per_block: WRatio::from(0),
+        multiplier_per_block: WRatio::from(0),
+        jump_multiplier_per_block: WRatio::from(0),
+        reserve_factor: WRatio::from(0),
+        rewards_config: Vec::new(),
+    };
     let (dweth, dwnear, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
         wbtc.account_id(),
         controller.account_id(),
-        InterestRateModel::default(),
-        InterestRateModel::default(),
-        InterestRateModel::default(),
+        interest_rate_model.clone(),
+        interest_rate_model.clone(),
+        interest_rate_model,
     );
 
     let mint_amount = U128(START_BALANCE);
@@ -112,32 +120,28 @@ fn repay_fixture() -> (
 }
 
 #[test]
-fn scenario_repay_zero_tokens() {
+fn scenario_repay() {
     let (dwnear, controller, wnear, user) = repay_fixture();
 
-    let result = repay(&user, dwnear.account_id(), &wnear, 0);
+    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
 
-    assert_failure(result, "The amount should be a positive number");
+    let repay_info = repay_info(&user, &dwnear, dwnear_balance);
+
+    let repay_amount = Balance::from(repay_info.total_amount);
+
+    repay(&user, dwnear.account_id(), &wnear, repay_amount).assert_success();
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance.0,
-        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW,
+        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - repay_amount,
         "Repay wasn`t done"
     );
 
     let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
-    assert_eq!(
-        user_balance, WNEAR_BORROW,
-        "Borrow balance on dtoken should be {}",
-        WNEAR_BORROW
-    );
+    assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
-    assert_eq!(
-        user_balance, WNEAR_BORROW,
-        "Borrow balance on controller should be {}",
-        WNEAR_BORROW
-    );
+    assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }

@@ -84,7 +84,7 @@ impl Contract {
                 .into(),
         };
 
-        let borrow_rate: Balance = self.get_borrow_rate(
+        let borrow_rate = self.get_borrow_rate(
             U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
@@ -123,7 +123,7 @@ impl Contract {
         if !is_promise_success() {
             log!(
                 "{}",
-                Events::BorrowFailedToInceaseBorrowOnController(
+                Events::BorrowFailedToIncreaseBorrowOnController(
                     env::signer_account_id(),
                     Balance::from(token_amount)
                 )

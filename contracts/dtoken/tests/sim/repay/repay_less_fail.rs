@@ -1,21 +1,22 @@
 use crate::utils::{
-    add_market, initialize_controller, initialize_three_dtokens_with_custom_interest_rate,
-    initialize_three_utokens, new_user, view_balance, supply,
+    add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
+    mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
-use dtoken::{InterestRateModel, RepayInfo};
+use dtoken::{InterestRateModel, WRatio};
 use general::Price;
-use near_sdk::json_types::U128;
-use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount};
+use near_sdk::{json_types::U128, Balance};
+use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
-const WETH_AMOUNT: u128 = 60;
-const WNEAR_AMOUNT: u128 = 70;
-const WBTC_AMOUNT: u128 = 100;
-const WETH_BORROW: u128 = 30;
-const WNEAR_BORROW: u128 = 40;
-const START_BALANCE: u128 = 100;
+const WETH_AMOUNT: Balance = 60;
+const WNEAR_AMOUNT: Balance = 70;
+const WBTC_AMOUNT: Balance = 100;
+const WETH_BORROW: Balance = 30;
+const WNEAR_BORROW: Balance = 40;
+const START_BALANCE: Balance = 100;
+const START_PRICE: Balance = 10000;
 
-fn borrow_fixture() -> (
+fn repay_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<controller::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
@@ -24,60 +25,34 @@ fn borrow_fixture() -> (
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
-    let (uroot1, uroot2, uroot3, weth, wnear, wbtc) = initialize_three_utokens(&root);
-    let (_croot, controller) = initialize_controller(&root);
-    let (_droot, dweth, dwnear, dwbtc) = initialize_three_dtokens_with_custom_interest_rate(
+    let (weth, wnear, wbtc) = initialize_three_utokens(&root);
+    let controller = initialize_controller(&root);
+    let interest_rate_model = InterestRateModel {
+        kink: WRatio::from(0),
+        base_rate_per_block: WRatio::from(0),
+        multiplier_per_block: WRatio::from(0),
+        jump_multiplier_per_block: WRatio::from(0),
+        reserve_factor: WRatio::from(0),
+        rewards_config: Vec::new(),
+    };
+    let (dweth, dwnear, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
         wbtc.account_id(),
         controller.account_id(),
-        InterestRateModel::default(),
-        InterestRateModel::default(),
-        InterestRateModel::default(),
+        interest_rate_model.clone(),
+        interest_rate_model.clone(),
+        interest_rate_model,
     );
 
-    call!(
-        uroot1,
-        wnear.mint(dwnear.account_id(), U128(WNEAR_AMOUNT)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot2,
-        weth.mint(dweth.account_id(), U128(WETH_AMOUNT)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot3,
-        wbtc.mint(dwbtc.account_id(), U128(WBTC_AMOUNT)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot1,
-        weth.mint(user.account_id(), U128(START_BALANCE)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot2,
-        wnear.mint(user.account_id(), U128(START_BALANCE)),
-        0,
-        100000000000000
-    );
-
-    call!(
-        uroot3,
-        wbtc.mint(user.account_id(), U128(START_BALANCE)),
-        0,
-        100000000000000
-    );
+    let mint_amount = U128(START_BALANCE);
+    mint_tokens(&weth, dweth.account_id(), U128(WETH_AMOUNT));
+    mint_tokens(&wnear, dwnear.account_id(), U128(WNEAR_AMOUNT));
+    mint_tokens(&wbtc, dwbtc.account_id(), U128(WBTC_AMOUNT));
+    mint_tokens(&weth, user.account_id(), mint_amount);
+    mint_tokens(&wnear, user.account_id(), mint_amount);
+    mint_tokens(&wbtc, user.account_id(), mint_amount);
 
     add_market(
         &controller,
@@ -100,90 +75,61 @@ fn borrow_fixture() -> (
         "wbtc".to_string(),
     );
 
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dweth.account_id(),
-            &Price {
-                ticker_id: "weth".to_string(),
-                value: U128(10000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
+    set_price(
+        &controller,
+        dweth.account_id(),
+        &Price {
+            ticker_id: "weth".to_string(),
+            value: U128(START_PRICE),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
+    );
 
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dwnear.account_id(),
-            &Price {
-                ticker_id: "wnear".to_string(),
-                value: U128(10000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
+    set_price(
+        &controller,
+        dwnear.account_id(),
+        &Price {
+            ticker_id: "wnear".to_string(),
+            value: U128(START_PRICE),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
+    );
 
-    call!(
-        controller.user_account,
-        controller.upsert_price(
-            dwbtc.account_id(),
-            &Price {
-                ticker_id: "wbtc".to_string(),
-                value: U128(10000),
-                volatility: U128(100),
-                fraction_digits: 4
-            }
-        ),
-        deposit = 0
-    )
-    .assert_success();
+    set_price(
+        &controller,
+        dwbtc.account_id(),
+        &Price {
+            ticker_id: "wbtc".to_string(),
+            value: U128(START_PRICE),
+            volatility: U128(100),
+            fraction_digits: 4,
+        },
+    );
 
     supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
 
     supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
 
-    call!(user, dweth.borrow(U128(WETH_BORROW)), deposit = 0).assert_success();
+    borrow(&user, &dweth, WETH_BORROW).assert_success();
 
-    call!(user, dwnear.borrow(U128(WNEAR_BORROW)), deposit = 0).assert_success();
+    borrow(&user, &dwnear, WNEAR_BORROW).assert_success();
 
     (dwnear, controller, wnear, user)
 }
 
 #[test]
 fn scenario_repay_less_fail() {
-    let (dwnear, controller, wnear, user) = borrow_fixture();
+    let (dwnear, controller, wnear, user) = repay_fixture();
 
-    let dwnear_balance: String = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
 
-    let repay_info = call!(
-        user,
-        dwnear.view_repay_info(user.account_id(), U128(dwnear_balance.parse().unwrap())),
-        deposit = 0
-    )
-    .unwrap_json::<RepayInfo>();
+    let repay_info = repay_info(&user, &dwnear, dwnear_balance);
 
-    let repay_amount = u128::from(repay_info.total_amount);
+    let repay_amount = Balance::from(repay_info.total_amount);
 
-    let action = "\"Repay\"".to_string();
-
-    call!(
-        user,
-        wnear.ft_transfer_call(
-            dwnear.account_id(),
-            U128(repay_amount - 10),
-            Some("REPAY".to_string()),
-            action
-        ),
-        deposit = 1
-    )
-    .assert_success();
+    repay(&user, dwnear.account_id(), &wnear, repay_amount - 10).assert_success();
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -192,14 +138,14 @@ fn scenario_repay_less_fail() {
         "Repay wasn`t done"
     );
 
-    let user_balance: u128 = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance, WNEAR_BORROW,
         "Borrow balance on dtoken should be {}",
         WNEAR_BORROW
     );
 
-    let user_balance: u128 =
+    let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
     assert_eq!(
         user_balance, WNEAR_BORROW,

@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use std::cmp::{max, min};
 
 const MAX_RESERVE_FACTOR_VALUE: Ratio = RATIO_DECIMALS;
@@ -13,11 +14,11 @@ impl Contract {
         reserve_factor: WBalance,
     ) -> Ratio {
         assert!(
-            Balance::from(reserve_factor) <= MAX_RESERVE_FACTOR_VALUE,
+            Balance::from(reserve_factor) <= MAX_RESERVE_FACTOR_VALUE.0,
             "Reserve factor should be less {}",
             MAX_RESERVE_FACTOR_VALUE
         );
-        let rest_of_supply_factor = RATIO_DECIMALS - Balance::from(reserve_factor);
+        let rest_of_supply_factor = RATIO_DECIMALS - Ratio(reserve_factor.0);
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
@@ -37,7 +38,7 @@ impl Contract {
         let base_rate_per_block = interest_rate_model.get_base_rate_per_block();
         let jump_multiplier_per_block = interest_rate_model.get_jump_multiplier_per_block();
         min(util, kink) * multiplier_per_block / RATIO_DECIMALS
-            + max(0, util as i128 - kink as i128) as Ratio * jump_multiplier_per_block
+            + Ratio(max(0, util.0 as i128 - kink.0 as i128) as u128) * jump_multiplier_per_block
                 / RATIO_DECIMALS
             + base_rate_per_block
     }
@@ -63,13 +64,14 @@ impl Contract {
             0,
             "Cannot calculate utilization rate as denominator is equal 0"
         );
-        Balance::from(total_borrows) * RATIO_DECIMALS / denominator.unwrap()
+        Ratio(Balance::from(total_borrows) * RATIO_DECIMALS.0 / denominator.unwrap())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
+    use general::ratio::Ratio;
     use general::WRatio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
@@ -92,7 +94,7 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
-        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), 9000);
+        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), Ratio(9000));
     }
 
     #[test]
@@ -108,7 +110,7 @@ mod tests {
 
         assert_eq!(
             contract.get_borrow_rate(U128(20), U128(180), U128(0)),
-            19000
+            Ratio(19000)
         );
     }
 
@@ -129,9 +131,9 @@ mod tests {
                 U128(20),
                 U128(180),
                 U128(0),
-                U128(interest_rate_model.get_reserve_factor())
+                U128(interest_rate_model.get_reserve_factor().0)
             ),
-            15903
+            Ratio(15903)
         );
     }
 }

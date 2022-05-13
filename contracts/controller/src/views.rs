@@ -1,4 +1,5 @@
 use crate::*;
+use general::ratio::RATIO_DECIMALS;
 use std::collections::HashMap;
 
 use crate::admin::Market;
@@ -25,7 +26,7 @@ impl Default for AccountData {
             total_supplies_usd: U128(0),
             total_available_borrows_usd: U128(0),
             blocked: false,
-            health_factor_ratio: WRatio::from(RATIO_DECIMALS),
+            health_factor_ratio: WRatio::from(RATIO_DECIMALS.0),
             user_profile: Default::default(),
         }
     }
@@ -54,7 +55,7 @@ impl Contract {
                 let total_supplies = self.get_total_supplies(user_id.clone());
 
                 let total_available_borrows_usd =
-                    (total_supplies.0 * RATIO_DECIMALS / self.health_threshold).into();
+                    (total_supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0).into();
 
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
@@ -64,7 +65,7 @@ impl Contract {
                     total_available_borrows_usd,
                     total_supplies_usd: total_supplies,
                     blocked: false,
-                    health_factor_ratio: WRatio::from(health_factor),
+                    health_factor_ratio: WRatio::from(health_factor.0),
                     user_profile,
                 }
             })
@@ -80,7 +81,7 @@ impl Contract {
         let gotten_borrow = self.get_total_borrows(user_id);
 
         let potential_borrow =
-            (supplies.0 * RATIO_DECIMALS / self.health_threshold) - gotten_borrow.0;
+            (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
         (potential_borrow / price * ONE_TOKEN).into()
@@ -90,7 +91,7 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let borrows = self.get_total_borrows(user_id);
 
-        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold / RATIO_DECIMALS);
+        let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
         (max_withdraw / price * ONE_TOKEN).into()
