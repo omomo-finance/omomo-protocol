@@ -19,7 +19,6 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
     ) {
-        
         assert!(
             self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
             "Borrow operation is not allowed for account {} token_address {} token_amount {}",

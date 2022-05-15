@@ -90,7 +90,8 @@ fn liquidation_success_fixture() -> (
 
     borrow(&borrower, &dweth, BORROWER_BORROW).assert_success();
 
-    let user_balance: Balance = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_balance, BORROWER_BORROW,
         "Borrow balance on dtoken should be {}",
@@ -142,7 +143,8 @@ fn scenario_liquidation_success() {
         (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount))
     );
 
-    let user_borrows: Balance = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+    let user_borrows: Balance =
+        view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
 
     let borrow_balance = BORROWER_BORROW - Balance::from(amount);
 

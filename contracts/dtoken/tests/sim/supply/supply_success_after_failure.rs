@@ -7,7 +7,7 @@ use general::Price;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_two_dtokens,
-    initialize_two_utokens, mint_tokens, new_user, supply, view_balance, set_price,
+    initialize_two_utokens, mint_tokens, new_user, set_price, supply, view_balance,
 };
 
 const WNEAR_BALANCE: Balance = 50;

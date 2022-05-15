@@ -89,7 +89,8 @@ fn liquidation_fixture() -> (
 
     borrow(&borrower, &dweth, BORROWER_BORROW).assert_success();
 
-    let user_balance: Balance = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_balance, BORROWER_BORROW,
         "Borrow balance on dtoken should be {}",
@@ -129,7 +130,8 @@ fn scenario_liquidation_failed_on_too_much_for_liquidation() {
     let amount = 70000;
     liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount).assert_success();
 
-    let user_borrows: Balance = view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+    let user_borrows: Balance =
+        view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_borrows, BORROWER_BORROW,
         "Borrow balance on dtoken should be BORROWER_BORROW"
