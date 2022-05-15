@@ -1,4 +1,4 @@
-mod withdraw;
+mod withdraw_success;
 mod withdraw_fail_zero_tokens;
 mod withdraw_more_than_supply;
 mod withdraw_fail_due_to_zero_denominator;

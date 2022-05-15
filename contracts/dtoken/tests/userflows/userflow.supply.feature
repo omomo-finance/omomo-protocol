@@ -2,8 +2,10 @@ Feature: User Supply flow
 
 Background:
 	Given The user Bob
+	And Underlying token contract WETH with minted 100 tokens for digital token DWETH
+	And Underlying token contract WNEAR with minted 100 tokens for digital token DWNEAR
 	And Underlying token contract WETH with minted 100 tokens for user Bob
-	And Underlying token contract WNEAR with 50 tokens  for user Bob
+	And Underlying token contract WNEAR with 50 tokens for user Bob
 	And Digital token DWETH contract
 	And Digital token DWNEAR contract
 	And token = 10^24

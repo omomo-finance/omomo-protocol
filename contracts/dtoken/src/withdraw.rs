@@ -35,6 +35,10 @@ impl Contract {
             Balance::from(dtoken_amount) > 0,
             "Amount should be a positive number"
         );
+        assert!(
+            dtoken_amount.0 <= self.token.accounts.get(&env::signer_account_id()).unwrap(),
+            "The account doesn't have enough digital tokens to do withdraw"
+        );
         self.mutex_account_lock(Actions::Withdraw, dtoken_amount, GAS_FOR_WITHDRAW)
     }
 

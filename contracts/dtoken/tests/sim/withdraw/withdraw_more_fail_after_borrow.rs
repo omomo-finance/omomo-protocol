@@ -91,7 +91,7 @@ fn withdraw_fixture() -> (
 }
 
 #[test]
-fn scenario_borrow() {
+fn scenario_withdraw_more_after_borrow() {
     let (dweth, controller, weth, user) = withdraw_fixture();
 
     withdraw(&user, &dweth, START_BALANCE).assert_success();

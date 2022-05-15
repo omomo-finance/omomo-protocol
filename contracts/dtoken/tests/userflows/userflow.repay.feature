@@ -2,6 +2,9 @@ Feature: User Repay flow
 
 Background:
 	Given The user Bob
+	And Underlying token contract WETH with minted 100 tokens for digital token DWETH
+	And Underlying token contract WNEAR with minted 100 tokens for digital token DWNEAR
+	And Underlying token contract WBTC with minted 100 tokens for digital token DWBTC
 	And Underlying token contract WNEAR with 100 tokens for user Bob
 	And Underlying token contract WETH with 100 tokens for user Bob
 	And Underlying token contract WBTC with 100 tokens for user Bob
