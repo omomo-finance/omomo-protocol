@@ -34,11 +34,6 @@ Rule: No borrows were done
 		When User Bob withdraw from DWNEAR contract 100 tokens
 		Then Failure flow expected <Withdraw more than supplies were done>
 
-	Scenario: User Bob withdraw from DWBTC digital token 100 tokens - negative flow <Withdraw with no supplies>
-		Given User Bob and DWBTC contract
-		When User Bob withdraw from DWBTC contract 100 tokens
-		Then Failure flow expected <Cannot calculate utilization rate as denominator is equal 0>
-
 	Scenario: Sequential test after failure - positive flow <Success flow>
 		Given User Bob and DWETH, DWNEAR contracts
 		And Exchange_rate for DWETH contract equal 2

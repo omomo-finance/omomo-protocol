@@ -27,6 +27,11 @@ Scenario: User Bob supplies to digital token DWNEAR 0 tokens - negative flow  <A
 	When User Bob supplies to digital token DWNEAR 0 tokens
 	Then Failure flow expected	
 
+Scenario:User Bob supplies to digital token DWNEAR 100 tokens - negative flow <Digital token with no balance>
+	Given User Bob and DWNEAR contract
+	When User Bob supplies to digital token DWNEAR  100 tokens
+	Then Failure flow expected <Cannot calculate utilization rate as denominator is equal 0>
+
 Scenario: Sequential test after failure - positive flow <Success flow>
 	Given User Bob and DWETH, DWNEAR contracts
 	When User Bob supplies to digital token DWNEAR 0 tokens, receive failure, after supplies to digital token DWETH 100 tokens
