@@ -34,7 +34,7 @@ You can withdraw deposited funds anytime.
 
 ## How does withdrawal work?
 
-![](../.gitbook/assets/withdraw.png)
+![](../.gitbook/assets/Withdraw.png)
 
 ## Can I use my assets as collateral?
 
