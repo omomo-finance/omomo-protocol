@@ -8,14 +8,14 @@ You can get a loan on any asset, even the one you have deposited. This way, you 
 
 ## How do I borrow?
 
-1. To enable borrowing, you need to supply any asset to be used as collateral.&#x20;
-2. Select the asset you are interested in and click on the **Borrow** button.&#x20;
-3. In the **Borrow tab**, set the amount you’d like to borrow based on your available supplies that would be used as collateral for the loan.&#x20;
+1. To enable borrowing, you need to supply any asset to be used as collateral.
+2. Select the asset you are interested in and click on the **Borrow** button.
+3. In the **Borrow tab**, set the amount you’d like to borrow based on your available supplies that would be used as collateral for the loan.
 4. Submit your transaction and wait for confirmation.
 
 ## How does borrowing work?
 
-![](../.gitbook/assets/borrow.png)
+![](../.gitbook/assets/Borrow.png)
 
 ## **How much can I borrow?**
 
@@ -41,7 +41,7 @@ Unfortunately, as your Health factor decreases, the risk of liquidation gets hig
 
 ***
 
-## **How can I avoid liquidation?**&#x20;
+## **How can I avoid liquidation?**
 
 To avoid liquidation, you need to keep your Health factor high. For that, you should do the following:
 

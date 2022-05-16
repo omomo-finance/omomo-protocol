@@ -14,7 +14,7 @@ All dTokens holders receive incentives that evolve with market conditions. You c
 
 ## How does deposit work?
 
-![](<../.gitbook/assets/deposit (1).png>)
+![](../.gitbook/assets/Deposit.png)
 
 ## **Is there any minimum or maximum limit to deposit?**
 

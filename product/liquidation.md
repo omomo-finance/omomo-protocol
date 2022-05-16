@@ -6,7 +6,7 @@ Liquidation is the process of terminating a borrower's account when their Health
 
 ## **How does liquidation work?**
 
-![](../.gitbook/assets/liquidation.png)
+![](<../.gitbook/assets/Liquidation (1).png>)
 
 ## **Liquidation threshold**
 
@@ -69,3 +69,34 @@ Once these calculations are done, we can compute the final values and verify the
 * health\_factor < 100% (to liquidate only unhealthy accounts);
 * discounted\_collateral\_sum <= repaid\_sum (to prevent from taking more collateral than the repaid sum (after discount));
 * new\_health\_factor < 100% (to prevent the liquidator from repaying too much of the borrowed assets).
+
+## Liquidation manual
+
+
+
+There is no UI that would trigger the liquidation mechanism. However, you can launch the liquidation by yourself following these steps:
+
+* Indicate the borrower account that you want to liquidate.
+* Indicate the borrow token address and collaterals, which you are interested in.
+* Indicate the amount of funds that should be liquidated.
+* Finally, launch the liquidation.
+
+To receive the market list, you need to call the view\_markets method on the controller contract:
+
+```
+near view controller_contract view_markets '{}' 
+```
+
+```
+Market {
+  pub asset_id: AccountId, // Token contract address
+  pub dtoken: AccountId, // Dtoken contract address on the OMOMO service
+  pub ticker_id: String, // Ticker name
+}
+```
+
+The liquidation call should be launched on the borrowed token contract:
+
+```
+near call borrowed_token_address ft_transfer_call '{"receiver_id": "borrowed_dtoken_address", "amount": "XXX", "memo": null, msg: "{"Liquidate":{"borrower":"borrower_address","borrowing_dtoken":"borrowed_dtoken_address","collateral_dtoken":"collateral_dtoken_address"}}" }' --accountId liquidator_account_id
+```
