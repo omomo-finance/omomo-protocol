@@ -48,6 +48,12 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
+
+        assert!(
+            Balance::from(token_amount) > 0,
+            "Amount should be a positive number"
+        );
+
         self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(180))
     }
 
@@ -94,6 +100,7 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
+
         controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
