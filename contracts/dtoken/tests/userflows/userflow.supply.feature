@@ -2,8 +2,10 @@ Feature: User Supply flow
 
 Background:
 	Given The user Bob
+	And Underlying token contract WETH with minted 100 tokens for digital token DWETH
+	And Underlying token contract WNEAR with minted 100 tokens for digital token DWNEAR
 	And Underlying token contract WETH with minted 100 tokens for user Bob
-	And Underlying token contract WNEAR with 50 tokens  for user Bob
+	And Underlying token contract WNEAR with 50 tokens for user Bob
 	And Digital token DWETH contract
 	And Digital token DWNEAR contract
 	And token = 10^24
@@ -24,6 +26,11 @@ Scenario: User Bob supplies to digital token DWNEAR 0 tokens - negative flow  <A
 	Given User Bob and DWNEAR contract
 	When User Bob supplies to digital token DWNEAR 0 tokens
 	Then Failure flow expected	
+
+Scenario:User Bob supplies to digital token DWNEAR 100 tokens - negative flow <Digital token with no balance>
+	Given User Bob and DWNEAR contract
+	When User Bob supplies to digital token DWNEAR  100 tokens
+	Then Failure flow expected <Cannot calculate utilization rate as denominator is equal 0>
 
 Scenario: Sequential test after failure - positive flow <Success flow>
 	Given User Bob and DWETH, DWNEAR contracts
