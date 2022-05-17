@@ -4,6 +4,7 @@ use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
 use controller::ActionType::Supply;
 use general::Price;
+use general::wbalance::WBalance;
 
 use crate::utils::{
     add_market, initialize_controller, initialize_dtoken, initialize_utoken, mint_tokens, new_user,
@@ -46,7 +47,7 @@ fn supply_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },

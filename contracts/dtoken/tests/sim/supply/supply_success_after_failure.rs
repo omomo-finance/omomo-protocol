@@ -4,6 +4,7 @@ use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
 use controller::ActionType::Supply;
 use general::Price;
+use general::wbalance::WBalance;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_two_dtokens,
@@ -62,7 +63,7 @@ fn supply_success_after_failure_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -73,7 +74,7 @@ fn supply_success_after_failure_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },

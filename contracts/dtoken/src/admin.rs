@@ -109,12 +109,12 @@ mod tests {
             controller_account_id: "controller".parse().unwrap(),
             interest_rate_model: InterestRateModel::default(),
         });
-        dtoken_contract.mint(bob(), U128(1000));
-        let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
+        dtoken_contract.mint(bob(), WBalance::from(1000));
+        let exchange_rate = dtoken_contract.get_exchange_rate(WBalance::from(20000));
         assert_eq!(exchange_rate, Ratio(200000));
 
         dtoken_contract.set_total_reserves(10000);
-        let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
+        let exchange_rate = dtoken_contract.get_exchange_rate(WBalance::from(20000));
         assert_eq!(exchange_rate, Ratio(100000));
     }
 

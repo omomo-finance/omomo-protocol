@@ -36,7 +36,7 @@ impl Contract {
             "Amount should be a positive number"
         );
         assert!(
-            dtoken_amount.0
+            Balance::from(dtoken_amount)
                 <= self
                     .token
                     .accounts

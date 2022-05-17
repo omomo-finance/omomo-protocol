@@ -9,6 +9,7 @@ use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use general::wbalance::WBalance;
 
 const BORROWER_SUPPLY: Balance = 60000;
 const BORROWER_BORROW: Balance = 40000;
@@ -69,7 +70,7 @@ fn liquidation_success_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -80,7 +81,7 @@ fn liquidation_success_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -115,7 +116,7 @@ fn liquidation_success_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(CHANGED_PRICE),
+            value: WBalance::from(CHANGED_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -131,7 +132,7 @@ fn scenario_liquidation_success() {
 
     let amount = 3500;
 
-    liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount).assert_success();
+    dbg!(liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount));
 
     let weth_ft_balance_of_for_dweth: U128 =
         view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();

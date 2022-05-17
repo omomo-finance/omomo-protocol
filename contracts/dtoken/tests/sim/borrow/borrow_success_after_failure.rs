@@ -8,6 +8,7 @@ use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use general::wbalance::WBalance;
 
 const WETH_AMOUNT: Balance = 10;
 const WNEAR_AMOUNT: Balance = 10;
@@ -72,7 +73,7 @@ fn borrow_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -83,7 +84,7 @@ fn borrow_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -94,7 +95,7 @@ fn borrow_fixture() -> (
         dwbtc.account_id(),
         &Price {
             ticker_id: "wbtc".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },

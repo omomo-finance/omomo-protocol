@@ -7,6 +7,7 @@ use dtoken::InterestRateModel;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use general::wbalance::WBalance;
 
 const WNEAR_AMOUNT: Balance = 99;
 const WITHDRAW_AMOUNT: Balance = 100;
@@ -53,7 +54,7 @@ fn withdraw_more_than_supply_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },

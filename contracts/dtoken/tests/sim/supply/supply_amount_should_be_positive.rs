@@ -3,6 +3,7 @@ use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, ContractAccount, UserAccount};
 
 use general::Price;
+use general::wbalance::WBalance;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_dtoken, initialize_utoken,
@@ -45,7 +46,7 @@ fn supply_amount_should_be_positive_fixture() -> (
         dwnear.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },

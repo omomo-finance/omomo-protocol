@@ -7,6 +7,7 @@ use dtoken::InterestRateModel;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use general::wbalance::WBalance;
 
 const WBTC_AMOUNT: Balance = 0;
 const BORROW_AMOUNT: Balance = 50;
@@ -66,7 +67,7 @@ fn withdraw_fixture() -> (
         dweth.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },
@@ -77,7 +78,7 @@ fn withdraw_fixture() -> (
         dwbtc.account_id(),
         &Price {
             ticker_id: "wbtc".to_string(),
-            value: U128(START_PRICE),
+            value: WBalance::from(START_PRICE),
             volatility: U128(100),
             fraction_digits: 4,
         },

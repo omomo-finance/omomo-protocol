@@ -9,6 +9,7 @@ use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use dtoken::{Config as dConfig, RepayInfo};
 use general::Price;
+use general::wbalance::WBalance;
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -380,7 +381,7 @@ pub fn withdraw(
     dtoken: &ContractAccount<dtoken::ContractContract>,
     amount: Balance,
 ) -> ExecutionResult {
-    call!(user, dtoken.withdraw(U128(amount)), deposit = 0)
+    call!(user, dtoken.withdraw(WBalance::from(amount)), deposit = 0)
 }
 
 pub fn borrow(
@@ -388,7 +389,7 @@ pub fn borrow(
     dtoken: &ContractAccount<dtoken::ContractContract>,
     amount: Balance,
 ) -> ExecutionResult {
-    call!(user, dtoken.borrow(U128(amount)), deposit = 0)
+    call!(user, dtoken.borrow(WBalance::from(amount)), deposit = 0)
 }
 
 pub fn repay(
@@ -442,7 +443,7 @@ pub fn repay_info(
 ) -> RepayInfo {
     call!(
         user,
-        dtoken.view_repay_info(user.account_id(), dtoken_balance),
+        dtoken.view_repay_info(user.account_id(), WBalance(dtoken_balance)),
         deposit = 0
     )
     .unwrap_json::<RepayInfo>()
