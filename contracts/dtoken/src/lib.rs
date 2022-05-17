@@ -113,6 +113,7 @@ trait ControllerInterface {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        borrow_block: BlockHeight,
     );
     fn withdraw_supplies(
         &mut self,
@@ -125,6 +126,8 @@ trait ControllerInterface {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        borrow_block: BlockHeight,
+        borrow_rate: WRatio,
     );
     fn decrease_borrows(
         &mut self,

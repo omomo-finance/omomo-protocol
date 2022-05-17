@@ -80,7 +80,7 @@ impl Contract {
             + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor().0
                 / RATIO_DECIMALS.0;
 
-        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
+        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
         self.set_total_reserves(new_total_reserve);
         require!(
             Balance::from(token_amount) >= borrow_with_rate_amount,
@@ -95,6 +95,7 @@ impl Contract {
             env::signer_account_id(),
             self.get_contract_address(),
             U128(borrow_amount),
+            borrow_accrued_interest.last_recalculation_block,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),
