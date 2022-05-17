@@ -200,6 +200,11 @@ impl Contract {
                 as u128
             / 10u128.pow(16)
     }
+
+    pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
+        self.total_reserves = amount;
+        self.get_total_reserves()
+    }
 }
 
 #[near_bindgen]

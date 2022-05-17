@@ -54,3 +54,8 @@ Feature: User liquidation flow
 			Given The borrower, liquidator users, WETH, WNEAR, DWETH, DWNEAR, Controller contracts
 			When Liquidator wants to liquidate his own borrow collaterals DWNEAR with 20 DWETH
 			Then Negative flow expected <Liquidation failed on controller, Liquidation cannot liquidate his on borrow>
+
+		Scenario: Liquidator tries to liquidate ou wrong dtoken - negative flow
+			Given The borrower, liquidator users, WETH, WNEAR, DWETH, DWNEAR, Controller contracts
+			When Liquidator wants to liquidate on WNEAR, where user doesn't have borrows
+			Then Negative flow expected

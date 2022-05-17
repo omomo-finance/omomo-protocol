@@ -2,6 +2,9 @@ Feature: User Borrow flow
 
 Background:
 	Given The user Bob
+	And Underlying token contract WETH with minted 100 tokens for digital token DWETH
+	And Underlying token contract WNEAR with minted 100 tokens for digital token DWNEAR
+	And Underlying token contract WBTC with minted 100 tokens for digital token DWBTC
 	And Digital token DWNEAR contract with supplied 10 tokens by user Bob
 	And Digital token DWETH contract with supplied 10 tokens by user Bob
 	And Underlying token contract WBTC with no tokens for user Bob
