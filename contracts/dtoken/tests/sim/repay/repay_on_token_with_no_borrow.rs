@@ -3,10 +3,10 @@ use crate::utils::{
     mint_tokens, new_user, repay, set_price, supply,
 };
 use dtoken::{InterestRateModel, WRatio};
+use general::wbalance::WBalance;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
-use general::wbalance::WBalance;
 
 const WETH_AMOUNT: Balance = 60;
 const WNEAR_AMOUNT: Balance = 70;
@@ -39,7 +39,7 @@ fn repay_fixture() -> (
         wnear.account_id(),
         controller.account_id(),
         interest_rate_model.clone(),
-        interest_rate_model.clone(),
+        interest_rate_model,
     );
 
     let mint_amount = U128(START_BALANCE);

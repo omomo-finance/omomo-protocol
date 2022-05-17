@@ -8,8 +8,8 @@ use controller::{ActionType, Config as cConfig};
 use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use dtoken::{Config as dConfig, RepayInfo};
-use general::Price;
 use general::wbalance::WBalance;
+use general::Price;
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -101,7 +101,7 @@ pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<test_utoken::Con
         &uroot,
         AccountId::new_unchecked("utoken_contract".to_string()),
     );
-    internal_utoken_initialize(&utoken.user_account, &utoken, uroot.account_id().clone());
+    internal_utoken_initialize(&utoken.user_account, &utoken, uroot.account_id());
     utoken
 }
 

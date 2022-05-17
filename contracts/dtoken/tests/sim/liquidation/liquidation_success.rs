@@ -5,11 +5,11 @@ use crate::utils::{
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
 use general::ratio::RATIO_DECIMALS;
+use general::wbalance::WBalance;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
-use general::wbalance::WBalance;
 
 const BORROWER_SUPPLY: Balance = 60000;
 const BORROWER_BORROW: Balance = 40000;
@@ -132,25 +132,25 @@ fn scenario_liquidation_success() {
 
     let amount = 3500;
 
-    dbg!(liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount));
+    liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount);
 
     let weth_ft_balance_of_for_dweth: U128 =
         view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();
 
     assert_eq!(
         Balance::from(weth_ft_balance_of_for_dweth),
-        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount)),
+        (MINT_BALANCE - BORROWER_BORROW + amount),
         "dweth_balance_of_on_weth balance of should be {}",
-        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount))
+        (MINT_BALANCE - BORROWER_BORROW + amount)
     );
 
     let user_borrows: Balance =
         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
 
-    let borrow_balance = BORROWER_BORROW - Balance::from(amount);
+    let borrow_balance = BORROWER_BORROW - amount;
 
     let revenue_amount: Balance =
-        (10500 * Balance::from(amount) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
+        (10500 * amount * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
 
     assert_eq!(
         user_borrows,

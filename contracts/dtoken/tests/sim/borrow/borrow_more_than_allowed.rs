@@ -4,10 +4,10 @@ use crate::utils::{
 };
 use controller::ActionType::Borrow;
 use dtoken::InterestRateModel;
+use general::wbalance::WBalance;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
-use general::wbalance::WBalance;
 
 const WETH_AMOUNT: Balance = 10;
 const WNEAR_AMOUNT: Balance = 10;

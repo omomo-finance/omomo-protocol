@@ -3,8 +3,8 @@ use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
 use controller::ActionType::Supply;
-use general::Price;
 use general::wbalance::WBalance;
+use general::Price;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_two_dtokens,
