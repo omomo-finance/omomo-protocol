@@ -175,6 +175,99 @@ fn repay_zero_accrued_interest_fixture() -> (
     (dtoken, controller, utoken, user, root)
 }
 
+fn reserve_update_fixture() -> (
+    ContractAccount<dtoken::ContractContract>,
+    ContractAccount<test_utoken::ContractContract>,
+    UserAccount,
+    u128,
+) {
+    let root = init_simulator(None);
+
+    let user = new_user(&root, "user".parse().unwrap());
+    let (_uroot, utoken) = initialize_utoken(&root);
+    let (_croot, controller) = initialize_controller(&root);
+    let (_droot, dtoken) = initialize_dtoken_with_custom_interest_rate(
+        &root,
+        utoken.account_id(),
+        controller.account_id(),
+        InterestRateModel {
+            kink: U128(8000),
+            multiplier_per_block: U128(500),
+            base_rate_per_block: U128(400),
+            jump_multiplier_per_block: U128(10900),
+            reserve_factor: U128(500),
+            rewards_config: Vec::new(),
+        },
+    );
+
+    call!(
+        utoken.user_account,
+        utoken.mint(dtoken.account_id(), U128(10000000000)),
+        0,
+        100000000000000
+    );
+
+    call!(
+        utoken.user_account,
+        utoken.mint(user.account_id(), U128(1000000)),
+        0,
+        100000000000000
+    );
+
+    add_market(
+        &controller,
+        utoken.account_id(),
+        dtoken.account_id(),
+        "weth".to_string(),
+    );
+
+    call!(
+        controller.user_account,
+        controller.upsert_price(
+            dtoken.account_id(),
+            &Price {
+                ticker_id: "weth".to_string(),
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4
+            }
+        ),
+        deposit = 0
+    )
+    .assert_success();
+
+    let action = "\"Supply\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(50000),
+            Some("SUPPLY".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
+    call!(user, dtoken.borrow(U128(20000)), deposit = 0).assert_success();
+
+    let dtoken_balance: String = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let repay_info = call!(
+        user,
+        dtoken.view_repay_info(user.account_id(), U128(dtoken_balance.parse().unwrap())),
+        deposit = 0
+    )
+    .unwrap_json::<RepayInfo>();
+
+    let repay_amount = u128::from(repay_info.total_amount)
+        + u128::from(repay_info.accrued_interest_per_block) * 40;
+
+    root.borrow_runtime_mut().produce_blocks(20).unwrap();
+
+    (dtoken, utoken, user, repay_amount)
+}
+
 #[test]
 fn scenario_repay_no_borrow() {
     let (dtoken, utoken, user) = repay_no_borrow_fixture();
@@ -343,4 +436,35 @@ fn scenario_repay_zero_accrued_interest() {
     let user_balance: u128 =
         view_balance(&controller, Borrow, user.account_id(), dtoken.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+}
+
+#[test]
+fn scenario_reserve_update() {
+    let (dtoken, utoken, user, repay_amount) = reserve_update_fixture();
+
+    let total_reserves_before: U128 = view!(dtoken.view_total_reserves()).unwrap_json();
+    assert_eq!(total_reserves_before, U128(0));
+
+    let user_balance_before_repay: U128 =
+        view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
+
+    let action = "\"Repay\"".to_string();
+
+    call!(
+        user,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(repay_amount),
+            Some("REPAY".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
+    let user_balance: U128 = view!(utoken.ft_balance_of(user.account_id())).unwrap_json();
+    assert_ne!(user_balance, user_balance_before_repay, "Repay wasn`t done");
+
+    let total_reserves_after: U128 = view!(dtoken.view_total_reserves()).unwrap_json();
+    assert_eq!(total_reserves_after, U128(1440));
 }
