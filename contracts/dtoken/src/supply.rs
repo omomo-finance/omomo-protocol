@@ -12,9 +12,9 @@ impl Contract {
         );
         self.mutex_account_lock(Actions::Supply, token_amount, self.terra_gas(120))
     }
-    pub fn post_supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn post_supply(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount.0);
         }
 
         underlying_token::ft_balance_of(
