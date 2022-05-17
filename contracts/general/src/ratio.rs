@@ -6,7 +6,7 @@ use std::ops::{Add, Div, Mul, Sub};
 
 pub const RATIO_DECIMALS: Ratio = Ratio(10u128.pow(4));
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, Copy)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, Copy, Default)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Ratio(pub u128);
 

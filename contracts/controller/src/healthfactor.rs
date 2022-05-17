@@ -1,6 +1,7 @@
 use crate::*;
 
 use general::ratio::{Ratio, RATIO_DECIMALS};
+use near_sdk::env::block_height;
 use std::collections::HashMap;
 
 impl Contract {
@@ -71,6 +72,36 @@ impl Contract {
             ActionType::Borrow => {
                 borrows += usd_amount;
             }
+        }
+
+        if borrows != 0 {
+            Ratio(collaterals * RATIO_DECIMALS.0 / borrows)
+        } else {
+            self.get_health_threshold()
+        }
+    }
+
+    pub fn get_health_factor_with_accrued_interest(
+        &self,
+        user_account: AccountId,
+        total_borrows: Balance,
+    ) -> Ratio {
+        let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
+        let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
+
+        let user_profile = self.user_profiles.get(&user_account).unwrap_or_default();
+        for (token_address, borrow_data) in user_profile.borrow_data.iter() {
+            let accrued_interest = Ratio(total_borrows)
+                * borrow_data.borrow_rate
+                * Ratio((block_height() - borrow_data.borrow_block) as u128)
+                / RATIO_DECIMALS;
+
+            let price = self.get_price(token_address.clone()).unwrap();
+            let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
+                Balance::from(price.value) * accrued_interest.0 / 10u128.pow(price.fraction_digits),
+            );
+
+            borrows += accrued_interest_amount;
         }
 
         if borrows != 0 {
