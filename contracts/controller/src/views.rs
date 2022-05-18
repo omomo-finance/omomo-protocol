@@ -84,7 +84,7 @@ impl Contract {
             (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (potential_borrow / price * ONE_TOKEN).into()
+        (potential_borrow * ONE_TOKEN / price).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -94,7 +94,7 @@ impl Contract {
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (max_withdraw / price * ONE_TOKEN).into()
+        (max_withdraw * ONE_TOKEN / price).into()
     }
 }
 
@@ -254,12 +254,12 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            5 * ONE_TOKEN, // in yocto == 5 Near
+            5420000000000000000000000, // in yocto == 5.42 Near
         );
 
         // we are able to withdraw all the supplied funds hence 5 NEAR
         assert_eq!(
-            U128(5 * ONE_TOKEN),
+            U128(5420000000000000000000000),
             near_contract.view_withdraw_max(user, token_address)
         );
     }
@@ -272,14 +272,14 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            50 * ONE_TOKEN, // in yocto == 50 Near
+            5420000000000000000000000, // in yocto == 50 Near
         );
 
         near_contract.set_entity_by_token(
             Borrow,
             user.clone(),
             token_address.clone(),
-            10 * ONE_TOKEN, // in yocto == 10 Near
+            1 * ONE_TOKEN, // in yocto == 10 Near
         );
 
         // max_withdraw = (50 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 466_666;
@@ -291,7 +291,7 @@ mod tests {
 
         // we still have some tokens to borrow  23 Near
         assert_eq!(
-            U128(23 * ONE_TOKEN),
+            U128(2613300000000000000000000),
             near_contract.view_borrow_max(user, token_address)
         );
     }
