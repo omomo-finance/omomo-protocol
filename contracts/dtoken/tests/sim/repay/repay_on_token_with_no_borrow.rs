@@ -38,7 +38,7 @@ fn repay_fixture() -> (
         wnear.account_id(),
         controller.account_id(),
         interest_rate_model.clone(),
-        interest_rate_model.clone(),
+        interest_rate_model,
     );
 
     let mint_amount = U128(START_BALANCE);
