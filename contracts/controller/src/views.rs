@@ -272,26 +272,26 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            5420000000000000000000000, // in yocto == 50 Near
+            54240000000000000000000000, // in yocto == 54.24 Near
         );
 
         near_contract.set_entity_by_token(
             Borrow,
             user.clone(),
             token_address.clone(),
-            1 * ONE_TOKEN, // in yocto == 10 Near
+            10 * ONE_TOKEN, // in yocto == 10 Near
         );
 
-        // max_withdraw = (50 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 466_666;
-        // amount = 466_666 / 20_000 = 23
+        // max_withdraw = (54.24 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 523_200;
+        // amount = 523_200 / 20_000 = 26.16
 
         // as we borrow and supply same token the easiest way to check is
-        // 50 (supplied) / 1.5 (health threshold) = 33
-        // hence we have 33 - 10 = 23 left to borrow not to violate health threshold
+        // 50 (supplied) / 1.5 (health threshold) = 36.16
+        // hence we have 36.16 - 10 = 26.16 left to borrow not to violate health threshold
 
-        // we still have some tokens to borrow  23 Near
+        // we still have some tokens to borrow  26.16 Near
         assert_eq!(
-            U128(2613300000000000000000000),
+            U128(26160000000000000000000000),
             near_contract.view_borrow_max(user, token_address)
         );
     }
