@@ -128,9 +128,7 @@ impl Contract {
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
     ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
-        if self.get_health_factor_with_accrued_interest(borrower.clone())
-            > self.get_health_threshold()
-        {
+        if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
             Err((
                 WBalance::from(liquidation_amount.0),
                 WBalance::from(0),
