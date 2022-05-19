@@ -84,7 +84,7 @@ impl Contract {
             (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
         let price = self.get_price(dtoken_id).unwrap();
 
-        (potential_borrow * ONE_TOKEN / price.value.0.0).into()
+        (potential_borrow * ONE_TOKEN / price.value.0 .0).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> U128 {
@@ -94,7 +94,7 @@ impl Contract {
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
         let price = self.get_price(dtoken_id).unwrap();
 
-        (max_withdraw * ONE_TOKEN / price.value.0.0).into()
+        (max_withdraw * ONE_TOKEN / price.value.0 .0).into()
     }
 }
 
@@ -102,12 +102,12 @@ impl Contract {
 mod tests {
     use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
+    use general::wbalance::WBalance;
     use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
-    use general::wbalance::WBalance;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());

@@ -22,17 +22,17 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(30),
         )
-            .then(ext_self::liquidate_callback(
-                borrower,
-                borrowing_dtoken,
-                collateral_dtoken,
-                liquidator,
-                liquidation_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(80),
-            ))
-            .into()
+        .then(ext_self::liquidate_callback(
+            borrower,
+            borrowing_dtoken,
+            collateral_dtoken,
+            liquidator,
+            liquidation_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(80),
+        ))
+        .into()
     }
 }
 
@@ -74,7 +74,7 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(40),
         )
-            .into()
+        .into()
     }
 
     pub fn swap_supplies(
