@@ -12,7 +12,7 @@ impl Contract {
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
+    ) -> PromiseOrValue<U128> {
         require!(
             self.is_dtoken_caller(),
             "This functionality is allowed to be called by admin, contract or dtoken's contract only"
@@ -122,11 +122,11 @@ impl Contract {
         liquidator: AccountId,
         collateral_dtoken: AccountId,
         liquidation_amount: WBalance,
-    ) -> Result<(WBalance, WBalance), (WBalance, WBalance, String)> {
+    ) -> Result<(U128, U128), (U128, U128, String)> {
         if self.get_health_factor(borrower.clone()) > self.get_health_threshold() {
             Err((
-                liquidation_amount,
-                WBalance::from(0),
+                liquidation_amount.0,
+                U128(0),
                 String::from("User can't be liquidated as he has normal value of health factor"),
             ))
         } else {
@@ -138,8 +138,8 @@ impl Contract {
 
             if max_possible_liquidation_amount <= liquidation_amount {
                 return Err((
-                    liquidation_amount,
-                    max_possible_liquidation_amount,
+                    liquidation_amount.0,
+                    max_possible_liquidation_amount.0,
                     String::from(
                         "Max possible liquidation amount cannot be less than liquidation amount",
                     ),
@@ -148,8 +148,8 @@ impl Contract {
 
             if liquidator == borrower {
                 return Err((
-                    liquidation_amount,
-                    max_possible_liquidation_amount,
+                    liquidation_amount.0,
+                    max_possible_liquidation_amount.0,
                     String::from("Liquidation cannot liquidate his on borrow"),
                 ));
             }
@@ -159,7 +159,7 @@ impl Contract {
                 collateral_dtoken,
                 liquidation_amount,
             );
-            Ok((liquidation_amount, revenue_amount))
+            Ok((liquidation_amount.0, revenue_amount.0))
         }
     }
 }

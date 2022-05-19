@@ -231,7 +231,7 @@ impl Contract {
         &mut self,
         action: Actions,
         amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
+    ) -> PromiseOrValue<U128> {
         match action {
             Actions::Repay => self.post_repay(amount),
             Actions::Withdraw => self.post_withdraw(amount),

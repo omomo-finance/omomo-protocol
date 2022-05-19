@@ -4,9 +4,9 @@ use general::ratio::{Ratio, RATIO_DECIMALS};
 const GAS_FOR_WITHDRAW: Gas = Gas(180_000_000_000_000);
 
 impl Contract {
-    pub fn post_withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn post_withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(dtoken_amount);
+            return PromiseOrValue::Value(dtoken_amount.0);
         }
         underlying_token::ft_balance_of(
             self.get_contract_address(),

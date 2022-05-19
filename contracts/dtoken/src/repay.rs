@@ -12,9 +12,9 @@ impl Contract {
         self.mutex_account_lock(Actions::Repay, token_amount, self.terra_gas(140))
     }
 
-    pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount.0);
         }
         underlying_token::ft_balance_of(
             self.get_contract_address(),

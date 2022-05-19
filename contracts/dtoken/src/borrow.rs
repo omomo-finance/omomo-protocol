@@ -20,9 +20,9 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn post_borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn post_borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount.0);
         }
 
         underlying_token::ft_balance_of(
