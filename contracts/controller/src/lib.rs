@@ -8,7 +8,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
 use general::percent::Percent;
-use general::ratio::Ratio;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use general::*;
 
 pub use crate::borrows_supplies::*;
@@ -163,10 +163,11 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            liquidation_incentive: Ratio(500000000),
-            liquidation_health_factor_threshold: Ratio(10000000000),
+            liquidation_incentive: Ratio((0.05 * RATIO_DECIMALS.0 as f64) as u128),
+            liquidation_health_factor_threshold: Ratio((1.0 * RATIO_DECIMALS.0 as f64) as u128),
             reserve_factor: Percent(0),
-            health_threshold: Ratio(15000000000),
+            health_threshold: Ratio((1.5 * RATIO_DECIMALS.0 as f64) as u128),
+
             mutex: ActionMutex::default(),
         }
     }

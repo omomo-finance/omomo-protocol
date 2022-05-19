@@ -115,7 +115,7 @@ impl Default for InterestRateModel {
             base_rate_per_block: WRatio::from(RATIO_DECIMALS.0),
             multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
             jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
-            reserve_factor: WRatio::from(500000000),
+            reserve_factor: WRatio::from((0.05 * RATIO_DECIMALS.0 as f64) as u128),
             rewards_config: Vec::new(),
         }
     }
