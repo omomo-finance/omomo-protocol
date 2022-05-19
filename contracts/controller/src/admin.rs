@@ -118,7 +118,7 @@ impl Contract {
     pub fn get_liquidation_incentive(&self) -> Ratio {
         // TODO: Move this kind of getter that don't require admin rights somewhere else
         // incentive % + 100 %
-        self.liquidation_incentive + Ratio(10000)
+        self.liquidation_incentive + Ratio(10000000000)
     }
 
     pub fn get_health_threshold(&self) -> Ratio {

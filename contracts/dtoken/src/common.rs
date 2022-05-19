@@ -385,7 +385,7 @@ mod tests {
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(10000),
+            initial_exchange_rate: U128(10000000000),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -426,7 +426,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio(10000000000),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -447,7 +447,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio(10000000000),
             contract.calculate_exchange_rate(
                 U128(11_000),
                 total_borrows,
@@ -468,7 +468,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio(10000000000),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -489,7 +489,7 @@ mod tests {
 
         // Ratio that represents xrate = 1.05
         assert_eq!(
-            Ratio(10500),
+            Ratio(10500000000),
             contract.calculate_exchange_rate(
                 U128(11_050),
                 total_borrows,
@@ -510,7 +510,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio(10000000000),
             contract.calculate_exchange_rate(
                 U128(10_002.5 as u128),
                 total_borrows,

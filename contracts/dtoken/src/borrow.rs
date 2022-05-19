@@ -43,18 +43,18 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn borrow(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
 
         assert!(
-            Balance::from(token_amount) > 0,
+            Balance::from(amount) > 0,
             "Amount should be a positive number"
         );
 
-        self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(180))
+        self.mutex_account_lock(Actions::Borrow, amount, self.terra_gas(180))
     }
 
     #[private]

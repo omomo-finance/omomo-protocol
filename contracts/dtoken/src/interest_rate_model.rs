@@ -115,7 +115,7 @@ impl Default for InterestRateModel {
             base_rate_per_block: WRatio::from(RATIO_DECIMALS.0),
             multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
             jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
-            reserve_factor: WRatio::from(500),
+            reserve_factor: WRatio::from(500000000),
             rewards_config: Vec::new(),
         }
     }
@@ -179,7 +179,7 @@ mod tests {
         let (owner_account, token_address) = (alice(), bob());
 
         let near_contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000),
+            initial_exchange_rate: U128(10000000000),
             underlying_token_id: "weth".parse().unwrap(),
             owner_id: owner_account,
             controller_account_id: "controller".parse().unwrap(),

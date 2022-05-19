@@ -83,7 +83,7 @@ mod tests {
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(10000),
+            initial_exchange_rate: U128(10000000000),
             underlying_token_id: underlying_token_account,
             owner_id: user_account,
             controller_account_id: controller_account,
@@ -94,7 +94,7 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
-        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), Ratio(9000));
+        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), Ratio(9000000000));
     }
 
     #[test]
@@ -104,13 +104,13 @@ mod tests {
         let mut interest_rate_model = contract.config.get().unwrap().interest_rate_model;
 
         interest_rate_model.set_base_rate_per_block(WRatio::from(0));
-        interest_rate_model.set_multiplier_per_block(WRatio::from(500));
-        interest_rate_model.set_kink(WRatio::from(8000));
-        interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900));
+        interest_rate_model.set_multiplier_per_block(WRatio::from(500000000));
+        interest_rate_model.set_kink(WRatio::from(8000000000));
+        interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900000000));
 
         assert_eq!(
             contract.get_borrow_rate(U128(20), U128(180), U128(0)),
-            Ratio(19000)
+            Ratio(19000000000)
         );
     }
 
@@ -121,10 +121,10 @@ mod tests {
         let mut interest_rate_model = contract.config.get().unwrap().interest_rate_model;
 
         interest_rate_model.set_base_rate_per_block(WRatio::from(0));
-        interest_rate_model.set_multiplier_per_block(WRatio::from(500));
-        interest_rate_model.set_kink(WRatio::from(8000));
-        interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900));
-        interest_rate_model.set_reserve_factor(WRatio::from(700));
+        interest_rate_model.set_multiplier_per_block(WRatio::from(500000000));
+        interest_rate_model.set_kink(WRatio::from(8000000000));
+        interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900000000));
+        interest_rate_model.set_reserve_factor(WRatio::from(700000000));
 
         assert_eq!(
             contract.get_supply_rate(
@@ -133,7 +133,7 @@ mod tests {
                 U128(0),
                 U128(interest_rate_model.get_reserve_factor().0)
             ),
-            Ratio(15903)
+            Ratio(15903000000)
         );
     }
 }

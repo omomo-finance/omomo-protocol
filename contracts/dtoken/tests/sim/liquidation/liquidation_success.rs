@@ -149,7 +149,7 @@ fn scenario_liquidation_success() {
     let borrow_balance = BORROWER_BORROW - amount;
 
     let revenue_amount: Balance =
-        (10500 * amount * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
+        (10500000000 * amount * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
 
     assert_eq!(
         user_borrows,

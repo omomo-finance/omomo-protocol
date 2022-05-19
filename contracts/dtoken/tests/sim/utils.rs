@@ -190,7 +190,7 @@ fn internal_dtoken_initialize(
     call!(
         account,
         dtoken.new(dConfig {
-            initial_exchange_rate: U128(10000),
+            initial_exchange_rate: U128(10000000000),
             underlying_token_id: utoken_account,
             owner_id: owner,
             controller_account_id: controller_account,
