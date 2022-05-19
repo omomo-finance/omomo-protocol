@@ -76,25 +76,25 @@ impl Contract {
         self.get_prices_for_dtokens(dtokens)
     }
 
-    pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
+    pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> U128 {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
         let potential_borrow =
             (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
-        let price = self.get_price(dtoken_id).unwrap().value.0;
+        let price = self.get_price(dtoken_id).unwrap();
 
-        (potential_borrow * ONE_TOKEN / price).into()
+        (potential_borrow * ONE_TOKEN / price.value.0.0).into()
     }
 
-    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
+    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> U128 {
         let supplies = self.get_total_supplies(user_id.clone());
         let borrows = self.get_total_borrows(user_id);
 
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
-        let price = self.get_price(dtoken_id).unwrap().value.0;
+        let price = self.get_price(dtoken_id).unwrap();
 
-        (max_withdraw * ONE_TOKEN / price).into()
+        (max_withdraw * ONE_TOKEN / price.value.0.0).into()
     }
 }
 
@@ -107,6 +107,7 @@ mod tests {
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
+    use general::wbalance::WBalance;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());
@@ -139,13 +140,13 @@ mod tests {
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
             ticker_id: ticker_id_2,
-            value: U128(20000),
+            value: WBalance::from(20000),
             volatility: U128(80),
             fraction_digits: 4,
         });
         prices.push(Price {
             ticker_id: ticker_id_1,
-            value: U128(20000),
+            value: WBalance::from(20000),
             volatility: U128(100),
             fraction_digits: 4,
         });
