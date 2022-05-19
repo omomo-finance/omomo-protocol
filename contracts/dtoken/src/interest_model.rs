@@ -94,7 +94,10 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
-        assert_eq!(contract.get_util(U128(20), U128(180), U128(0)), Ratio(9000000000));
+        assert_eq!(
+            contract.get_util(U128(20), U128(180), U128(0)),
+            Ratio(9000000000)
+        );
     }
 
     #[test]
