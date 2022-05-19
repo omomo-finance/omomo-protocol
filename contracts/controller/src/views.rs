@@ -82,9 +82,9 @@ impl Contract {
 
         let potential_borrow =
             (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
-        let price = Balance::from(self.get_price(dtoken_id).unwrap().value);
+        let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        WBalance::from(potential_borrow / price * ONE_TOKEN)
+        (potential_borrow * ONE_TOKEN / price).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -92,9 +92,9 @@ impl Contract {
         let borrows = self.get_total_borrows(user_id);
 
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
-        let price = Balance::from(self.get_price(dtoken_id).unwrap().value);
+        let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        WBalance::from(max_withdraw / price * ONE_TOKEN)
+        (max_withdraw * ONE_TOKEN / price).into()
     }
 }
 
@@ -102,7 +102,6 @@ impl Contract {
 mod tests {
     use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
-    use general::wbalance::WBalance;
     use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
@@ -140,13 +139,13 @@ mod tests {
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
             ticker_id: ticker_id_2,
-            value: WBalance::from(20000),
+            value: U128(20000),
             volatility: U128(80),
             fraction_digits: 4,
         });
         prices.push(Price {
             ticker_id: ticker_id_1,
-            value: WBalance::from(20000),
+            value: U128(20000),
             volatility: U128(100),
             fraction_digits: 4,
         });
@@ -255,12 +254,12 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            5 * ONE_TOKEN, // in yocto == 5 Near
+            5420000000000000000000000, // in yocto == 5.42 Near
         );
 
         // we are able to withdraw all the supplied funds hence 5 NEAR
         assert_eq!(
-            WBalance::from(5 * ONE_TOKEN),
+            U128(5420000000000000000000000),
             near_contract.view_withdraw_max(user, token_address)
         );
     }
@@ -273,7 +272,7 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            50 * ONE_TOKEN, // in yocto == 50 Near
+            54240000000000000000000000, // in yocto == 54.24 Near
         );
 
         near_contract.set_entity_by_token(
@@ -283,16 +282,16 @@ mod tests {
             10 * ONE_TOKEN, // in yocto == 10 Near
         );
 
-        // max_withdraw = (50 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 466_666;
-        // amount = 466_666 / 20_000 = 23
+        // max_withdraw = (54.24 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 523_200;
+        // amount = 523_200 / 20_000 = 26.16
 
         // as we borrow and supply same token the easiest way to check is
-        // 50 (supplied) / 1.5 (health threshold) = 33
-        // hence we have 33 - 10 = 23 left to borrow not to violate health threshold
+        // 50 (supplied) / 1.5 (health threshold) = 36.16
+        // hence we have 36.16 - 10 = 26.16 left to borrow not to violate health threshold
 
-        // we still have some tokens to borrow  23 Near
+        // we still have some tokens to borrow  26.16 Near
         assert_eq!(
-            WBalance::from(23 * ONE_TOKEN),
+            U128(26160000000000000000000000),
             near_contract.view_borrow_max(user, token_address)
         );
     }
