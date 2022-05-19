@@ -1,6 +1,5 @@
 use crate::*;
 use general::ratio::{Ratio, RATIO_DECIMALS};
-use near_sdk::env::block_height;
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
@@ -87,24 +86,6 @@ impl Contract {
             accrued_interest.clone(),
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
-
-        let current_block_height = block_height();
-        for (unique_id, reward_setting) in self.model.rewards_config.clone().iter().enumerate() {
-            let reward_amount = self.calculate_reward_amount(
-                env::signer_account_id(),
-                reward_setting,
-                current_block_height,
-                accrued_interest.last_recalculation_block,
-            );
-            let reward = Reward {
-                id: format!("{}{}", env::block_timestamp_ms(), unique_id),
-                token: reward_setting.token.clone(),
-                amount: WBalance::from(reward_amount),
-                locked_till: current_block_height + reward_setting.lock_time,
-                penalty: reward_setting.penalty,
-            };
-            self.adjust_reward(env::signer_account_id(), reward);
-        }
 
         // Dtokens minting and adding them to the user account
         self.mint(self.get_signer_address(), dtoken_amount.into());

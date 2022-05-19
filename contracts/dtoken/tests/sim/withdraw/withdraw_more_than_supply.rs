@@ -29,7 +29,6 @@ fn withdraw_more_than_supply_fixture() -> (
         base_rate_per_block: U128(0),
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
-        rewards_config: Vec::new(),
     };
     let dwnear = initialize_dtoken(
         &root,
