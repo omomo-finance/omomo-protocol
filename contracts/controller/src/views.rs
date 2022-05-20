@@ -93,8 +93,11 @@ impl Contract {
 
         let max_withdraw = supplies.0 - (borrows.0 * self.health_threshold.0 / RATIO_DECIMALS.0);
         let price = self.get_price(dtoken_id).unwrap().value.0;
-
-        (max_withdraw * ONE_TOKEN / price).into()
+        if supplies.0 <= max_withdraw {
+            (supplies.0 * ONE_TOKEN / price).into()
+        } else {
+            (max_withdraw * ONE_TOKEN / price).into()
+        }
     }
 }
 
