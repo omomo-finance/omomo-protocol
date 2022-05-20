@@ -142,7 +142,8 @@ fn scenario_repay_by_parts() {
 
     let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
-        user_balance, WNEAR_BORROW - FIRST_PART_TO_REPAY,
+        user_balance,
+        WNEAR_BORROW - FIRST_PART_TO_REPAY,
         "Borrow balance on dtoken should be {}",
         WNEAR_BORROW - FIRST_PART_TO_REPAY
     );
@@ -150,14 +151,22 @@ fn scenario_repay_by_parts() {
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
     assert_eq!(
-        user_balance, WNEAR_BORROW - FIRST_PART_TO_REPAY,
+        user_balance,
+        WNEAR_BORROW - FIRST_PART_TO_REPAY,
         "Borrow balance on controller should be {}",
         WNEAR_BORROW - FIRST_PART_TO_REPAY
     );
 
-    repay(&user, dwnear.account_id(), &wnear, repay_amount - FIRST_PART_TO_REPAY).assert_success();
+    repay(
+        &user,
+        dwnear.account_id(),
+        &wnear,
+        repay_amount - FIRST_PART_TO_REPAY,
+    )
+    .assert_success();
 
-    let balance_after_first_repay = START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY;
+    let balance_after_first_repay =
+        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY;
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
