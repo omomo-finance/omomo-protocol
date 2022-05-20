@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::repay_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(60),
-        ))
-        .into()
+            .then(ext_self::repay_balance_of_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(60),
+            ))
+            .into()
     }
 }
 
@@ -63,7 +63,7 @@ impl Contract {
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
         );
-        let borrow_amount = self.get_account_borrows(env::signer_account_id());
+        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
 
         let borrow_accrued_interest = self
             .config
@@ -78,18 +78,23 @@ impl Contract {
         let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         let new_total_reserve = self.get_total_reserves()
             + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor().0
-                / RATIO_DECIMALS.0;
+            / RATIO_DECIMALS.0;
 
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
         self.set_total_reserves(new_total_reserve);
-        require!(
-            Balance::from(token_amount) >= borrow_with_rate_amount,
-            format!(
-                "repay amount {} is less than actual debt {}",
-                Balance::from(token_amount),
-                borrow_with_rate_amount
-            )
-        );
+
+        // require!(
+        //     Balance::from(token_amount) >= borrow_with_rate_amount,
+        //     format!(
+        //         "repay amount {} is less than actual debt {}",
+        //         Balance::from(token_amount),
+        //         borrow_with_rate_amount
+        //     )
+        // );
+
+        if token_amount.0 < borrow_with_rate_amount {
+            borrow_amount = token_amount.0;
+        }
 
         controller::repay_borrows(
             env::signer_account_id(),
@@ -99,14 +104,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::controller_repay_borrows_callback(
-            token_amount,
-            U128(borrow_with_rate_amount),
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(20),
-        ))
-        .into()
+            .then(ext_self::controller_repay_borrows_callback(
+                token_amount,
+                U128(borrow_with_rate_amount),
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(20),
+            ))
+            .into()
     }
 
     #[private]
@@ -127,18 +132,27 @@ impl Contract {
             return PromiseOrValue::Value(amount);
         }
 
-        let extra_balance = Balance::from(amount) - Balance::from(borrow_amount);
-        self.decrease_borrows(
-            env::signer_account_id(),
-            U128(self.get_account_borrows(env::signer_account_id())),
-        );
+        let mut extra_balance = 0;
+
+        if amount.0 < borrow_amount.0 {
+            self.decrease_borrows(
+                env::signer_account_id(),
+                amount,
+            );
+        } else {
+            extra_balance += Balance::from(amount) - Balance::from(borrow_amount);
+            self.decrease_borrows(
+                env::signer_account_id(),
+                U128(self.get_account_borrows(env::signer_account_id())),
+            );
+        }
+
         self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
 
         self.mutex_account_unlock();
         log!(
             "{}",
-            Events::RepaySuccess(env::signer_account_id(), Balance::from(borrow_amount))
-        );
+            Events::RepaySuccess(env::signer_account_id(), Balance::from(borrow_amount)));
         PromiseOrValue::Value(U128(extra_balance))
     }
 }
