@@ -14,6 +14,9 @@ pub struct UserProfile {
 
     /// User consistency
     pub consistency: Consistency,
+
+    /// Borrow data with block height and APY
+    pub borrow_data: HashMap<AccountId, BorrowData>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -36,6 +39,17 @@ pub struct Consistency {
 
     /// Block that represents the time when consistency was affected
     pub block_height: BlockHeight,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(Debug, Default)]
+pub struct BorrowData {
+    /// Borrow block height
+    pub borrow_block: BlockHeight,
+
+    /// Borrow APY
+    pub borrow_rate: Ratio,
 }
 
 impl UserProfile {
@@ -76,6 +90,17 @@ impl UserProfile {
     pub fn set_consistency(&mut self, consistency: bool, block: BlockHeight) {
         self.consistency.is_inconsistent = !consistency;
         self.consistency.block_height = block;
+    }
+
+    pub fn insert_borrow_data(&mut self, token_address: AccountId, borrow_data: BorrowData) {
+        self.borrow_data.insert(token_address, borrow_data);
+    }
+
+    pub fn get_borrow_data(&mut self, token_address: AccountId) -> BorrowData {
+        self.borrow_data
+            .get(&token_address)
+            .unwrap_or(&BorrowData::default())
+            .clone()
     }
 }
 

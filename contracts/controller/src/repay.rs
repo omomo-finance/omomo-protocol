@@ -1,4 +1,5 @@
 use crate::*;
+use near_sdk::BlockHeight;
 
 #[near_bindgen]
 impl Contract {
@@ -21,6 +22,8 @@ impl Contract {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        borrow_block: BlockHeight,
+        borrow_rate: WRatio,
     ) -> Balance {
         assert!(
             self.is_repay_allowed(account_id.clone(), token_address.clone(), token_amount),
@@ -30,6 +33,12 @@ impl Contract {
             Balance::from(token_amount)
         );
 
-        self.decrease_borrows(account_id, token_address, token_amount)
+        self.decrease_borrows(
+            account_id,
+            token_address,
+            token_amount,
+            borrow_block,
+            borrow_rate,
+        )
     }
 }
