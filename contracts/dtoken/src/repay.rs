@@ -83,15 +83,6 @@ impl Contract {
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
         self.set_total_reserves(new_total_reserve);
 
-        // require!(
-        //     Balance::from(token_amount) >= borrow_with_rate_amount,
-        //     format!(
-        //         "repay amount {} is less than actual debt {}",
-        //         Balance::from(token_amount),
-        //         borrow_with_rate_amount
-        //     )
-        // );
-
         if token_amount.0 < borrow_with_rate_amount {
             borrow_amount = token_amount.0;
         }
