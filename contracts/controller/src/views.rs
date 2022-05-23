@@ -91,7 +91,7 @@ impl Contract {
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
         let supplies = self.get_total_supplies(user_id.clone());
         let borrows = self.get_total_borrows(user_id.clone());
-        let accrued_interest = self.calculate_accrued_borrow_interest(dtoken_id.clone());
+        let accrued_interest = self.calculate_accrued_borrow_interest(user_id.clone());
         let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
 
         let max_withdraw = supplies.0 - ((borrows.0 + accrued_interest) * self.health_threshold.0 / RATIO_DECIMALS.0);
