@@ -100,7 +100,7 @@ pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<test_utoken::Con
         &uroot,
         AccountId::new_unchecked("utoken_contract".to_string()),
     );
-    internal_utoken_initialize(&utoken.user_account, &utoken, uroot.account_id().clone());
+    internal_utoken_initialize(&utoken.user_account, &utoken, uroot.account_id());
     utoken
 }
 

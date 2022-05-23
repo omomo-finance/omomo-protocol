@@ -138,18 +138,18 @@ fn scenario_liquidation_success() {
 
     assert_eq!(
         Balance::from(weth_ft_balance_of_for_dweth),
-        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount)),
+        (MINT_BALANCE - BORROWER_BORROW + amount),
         "dweth_balance_of_on_weth balance of should be {}",
-        (MINT_BALANCE - BORROWER_BORROW + Balance::from(amount))
+        (MINT_BALANCE - BORROWER_BORROW + amount)
     );
 
     let user_borrows: Balance =
         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
 
-    let borrow_balance = BORROWER_BORROW - Balance::from(amount);
+    let borrow_balance = BORROWER_BORROW - amount;
 
     let revenue_amount: Balance =
-        (10500 * Balance::from(amount) * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
+        (10500 * amount * START_PRICE) / (CHANGED_PRICE * RATIO_DECIMALS.0);
 
     assert_eq!(
         user_borrows,

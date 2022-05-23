@@ -63,7 +63,7 @@ impl Contract {
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
         );
-        let borrow_amount = self.get_account_borrows(env::signer_account_id());
+        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
 
         let borrow_accrued_interest = self
             .config
@@ -82,14 +82,10 @@ impl Contract {
 
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
         self.set_total_reserves(new_total_reserve);
-        require!(
-            Balance::from(token_amount) >= borrow_with_rate_amount,
-            format!(
-                "repay amount {} is less than actual debt {}",
-                Balance::from(token_amount),
-                borrow_with_rate_amount
-            )
-        );
+
+        if token_amount.0 < borrow_with_rate_amount {
+            borrow_amount = token_amount.0;
+        }
 
         controller::repay_borrows(
             env::signer_account_id(),
@@ -128,11 +124,18 @@ impl Contract {
             return PromiseOrValue::Value(amount);
         }
 
-        let extra_balance = Balance::from(amount) - Balance::from(borrow_amount);
-        self.decrease_borrows(
-            env::signer_account_id(),
-            U128(self.get_account_borrows(env::signer_account_id())),
-        );
+        let mut extra_balance = 0;
+
+        if amount.0 < borrow_amount.0 {
+            self.decrease_borrows(env::signer_account_id(), amount);
+        } else {
+            extra_balance += Balance::from(amount) - Balance::from(borrow_amount);
+            self.decrease_borrows(
+                env::signer_account_id(),
+                U128(self.get_account_borrows(env::signer_account_id())),
+            );
+        }
+
         self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
 
         self.mutex_account_unlock();
