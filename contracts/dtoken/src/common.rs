@@ -350,8 +350,8 @@ impl fmt::Display for Events {
 
 #[cfg(test)]
 mod tests {
+    use crate::InterestRateModel;
     use crate::{Config, Contract};
-    use crate::{InterestRateModel};
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
