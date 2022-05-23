@@ -1,6 +1,6 @@
 use crate::*;
 use general::ratio::RATIO_DECIMALS;
-use near_sdk::PromiseOrValue;
+use near_sdk::{env::block_height, PromiseOrValue};
 use partial_min_max::min;
 
 #[near_bindgen]
@@ -39,12 +39,19 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
         liquidation_revenue_amount: WBalance,
+        borrow_rate: WRatio,
     ) -> PromiseOrValue<U128> {
         require!(
             self.is_dtoken_caller(),
             "This method is allowed to be called by dtoken contract only"
         );
-        self.repay_borrows(borrower.clone(), borrowing_dtoken, liquidation_amount);
+        self.repay_borrows(
+            borrower.clone(),
+            borrowing_dtoken,
+            liquidation_amount,
+            block_height(),
+            borrow_rate,
+        );
         self.decrease_supplies(
             borrower.clone(),
             collateral_dtoken.clone(),
