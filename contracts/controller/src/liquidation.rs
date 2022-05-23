@@ -39,6 +39,7 @@ impl Contract {
         liquidator: AccountId,
         liquidation_amount: WBalance,
         liquidation_revenue_amount: WBalance,
+        borrow_rate: WRatio,
     ) -> PromiseOrValue<U128> {
         require!(
             self.is_dtoken_caller(),
@@ -49,6 +50,7 @@ impl Contract {
             borrowing_dtoken,
             liquidation_amount,
             block_height(),
+            borrow_rate,
         );
         self.decrease_supplies(
             borrower.clone(),

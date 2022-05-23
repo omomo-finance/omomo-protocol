@@ -92,6 +92,7 @@ impl Contract {
             self.get_contract_address(),
             U128(borrow_amount),
             borrow_accrued_interest.last_recalculation_block,
+            U128(borrow_rate.0),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),

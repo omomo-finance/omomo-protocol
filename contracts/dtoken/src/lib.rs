@@ -114,6 +114,7 @@ trait ControllerInterface {
         token_address: AccountId,
         token_amount: WBalance,
         borrow_block: BlockHeight,
+        borrow_rate: WRatio,
     );
     fn withdraw_supplies(
         &mut self,
@@ -151,6 +152,7 @@ trait ControllerInterface {
         liquidator: AccountId,
         liquidation_amount: WBalance,
         liquidation_revenue_amount: WBalance,
+        borrow_rate: WRatio,
     );
     fn mutex_lock(&mut self, action: Actions);
     fn mutex_unlock(&mut self);
@@ -208,6 +210,15 @@ trait InternalTokenInterface {
         collateral_dtoken: AccountId,
         liquidator: AccountId,
         liquidation_amount: WBalance,
+    );
+    fn liquidate_balance_of_callback(
+        &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+        result: Option<Vec<u8>>,
     );
     fn mutex_lock_callback(
         &mut self,

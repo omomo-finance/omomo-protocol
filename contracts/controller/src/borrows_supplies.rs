@@ -118,6 +118,7 @@ impl Contract {
         token_address: AccountId,
         token_amount: WBalance,
         borrow_block: BlockHeight,
+        borrow_rate: WRatio,
     ) -> Balance {
         let existing_borrows: Balance =
             self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
@@ -129,9 +130,13 @@ impl Contract {
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
+        let mut borrow_rate = borrow_rate.0;
+        if decreased_borrows == 0 {
+            borrow_rate = 0;
+        }
         let borrow_data = BorrowData {
             borrow_block,
-            borrow_rate: Ratio(0),
+            borrow_rate: Ratio(borrow_rate),
         };
         self.user_profiles
             .get(&account)
@@ -243,7 +248,7 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use general::ratio::Ratio;
-    use general::{Price, ONE_TOKEN};
+    use general::{Price, WRatio, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::AccountId;
@@ -325,12 +330,19 @@ mod tests {
             100
         );
 
-        near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2), 0);
+        near_contract.decrease_borrows(
+            user_account.clone(),
+            token_address.clone(),
+            U128(2),
+            0,
+            WRatio::from(0),
+        );
         near_contract.decrease_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
             U128(2),
             0,
+            WRatio::from(0),
         );
 
         assert_eq!(
@@ -408,7 +420,7 @@ mod tests {
             Ratio(0),
         );
 
-        near_contract.decrease_borrows(user_account, token_address, U128(20), 0);
+        near_contract.decrease_borrows(user_account, token_address, U128(20), 0, WRatio::from(0));
     }
 
     #[test]
