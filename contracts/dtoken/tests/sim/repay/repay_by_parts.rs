@@ -13,8 +13,9 @@ const WNEAR_AMOUNT: Balance = 70;
 const WBTC_AMOUNT: Balance = 100;
 const WETH_BORROW: Balance = 30;
 const WNEAR_BORROW: Balance = 40;
-const START_BALANCE: Balance = 100;
+const START_BALANCE: Balance = 200;
 const START_PRICE: Balance = 10000;
+const FIRST_PART_TO_REPAY: Balance = 10;
 
 fn repay_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -120,7 +121,7 @@ fn repay_fixture() -> (
 }
 
 #[test]
-fn scenario_repay_less_fail() {
+fn scenario_repay_by_parts() {
     let (dwnear, controller, wnear, user) = repay_fixture();
 
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
@@ -129,27 +130,56 @@ fn scenario_repay_less_fail() {
 
     let repay_amount = Balance::from(repay_info.total_amount);
 
-    repay(&user, dwnear.account_id(), &wnear, repay_amount - 10).assert_success();
+    repay(&user, dwnear.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance.0,
-        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW,
-        "Repay wasn`t done"
+        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY,
+        "Repay was partially done, user balance should be {}",
+        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY
     );
 
     let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
-        user_balance, WNEAR_BORROW,
+        user_balance,
+        WNEAR_BORROW - FIRST_PART_TO_REPAY,
         "Borrow balance on dtoken should be {}",
-        WNEAR_BORROW
+        WNEAR_BORROW - FIRST_PART_TO_REPAY
     );
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
     assert_eq!(
-        user_balance, WNEAR_BORROW,
+        user_balance,
+        WNEAR_BORROW - FIRST_PART_TO_REPAY,
         "Borrow balance on controller should be {}",
-        WNEAR_BORROW
+        WNEAR_BORROW - FIRST_PART_TO_REPAY
     );
+
+    repay(
+        &user,
+        dwnear.account_id(),
+        &wnear,
+        repay_amount - FIRST_PART_TO_REPAY,
+    )
+    .assert_success();
+
+    let balance_after_first_repay =
+        START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY;
+
+    let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
+    assert_eq!(
+        user_balance.0,
+        balance_after_first_repay - (repay_amount - FIRST_PART_TO_REPAY),
+        "Repay was fully done, user balance should be {}",
+        balance_after_first_repay - (repay_amount - FIRST_PART_TO_REPAY)
+    );
+
+    let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
+
+    let user_balance: Balance =
+        view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
+    assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }
