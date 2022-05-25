@@ -92,14 +92,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -353,9 +353,9 @@ mod tests {
     use crate::InterestRateModel;
     use crate::{Config, Contract};
     use general::ratio::Ratio;
+    use general::wbalance::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
-    use general::wbalance::WBalance;
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =

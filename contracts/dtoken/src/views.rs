@@ -78,12 +78,12 @@ impl Contract {
 #[cfg(test)]
 mod tests {
     use crate::InterestRateModel;
+    use general::ratio::Ratio;
     use general::wbalance::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, Balance, VMContext};
-    use general::ratio::Ratio;
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
@@ -204,8 +204,7 @@ mod tests {
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(
-            withdraw_info.total_interest,
-            0,
+            withdraw_info.total_interest, 0,
             "Withdraw total_interest is not matches to expected"
         );
     }

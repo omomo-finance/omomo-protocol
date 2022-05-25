@@ -110,12 +110,12 @@ impl Contract {
 mod tests {
     use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
+    use general::wbalance::WBalance;
     use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
-    use general::wbalance::WBalance;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());
@@ -154,7 +154,7 @@ mod tests {
         });
         prices.push(Price {
             ticker_id: ticker_id_1,
-            value:  WBalance::from(20000),
+            value: WBalance::from(20000),
             volatility: U128(100),
             fraction_digits: 4,
         });
