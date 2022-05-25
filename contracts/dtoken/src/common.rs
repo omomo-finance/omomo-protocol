@@ -3,9 +3,6 @@ use general::ratio::{Ratio, RATIO_DECIMALS};
 use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use std::fmt;
 
-const BLOCK_PER_DAY: BlockHeight = 72000;
-const BLOCK_PER_WEEK: BlockHeight = 1048896;
-
 pub enum Events {
     BorrowFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
     BorrowFailedToIncreaseBorrowOnController(AccountId, Balance),
@@ -127,8 +124,8 @@ impl Contract {
     pub fn get_repay_info(&self, user_id: AccountId, underlying_balance: WBalance) -> RepayInfo {
         let borrow_rate = self.get_borrow_rate(
             underlying_balance,
-            WBalance::from(self.get_total_borrows()),
-            WBalance::from(self.total_reserves),
+            U128(self.get_total_borrows()),
+            U128(self.total_reserves),
         );
         let user_borrows = self.get_account_borrows(user_id.clone());
 
@@ -148,8 +145,8 @@ impl Contract {
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
             total_amount: WBalance::from(accumulated_interest + user_borrows),
-            borrow_amount: WBalance::from(user_borrows),
-            accumulated_interest: WBalance::from(accumulated_interest),
+            borrow_amount: U128(user_borrows),
+            accumulated_interest: U128(accumulated_interest),
         }
     }
 
@@ -158,48 +155,28 @@ impl Contract {
         user_id: AccountId,
         underlying_balance: WBalance,
     ) -> WithdrawInfo {
-        let exchange_rate = U128::from(self.get_exchange_rate(underlying_balance).0);
+        let exchange_rate: Ratio = self.get_exchange_rate(underlying_balance);
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             underlying_balance,
-            WBalance::from(self.get_total_borrows()),
-            WBalance::from(self.total_reserves),
-            WBalance::from(interest_rate_model.get_reserve_factor().0),
+            U128(self.get_total_borrows()),
+            U128(self.total_reserves),
+            U128(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
             self.get_supplies_by_account(user_id.clone()),
             self.get_accrued_supply_interest(user_id.clone()),
         );
-        let total_interest = U128::from(
-            self.get_accrued_supply_interest(user_id)
-                .accumulated_interest
-                + accrued_supply_interest.accumulated_interest,
-        );
+        let total_interest = self
+            .get_accrued_supply_interest(user_id)
+            .accumulated_interest
+            + accrued_supply_interest.accumulated_interest;
 
         WithdrawInfo {
             exchange_rate,
             total_interest,
         }
-    }
-
-    pub fn calculate_reward_amount(
-        &self,
-        account_id: AccountId,
-        reward_setting: &RewardSetting,
-        current_block: BlockHeight,
-        last_recalculation_block: BlockHeight,
-    ) -> Balance {
-        let blocks_per_period = match reward_setting.reward_per_period.period {
-            RewardPeriod::Day => BLOCK_PER_DAY,
-            RewardPeriod::Week => BLOCK_PER_WEEK,
-        };
-        Balance::from(reward_setting.reward_per_period.amount)
-            * (self.token.accounts.get(&account_id).unwrap_or(0) * 10u128.pow(8)
-                / self.get_total_supplies())
-            * ((current_block - last_recalculation_block) * 10u64.pow(8) / blocks_per_period)
-                as u128
-            / 10u128.pow(16)
     }
 
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
@@ -231,7 +208,7 @@ impl Contract {
         &mut self,
         action: Actions,
         amount: WBalance,
-    ) -> PromiseOrValue<U128> {
+    ) -> PromiseOrValue<WBalance> {
         match action {
             Actions::Repay => self.post_repay(amount),
             Actions::Withdraw => self.post_withdraw(amount),
@@ -373,12 +350,9 @@ impl fmt::Display for Events {
 
 #[cfg(test)]
 mod tests {
-    use crate::RewardAmount;
-    use crate::RewardPeriod::Day;
+    use crate::InterestRateModel;
     use crate::{Config, Contract};
-    use crate::{InterestRateModel, RewardSetting, VestingPlans};
     use general::ratio::Ratio;
-    use general::wbalance::WBalance;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
 
@@ -396,29 +370,6 @@ mod tests {
     }
 
     #[test]
-    fn test_calculate_reward_amount() {
-        let mut contract = init_env();
-
-        contract.mint(bob(), WBalance::from(100));
-        contract.mint(carol(), WBalance::from(1000));
-
-        let reward_setting = RewardSetting {
-            token: alice(),
-            reward_per_period: RewardAmount {
-                period: Day,
-                amount: WBalance::from(1000000),
-            },
-            lock_time: 20000,
-            penalty: Ratio(1000),
-            vesting: VestingPlans::None,
-        };
-
-        let reward_amount = contract.calculate_reward_amount(bob(), &reward_setting, 300, 100);
-
-        assert_eq!(reward_amount, 252);
-    }
-
-    #[test]
     fn test_exchange_rate_initial_state() {
         let contract = init_env();
 
@@ -430,7 +381,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                WBalance::from(10_000),
+                U128(10_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -451,7 +402,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                WBalance::from(11_000),
+                U128(11_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -472,7 +423,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                WBalance::from(10_000),
+                U128(10_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -493,7 +444,7 @@ mod tests {
         assert_eq!(
             Ratio(10500),
             contract.calculate_exchange_rate(
-                WBalance::from(11_050),
+                U128(11_050),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -514,7 +465,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                WBalance::from(10_002.5 as u128),
+                U128(10_002.5 as u128),
                 total_borrows,
                 total_reserves as u128,
                 total_supplies,

@@ -31,7 +31,6 @@ fn repay_fixture() -> (
         multiplier_per_block: WRatio::from(0),
         jump_multiplier_per_block: WRatio::from(0),
         reserve_factor: WRatio::from(0),
-        rewards_config: Vec::new(),
     };
     let (dweth, dwnear) = initialize_two_dtokens(
         &root,

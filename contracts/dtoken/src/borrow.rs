@@ -99,12 +99,14 @@ impl Contract {
                 self.get_account_borrows(env::signer_account_id()),
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
-        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest);
+        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
 
         controller::make_borrow(
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
+            borrow_accrued_interest.last_recalculation_block,
+            WRatio::from(borrow_rate.0),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),

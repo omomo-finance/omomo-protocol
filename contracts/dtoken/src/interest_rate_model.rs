@@ -11,7 +11,6 @@ pub struct InterestRateModel {
     pub base_rate_per_block: WRatio,
     pub jump_multiplier_per_block: WRatio,
     pub reserve_factor: WRatio,
-    pub rewards_config: Vec<RewardSetting>,
 }
 
 #[near_bindgen]
@@ -34,8 +33,8 @@ impl fmt::Display for RepayInfo {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct WithdrawInfo {
-    pub exchange_rate: U128,
-    pub total_interest: U128,
+    pub exchange_rate: Ratio,
+    pub total_interest: Balance,
 }
 
 impl fmt::Display for WithdrawInfo {
@@ -63,10 +62,6 @@ impl InterestRateModel {
 
     pub fn get_reserve_factor(&self) -> Ratio {
         Ratio(self.reserve_factor.0)
-    }
-
-    pub fn get_rewards_config(&self) -> Vec<RewardSetting> {
-        self.rewards_config.clone()
     }
 
     pub fn set_kink(&mut self, value: WRatio) {
@@ -116,7 +111,6 @@ impl Default for InterestRateModel {
             multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
             jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
             reserve_factor: WRatio::from(500),
-            rewards_config: Vec::new(),
         }
     }
 }
@@ -157,61 +151,5 @@ impl Contract {
         let mut user = self.user_profiles.get(&account).unwrap_or_default();
         user.borrow_interest = accrued_interest;
         self.user_profiles.insert(&account, &user);
-    }
-
-    #[private]
-    pub fn set_rewards_config(&mut self, rewards_config: Vec<RewardSetting>) {
-        self.model.rewards_config = rewards_config;
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use general::ratio::Ratio;
-    use general::wbalance::WBalance;
-    use near_sdk::json_types::U128;
-    use near_sdk::test_utils::test_env::{alice, bob};
-    use near_sdk::AccountId;
-
-    use crate::{Config, Contract, RewardAmount, RewardSetting, VestingPlans};
-    use crate::{InterestRateModel, RewardPeriod};
-
-    pub fn init_test_env() -> (Contract, AccountId) {
-        let (owner_account, token_address) = (alice(), bob());
-
-        let near_contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000),
-            underlying_token_id: "weth".parse().unwrap(),
-            owner_id: owner_account,
-            controller_account_id: "controller".parse().unwrap(),
-            interest_rate_model: InterestRateModel::default(),
-        });
-
-        (near_contract, token_address)
-    }
-
-    #[test]
-    fn test_for_reward_config_getter_setter() {
-        let (mut near_contract, token_address) = init_test_env();
-        let reward_setting = RewardSetting {
-            token: token_address.clone(),
-            reward_per_period: RewardAmount {
-                period: RewardPeriod::Day,
-                amount: WBalance::from(20),
-            },
-            lock_time: 100,
-            penalty: Ratio(500),
-            vesting: VestingPlans::None,
-        };
-
-        let mut rewards_config = Vec::new();
-        rewards_config.push(reward_setting);
-
-        near_contract.set_rewards_config(rewards_config);
-        assert_eq!(near_contract.model.get_rewards_config().len(), 1);
-        assert_eq!(
-            near_contract.model.get_rewards_config()[0].token,
-            token_address
-        );
     }
 }

@@ -31,7 +31,6 @@ fn withdraw_fixture() -> (
         base_rate_per_block: U128(0),
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
-        rewards_config: Vec::new(),
     };
     let (dweth, dwbtc) = initialize_two_dtokens(
         &root,

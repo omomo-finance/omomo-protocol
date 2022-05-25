@@ -30,7 +30,7 @@ impl Contract {
             liquidation_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(80),
+            self.terra_gas(90),
         ))
         .into()
     }
@@ -54,9 +54,61 @@ impl Contract {
             Balance::from(liquidation_amount)
         );
         require!(is_promise_success(), &err_message);
-
         let result = promise_result_as_success();
+
         require!(result.is_some(), err_message);
+
+        underlying_token::ft_balance_of(
+            self.get_contract_address(),
+            self.get_underlying_contract_address(),
+            NO_DEPOSIT,
+            TGAS,
+        )
+        .then(ext_self::liquidate_balance_of_callback(
+            borrower,
+            borrowing_dtoken,
+            collateral_dtoken,
+            liquidator,
+            liquidation_amount,
+            result,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(60),
+        ))
+        .into()
+    }
+
+    #[private]
+    pub fn liquidate_balance_of_callback(
+        &mut self,
+        borrower: AccountId,
+        borrowing_dtoken: AccountId,
+        collateral_dtoken: AccountId,
+        liquidator: AccountId,
+        liquidation_amount: WBalance,
+        result: Option<Vec<u8>>,
+    ) -> PromiseOrValue<U128> {
+        let err_message = format!(
+            "Revenue amount is not available! liquidator_account_id: {}, borrower_account_id: {}, amount: {}",
+            liquidator,
+            borrower,
+            Balance::from(liquidation_amount)
+        );
+        require!(is_promise_success(), &err_message);
+
+        let balance_of: Balance = match env::promise_result(0) {
+            PromiseResult::NotReady => 0,
+            PromiseResult::Failed => 0,
+            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
+                .unwrap()
+                .into(),
+        };
+
+        let borrow_rate = self.get_borrow_rate(
+            U128(balance_of - liquidation_amount.0),
+            U128(self.get_total_borrows()),
+            U128(self.total_reserves),
+        );
 
         let liquidation_revenue_amount: WBalance =
             WBalance(near_sdk::serde_json::from_slice::<U128>(&result.unwrap()).unwrap());
@@ -70,6 +122,7 @@ impl Contract {
             liquidator,
             liquidation_amount,
             liquidation_revenue_amount,
+            U128(borrow_rate.0),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(40),
