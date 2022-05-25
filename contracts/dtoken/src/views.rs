@@ -70,10 +70,6 @@ impl Contract {
         self.get_exchange_rate(ft_balance)
     }
 
-    pub fn view_user_rewards(&self, user_id: AccountId) -> HashMap<String, Reward> {
-        self.get_user_rewards(user_id)
-    }
-
     pub fn view_withdraw_info(&self, user_id: AccountId, ft_balance: WBalance) -> WithdrawInfo {
         self.get_withdraw_info(user_id, ft_balance)
     }
