@@ -163,10 +163,10 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            liquidation_incentive: Ratio((0.05 * RATIO_DECIMALS.0 as f64) as u128),
-            liquidation_health_factor_threshold: Ratio((1.0 * RATIO_DECIMALS.0 as f64) as u128),
+            liquidation_incentive: Ratio(5) * RATIO_DECIMALS / Ratio(100),
+            liquidation_health_factor_threshold: Ratio(1) * RATIO_DECIMALS,
             reserve_factor: Percent(0),
-            health_threshold: Ratio((1.5 * RATIO_DECIMALS.0 as f64) as u128),
+            health_threshold: Ratio(150) * RATIO_DECIMALS / Ratio(100),
 
             mutex: ActionMutex::default(),
         }
