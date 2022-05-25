@@ -105,9 +105,9 @@ impl Contract {
         };
 
         let borrow_rate = self.get_borrow_rate(
-            U128(balance_of - liquidation_amount.0),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            WBalance::from(balance_of - Balance::from(liquidation_amount)),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
         );
 
         let liquidation_revenue_amount: WBalance =

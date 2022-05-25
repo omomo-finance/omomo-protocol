@@ -17,10 +17,10 @@ pub struct InterestRateModel {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct RepayInfo {
-    pub accrued_interest_per_block: WBalance,
-    pub total_amount: WBalance,
-    pub borrow_amount: WBalance,
-    pub accumulated_interest: WBalance,
+    pub accrued_interest_per_block: U128,
+    pub total_amount: U128,
+    pub borrow_amount: U128,
+    pub accumulated_interest: U128,
 }
 
 impl fmt::Display for RepayInfo {

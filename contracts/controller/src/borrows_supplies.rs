@@ -252,6 +252,7 @@ mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::AccountId;
+    use general::wbalance::WBalance;
 
     use crate::borrows_supplies::ActionType::{Borrow, Supply};
     use crate::{Config, Contract};
@@ -305,14 +306,14 @@ mod tests {
         near_contract.increase_borrows(
             user_account.clone(),
             token_address.clone(),
-            U128(10),
+            WBalance::from(10),
             0,
             Ratio(0),
         );
         near_contract.increase_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
-            U128(100),
+            WBalance::from(100),
             0,
             Ratio(0),
         );
@@ -333,14 +334,14 @@ mod tests {
         near_contract.decrease_borrows(
             user_account.clone(),
             token_address.clone(),
-            U128(2),
+            WBalance::from(2),
             0,
             WRatio::from(0),
         );
         near_contract.decrease_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
-            U128(2),
+            WBalance::from(2),
             0,
             WRatio::from(0),
         );
@@ -363,11 +364,11 @@ mod tests {
     fn success_increase_n_decrease_supplies() {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
-        near_contract.increase_supplies(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_supplies(user_account.clone(), token_address.clone(), WBalance::from(10));
         near_contract.increase_supplies(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
-            U128(20),
+            WBalance::from(20),
         );
 
         assert_eq!(
@@ -383,11 +384,11 @@ mod tests {
             20
         );
 
-        near_contract.decrease_supplies(user_account.clone(), token_address.clone(), U128(2));
+        near_contract.decrease_supplies(user_account.clone(), token_address.clone(), WBalance::from(2));
         near_contract.decrease_supplies(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
-            U128(2),
+            WBalance::from(2),
         );
 
         assert_eq!(
@@ -415,12 +416,12 @@ mod tests {
         near_contract.increase_borrows(
             user_account.clone(),
             token_address.clone(),
-            U128(10),
+            WBalance::from(10),
             0,
             Ratio(0),
         );
 
-        near_contract.decrease_borrows(user_account, token_address, U128(20), 0, WRatio::from(0));
+        near_contract.decrease_borrows(user_account, token_address, WBalance::from(20), 0, WRatio::from(0));
     }
 
     #[test]
@@ -429,12 +430,12 @@ mod tests {
 
         let price = Price {
             ticker_id: "wnear".to_string(),
-            value: U128(100 * ONE_TOKEN),
+            value: WBalance::from(100 * ONE_TOKEN),
             volatility: U128(1),
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_supplies(user_account.clone(), token_address, U128(10));
+        near_contract.increase_supplies(user_account.clone(), token_address, WBalance::from(10));
 
         assert_eq!(near_contract.get_total_supplies(user_account), U128(1000));
     }
@@ -445,12 +446,12 @@ mod tests {
 
         let price = Price {
             ticker_id: "wnear".to_string(),
-            value: U128(100 * ONE_TOKEN),
+            value: WBalance::from(100 * ONE_TOKEN),
             volatility: U128(1),
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_borrows(user_account.clone(), token_address, U128(10), 0, Ratio(0));
+        near_contract.increase_borrows(user_account.clone(), token_address, WBalance::from(10), 0, Ratio(0));
 
         assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
     }

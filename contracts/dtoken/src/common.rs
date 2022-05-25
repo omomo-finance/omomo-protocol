@@ -92,14 +92,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            gas,
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                gas,
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -124,8 +124,8 @@ impl Contract {
     pub fn get_repay_info(&self, user_id: AccountId, underlying_balance: WBalance) -> RepayInfo {
         let borrow_rate = self.get_borrow_rate(
             underlying_balance,
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
         );
         let user_borrows = self.get_account_borrows(user_id.clone());
 
@@ -143,8 +143,8 @@ impl Contract {
         let accrued_interest_per_block = user_borrows * borrow_rate.0 / RATIO_DECIMALS.0;
 
         RepayInfo {
-            accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
-            total_amount: WBalance::from(accumulated_interest + user_borrows),
+            accrued_interest_per_block: U128::from(accrued_interest_per_block),
+            total_amount: U128::from(accumulated_interest + user_borrows),
             borrow_amount: U128(user_borrows),
             accumulated_interest: U128(accumulated_interest),
         }
@@ -159,9 +159,9 @@ impl Contract {
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             underlying_balance,
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
+            WBalance::from(interest_rate_model.get_reserve_factor().0),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -208,7 +208,7 @@ impl Contract {
         &mut self,
         action: Actions,
         amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
+    ) -> PromiseOrValue<U128> {
         match action {
             Actions::Repay => self.post_repay(amount),
             Actions::Withdraw => self.post_withdraw(amount),
@@ -355,6 +355,7 @@ mod tests {
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use general::wbalance::WBalance;
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
@@ -381,7 +382,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                U128(10_000),
+                WBalance::from(10_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -402,7 +403,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                U128(11_000),
+                WBalance::from(11_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -423,7 +424,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                U128(10_000),
+                WBalance::from(10_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -444,7 +445,7 @@ mod tests {
         assert_eq!(
             Ratio(10500),
             contract.calculate_exchange_rate(
-                U128(11_050),
+                WBalance::from(11_050),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -465,7 +466,7 @@ mod tests {
         assert_eq!(
             Ratio(10000),
             contract.calculate_exchange_rate(
-                U128(10_002.5 as u128),
+                WBalance::from(10_002.5 as u128),
                 total_borrows,
                 total_reserves as u128,
                 total_supplies,

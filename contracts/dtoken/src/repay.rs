@@ -4,7 +4,7 @@ use general::ratio::RATIO_DECIMALS;
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
 impl Contract {
-    pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_REPAY,
             "Prepaid gas is not enough for repay flow"
@@ -12,9 +12,9 @@ impl Contract {
         self.mutex_account_lock(Actions::Repay, token_amount, self.terra_gas(140))
     }
 
-    pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<U128> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount.0);
         }
         underlying_token::ft_balance_of(
             self.get_contract_address(),
@@ -48,7 +48,7 @@ impl Contract {
             );
             self.mutex_account_unlock();
 
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(token_amount.0);
         }
 
         let balance_of: Balance = match env::promise_result(0) {
@@ -59,9 +59,9 @@ impl Contract {
                 .into(),
         };
         let borrow_rate = self.get_borrow_rate(
-            U128(balance_of - Balance::from(token_amount)),
-            U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            WBalance::from(balance_of - Balance::from(token_amount)),
+            WBalance::from(self.get_total_borrows()),
+            WBalance::from(self.total_reserves),
         );
         let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
 
@@ -83,14 +83,14 @@ impl Contract {
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
         self.set_total_reserves(new_total_reserve);
 
-        if token_amount.0 < borrow_with_rate_amount {
-            borrow_amount = token_amount.0;
+        if Balance::from(token_amount) < borrow_with_rate_amount {
+            borrow_amount = Balance::from(token_amount);
         }
 
         controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
-            U128(borrow_amount),
+            WBalance::from(borrow_amount),
             borrow_accrued_interest.last_recalculation_block,
             U128(borrow_rate.0),
             self.get_controller_address(),
@@ -99,7 +99,7 @@ impl Contract {
         )
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
-            U128(borrow_with_rate_amount),
+            WBalance::from(borrow_with_rate_amount),
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(20),
@@ -122,18 +122,18 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(amount);
+            return PromiseOrValue::Value(amount.0);
         }
 
         let mut extra_balance = 0;
 
-        if amount.0 < borrow_amount.0 {
+        if amount < borrow_amount {
             self.decrease_borrows(env::signer_account_id(), amount);
         } else {
             extra_balance += Balance::from(amount) - Balance::from(borrow_amount);
             self.decrease_borrows(
                 env::signer_account_id(),
-                U128(self.get_account_borrows(env::signer_account_id())),
+                WBalance::from(self.get_account_borrows(env::signer_account_id())),
             );
         }
 
