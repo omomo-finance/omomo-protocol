@@ -1,4 +1,5 @@
 use near_sdk::require;
+use near_sdk::BlockHeight;
 use std::collections::HashMap;
 
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
@@ -18,6 +19,8 @@ impl Contract {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        borrow_block: BlockHeight,
+        borrow_rate: WRatio,
     ) {
         assert!(
             self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
@@ -26,7 +29,13 @@ impl Contract {
             token_address,
             Balance::from(token_amount)
         );
-        self.increase_borrows(account_id, token_address, token_amount);
+        self.increase_borrows(
+            account_id,
+            token_address,
+            token_amount,
+            borrow_block,
+            Ratio(borrow_rate.0),
+        );
     }
 
     pub fn withdraw_supplies(
@@ -75,11 +84,31 @@ impl Contract {
         account: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        borrow_block: BlockHeight,
+        borrow_rate: Ratio,
     ) {
         let existing_borrows: Balance =
             self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
         let increased_borrows: Balance = existing_borrows + Balance::from(token_amount);
 
+        let mut borrow_block = borrow_block;
+        if existing_borrows != 0 {
+            borrow_block = self
+                .user_profiles
+                .get(&account)
+                .unwrap_or_default()
+                .get_borrow_data(token_address.clone())
+                .borrow_block;
+        }
+        let borrow_data = BorrowData {
+            borrow_block,
+            borrow_rate,
+        };
+
+        self.user_profiles
+            .get(&account)
+            .unwrap_or_default()
+            .insert_borrow_data(token_address.clone(), borrow_data);
         self.set_entity_by_token(Borrow, account, token_address, increased_borrows);
     }
 
@@ -88,6 +117,8 @@ impl Contract {
         account: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        borrow_block: BlockHeight,
+        borrow_rate: WRatio,
     ) -> Balance {
         let existing_borrows: Balance =
             self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
@@ -98,6 +129,19 @@ impl Contract {
         );
 
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
+
+        let mut borrow_rate = borrow_rate.0;
+        if decreased_borrows == 0 {
+            borrow_rate = 0;
+        }
+        let borrow_data = BorrowData {
+            borrow_block,
+            borrow_rate: Ratio(borrow_rate),
+        };
+        self.user_profiles
+            .get(&account)
+            .unwrap_or_default()
+            .insert_borrow_data(token_address.clone(), borrow_data);
 
         self.set_entity_by_token(Borrow, account, token_address, decreased_borrows)
     }
@@ -203,7 +247,8 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
-    use general::{Price, ONE_TOKEN};
+    use general::ratio::Ratio;
+    use general::{Price, WRatio, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::AccountId;
@@ -257,11 +302,19 @@ mod tests {
     fn success_increase_n_decrease_borrows() {
         let (mut near_contract, token_address, user_account) = init_test_env();
 
-        near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_borrows(
+            user_account.clone(),
+            token_address.clone(),
+            U128(10),
+            0,
+            Ratio(0),
+        );
         near_contract.increase_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
             U128(100),
+            0,
+            Ratio(0),
         );
 
         assert_eq!(
@@ -277,11 +330,19 @@ mod tests {
             100
         );
 
-        near_contract.decrease_borrows(user_account.clone(), token_address.clone(), U128(2));
+        near_contract.decrease_borrows(
+            user_account.clone(),
+            token_address.clone(),
+            U128(2),
+            0,
+            WRatio::from(0),
+        );
         near_contract.decrease_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
             U128(2),
+            0,
+            WRatio::from(0),
         );
 
         assert_eq!(
@@ -351,9 +412,15 @@ mod tests {
         */
         let (mut near_contract, token_address, user_account) = init_test_env();
 
-        near_contract.increase_borrows(user_account.clone(), token_address.clone(), U128(10));
+        near_contract.increase_borrows(
+            user_account.clone(),
+            token_address.clone(),
+            U128(10),
+            0,
+            Ratio(0),
+        );
 
-        near_contract.decrease_borrows(user_account, token_address, U128(20));
+        near_contract.decrease_borrows(user_account, token_address, U128(20), 0, WRatio::from(0));
     }
 
     #[test]
@@ -383,7 +450,7 @@ mod tests {
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_borrows(user_account.clone(), token_address, U128(10));
+        near_contract.increase_borrows(user_account.clone(), token_address, U128(10), 0, Ratio(0));
 
         assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
     }

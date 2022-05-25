@@ -1,6 +1,7 @@
 use crate::*;
 
 use general::ratio::{Ratio, RATIO_DECIMALS};
+use near_sdk::env::block_height;
 use std::collections::HashMap;
 
 impl Contract {
@@ -34,13 +35,40 @@ impl Contract {
 
         self.calculate_assets_weighted_price(&map_raw)
     }
+
+    pub fn calculate_accrued_borrow_interest(&self, account_id: AccountId) -> Balance {
+        let mut total_accrued_interest = 0;
+        let user_profile = self.user_profiles.get(&account_id).unwrap_or_default();
+        let total_borrows = user_profile
+            .account_borrows
+            .iter()
+            .map(|(_, balance)| balance)
+            .sum();
+
+        for (token_address, borrow_data) in user_profile.borrow_data.iter() {
+            let accrued_interest = Ratio(total_borrows)
+                * borrow_data.borrow_rate
+                * Ratio((block_height() - borrow_data.borrow_block) as u128)
+                / RATIO_DECIMALS;
+
+            let price = self.get_price(token_address.clone()).unwrap();
+            let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
+                Balance::from(price.value) * accrued_interest.0 / 10u128.pow(price.fraction_digits),
+            );
+
+            total_accrued_interest += accrued_interest_amount;
+        }
+        total_accrued_interest
+    }
 }
 
 #[near_bindgen]
 impl Contract {
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
         let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
-        let borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
+        let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
+
+        borrows += self.calculate_accrued_borrow_interest(user_account);
 
         if borrows != 0 {
             Ratio(collaterals * RATIO_DECIMALS.0 / borrows)
@@ -58,7 +86,8 @@ impl Contract {
     ) -> Ratio {
         let mut collaterals =
             self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
-        let mut borrows = self.get_account_sum_per_action(user_account, ActionType::Borrow);
+        let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
+        borrows += self.calculate_accrued_borrow_interest(user_account);
 
         let price = self.get_price(token_address).unwrap();
         let usd_amount = Percentage::from(price.volatility.0).apply_to(
@@ -248,6 +277,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
+            0,
+            Ratio(0),
         );
 
         assert_eq!(
@@ -272,6 +303,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
+            0,
+            Ratio(0),
         );
 
         assert_eq!(
@@ -296,6 +329,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
+            0,
+            Ratio(0),
         );
 
         // Ratio that represents 150%
@@ -320,6 +355,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(70),
+            0,
+            Ratio(0),
         );
 
         // Ratio that represents 142.85714285%
@@ -344,6 +381,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
+            0,
+            Ratio(0),
         );
 
         // Ratio that represents 100%
@@ -380,6 +419,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
+            0,
+            Ratio(0),
         );
 
         // Ratio that represents 200%
@@ -428,6 +469,8 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
+            0,
+            Ratio(0),
         );
 
         // Ratio that represents 200%
@@ -476,12 +519,16 @@ mod tests {
             user_account.clone(),
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(50),
+            0,
+            Ratio(0),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
+            0,
+            Ratio(0),
         );
 
         // Ratio that represents 153.48837209%
