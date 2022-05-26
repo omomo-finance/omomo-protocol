@@ -336,7 +336,7 @@ mod tests {
         // Ratio that represents 150%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(15000)
+            Ratio(15000000000)
         );
     }
 
@@ -359,10 +359,10 @@ mod tests {
             Ratio(0),
         );
 
-        // Ratio that represents 142.85%
+        // Ratio that represents 142.85714285%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(14285)
+            Ratio(14285714285)
         );
     }
 
@@ -388,7 +388,7 @@ mod tests {
         // Ratio that represents 100%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio(10000)
+            Ratio(10000000000)
         );
 
         controller_contract.increase_supplies(
@@ -400,7 +400,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(20000)
+            Ratio(20000000000)
         );
     }
 
@@ -426,7 +426,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio(20000)
+            Ratio(20000000000)
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -450,7 +450,7 @@ mod tests {
         // Ratio that represents 50%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(5000)
+            Ratio(5000000000)
         );
     }
 
@@ -476,7 +476,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio(20000)
+            Ratio(20000000000)
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -500,7 +500,7 @@ mod tests {
         // Ratio that represents 225%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(22500)
+            Ratio(22500000000)
         );
     }
 
@@ -531,10 +531,10 @@ mod tests {
             Ratio(0),
         );
 
-        // Ratio that represents 153.48%
+        // Ratio that represents 153.48837209%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(15348)
+            Ratio(15348837209)
         );
     }
 }

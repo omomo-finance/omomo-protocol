@@ -105,7 +105,7 @@ mod tests {
         }
 
         let mut contract = Contract::new(Config {
-            initial_exchange_rate: U128(1000000),
+            initial_exchange_rate: U128(10000000000),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -158,9 +158,9 @@ mod tests {
             total_supplies: U128(0),
             total_borrows: U128(0),
             total_reserves: U128(200),
-            exchange_rate_ratio: U128(1000000),
+            exchange_rate_ratio: U128(10000000000),
             interest_rate_ratio: U128(0),
-            borrow_rate_ratio: U128(10000),
+            borrow_rate_ratio: U128(10000000000),
         };
 
         assert_eq!(
@@ -196,11 +196,11 @@ mod tests {
         let withdraw_info = contract.view_withdraw_info(bob(), U128(1000));
 
         // total interest should be 0
-        // exchange_rate = initial_exchange_rate = 1000000
+        // exchange_rate = initial_exchange_rate = 10000000000
 
         assert_eq!(
             withdraw_info.exchange_rate,
-            Ratio(1000000),
+            Ratio(10000000000),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(

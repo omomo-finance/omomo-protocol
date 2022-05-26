@@ -243,13 +243,13 @@ mod tests {
         assert_eq!(
             result[0].total_available_borrows_usd,
             // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
-            U128(100 * 20000 * 10000 / 15000),
+            U128(100 * 20000 * 10000000000 / 15000000000),
             "View accounts total supplies check has been failed"
         );
 
         assert_eq!(
             result[0].health_factor_ratio,
-            U128(15000),
+            U128(15000000000),
             "View accounts health factor check has been failed"
         );
     }

@@ -3,7 +3,7 @@ use near_sdk::{env, near_bindgen, require, AccountId};
 use std::collections::HashMap;
 
 use general::percent::Percent;
-use general::ratio::Ratio;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 use crate::*;
 
@@ -118,7 +118,7 @@ impl Contract {
     pub fn get_liquidation_incentive(&self) -> Ratio {
         // TODO: Move this kind of getter that don't require admin rights somewhere else
         // incentive % + 100 %
-        self.liquidation_incentive + Ratio(10000)
+        self.liquidation_incentive + Ratio(1) * RATIO_DECIMALS
     }
 
     pub fn get_health_threshold(&self) -> Ratio {

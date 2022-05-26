@@ -26,17 +26,17 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn withdraw(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
         );
         assert!(
-            Balance::from(dtoken_amount) > 0,
+            Balance::from(amount) > 0,
             "Amount should be a positive number"
         );
         assert!(
-            dtoken_amount.0
+            amount.0
                 <= self
                     .token
                     .accounts
@@ -44,7 +44,7 @@ impl Contract {
                     .unwrap_or(0),
             "The account doesn't have enough digital tokens to do withdraw"
         );
-        self.mutex_account_lock(Actions::Withdraw, dtoken_amount, GAS_FOR_WITHDRAW)
+        self.mutex_account_lock(Actions::Withdraw, amount, GAS_FOR_WITHDRAW)
     }
 
     #[private]

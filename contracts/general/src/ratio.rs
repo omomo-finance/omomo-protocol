@@ -4,7 +4,7 @@ use std::cmp::{max_by, min_by, Ordering};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
-pub const RATIO_DECIMALS: Ratio = Ratio(10u128.pow(4));
+pub const RATIO_DECIMALS: Ratio = Ratio(10u128.pow(10));
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, Copy, Default)]
 #[serde(crate = "near_sdk::serde")]
