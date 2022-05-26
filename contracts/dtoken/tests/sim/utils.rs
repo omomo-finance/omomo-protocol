@@ -191,7 +191,7 @@ fn internal_dtoken_initialize(
     call!(
         account,
         dtoken.new(dConfig {
-            initial_exchange_rate: U128((1.0 * RATIO_DECIMALS.0 as f64) as u128),
+            initial_exchange_rate: Ratio(1) * RATIO_DECIMALS,
             underlying_token_id: utoken_account,
             owner_id: owner,
             controller_account_id: controller_account,
