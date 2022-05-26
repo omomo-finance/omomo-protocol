@@ -8,7 +8,7 @@ use controller::{ActionType, Config as cConfig};
 use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use dtoken::{Config as dConfig, RepayInfo};
-use general::ratio::RATIO_DECIMALS;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use general::Price;
 use test_utoken::ContractContract as Utoken;
 
