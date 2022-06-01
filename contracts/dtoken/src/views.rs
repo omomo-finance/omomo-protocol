@@ -73,6 +73,10 @@ impl Contract {
     pub fn view_withdraw_info(&self, user_id: AccountId, ft_balance: WBalance) -> WithdrawInfo {
         self.get_withdraw_info(user_id, ft_balance)
     }
+
+    pub fn view_reward_campaigns(&self) -> Vec<RewardCampaignExtended> {
+        self.get_reward_campaigns_extended()
+    }
 }
 
 #[cfg(test)]

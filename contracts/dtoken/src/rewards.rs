@@ -1,6 +1,7 @@
 use crate::*;
 use general::ratio::Ratio;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use std::fmt;
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -9,7 +10,7 @@ pub enum CampaignType {
     Borrow,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Vesting {
     /// Campaign vesting start time, seconds
@@ -20,7 +21,7 @@ pub struct Vesting {
     penalty: Ratio,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct RewardCampaign {
     /// Reward campaign type
@@ -43,9 +44,60 @@ pub struct RewardCampaign {
     vesting: Vesting,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct RewardCampaignExtended {
+    /// Reward campaign id
+    campaign_id: String,
+    /// Reward campaign data
+    campaign: RewardCampaign,
+    /// Market total Supply/Borrow depends on reward campaign type
+    market_total: WBalance,
+    /// Rewards per day token amount
+    rewards_per_day: WBalance,
+}
+
+impl fmt::Display for RewardCampaignExtended {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl Contract {
     pub fn get_reward_campaign_by_id(&self, campaign_id: String) -> Option<RewardCampaign> {
         self.reward_campaigns.get(&campaign_id)
+    }
+
+    pub fn get_reward_campaigns_extended(&self) -> Vec<RewardCampaignExtended> {
+        self.reward_campaigns
+            .iter()
+            .filter(|(_, campaign)| campaign.end_time > env::block_height())
+            .map(|(id, campaign)| RewardCampaignExtended {
+                campaign_id: id,
+                campaign: campaign.clone(),
+                market_total: self.get_market_total(campaign.clone()),
+                rewards_per_day: self.get_reward_tokens_per_day(campaign),
+            })
+            .collect::<Vec<RewardCampaignExtended>>()
+    }
+
+    pub fn get_rewards_per_second(&self, campaign: RewardCampaign) -> WBalance {
+        let rewards_per_second: u128 =
+            campaign.reward_amount.0 / u128::from(campaign.end_time - campaign.start_time);
+        WBalance::from(rewards_per_second)
+    }
+
+    pub fn get_reward_tokens_per_day(&self, campaign: RewardCampaign) -> WBalance {
+        let rewards_per_second = self.get_rewards_per_second(campaign);
+        WBalance::from(24 * 60 * 60 * rewards_per_second.0)
+    }
+
+    pub fn get_market_total(&self, campaign: RewardCampaign) -> WBalance {
+        let total_amount = match campaign.campaign_type {
+            CampaignType::Supply => self.get_total_supplies(),
+            CampaignType::Borrow => self.get_total_borrows(),
+        };
+        WBalance::from(total_amount)
     }
 }
 
@@ -155,6 +207,34 @@ mod tests {
                 .is_none(),
             "Campaign with id {} wasn't removed",
             campaign_id
+        );
+    }
+
+    #[test]
+    fn test_get_reward_campaigns_extended() {
+        let mut contract = init_env();
+        let campaign = get_campaign();
+        let context = get_context(false);
+        testing_env!(context);
+        contract.add_reward_campaign(campaign.clone());
+        contract.add_reward_campaign(campaign.clone());
+        contract.add_reward_campaign(campaign.clone());
+
+        let campaign_list = contract.get_reward_campaigns_extended();
+
+        assert_eq!(campaign_list.len(), 3, "Campaign list len doesn't match");
+
+        let gotten_campaign = campaign_list.get(0).unwrap();
+
+        assert_eq!(
+            gotten_campaign.rewards_per_day.0,
+            contract.get_reward_tokens_per_day(campaign.clone()).0,
+            "Values rewards_per_day don't match"
+        );
+        assert_eq!(
+            gotten_campaign.market_total.0,
+            contract.get_market_total(campaign).0,
+            "Values rewards_per_day don't match"
         );
     }
 
