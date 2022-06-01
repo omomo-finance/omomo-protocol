@@ -4,7 +4,7 @@ use std::cmp::{max_by, min_by, Ordering};
 use std::fmt;
 use std::ops::{Add, Div, Mul, Sub};
 
-pub const RATIO_DECIMALS: Ratio = Ratio(10u128.pow(10));
+pub const RATIO_DECIMALS: u128 = 10u128.pow(10);
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, Copy, Default)]
 #[serde(crate = "near_sdk::serde")]
@@ -13,6 +13,14 @@ pub struct Ratio(pub u128);
 impl Ratio {
     pub fn new(ratio: u128) -> Ratio {
         Ratio(ratio)
+    }
+
+    pub fn zero() -> Self {
+        Ratio(0u128)
+    }
+
+    pub fn one() -> Self {
+        Ratio(RATIO_DECIMALS)
     }
 }
 
