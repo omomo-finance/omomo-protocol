@@ -14,6 +14,14 @@ impl Ratio {
     pub fn new(ratio: u128) -> Ratio {
         Ratio(ratio)
     }
+
+    pub fn zero() -> Self {
+        Ratio(0u128)
+    }
+
+    pub fn one() -> Self {
+        RATIO_DECIMALS
+    }
 }
 
 impl Mul for Ratio {
