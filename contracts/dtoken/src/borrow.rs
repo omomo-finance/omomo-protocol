@@ -106,7 +106,7 @@ impl Contract {
             self.get_contract_address(),
             token_amount,
             borrow_accrued_interest.last_recalculation_block,
-            WRatio::from(borrow_rate.0),
+            WRatio::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),

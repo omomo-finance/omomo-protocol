@@ -2,10 +2,9 @@ use crate::*;
 use near_sdk::borsh::maybestd::io::Write;
 use near_sdk::json_types::U128;
 use near_sdk::serde::Serializer;
-use std::cmp::Ordering;
+use std::cmp::{max_by, min_by, Ordering};
 use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul, Sub};
-#[cfg(not(target_arch = "wasm32"))]
 use std::str::FromStr;
 
 uint::construct_uint!(
@@ -33,6 +32,7 @@ impl Default for BigDecimal {
     }
 }
 
+
 impl Display for BigDecimal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let a = self.0 / U384::from(BIG_DIVISOR);
@@ -45,17 +45,14 @@ impl Display for BigDecimal {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 impl std::fmt::Debug for BigDecimal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self)
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 const PARSE_INT_ERROR: &'static str = "Parse int error";
 
-#[cfg(not(target_arch = "wasm32"))]
 impl FromStr for BigDecimal {
     type Err = String;
 
@@ -88,7 +85,6 @@ impl Serialize for BigDecimal {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
 impl<'de> Deserialize<'de> for BigDecimal {
     fn deserialize<D>(
         deserializer: D,
@@ -240,6 +236,42 @@ impl PartialEq<Self> for BigDecimal {
 impl PartialOrd for BigDecimal {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.0.partial_cmp(&other.0)
+    }
+}
+
+impl Eq for BigDecimal {}
+
+impl Ord for BigDecimal {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.0.cmp(&other.0)
+    }
+
+    fn max(self, other: Self) -> Self
+        where
+            Self: Sized,
+    {
+        max_by(self, other, Ord::cmp)
+    }
+
+    fn min(self, other: Self) -> Self
+        where
+            Self: Sized,
+    {
+        min_by(self, other, Ord::cmp)
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self
+        where
+            Self: Sized,
+    {
+        assert!(min <= max);
+        if self < min {
+            min
+        } else if self > max {
+            max
+        } else {
+            self
+        }
     }
 }
 

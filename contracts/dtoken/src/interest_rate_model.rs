@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 use near_sdk::env::block_height;
 use std::fmt;
 
@@ -45,23 +45,23 @@ impl fmt::Display for WithdrawInfo {
 
 impl InterestRateModel {
     pub fn get_kink(&self) -> Ratio {
-        Ratio(self.kink.0)
+        Ratio::from(self.kink)
     }
 
     pub fn get_multiplier_per_block(&self) -> Ratio {
-        Ratio(self.multiplier_per_block.0)
+        Ratio::from(self.multiplier_per_block)
     }
 
     pub fn get_base_rate_per_block(&self) -> Ratio {
-        Ratio(self.base_rate_per_block.0)
+        Ratio::from(self.base_rate_per_block)
     }
 
     pub fn get_jump_multiplier_per_block(&self) -> Ratio {
-        Ratio(self.jump_multiplier_per_block.0)
+        Ratio::from(self.jump_multiplier_per_block)
     }
 
     pub fn get_reserve_factor(&self) -> Ratio {
-        Ratio(self.reserve_factor.0)
+        Ratio::from(self.reserve_factor)
     }
 
     pub fn set_kink(&mut self, value: WRatio) {
@@ -92,9 +92,9 @@ impl InterestRateModel {
     ) -> AccruedInterest {
         let current_block_height = block_height();
         let accrued_rate = total_borrow
-            * borrow_rate.0
+            * borrow_rate.round_u128()
             * (current_block_height - accrued_interest.last_recalculation_block) as u128
-            / RATIO_DECIMALS.0;
+            / Ratio::one().round_u128();
 
         AccruedInterest {
             accumulated_interest: accrued_interest.accumulated_interest + accrued_rate,
@@ -106,10 +106,10 @@ impl InterestRateModel {
 impl Default for InterestRateModel {
     fn default() -> Self {
         Self {
-            kink: WRatio::from(RATIO_DECIMALS.0),
-            base_rate_per_block: WRatio::from(RATIO_DECIMALS.0),
-            multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
-            jump_multiplier_per_block: WRatio::from(RATIO_DECIMALS.0),
+            kink: WRatio::from(Ratio::one()),
+            base_rate_per_block: WRatio::from(Ratio::one()),
+            multiplier_per_block: WRatio::from(Ratio::one()),
+            jump_multiplier_per_block: WRatio::from(Ratio::one()),
             reserve_factor: WRatio::from(500),
         }
     }

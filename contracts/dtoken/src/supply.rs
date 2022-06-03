@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
@@ -70,14 +70,14 @@ impl Contract {
 
         let exchange_rate: Balance = self
             .get_exchange_rate((balance_of - Balance::from(token_amount)).into())
-            .0;
-        let dtoken_amount = Balance::from(token_amount) * exchange_rate / RATIO_DECIMALS.0;
+            .round_u128();
+        let dtoken_amount = Balance::from(token_amount) * exchange_rate / Ratio::one().round_u128();
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            U128(interest_rate_model.get_reserve_factor().round_u128()),
         );
         let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(

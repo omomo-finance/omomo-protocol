@@ -122,7 +122,7 @@ impl Contract {
             liquidator,
             liquidation_amount,
             liquidation_revenue_amount,
-            U128(borrow_rate.0),
+            U128::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(40),

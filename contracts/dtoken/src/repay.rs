@@ -1,5 +1,5 @@
+use general::ratio::Ratio;
 use crate::*;
-use general::ratio::RATIO_DECIMALS;
 
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
@@ -77,8 +77,8 @@ impl Contract {
             );
         let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         let new_total_reserve = self.get_total_reserves()
-            + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor().0
-                / RATIO_DECIMALS.0;
+            + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor().round_u128()
+                / Ratio::one().round_u128();
 
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
         self.set_total_reserves(new_total_reserve);
@@ -92,7 +92,7 @@ impl Contract {
             self.get_contract_address(),
             U128(borrow_amount),
             borrow_accrued_interest.last_recalculation_block,
-            U128(borrow_rate.0),
+            U128::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),

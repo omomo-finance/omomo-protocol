@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct UserProfile {
     /// Dtoken address -> Supplies balance
     pub account_supplies: HashMap<AccountId, Balance>,

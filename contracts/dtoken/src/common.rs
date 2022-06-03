@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use std::fmt;
 
@@ -68,12 +68,10 @@ impl Contract {
         total_supplies: Balance,
     ) -> Ratio {
         if total_supplies == 0 {
-            return Ratio(self.initial_exchange_rate);
+            return Ratio::from(self.initial_exchange_rate);
         }
-        Ratio(
-            (Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS.0
-                / total_supplies,
-        )
+        Ratio::from(underlying_balance) + Ratio::from(total_borrows - total_reserves) * Ratio::one()
+            / Ratio::from(total_supplies)
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
@@ -92,14 +90,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            gas,
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                gas,
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -140,7 +138,7 @@ impl Contract {
                 self.get_accrued_borrow_interest(user_id),
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        let accrued_interest_per_block = user_borrows * borrow_rate.0 / RATIO_DECIMALS.0;
+        let accrued_interest_per_block = user_borrows * borrow_rate.round_u128() / Ratio::one().round_u128();
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
@@ -161,7 +159,7 @@ impl Contract {
             underlying_balance,
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            U128(interest_rate_model.get_reserve_factor().round_u128()),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,

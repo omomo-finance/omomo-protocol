@@ -1,8 +1,8 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 use std::cmp::{max, min};
 
-const MAX_RESERVE_FACTOR_VALUE: Ratio = RATIO_DECIMALS;
+// const MAX_RESERVE_FACTOR_VALUE: Ratio = Ratio::one();
 
 #[near_bindgen]
 impl Contract {
@@ -13,16 +13,18 @@ impl Contract {
         total_reserves: WBalance,
         reserve_factor: WBalance,
     ) -> Ratio {
+        let max_reserve_factor_value = Ratio::one();
+
         assert!(
-            Balance::from(reserve_factor) <= MAX_RESERVE_FACTOR_VALUE.0,
+            Balance::from(reserve_factor) <= max_reserve_factor_value.round_u128(),
             "Reserve factor should be less {}",
-            MAX_RESERVE_FACTOR_VALUE
+            max_reserve_factor_value
         );
-        let rest_of_supply_factor = RATIO_DECIMALS - Ratio(reserve_factor.0);
+        let rest_of_supply_factor = Ratio::one() - Ratio::from(reserve_factor);
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
-        let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
+        let rate_to_pool = borrow_rate * rest_of_supply_factor / Ratio::one();
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
-        util_rate * rate_to_pool / RATIO_DECIMALS
+        util_rate * rate_to_pool / Ratio::one()
     }
 
     pub fn get_borrow_rate(
@@ -37,9 +39,9 @@ impl Contract {
         let multiplier_per_block = interest_rate_model.get_multiplier_per_block();
         let base_rate_per_block = interest_rate_model.get_base_rate_per_block();
         let jump_multiplier_per_block = interest_rate_model.get_jump_multiplier_per_block();
-        min(util, kink) * multiplier_per_block / RATIO_DECIMALS
-            + Ratio(max(0, util.0 as i128 - kink.0 as i128) as u128) * jump_multiplier_per_block
-                / RATIO_DECIMALS
+        min(util, kink) * multiplier_per_block / Ratio::one()
+            + max(Ratio::zero(), util  - kink)* jump_multiplier_per_block
+                / Ratio::one()
             + base_rate_per_block
     }
 
@@ -64,7 +66,7 @@ impl Contract {
             0,
             "Cannot calculate utilization rate as denominator is equal 0"
         );
-        Ratio(Balance::from(total_borrows) * RATIO_DECIMALS.0 / denominator.unwrap())
+        Ratio::from(Balance::from(total_borrows) * Ratio::one().round_u128() / denominator.unwrap())
     }
 }
 

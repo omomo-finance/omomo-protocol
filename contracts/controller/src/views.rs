@@ -65,7 +65,7 @@ impl Contract {
                     total_available_borrows_usd,
                     total_supplies_usd: total_supplies,
                     blocked: false,
-                    health_factor_ratio: WRatio::from(health_factor.0),
+                    health_factor_ratio: WRatio::from(health_factor),
                     user_profile,
                 }
             })
@@ -93,11 +93,11 @@ impl Contract {
         let accrued_interest = self.calculate_accrued_borrow_interest(user_id.clone());
         let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
 
-        let max_withdraw = Ratio::from(supplies)
-            - (Ratio::from(borrows + accrued_interest) * self.health_threshold / Ratio::one());
+        let max_withdraw = supplies.0
+            - (borrows.0 + accrued_interest * self.health_threshold.round_u128() / Ratio::one().round_u128());
         let price = self.get_price(dtoken_id).unwrap().value.0;
-        let max_withdraw_in_token = Ratio::from(max_withdraw) * Ratio::from(ONE_TOKEN) / Ratio::from(price);
-        if Ratio::from(supply_by_token) <= max_withdraw_in_token {
+        let max_withdraw_in_token = max_withdraw * Ratio::from(ONE_TOKEN).round_u128() / Ratio::from(price).round_u128();
+        if supply_by_token <= max_withdraw_in_token {
             supply_by_token.into()
         } else {
             max_withdraw_in_token.into()
