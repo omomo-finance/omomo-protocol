@@ -8,6 +8,7 @@ use near_sdk::{
     env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BlockHeight,
     BorshStorageKey, Gas, PromiseOrValue, PromiseResult,
 };
+use std::collections::HashMap;
 
 #[allow(unused_imports)]
 pub use general::*;
@@ -46,6 +47,7 @@ enum StorageKeys {
     Config,
     UserProfiles,
     RewardCampaigns,
+    Rewards,
 }
 
 #[near_bindgen]
@@ -79,6 +81,9 @@ pub struct Contract {
 
     /// Unique incremental identifier
     uid: u64,
+
+    /// User account_id -> { campaign_id -> reward }
+    rewards: UnorderedMap<AccountId, HashMap<String, Reward>>,
 }
 
 impl Default for Contract {
@@ -263,6 +268,7 @@ impl Contract {
             admin: config.owner_id,
             reward_campaigns: UnorderedMap::new(StorageKeys::RewardCampaigns),
             uid: 0,
+            rewards: UnorderedMap::new(StorageKeys::Rewards),
         }
     }
 }
