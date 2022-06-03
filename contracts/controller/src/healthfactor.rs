@@ -1,6 +1,6 @@
 use crate::*;
 
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 use near_sdk::env::block_height;
 use std::collections::HashMap;
 
@@ -39,21 +39,21 @@ impl Contract {
     pub fn calculate_accrued_borrow_interest(&self, account_id: AccountId) -> Balance {
         let mut total_accrued_interest = 0;
         let user_profile = self.user_profiles.get(&account_id).unwrap_or_default();
-        let total_borrows = user_profile
+        let total_borrows: Balance = user_profile
             .account_borrows
             .iter()
             .map(|(_, balance)| balance)
             .sum();
 
         for (token_address, borrow_data) in user_profile.borrow_data.iter() {
-            let accrued_interest = Ratio(total_borrows)
+            let accrued_interest = Ratio::from(total_borrows)
                 * borrow_data.borrow_rate
-                * Ratio((block_height() - borrow_data.borrow_block) as u128)
-                / RATIO_DECIMALS;
+                * Ratio::from((block_height() - borrow_data.borrow_block) as u128)
+                / Ratio::one();
 
             let price = self.get_price(token_address.clone()).unwrap();
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
-                Balance::from(price.value) * accrued_interest.0 / 10u128.pow(price.fraction_digits),
+                Balance::from(price.value) * accrued_interest.round_u128() / 10u128.pow(price.fraction_digits),
             );
 
             total_accrued_interest += accrued_interest_amount;
@@ -71,7 +71,7 @@ impl Contract {
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
         if borrows != 0 {
-            Ratio(collaterals * RATIO_DECIMALS.0 / borrows)
+            Ratio::from(collaterals) * Ratio::one() / Ratio::from(borrows)
         } else {
             self.get_health_threshold()
         }
@@ -103,7 +103,7 @@ impl Contract {
         }
 
         if borrows != 0 {
-            Ratio(collaterals * RATIO_DECIMALS.0 / borrows)
+            Ratio::from(collaterals) * Ratio::one() / Ratio::from(borrows)
         } else {
             self.get_health_threshold()
         }

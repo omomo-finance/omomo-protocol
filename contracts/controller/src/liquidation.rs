@@ -1,5 +1,4 @@
 use crate::*;
-use general::ratio::RATIO_DECIMALS;
 use near_sdk::{env::block_height, PromiseOrValue};
 use partial_min_max::min;
 
@@ -71,7 +70,7 @@ impl Contract {
             NO_DEPOSIT,
             near_sdk::Gas::ONE_TERA * 8_u64,
         )
-        .into()
+            .into()
     }
 }
 
@@ -83,10 +82,10 @@ impl Contract {
         liquidation_amount: WBalance,
     ) -> WBalance {
         WBalance::from(
-            self.get_liquidation_incentive().0
-                * liquidation_amount.0
-                * self.prices.get(&borrowing_dtoken).unwrap().value.0
-                / (self.prices.get(&collateral_dtoken).unwrap().value.0 * RATIO_DECIMALS.0),
+            self.get_liquidation_incentive()
+                * Ratio::from(liquidation_amount)
+                * Ratio::from(self.prices.get(&borrowing_dtoken).unwrap().value)
+                / (Ratio::from(self.prices.get(&collateral_dtoken).unwrap().value) * Ratio::one()),
         )
     }
 
@@ -108,7 +107,7 @@ impl Contract {
         let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
 
         let max_unhealth_repay =
-            unhealth_factor.0 * borrow_amount * borrow_price / RATIO_DECIMALS.0;
+            unhealth_factor * Ratio::from(borrow_amount) * Ratio::from(borrow_price) / Ratio::one();
 
         let supply_amount =
             self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
@@ -116,8 +115,8 @@ impl Contract {
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (RATIO_DECIMALS - self.liquidation_incentive).0 * supply_amount * collateral_price,
-        ) / borrow_price;
+            (Ratio::one() - self.liquidation_incentive) * Ratio::from(supply_amount) * Ratio::from(collateral_price),
+        ) / Ratio::from(borrow_price);
 
         WBalance::from(max_possible_liquidation_amount)
     }

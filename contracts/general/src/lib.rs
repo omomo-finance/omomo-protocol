@@ -1,5 +1,6 @@
 pub mod percent;
 pub mod ratio;
+pub mod big_decimal;
 
 use crate::percent::WPercent;
 

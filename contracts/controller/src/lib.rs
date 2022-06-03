@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap};
 use near_sdk::{env, ext_contract, near_bindgen, require, AccountId, Balance, BorshStorageKey};
@@ -8,7 +9,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
 use general::percent::Percent;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 use general::*;
 
 pub use crate::borrows_supplies::*;
@@ -163,10 +164,10 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            liquidation_incentive: Ratio(5) * RATIO_DECIMALS / Ratio(100),
-            liquidation_health_factor_threshold: Ratio(1) * RATIO_DECIMALS,
+            liquidation_incentive: Ratio::from_str("0.05") * Ratio::ratio_decimals(),
+            liquidation_health_factor_threshold: Ratio::ratio_decimals(),
             reserve_factor: Percent(0),
-            health_threshold: Ratio(150) * RATIO_DECIMALS / Ratio(100),
+            health_threshold: Ratio::from_str("1.5") * Ratio::ratio_decimals(),
 
             mutex: ActionMutex::default(),
         }

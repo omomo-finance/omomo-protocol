@@ -3,7 +3,7 @@ use near_sdk::{env, near_bindgen, require, AccountId};
 use std::collections::HashMap;
 
 use general::percent::Percent;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 
 use crate::*;
 
@@ -118,7 +118,7 @@ impl Contract {
     pub fn get_liquidation_incentive(&self) -> Ratio {
         // TODO: Move this kind of getter that don't require admin rights somewhere else
         // incentive % + 100 %
-        self.liquidation_incentive + Ratio(1) * RATIO_DECIMALS
+        self.liquidation_incentive + Ratio::ratio_decimals()
     }
 
     pub fn get_health_threshold(&self) -> Ratio {
@@ -126,7 +126,7 @@ impl Contract {
     }
 
     pub fn set_health_factor_threshold(mut self, value: Ratio) {
-        // TODO: Maybe change name of this funcction
+        // TODO: Maybe change name of this function
         require!(
             self.is_valid_admin_call(),
             "this functionality is allowed to be called by admin or contract only"

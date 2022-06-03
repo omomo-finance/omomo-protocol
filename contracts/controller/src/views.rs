@@ -1,6 +1,5 @@
 use crate::borrows_supplies::ActionType::Supply;
 use crate::*;
-use general::ratio::RATIO_DECIMALS;
 use std::collections::HashMap;
 
 use crate::admin::Market;
@@ -27,7 +26,7 @@ impl Default for AccountData {
             total_supplies_usd: U128(0),
             total_available_borrows_usd: U128(0),
             blocked: false,
-            health_factor_ratio: WRatio::from(RATIO_DECIMALS.0),
+            health_factor_ratio: WRatio::from(Ratio::one()),
             user_profile: Default::default(),
         }
     }
@@ -56,7 +55,7 @@ impl Contract {
                 let total_supplies = self.get_total_supplies(user_id.clone());
 
                 let total_available_borrows_usd =
-                    (total_supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0).into();
+                    (Ratio::from(total_supplies) * Ratio::one() / self.health_threshold).into();
 
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
@@ -82,10 +81,10 @@ impl Contract {
         let gotten_borrow = self.get_total_borrows(user_id);
 
         let potential_borrow =
-            (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
+            (Ratio::from(supplies) * Ratio::one() / self.health_threshold) - Ratio::from(gotten_borrow);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (potential_borrow * ONE_TOKEN / price).into()
+        (Ratio::from(potential_borrow) * Ratio::from(ONE_TOKEN) / Ratio::from(price)).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -94,11 +93,11 @@ impl Contract {
         let accrued_interest = self.calculate_accrued_borrow_interest(user_id.clone());
         let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
 
-        let max_withdraw = supplies.0
-            - ((borrows.0 + accrued_interest) * self.health_threshold.0 / RATIO_DECIMALS.0);
+        let max_withdraw = Ratio::from(supplies)
+            - (Ratio::from(borrows + accrued_interest) * self.health_threshold / Ratio::one());
         let price = self.get_price(dtoken_id).unwrap().value.0;
-        let max_withdraw_in_token = max_withdraw * ONE_TOKEN / price;
-        if supply_by_token <= max_withdraw_in_token {
+        let max_withdraw_in_token = Ratio::from(max_withdraw) * Ratio::from(ONE_TOKEN) / Ratio::from(price);
+        if Ratio::from(supply_by_token) <= max_withdraw_in_token {
             supply_by_token.into()
         } else {
             max_withdraw_in_token.into()

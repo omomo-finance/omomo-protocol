@@ -43,7 +43,7 @@ pub struct Consistency {
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct BorrowData {
     /// Borrow block height
     pub borrow_block: BlockHeight,

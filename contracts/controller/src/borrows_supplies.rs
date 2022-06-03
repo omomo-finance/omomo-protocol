@@ -34,7 +34,7 @@ impl Contract {
             token_address,
             token_amount,
             borrow_block,
-            Ratio(borrow_rate.0),
+            Ratio::from(borrow_rate.0),
         );
     }
 
@@ -136,7 +136,7 @@ impl Contract {
         }
         let borrow_data = BorrowData {
             borrow_block,
-            borrow_rate: Ratio(borrow_rate),
+            borrow_rate: Ratio::from(borrow_rate),
         };
         self.user_profiles
             .get(&account)
