@@ -8,23 +8,19 @@ use std::ops::{Add, Div, Mul, Sub};
 use std::str::FromStr;
 
 uint::construct_uint!(
-    pub struct U256(4);
-);
-
-uint::construct_uint!(
     pub struct U384(6);
 );
 
 pub(crate) const MAX_RATIO: u32 = 10000;
 
-const NUM_DECIMALS: u8 = 27;
+const NUM_DECIMALS: u8 = 24;
 const BIG_DIVISOR: u128 = 10u128.pow(NUM_DECIMALS as u32);
 const HALF_DIVISOR: u128 = BIG_DIVISOR / 2;
 
 pub type LowU128 = U128;
 
 #[derive(Copy, Clone)]
-pub struct BigDecimal(U384);
+pub struct BigDecimal(pub U384);
 
 impl Default for BigDecimal {
     fn default() -> Self {
@@ -38,7 +34,7 @@ impl Display for BigDecimal {
         let a = self.0 / U384::from(BIG_DIVISOR);
         let b = (self.0 - a * U384::from(BIG_DIVISOR)).as_u128();
         if b > 0 {
-            write!(f, "{}", format!("{}.{:027}", a, b).trim_end_matches('0'))
+            write!(f, "{}", format!("{}.{:024}", a, b).trim_end_matches('0'))
         } else {
             write!(f, "{}.0", a)
         }
@@ -61,7 +57,7 @@ impl FromStr for BigDecimal {
         let (int, dec) = if let Some(dot_pos) = dot_pos {
             (
                 &s[..dot_pos],
-                format!("{:0<27}", &s[dot_pos + 1..])
+                format!("{:0<24}", &s[dot_pos + 1..])
                     .parse()
                     .map_err(|_| PARSE_INT_ERROR)?,
             )

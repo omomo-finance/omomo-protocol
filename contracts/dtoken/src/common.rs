@@ -377,7 +377,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from(10000000000u128),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -398,7 +398,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from(10000000000u128),
             contract.calculate_exchange_rate(
                 U128(11_000),
                 total_borrows,
@@ -419,7 +419,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from(10000000000u128),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -440,7 +440,7 @@ mod tests {
 
         // Ratio that represents xrate = 1.05
         assert_eq!(
-            Ratio(10500000000),
+            Ratio::from(10500000000u128),
             contract.calculate_exchange_rate(
                 U128(11_050),
                 total_borrows,
@@ -461,7 +461,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from(10000000000u128),
             contract.calculate_exchange_rate(
                 U128(10_002.5 as u128),
                 total_borrows,

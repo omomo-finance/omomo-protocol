@@ -200,7 +200,7 @@ mod tests {
 
         assert_eq!(
             withdraw_info.exchange_rate,
-            Ratio(10000000000),
+            Ratio::from(10000000000u128),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(

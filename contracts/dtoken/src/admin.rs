@@ -111,11 +111,11 @@ mod tests {
         });
         dtoken_contract.mint(bob(), U128(1000));
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, Ratio(200000000000));
+        assert_eq!(exchange_rate, Ratio::from(200000000000u128));
 
         dtoken_contract.set_total_reserves(10000);
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, Ratio(100000000000));
+        assert_eq!(exchange_rate, Ratio::from(100000000000u128));
     }
 
     #[test]

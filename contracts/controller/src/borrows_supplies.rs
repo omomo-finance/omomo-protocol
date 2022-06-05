@@ -307,14 +307,14 @@ mod tests {
             token_address.clone(),
             U128(10),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
         near_contract.increase_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
             U128(100),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         assert_eq!(
@@ -417,7 +417,7 @@ mod tests {
             token_address.clone(),
             U128(10),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         near_contract.decrease_borrows(user_account, token_address, U128(20), 0, WRatio::from(0));
@@ -450,7 +450,7 @@ mod tests {
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_borrows(user_account.clone(), token_address, U128(10), 0, Ratio(0));
+        near_contract.increase_borrows(user_account.clone(), token_address, U128(10), 0, Ratio::from(0u128));
 
         assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
     }

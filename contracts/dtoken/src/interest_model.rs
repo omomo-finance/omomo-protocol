@@ -98,7 +98,7 @@ mod tests {
         let contract = init_test_env();
         assert_eq!(
             contract.get_util(U128(20), U128(180), U128(0)),
-            Ratio(9000000000)
+            Ratio::from(9000000000u128)
         );
     }
 
@@ -115,7 +115,7 @@ mod tests {
 
         assert_eq!(
             contract.get_borrow_rate(U128(20), U128(180), U128(0)),
-            Ratio(19000000000)
+            Ratio::from(19000000000u128)
         );
     }
 
@@ -136,9 +136,9 @@ mod tests {
                 U128(20),
                 U128(180),
                 U128(0),
-                U128(interest_rate_model.get_reserve_factor().0)
+                U128(interest_rate_model.get_reserve_factor().round_u128())
             ),
-            Ratio(15903000000)
+            Ratio::from(15903000000u128)
         );
     }
 }

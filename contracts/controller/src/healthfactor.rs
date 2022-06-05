@@ -278,12 +278,12 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(100) * controller_contract.get_health_threshold() / Ratio(100),
+            Ratio::from(100u128) * controller_contract.get_health_threshold() / Ratio::from(100u128),
             "Health factor calculation has been failed"
         );
     }
@@ -304,7 +304,7 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         assert_eq!(
@@ -330,13 +330,13 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         // Ratio that represents 150%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(15000000000)
+            Ratio::from(15000000000u128)
         );
     }
 
@@ -356,13 +356,13 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(70),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         // Ratio that represents 142.85714285%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(14285714285)
+            Ratio::from(14285714285u128)
         );
     }
 
@@ -382,13 +382,13 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         // Ratio that represents 100%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio(10000000000)
+            Ratio::from(10000000000u128)
         );
 
         controller_contract.increase_supplies(
@@ -400,7 +400,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(20000000000)
+            Ratio::from(20000000000u128)
         );
     }
 
@@ -420,13 +420,13 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio(20000000000)
+            Ratio::from(20000000000u128)
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -450,7 +450,7 @@ mod tests {
         // Ratio that represents 50%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(5000000000)
+            Ratio::from(5000000000u128)
         );
     }
 
@@ -470,13 +470,13 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio(20000000000)
+            Ratio::from(20000000000u128)
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -500,7 +500,7 @@ mod tests {
         // Ratio that represents 225%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(22500000000)
+            Ratio::from(22500000000u128)
         );
     }
 
@@ -520,7 +520,7 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(50),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         controller_contract.increase_borrows(
@@ -528,13 +528,13 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio(0),
+            Ratio::from(0u128),
         );
 
         // Ratio that represents 153.48837209%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio(15348837209)
+            Ratio::from(15348837209u128)
         );
     }
 }
