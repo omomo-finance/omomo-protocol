@@ -27,7 +27,7 @@ fn repay_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear, wbtc) = initialize_three_utokens(&root);
     let controller = initialize_controller(&root);
-    let (dweth, dwnear, dwbtc) = initialize_three_dtokens(
+    let (_, dweth, dwnear, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
