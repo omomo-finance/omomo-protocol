@@ -1,5 +1,5 @@
-use general::ratio::Ratio;
 use crate::*;
+use general::ratio::Ratio;
 
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
@@ -77,7 +77,8 @@ impl Contract {
             );
         let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         let new_total_reserve = self.get_total_reserves()
-            + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor().round_u128()
+            + borrow_accrued_interest.accumulated_interest
+                * self.model.get_reserve_factor().round_u128()
                 / Ratio::one().round_u128();
 
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());

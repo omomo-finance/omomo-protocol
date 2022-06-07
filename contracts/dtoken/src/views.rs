@@ -1,5 +1,5 @@
-use general::ratio::Ratio;
 use crate::*;
+use general::ratio::Ratio;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -162,8 +162,6 @@ mod tests {
             interest_rate_ratio: U128(0),
             borrow_rate_ratio: U128(1000000000000000000000000),
         };
-
-
 
         assert_eq!(
             &gotten_md.total_supplies, &_expected_md.total_supplies,

@@ -53,7 +53,8 @@ impl Contract {
 
             let price = self.get_price(token_address.clone()).unwrap();
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
-                Balance::from(price.value) * accrued_interest.round_u128() / 10u128.pow(price.fraction_digits),
+                Balance::from(price.value) * accrued_interest.round_u128()
+                    / 10u128.pow(price.fraction_digits),
             );
 
             total_accrued_interest += accrued_interest_amount;
@@ -71,7 +72,7 @@ impl Contract {
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
         if borrows != 0 {
-            Ratio::from(collaterals)  / Ratio::from(borrows)
+            Ratio::from(collaterals) / Ratio::from(borrows)
         } else {
             self.get_health_threshold()
         }
@@ -283,7 +284,8 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(100u128) * controller_contract.get_health_threshold() / Ratio::from(100u128),
+            Ratio::from(100u128) * controller_contract.get_health_threshold()
+                / Ratio::from(100u128),
             "Health factor calculation has been failed"
         );
     }

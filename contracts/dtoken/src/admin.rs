@@ -41,13 +41,13 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use crate::InterestRateModel;
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
+    use std::str::FromStr;
 
     use crate::Config;
 

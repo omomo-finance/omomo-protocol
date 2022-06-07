@@ -88,7 +88,8 @@ impl Contract {
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
 
-        let token_amount: Balance = dtoken_amount * Ratio::one().round_u128() / exchange_rate.round_u128();
+        let token_amount: Balance =
+            dtoken_amount * Ratio::one().round_u128() / exchange_rate.round_u128();
         let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
 
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);

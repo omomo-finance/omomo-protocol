@@ -70,18 +70,20 @@ impl Contract {
             0,
             "Cannot calculate utilization rate as denominator is equal 0"
         );
-        Ratio::from(U128::from(total_borrows.0 * U128::from(Ratio::one()).0 / U128(denominator.unwrap()).0))
+        Ratio::from(U128::from(
+            total_borrows.0 * U128::from(Ratio::one()).0 / U128(denominator.unwrap()).0,
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use crate::InterestRateModel;
     use general::ratio::Ratio;
     use general::WRatio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use std::str::FromStr;
 
     use crate::{Config, Contract};
 
@@ -144,7 +146,6 @@ mod tests {
                 U128(0),
                 interest_rate_model.get_reserve_factor(),
             ),
-
             Ratio::from_str("1.709999999999998803").unwrap()
         );
     }

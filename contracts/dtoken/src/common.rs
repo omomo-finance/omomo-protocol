@@ -71,7 +71,10 @@ impl Contract {
             return Ratio::from(U128(self.initial_exchange_rate));
         }
 
-        Ratio::from(U128((underlying_balance.0 + total_borrows - total_reserves) * U128::from(Ratio::one()).0 / total_supplies))
+        Ratio::from(U128(
+            (underlying_balance.0 + total_borrows - total_reserves) * U128::from(Ratio::one()).0
+                / total_supplies,
+        ))
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
@@ -90,14 +93,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -138,7 +141,8 @@ impl Contract {
                 self.get_accrued_borrow_interest(user_id),
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        let accrued_interest_per_block = user_borrows * borrow_rate.round_u128() / Ratio::one().round_u128();
+        let accrued_interest_per_block =
+            user_borrows * borrow_rate.round_u128() / Ratio::one().round_u128();
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
@@ -348,12 +352,12 @@ impl fmt::Display for Events {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
     use crate::InterestRateModel;
     use crate::{Config, Contract};
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use std::str::FromStr;
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
@@ -459,7 +463,6 @@ mod tests {
         let total_reserves = 10_002.5;
         let total_borrows = 0;
         let total_supplies = 0;
-
 
         // Ratio that represents xrate = 1
         assert_eq!(

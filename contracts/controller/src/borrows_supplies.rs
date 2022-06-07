@@ -450,7 +450,13 @@ mod tests {
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_borrows(user_account.clone(), token_address, U128(10), 0, Ratio::from(0u128));
+        near_contract.increase_borrows(
+            user_account.clone(),
+            token_address,
+            U128(10),
+            0,
+            Ratio::from(0u128),
+        );
 
         assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
     }

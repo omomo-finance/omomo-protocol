@@ -4,7 +4,7 @@ use crate::utils::{
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
-use general::{Price, ratio::Ratio};
+use general::{ratio::Ratio, Price};
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};

@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
-pub struct  InterestRateModel {
+pub struct InterestRateModel {
     pub kink: WRatio,
     pub multiplier_per_block: WRatio,
     pub base_rate_per_block: WRatio,

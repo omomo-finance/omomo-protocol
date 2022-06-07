@@ -30,7 +30,6 @@ impl Default for BigDecimal {
     }
 }
 
-
 impl Display for BigDecimal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let a = self.0 / U384::from(BIG_DIVISOR);
@@ -49,7 +48,7 @@ impl std::fmt::Debug for BigDecimal {
     }
 }
 
-const PARSE_INT_ERROR: &'static str = "Parse int error";
+const PARSE_INT_ERROR: &str = "Parse int error";
 
 impl FromStr for BigDecimal {
     type Err = String;
@@ -66,7 +65,7 @@ impl FromStr for BigDecimal {
         } else {
             (s, 0u128)
         };
-        let int = U384::from_str(&int).map_err(|_| PARSE_INT_ERROR)?;
+        let int = U384::from_str(int).map_err(|_| PARSE_INT_ERROR)?;
         if dec >= BIG_DIVISOR {
             return Err(String::from("The decimal part is too large"));
         }
@@ -76,8 +75,8 @@ impl FromStr for BigDecimal {
 
 impl Serialize for BigDecimal {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
     }
@@ -87,11 +86,11 @@ impl<'de> Deserialize<'de> for BigDecimal {
     fn deserialize<D>(
         deserializer: D,
     ) -> Result<Self, <D as near_sdk::serde::Deserializer<'de>>::Error>
-        where
-            D: near_sdk::serde::Deserializer<'de>,
+    where
+        D: near_sdk::serde::Deserializer<'de>,
     {
         let s: String = Deserialize::deserialize(deserializer)?;
-        Ok(Self::from_str(&s).map_err(|err| near_sdk::serde::de::Error::custom(err))?)
+        Self::from_str(&s).map_err(near_sdk::serde::de::Error::custom)
     }
 }
 
@@ -245,22 +244,22 @@ impl Ord for BigDecimal {
     }
 
     fn max(self, other: Self) -> Self
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         max_by(self, other, Ord::cmp)
     }
 
     fn min(self, other: Self) -> Self
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         min_by(self, other, Ord::cmp)
     }
 
     fn clamp(self, min: Self, max: Self) -> Self
-        where
-            Self: Sized,
+    where
+        Self: Sized,
     {
         assert!(min <= max);
         if self < min {
@@ -275,7 +274,7 @@ impl Ord for BigDecimal {
 
 impl BorshSerialize for BigDecimal {
     fn serialize<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        BorshSerialize::serialize(&self.0.0, writer)
+        BorshSerialize::serialize(&self.0 .0, writer)
     }
 }
 
