@@ -59,17 +59,12 @@ fn withdraw_fixture() -> (
 fn scenario_withdraw() {
     let (dweth, controller, weth, user) = withdraw_fixture();
 
-    withdraw(&user, &dweth, WETH_AMOUNT).assert_success();
+    withdraw(&user, &dweth, WETH_AMOUNT / 2).assert_success();
 
     let user_supply_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());
-    assert_eq!(
-        user_supply_balance,
-        WETH_AMOUNT / 2,
-        "Balance should be {}",
-        WETH_AMOUNT / 2
-    );
+    assert_eq!(user_supply_balance, 0, "Balance should be {}", 0);
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
-    assert_eq!(user_balance.0, WETH_AMOUNT / 2);
+    assert_eq!(user_balance.0, WETH_AMOUNT);
 }
