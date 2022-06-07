@@ -7,10 +7,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::{Add, Div, Mul, Sub};
 use std::str::FromStr;
 
-uint::construct_uint!(
-    pub struct U256(4);
-);
-
+#[allow(clippy::manual-range-contains)]
 uint::construct_uint!(
     pub struct U384(6);
 );
