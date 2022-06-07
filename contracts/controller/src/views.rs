@@ -114,7 +114,6 @@ mod tests {
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
-    use general::ratio::Ratio;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());

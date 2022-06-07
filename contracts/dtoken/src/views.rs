@@ -1,3 +1,4 @@
+use general::ratio::Ratio;
 use crate::*;
 
 #[near_bindgen]
@@ -104,7 +105,7 @@ mod tests {
         }
 
         let mut contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -148,11 +149,6 @@ mod tests {
     }
 
     #[test]
-    fn test() {
-        println!("{:?}", U128::from(Ratio::one()));
-    }
-
-    #[test]
     fn test_view_market_data() {
         let contract = init_test_env(true);
 
@@ -162,7 +158,7 @@ mod tests {
             total_supplies: U128(0),
             total_borrows: U128(0),
             total_reserves: U128(200),
-            exchange_rate_ratio: U128::from(1000000000000000000000000),
+            exchange_rate_ratio: U128::from(Ratio::one()),
             interest_rate_ratio: U128(0),
             borrow_rate_ratio: U128(1000000000000000000000000),
         };
@@ -206,7 +202,7 @@ mod tests {
 
         assert_eq!(
             withdraw_info.exchange_rate,
-            Ratio::from(10000000000u128),
+            U128::from(Ratio::one()),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(

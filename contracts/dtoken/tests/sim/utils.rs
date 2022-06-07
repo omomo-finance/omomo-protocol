@@ -9,6 +9,7 @@ use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use dtoken::{Config as dConfig, RepayInfo};
 use general::Price;
+use general::ratio::Ratio;
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -190,7 +191,7 @@ fn internal_dtoken_initialize(
     call!(
         account,
         dtoken.new(dConfig {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken_account,
             owner_id: owner,
             controller_account_id: controller_account,

@@ -34,7 +34,7 @@ impl fmt::Display for RepayInfo {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct WithdrawInfo {
-    pub exchange_rate: Ratio,
+    pub exchange_rate: U128,
     pub total_interest: Balance,
 }
 

@@ -70,12 +70,13 @@ impl Contract {
             0,
             "Cannot calculate utilization rate as denominator is equal 0"
         );
-        Ratio::from(Balance::from(total_borrows) * Ratio::one().round_u128() / denominator.unwrap())
+        Ratio::from(U128::from(total_borrows.0 * U128::from(Ratio::one()).0 / U128(denominator.unwrap()).0))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
     use crate::InterestRateModel;
     use general::ratio::Ratio;
     use general::WRatio;
@@ -89,7 +90,7 @@ mod tests {
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: user_account,
             controller_account_id: controller_account,
@@ -100,9 +101,10 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
+
         assert_eq!(
             contract.get_util(U128(20), U128(180), U128(0)),
-            Ratio::from(9000000000u128)
+            Ratio::from_str("0.9").unwrap()
         );
     }
 
@@ -119,7 +121,7 @@ mod tests {
 
         assert_eq!(
             contract.get_borrow_rate(U128(20), U128(180), U128(0)),
-            Ratio::from(19000000000u128)
+            Ratio::from_str("1.9").unwrap()
         );
     }
 
@@ -142,7 +144,8 @@ mod tests {
                 U128(0),
                 interest_rate_model.get_reserve_factor(),
             ),
-            Ratio::from(15903000000u128)
+
+            Ratio::from_str("1.709999999999998803").unwrap()
         );
     }
 }
