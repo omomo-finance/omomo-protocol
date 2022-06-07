@@ -1,8 +1,6 @@
 use crate::*;
 use general::ratio::Ratio;
-use std::cmp::{max, min};
-
-// const MAX_RESERVE_FACTOR_VALUE: Ratio = Ratio::one();
+use std::cmp::min;
 
 #[near_bindgen]
 impl Contract {
@@ -11,16 +9,16 @@ impl Contract {
         underlying_balance: WBalance,
         total_borrows: WBalance,
         total_reserves: WBalance,
-        reserve_factor: WBalance,
+        reserve_factor: Ratio,
     ) -> Ratio {
         let max_reserve_factor_value = Ratio::one();
 
         assert!(
-            Balance::from(reserve_factor) <= max_reserve_factor_value.round_u128(),
+            reserve_factor <= max_reserve_factor_value,
             "Reserve factor should be less {}",
             max_reserve_factor_value
         );
-        let rest_of_supply_factor = Ratio::one() - Ratio::from(reserve_factor);
+        let rest_of_supply_factor = Ratio::one() - reserve_factor;
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / Ratio::one();
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
@@ -39,9 +37,15 @@ impl Contract {
         let multiplier_per_block = interest_rate_model.get_multiplier_per_block();
         let base_rate_per_block = interest_rate_model.get_base_rate_per_block();
         let jump_multiplier_per_block = interest_rate_model.get_jump_multiplier_per_block();
+
+        let mut multiplier = Ratio::zero();
+
+        if util > kink {
+            multiplier = util - kink;
+        }
+
         min(util, kink) * multiplier_per_block / Ratio::one()
-            + max(Ratio::zero(), util  - kink)* jump_multiplier_per_block
-                / Ratio::one()
+            + multiplier * jump_multiplier_per_block / Ratio::one()
             + base_rate_per_block
     }
 
@@ -136,7 +140,7 @@ mod tests {
                 U128(20),
                 U128(180),
                 U128(0),
-                U128(interest_rate_model.get_reserve_factor().round_u128())
+                interest_rate_model.get_reserve_factor(),
             ),
             Ratio::from(15903000000u128)
         );

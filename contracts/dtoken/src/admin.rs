@@ -41,6 +41,7 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
     use crate::InterestRateModel;
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
@@ -103,19 +104,20 @@ mod tests {
     #[test]
     fn update_exchange_rate() {
         let mut dtoken_contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128(1000000000000000000000000),
             underlying_token_id: "weth".parse().unwrap(),
             owner_id: "dtoken".parse().unwrap(),
             controller_account_id: "controller".parse().unwrap(),
             interest_rate_model: InterestRateModel::default(),
         });
         dtoken_contract.mint(bob(), U128(1000));
+
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, Ratio::from(200000000000u128));
+        assert_eq!(exchange_rate, Ratio::from_str("2").unwrap());
 
         dtoken_contract.set_total_reserves(10000);
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, Ratio::from(100000000000u128));
+        assert_eq!(exchange_rate, Ratio::from_str("2").unwrap());
     }
 
     #[test]

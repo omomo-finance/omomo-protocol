@@ -114,6 +114,7 @@ mod tests {
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
+    use general::ratio::Ratio;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());
@@ -241,14 +242,14 @@ mod tests {
 
         assert_eq!(
             result[0].total_available_borrows_usd,
-            // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
-            U128(100 * 20000 * 10000000000 / 15000000000),
+            // total_supplies_usd * Ratio::one() / self.health_threshold
+            U128(100 * 20000 * 1000000000000000000000000 / 1500000000000000000000000),
             "View accounts total supplies check has been failed"
         );
 
         assert_eq!(
             result[0].health_factor_ratio,
-            U128(15000000000),
+            U128(1500000000000000000000000),
             "View accounts health factor check has been failed"
         );
     }

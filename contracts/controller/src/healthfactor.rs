@@ -71,7 +71,7 @@ impl Contract {
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
         if borrows != 0 {
-            Ratio::from(collaterals) * Ratio::one() / Ratio::from(borrows)
+            Ratio::from(collaterals)  / Ratio::from(borrows)
         } else {
             self.get_health_threshold()
         }
@@ -336,7 +336,7 @@ mod tests {
         // Ratio that represents 150%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(15000000000u128)
+            Ratio::from_str("1.5").unwrap()
         );
     }
 
@@ -362,7 +362,7 @@ mod tests {
         // Ratio that represents 142.85714285%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(14285714285u128)
+            Ratio::from_str("1.428571428571428571428571").unwrap()
         );
     }
 
@@ -388,7 +388,7 @@ mod tests {
         // Ratio that represents 100%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from(10000000000u128)
+            Ratio::from_str("1").unwrap()
         );
 
         controller_contract.increase_supplies(
@@ -400,7 +400,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(20000000000u128)
+            Ratio::from_str("2").unwrap()
         );
     }
 
@@ -426,7 +426,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from(20000000000u128)
+            Ratio::from_str("2").unwrap()
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -450,7 +450,7 @@ mod tests {
         // Ratio that represents 50%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(5000000000u128)
+            Ratio::from_str("0.5").unwrap()
         );
     }
 
@@ -476,7 +476,7 @@ mod tests {
         // Ratio that represents 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from(20000000000u128)
+            Ratio::from_str("2").unwrap()
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -500,7 +500,7 @@ mod tests {
         // Ratio that represents 225%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(22500000000u128)
+            Ratio::from_str("2.25").unwrap()
         );
     }
 
@@ -531,10 +531,10 @@ mod tests {
             Ratio::from(0u128),
         );
 
-        // Ratio that represents 153.48837209%
+        // Ratio that represents 1.534883720930232558139534%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(15348837209u128)
+            Ratio::from_str("1.534883720930232558139534").unwrap()
         );
     }
 }

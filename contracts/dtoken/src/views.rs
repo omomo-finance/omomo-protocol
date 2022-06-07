@@ -1,5 +1,4 @@
 use crate::*;
-use general::ratio::Ratio;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -44,7 +43,7 @@ impl Contract {
             ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
-            WBalance::from(reserve_factor),
+            reserve_factor,
         );
         let borrow_rate = self.get_borrow_rate(
             ft_balance,
@@ -149,6 +148,11 @@ mod tests {
     }
 
     #[test]
+    fn test() {
+        println!("{:?}", U128::from(Ratio::one()));
+    }
+
+    #[test]
     fn test_view_market_data() {
         let contract = init_test_env(true);
 
@@ -158,10 +162,12 @@ mod tests {
             total_supplies: U128(0),
             total_borrows: U128(0),
             total_reserves: U128(200),
-            exchange_rate_ratio: U128(10000000000),
+            exchange_rate_ratio: U128::from(1000000000000000000000000),
             interest_rate_ratio: U128(0),
-            borrow_rate_ratio: U128(10000000000),
+            borrow_rate_ratio: U128(1000000000000000000000000),
         };
+
+
 
         assert_eq!(
             &gotten_md.total_supplies, &_expected_md.total_supplies,

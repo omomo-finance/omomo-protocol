@@ -80,7 +80,7 @@ impl Contract {
             U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().round_u128()),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
