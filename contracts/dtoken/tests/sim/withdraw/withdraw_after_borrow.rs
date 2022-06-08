@@ -12,6 +12,8 @@ const WBTC_AMOUNT: Balance = 0;
 const BORROW_AMOUNT: Balance = 50;
 const START_BALANCE: Balance = 100;
 const START_PRICE: Balance = 50000;
+const WITHDRAW: Balance = START_BALANCE / 8;
+const EXCHANGE_RATE: Balance = 2;
 
 fn withdraw_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -93,17 +95,17 @@ fn withdraw_fixture() -> (
 fn scenario_borrow() {
     let (dweth, controller, weth, user) = withdraw_fixture();
 
-    withdraw(&user, &dweth, START_BALANCE / 2).assert_success();
+    withdraw(&user, &dweth, WITHDRAW).assert_success();
 
     let user_supply_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());
     assert_eq!(
         user_supply_balance,
-        START_BALANCE - START_BALANCE / 4,
+        START_BALANCE - (EXCHANGE_RATE * WITHDRAW),
         "Balance should be {}",
-        START_BALANCE - START_BALANCE / 4
+        START_BALANCE - (EXCHANGE_RATE * WITHDRAW)
     );
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
-    assert_eq!(user_balance.0, START_BALANCE / 4);
+    assert_eq!(user_balance.0, EXCHANGE_RATE * WITHDRAW);
 }

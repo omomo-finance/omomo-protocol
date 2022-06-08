@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::Ratio;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -29,7 +29,7 @@ impl Contract {
     }
 
     pub fn view_market_data(&self, ft_balance: WBalance) -> MarketData {
-        let total_supplies = self.get_total_supplies();
+        let total_supplies_dtokens = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
         let exchange_rate = self.get_exchange_rate(ft_balance);
@@ -39,6 +39,7 @@ impl Contract {
             .unwrap()
             .interest_rate_model
             .get_reserve_factor();
+        let total_supplies: Balance = total_supplies_dtokens * exchange_rate.0 / RATIO_DECIMALS.0;
 
         let interest_rate = self.get_supply_rate(
             ft_balance,
