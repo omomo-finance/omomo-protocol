@@ -70,7 +70,7 @@ impl Contract {
             NO_DEPOSIT,
             near_sdk::Gas::ONE_TERA * 8_u64,
         )
-            .into()
+        .into()
     }
 }
 
@@ -115,7 +115,9 @@ impl Contract {
 
         let max_possible_liquidation_amount = min(
             max_unhealth_repay,
-            (Ratio::one() - self.liquidation_incentive) * Ratio::from(supply_amount) * Ratio::from(collateral_price),
+            (Ratio::one() - self.liquidation_incentive)
+                * Ratio::from(supply_amount)
+                * Ratio::from(collateral_price),
         ) / Ratio::from(borrow_price);
 
         WBalance::from(max_possible_liquidation_amount)

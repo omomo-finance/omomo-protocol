@@ -68,10 +68,13 @@ impl Contract {
         total_supplies: Balance,
     ) -> Ratio {
         if total_supplies == 0 {
-            return Ratio::from(self.initial_exchange_rate);
+            return Ratio::from(U128(self.initial_exchange_rate));
         }
-        Ratio::from(underlying_balance) + Ratio::from(total_borrows - total_reserves) * Ratio::one()
-            / Ratio::from(total_supplies)
+
+        Ratio::from(U128(
+            (underlying_balance.0 + total_borrows - total_reserves) * U128::from(Ratio::one()).0
+                / total_supplies,
+        ))
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
@@ -90,14 +93,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -138,7 +141,8 @@ impl Contract {
                 self.get_accrued_borrow_interest(user_id),
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        let accrued_interest_per_block = user_borrows * borrow_rate.round_u128() / Ratio::one().round_u128();
+        let accrued_interest_per_block =
+            user_borrows * borrow_rate.round_u128() / Ratio::one().round_u128();
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
@@ -153,13 +157,13 @@ impl Contract {
         user_id: AccountId,
         underlying_balance: WBalance,
     ) -> WithdrawInfo {
-        let exchange_rate: Ratio = self.get_exchange_rate(underlying_balance);
+        let exchange_rate = U128::from(self.get_exchange_rate(underlying_balance));
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().round_u128()),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -353,13 +357,14 @@ mod tests {
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use std::str::FromStr;
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -377,7 +382,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from_str("1").unwrap(),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -398,7 +403,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from_str("1").unwrap(),
             contract.calculate_exchange_rate(
                 U128(11_000),
                 total_borrows,
@@ -419,7 +424,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from_str("1").unwrap(),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -440,7 +445,7 @@ mod tests {
 
         // Ratio that represents xrate = 1.05
         assert_eq!(
-            Ratio(10500000000),
+            Ratio::from_str("1.05").unwrap(),
             contract.calculate_exchange_rate(
                 U128(11_050),
                 total_borrows,
@@ -461,7 +466,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000000000),
+            Ratio::from_str("1").unwrap(),
             contract.calculate_exchange_rate(
                 U128(10_002.5 as u128),
                 total_borrows,

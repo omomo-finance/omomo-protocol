@@ -1,8 +1,6 @@
 use crate::*;
 use general::ratio::Ratio;
-use std::cmp::{max, min};
-
-// const MAX_RESERVE_FACTOR_VALUE: Ratio = Ratio::one();
+use std::cmp::min;
 
 #[near_bindgen]
 impl Contract {
@@ -11,16 +9,16 @@ impl Contract {
         underlying_balance: WBalance,
         total_borrows: WBalance,
         total_reserves: WBalance,
-        reserve_factor: WBalance,
+        reserve_factor: Ratio,
     ) -> Ratio {
         let max_reserve_factor_value = Ratio::one();
 
         assert!(
-            Balance::from(reserve_factor) <= max_reserve_factor_value.round_u128(),
+            reserve_factor <= max_reserve_factor_value,
             "Reserve factor should be less {}",
             max_reserve_factor_value
         );
-        let rest_of_supply_factor = Ratio::one() - Ratio::from(reserve_factor);
+        let rest_of_supply_factor = Ratio::one() - reserve_factor;
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / Ratio::one();
         let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
@@ -39,9 +37,15 @@ impl Contract {
         let multiplier_per_block = interest_rate_model.get_multiplier_per_block();
         let base_rate_per_block = interest_rate_model.get_base_rate_per_block();
         let jump_multiplier_per_block = interest_rate_model.get_jump_multiplier_per_block();
+
+        let mut multiplier = Ratio::zero();
+
+        if util > kink {
+            multiplier = util - kink;
+        }
+
         min(util, kink) * multiplier_per_block / Ratio::one()
-            + max(Ratio::zero(), util  - kink)* jump_multiplier_per_block
-                / Ratio::one()
+            + multiplier * jump_multiplier_per_block / Ratio::one()
             + base_rate_per_block
     }
 
@@ -66,7 +70,9 @@ impl Contract {
             0,
             "Cannot calculate utilization rate as denominator is equal 0"
         );
-        Ratio::from(Balance::from(total_borrows) * Ratio::one().round_u128() / denominator.unwrap())
+        Ratio::from(U128::from(
+            total_borrows.0 * U128::from(Ratio::one()).0 / U128(denominator.unwrap()).0,
+        ))
     }
 }
 
@@ -77,6 +83,7 @@ mod tests {
     use general::WRatio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use std::str::FromStr;
 
     use crate::{Config, Contract};
 
@@ -85,7 +92,7 @@ mod tests {
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: user_account,
             controller_account_id: controller_account,
@@ -96,9 +103,10 @@ mod tests {
     #[test]
     fn test_get_util_rate() {
         let contract = init_test_env();
+
         assert_eq!(
             contract.get_util(U128(20), U128(180), U128(0)),
-            Ratio(9000000000)
+            Ratio::from_str("0.9").unwrap()
         );
     }
 
@@ -115,7 +123,7 @@ mod tests {
 
         assert_eq!(
             contract.get_borrow_rate(U128(20), U128(180), U128(0)),
-            Ratio(19000000000)
+            Ratio::from_str("1.9").unwrap()
         );
     }
 
@@ -136,9 +144,9 @@ mod tests {
                 U128(20),
                 U128(180),
                 U128(0),
-                U128(interest_rate_model.get_reserve_factor().0)
+                interest_rate_model.get_reserve_factor(),
             ),
-            Ratio(15903000000)
+            Ratio::from_str("1.709999999999998803").unwrap()
         );
     }
 }

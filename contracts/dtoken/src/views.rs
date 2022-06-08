@@ -29,7 +29,7 @@ impl Contract {
     }
 
     pub fn view_market_data(&self, ft_balance: WBalance) -> MarketData {
-        let total_supplies = self.get_total_supplies();
+        let total_supplies_dtokens = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
         let exchange_rate = self.get_exchange_rate(ft_balance);
@@ -39,12 +39,14 @@ impl Contract {
             .unwrap()
             .interest_rate_model
             .get_reserve_factor();
+        let total_supplies: Balance =
+            total_supplies_dtokens * U128::from(exchange_rate / Ratio::one()).0;
 
         let interest_rate = self.get_supply_rate(
             ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
-            WBalance::from(reserve_factor),
+            reserve_factor,
         );
         let borrow_rate = self.get_borrow_rate(
             ft_balance,
@@ -105,7 +107,7 @@ mod tests {
         }
 
         let mut contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -158,9 +160,9 @@ mod tests {
             total_supplies: U128(0),
             total_borrows: U128(0),
             total_reserves: U128(200),
-            exchange_rate_ratio: U128(10000000000),
+            exchange_rate_ratio: U128::from(Ratio::one()),
             interest_rate_ratio: U128(0),
-            borrow_rate_ratio: U128(10000000000),
+            borrow_rate_ratio: U128(1000000000000000000000000),
         };
 
         assert_eq!(
@@ -200,7 +202,7 @@ mod tests {
 
         assert_eq!(
             withdraw_info.exchange_rate,
-            Ratio(10000000000),
+            U128::from(Ratio::one()),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(

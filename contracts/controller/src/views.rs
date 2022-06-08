@@ -80,11 +80,11 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
-        let potential_borrow =
-            (Ratio::from(supplies) * Ratio::one() / self.health_threshold) - Ratio::from(gotten_borrow);
+        let potential_borrow = (Ratio::from(supplies) * Ratio::one() / self.health_threshold)
+            - Ratio::from(gotten_borrow);
         let price = self.get_price(dtoken_id).unwrap().value.0;
 
-        (Ratio::from(potential_borrow) * Ratio::from(ONE_TOKEN) / Ratio::from(price)).into()
+        (potential_borrow * Ratio::from(ONE_TOKEN) / Ratio::from(price)).into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -94,9 +94,12 @@ impl Contract {
         let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
 
         let max_withdraw = supplies.0
-            - (borrows.0 + accrued_interest * self.health_threshold.round_u128() / Ratio::one().round_u128());
+            - (borrows.0
+                + accrued_interest * self.health_threshold.round_u128()
+                    / Ratio::one().round_u128());
         let price = self.get_price(dtoken_id).unwrap().value.0;
-        let max_withdraw_in_token = max_withdraw * Ratio::from(ONE_TOKEN).round_u128() / Ratio::from(price).round_u128();
+        let max_withdraw_in_token =
+            max_withdraw * Ratio::from(ONE_TOKEN).round_u128() / Ratio::from(price).round_u128();
         if supply_by_token <= max_withdraw_in_token {
             supply_by_token.into()
         } else {
@@ -241,14 +244,14 @@ mod tests {
 
         assert_eq!(
             result[0].total_available_borrows_usd,
-            // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
-            U128(100 * 20000 * 10000000000 / 15000000000),
+            // total_supplies_usd * Ratio::one() / self.health_threshold
+            U128(100 * 20000 * 1000000000000000000000000 / 1500000000000000000000000),
             "View accounts total supplies check has been failed"
         );
 
         assert_eq!(
             result[0].health_factor_ratio,
-            U128(15000000000),
+            U128(1500000000000000000000000),
             "View accounts health factor check has been failed"
         );
     }

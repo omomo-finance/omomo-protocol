@@ -47,6 +47,7 @@ mod tests {
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
+    use std::str::FromStr;
 
     use crate::Config;
 
@@ -103,19 +104,20 @@ mod tests {
     #[test]
     fn update_exchange_rate() {
         let mut dtoken_contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: "weth".parse().unwrap(),
             owner_id: "dtoken".parse().unwrap(),
             controller_account_id: "controller".parse().unwrap(),
             interest_rate_model: InterestRateModel::default(),
         });
-        dtoken_contract.mint(bob(), U128(1000));
+        dtoken_contract.mint(bob(), U128(10000));
+
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, Ratio(200000000000));
+        assert_eq!(exchange_rate, Ratio::from_str("2").unwrap());
 
         dtoken_contract.set_total_reserves(10000);
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
-        assert_eq!(exchange_rate, Ratio(100000000000));
+        assert_eq!(exchange_rate, Ratio::from_str("1").unwrap());
     }
 
     #[test]

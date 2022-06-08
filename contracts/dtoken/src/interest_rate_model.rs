@@ -2,6 +2,7 @@ use crate::*;
 use general::ratio::Ratio;
 use near_sdk::env::block_height;
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -33,7 +34,7 @@ impl fmt::Display for RepayInfo {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct WithdrawInfo {
-    pub exchange_rate: Ratio,
+    pub exchange_rate: U128,
     pub total_interest: Balance,
 }
 
@@ -110,7 +111,7 @@ impl Default for InterestRateModel {
             base_rate_per_block: WRatio::from(Ratio::one()),
             multiplier_per_block: WRatio::from(Ratio::one()),
             jump_multiplier_per_block: WRatio::from(Ratio::one()),
-            reserve_factor: WRatio::from(500),
+            reserve_factor: WRatio::from(Ratio::one() * Ratio::from_str("0.05").unwrap()),
         }
     }
 }

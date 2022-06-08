@@ -68,16 +68,16 @@ impl Contract {
             }
         };
 
-        let exchange_rate: Balance = self
-            .get_exchange_rate((balance_of - Balance::from(token_amount)).into())
-            .round_u128();
-        let dtoken_amount = Balance::from(token_amount) * exchange_rate / Ratio::one().round_u128();
+        let exchange_rate =
+            self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
+        let dtoken_amount = token_amount.0 * U128::from(Ratio::one() / exchange_rate).0;
+
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().round_u128()),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
