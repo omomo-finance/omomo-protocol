@@ -69,8 +69,6 @@ fn scenario_withdraw_more_than_supply() {
 
     let result = withdraw(&user, &dwnear, WITHDRAW_AMOUNT);
 
-
-
     assert_failure(
         result,
         "The account doesn't have enough digital tokens to do withdraw",

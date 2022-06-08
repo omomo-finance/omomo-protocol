@@ -81,8 +81,8 @@ impl Contract {
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
 
         let new_total_reserve = self.get_total_reserves()
-            + borrow_accrued_interest.accumulated_interest * U128::from(self.model.get_reserve_factor()
-            / Ratio::one()).0;
+            + borrow_accrued_interest.accumulated_interest
+                * U128::from(self.model.get_reserve_factor() / Ratio::one()).0;
         self.set_total_reserves(new_total_reserve);
 
         if token_amount.0 < borrow_with_rate_amount {

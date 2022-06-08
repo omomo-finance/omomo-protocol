@@ -68,8 +68,8 @@ impl Contract {
             }
         };
 
-        let exchange_rate = self
-            .get_exchange_rate((balance_of - Balance::from(token_amount)).into());
+        let exchange_rate =
+            self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
         let dtoken_amount = token_amount.0 * U128::from(Ratio::one() / exchange_rate).0;
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;

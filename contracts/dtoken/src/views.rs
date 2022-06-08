@@ -39,7 +39,8 @@ impl Contract {
             .unwrap()
             .interest_rate_model
             .get_reserve_factor();
-        let total_supplies: Balance = total_supplies_dtokens * U128::from(exchange_rate / Ratio::one()).0;
+        let total_supplies: Balance =
+            total_supplies_dtokens * U128::from(exchange_rate / Ratio::one()).0;
 
         let interest_rate = self.get_supply_rate(
             ft_balance,
