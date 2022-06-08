@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 
 const GAS_FOR_WITHDRAW: Gas = Gas(180_000_000_000_000);
 
@@ -14,13 +14,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::withdraw_balance_of_callback(
-            Balance::from(dtoken_amount),
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(140),
-        ))
-        .into()
+            .then(ext_self::withdraw_balance_of_callback(
+                Balance::from(dtoken_amount),
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(140),
+            ))
+            .into()
     }
 }
 
@@ -38,10 +38,10 @@ impl Contract {
         assert!(
             amount.0
                 <= self
-                    .token
-                    .accounts
-                    .get(&env::signer_account_id())
-                    .unwrap_or(0),
+                .token
+                .accounts
+                .get(&env::signer_account_id())
+                .unwrap_or(0),
             "The account doesn't have enough digital tokens to do withdraw"
         );
         self.mutex_account_lock(Actions::Withdraw, amount, GAS_FOR_WITHDRAW)
@@ -80,7 +80,7 @@ impl Contract {
             U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -88,7 +88,7 @@ impl Contract {
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
 
-        let token_amount: Balance = dtoken_amount * exchange_rate.0 / RATIO_DECIMALS.0;
+        let token_amount: Balance = dtoken_amount * U128::from(exchange_rate / Ratio::one()).0;
         let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
 
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
@@ -101,16 +101,16 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(10),
         )
-        .then(ext_self::withdraw_supplies_callback(
-            env::signer_account_id(),
-            token_amount.into(),
-            dtoken_amount.into(),
-            whole_amount.into(),
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(80),
-        ))
-        .into()
+            .then(ext_self::withdraw_supplies_callback(
+                env::signer_account_id(),
+                token_amount.into(),
+                dtoken_amount.into(),
+                whole_amount.into(),
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(80),
+            ))
+            .into()
     }
 
     #[private]
@@ -146,14 +146,14 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-        .then(ext_self::withdraw_ft_transfer_call_callback(
-            token_amount,
-            dtoken_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(30),
-        ))
-        .into()
+            .then(ext_self::withdraw_ft_transfer_call_callback(
+                token_amount,
+                dtoken_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(30),
+            ))
+            .into()
     }
 
     #[private]
@@ -180,13 +180,13 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-            .then(ext_self::withdraw_increase_supplies_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            ))
-            .into()
+                .then(ext_self::withdraw_increase_supplies_callback(
+                    token_amount,
+                    env::current_account_id(),
+                    NO_DEPOSIT,
+                    self.terra_gas(10),
+                ))
+                .into()
         }
     }
 

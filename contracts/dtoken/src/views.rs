@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -39,7 +39,7 @@ impl Contract {
             .unwrap()
             .interest_rate_model
             .get_reserve_factor();
-        let total_supplies: Balance = total_supplies_dtokens * exchange_rate.0 / RATIO_DECIMALS.0;
+        let total_supplies: Balance = total_supplies_dtokens * U128::from(exchange_rate / Ratio::one()).0;
 
         let interest_rate = self.get_supply_rate(
             ft_balance,
