@@ -428,7 +428,7 @@ pub fn liquidate(
         liquidator,
         borrowing_utoken.ft_transfer_call(
             borrowing_dtoken.account_id(),
-            U128(amount),
+            U128::from(amount),
             None,
             action
         ),
