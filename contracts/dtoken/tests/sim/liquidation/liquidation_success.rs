@@ -4,7 +4,8 @@ use crate::utils::{
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
-use general::{ratio::Ratio, Price};
+use general::ratio::Ratio;
+use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
@@ -148,7 +149,7 @@ fn scenario_liquidation_success() {
     let borrow_balance = BORROWER_BORROW - amount;
 
     let revenue_amount: Balance =
-        (10500000000 * amount * START_PRICE) / (CHANGED_PRICE * Ratio::one().round_u128());
+        (10500 * amount * START_PRICE) / (CHANGED_PRICE * Ratio::one().round_u128());
 
     assert_eq!(
         user_borrows,

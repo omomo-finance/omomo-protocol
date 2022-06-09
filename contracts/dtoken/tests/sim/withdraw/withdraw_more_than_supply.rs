@@ -7,8 +7,9 @@ use dtoken::InterestRateModel;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use general::ratio::Ratio;
 
-const WNEAR_AMOUNT: Balance = 99;
+const WNEAR_AMOUNT: Balance = 50;
 const WITHDRAW_AMOUNT: Balance = 100;
 const START_PRICE: Balance = 10000;
 
@@ -24,11 +25,11 @@ fn withdraw_more_than_supply_fixture() -> (
     let wnear = initialize_utoken(&root);
     let controller = initialize_controller(&root);
     let interest_model = InterestRateModel {
-        kink: U128(0),
-        multiplier_per_block: U128(0),
-        base_rate_per_block: U128(0),
-        jump_multiplier_per_block: U128(0),
-        reserve_factor: U128(0),
+        kink: U128::from(Ratio::zero()),
+        multiplier_per_block: U128::from(Ratio::zero()),
+        base_rate_per_block: U128::from(Ratio::zero()),
+        jump_multiplier_per_block: U128::from(Ratio::zero()),
+        reserve_factor: U128::from(Ratio::zero()),
     };
     let dwnear = initialize_dtoken(
         &root,
