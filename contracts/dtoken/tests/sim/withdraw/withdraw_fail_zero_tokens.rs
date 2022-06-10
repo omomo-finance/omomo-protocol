@@ -22,7 +22,7 @@ fn withdraw_fail_zero_tokens_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let weth = initialize_utoken(&root);
     let controller = initialize_controller(&root);
-    let dweth = initialize_dtoken(
+    let (_, dweth) = initialize_dtoken(
         &root,
         weth.account_id(),
         controller.account_id(),

@@ -30,7 +30,7 @@ fn withdraw_more_than_supply_fixture() -> (
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
     };
-    let dwnear = initialize_dtoken(
+    let (_, dwnear) = initialize_dtoken(
         &root,
         wnear.account_id(),
         controller.account_id(),

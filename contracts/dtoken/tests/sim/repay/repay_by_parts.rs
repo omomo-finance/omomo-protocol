@@ -1,10 +1,10 @@
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
-    mint_tokens, mint_and_reserve, new_user, repay, repay_info, set_price, supply, view_balance,
+    mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
 use dtoken::{InterestRateModel, WRatio};
-use general::{Price, ratio::Ratio};
+use general::{ratio::Ratio, Price};
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
@@ -133,11 +133,7 @@ fn scenario_repay_by_parts() {
     repay(&user, dwnear.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
-    assert_eq!(
-        exchange_rate,
-        Ratio::one(),
-        "xrate should be 1.0"
-    );
+    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -191,9 +187,5 @@ fn scenario_repay_by_parts() {
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
-    assert_eq!(
-        exchange_rate,
-        Ratio::one(),
-        "xrate should be 1.0"
-    );
+    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 }

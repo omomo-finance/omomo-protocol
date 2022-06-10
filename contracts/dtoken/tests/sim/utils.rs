@@ -206,7 +206,7 @@ pub fn initialize_dtoken(
     utoken_account: AccountId,
     controller_account: AccountId,
     interest_model: InterestRateModel,
-) -> ContractAccount<dtoken::ContractContract> {
+) -> (UserAccount, ContractAccount<dtoken::ContractContract>) {
     let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
     let dtoken = init_dtoken(
         &droot,
@@ -220,7 +220,8 @@ pub fn initialize_dtoken(
         controller_account,
         interest_model,
     );
-    dtoken
+
+    (droot, dtoken)
 }
 
 pub fn initialize_two_dtokens(
@@ -346,7 +347,8 @@ pub fn mint_tokens(
         utoken.mint(receiver, amount),
         0,
         100000000000000
-    ).assert_success();
+    )
+    .assert_success();
 }
 
 pub fn set_price(
@@ -362,6 +364,19 @@ pub fn set_price(
     .assert_success();
 }
 
+pub fn reserve_storage(
+    dtoken_admin: &UserAccount,
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+) {
+    call!(
+        dtoken_admin,
+        utoken.storage_deposit(Some(dtoken.account_id()), None),
+        deposit = to_yocto("0.25")
+    )
+    .assert_success();
+}
+
 pub fn mint_and_reserve(
     dtoken_admin: &UserAccount,
     utoken: &ContractAccount<test_utoken::ContractContract>,
@@ -369,20 +384,23 @@ pub fn mint_and_reserve(
     amount: Balance,
 ) {
     mint_tokens(&utoken, dtoken_admin.account_id(), U128(amount));
-    call!(
-        dtoken_admin,
-        utoken.storage_deposit(Some(dtoken.account_id()), None),
-        deposit = to_yocto("0.25")
-    ).assert_success();
+    reserve_storage(dtoken_admin, utoken, dtoken);
 
     let action = "\"Reserve\"".to_string();
     call!(
         dtoken_admin,
-        utoken.ft_transfer_call(dtoken.account_id(), U128(amount), Some("RESERVE".to_string()), action),
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(amount),
+            Some("RESERVE".to_string()),
+            action
+        ),
         deposit = 1
-    ).assert_success();
+    )
+    .assert_success();
 
-    let underlying_balance: WBalance = view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    let underlying_balance: WBalance =
+        view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
         underlying_balance,
         WBalance::from(amount),

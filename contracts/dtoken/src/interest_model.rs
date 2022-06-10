@@ -49,7 +49,8 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let denominator = Balance::from(underlying_balance) + Balance::from(total_borrows) - Balance::from(total_reserves);
+        let denominator = Balance::from(underlying_balance) + Balance::from(total_borrows)
+            - Balance::from(total_reserves);
         // this may happen when there is no supplies
         if denominator == 0 {
             return Ratio(0);
