@@ -21,7 +21,7 @@ impl Contract {
         let rest_of_supply_factor = RATIO_DECIMALS - Ratio(reserve_factor.0);
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / RATIO_DECIMALS;
-        let util_rate = self.get_util(underlying_balance, total_borrows, total_reserves);
+        let util_rate = self.get_util_rate(underlying_balance, total_borrows, total_reserves);
         util_rate * rate_to_pool / RATIO_DECIMALS
     }
 
@@ -31,7 +31,7 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let util = self.get_util(underlying_balance, total_borrows, total_reserves);
+        let util = self.get_util_rate(underlying_balance, total_borrows, total_reserves);
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let kink = interest_rate_model.get_kink();
         let multiplier_per_block = interest_rate_model.get_multiplier_per_block();
@@ -43,28 +43,20 @@ impl Contract {
             + base_rate_per_block
     }
 
-    fn get_util(
+    fn get_util_rate(
         &self,
         underlying_balance: WBalance,
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let sum_balance_borrows =
-            Balance::from(underlying_balance).checked_add(Balance::from(total_borrows));
-        assert!(
-            sum_balance_borrows.is_some(),
-            "Overflowing occurs while adding underlying balance and total borrows"
-        );
-        let denominator = sum_balance_borrows
-            .unwrap()
-            .checked_sub(Balance::from(total_reserves));
-        assert!(denominator.is_some(), "Overflowing occurs while subtracting total reserves from sum of underlying balance and total borrows");
-        assert_ne!(
-            denominator.unwrap(),
-            0,
-            "Cannot calculate utilization rate as denominator is equal 0"
-        );
-        Ratio(Balance::from(total_borrows) * RATIO_DECIMALS.0 / denominator.unwrap())
+        let denominator = Balance::from(underlying_balance) + Balance::from(total_borrows)
+            - Balance::from(total_reserves);
+        // this may happen when there is no supplies
+        if denominator == 0 {
+            return Ratio(0);
+        }
+
+        Ratio(total_borrows.0) * Ratio::one() / Ratio(denominator)
     }
 }
 
@@ -95,7 +87,7 @@ mod tests {
     fn test_get_util_rate() {
         let contract = init_test_env();
         assert_eq!(
-            contract.get_util(U128(20), U128(180), U128(0)),
+            contract.get_util_rate(U128(20), U128(180), U128(0)),
             Ratio(9000000000)
         );
     }
