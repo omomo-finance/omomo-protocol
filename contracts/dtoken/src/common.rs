@@ -107,10 +107,15 @@ impl Contract {
     }
 
     pub fn get_total_supplies(&self) -> Balance {
-        self.token.total_supply
+        // Tokens amount
+        self.user_profiles
+            .iter()
+            .map(|(_, value)| value.supplies)
+            .sum()
     }
 
     pub fn get_total_borrows(&self) -> Balance {
+        // Tokens amount
         self.user_profiles
             .iter()
             .map(|(_, value)| value.borrows)
