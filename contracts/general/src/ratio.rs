@@ -1,5 +1,3 @@
-pub type Ratio = BigDecimal;
-
 use crate::*;
 use near_sdk::borsh::maybestd::io::Write;
 use near_sdk::json_types::U128;
@@ -20,6 +18,8 @@ const BIG_DIVISOR: u128 = 10u128.pow(NUM_DECIMALS as u32);
 const HALF_DIVISOR: u128 = BIG_DIVISOR / 2;
 
 pub type LowU128 = U128;
+pub type Ratio = BigDecimal;
+pub type BigBalance = BigDecimal;
 
 #[derive(Copy, Clone)]
 pub struct BigDecimal(pub U384);

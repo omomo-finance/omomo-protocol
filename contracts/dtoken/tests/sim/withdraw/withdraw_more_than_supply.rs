@@ -4,10 +4,10 @@ use crate::utils::{
 };
 use controller::ActionType::Supply;
 use dtoken::InterestRateModel;
+use general::ratio::Ratio;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
-use general::ratio::Ratio;
 
 const WNEAR_AMOUNT: Balance = 50;
 const WITHDRAW_AMOUNT: Balance = 100;

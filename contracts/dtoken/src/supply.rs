@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::Ratio;
+use general::ratio::{BigBalance, Ratio};
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
@@ -70,7 +70,8 @@ impl Contract {
 
         let exchange_rate =
             self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
-        let dtoken_amount = token_amount.0 * U128::from(Ratio::one() / exchange_rate).0;
+        let dtoken_amount: BigBalance =
+            BigBalance::from(token_amount.0) * Ratio::one() / exchange_rate;
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
@@ -106,7 +107,7 @@ impl Contract {
         )
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
-            U128(dtoken_amount),
+            dtoken_amount.into(),
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(20),

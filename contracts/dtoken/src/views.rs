@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::Ratio;
+use general::ratio::{BigBalance, Ratio};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -39,8 +39,10 @@ impl Contract {
             .unwrap()
             .interest_rate_model
             .get_reserve_factor();
-        let total_supplies: Balance =
-            total_supplies_dtokens * U128::from(exchange_rate / Ratio::one()).0;
+        let total_supplies: Balance = (BigBalance::from(total_supplies_dtokens)
+            * BigBalance::from(exchange_rate)
+            / Ratio::one())
+        .round_u128();
 
         let interest_rate = self.get_supply_rate(
             ft_balance,
@@ -162,7 +164,7 @@ mod tests {
             total_reserves: U128(200),
             exchange_rate_ratio: U128::from(Ratio::one()),
             interest_rate_ratio: U128(0),
-            borrow_rate_ratio: U128(1000000000000000000000000),
+            borrow_rate_ratio: U128::from(Ratio::one()),
         };
 
         assert_eq!(

@@ -71,10 +71,10 @@ impl Contract {
             return Ratio::from(U128(self.initial_exchange_rate));
         }
 
-        Ratio::from(U128(
-            (underlying_balance.0 + total_borrows - total_reserves) * U128::from(Ratio::one()).0
-                / total_supplies,
-        ))
+        (Ratio::from(underlying_balance.0) + Ratio::from(total_borrows)
+            - Ratio::from(total_reserves))
+            * Ratio::one()
+            / Ratio::from(total_supplies)
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
