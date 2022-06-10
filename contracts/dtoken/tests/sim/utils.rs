@@ -383,7 +383,7 @@ pub fn mint_and_reserve(
     dtoken: &ContractAccount<dtoken::ContractContract>,
     amount: Balance,
 ) {
-    mint_tokens(&utoken, dtoken_admin.account_id(), U128(amount));
+    mint_tokens(utoken, dtoken_admin.account_id(), U128(amount));
     reserve_storage(dtoken_admin, utoken, dtoken);
 
     let action = "\"Reserve\"".to_string();
