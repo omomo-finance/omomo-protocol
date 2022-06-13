@@ -7,6 +7,7 @@ use dtoken::InterestRateModel;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use controller::AccountData;
 
 const WETH_AMOUNT: Balance = 10;
 const WNEAR_AMOUNT: Balance = 10;
@@ -124,6 +125,8 @@ fn scenario_borrow() {
         user_balance, BORROW_AMOUNT,
         "User borrow balance on dtoken should be 10"
     );
+
+    dbg!(view!(controller.view_accounts_with_borrows()).unwrap_json::<Vec<AccountData>>());
 
     let user_balance: U128 = view!(wbtc.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
