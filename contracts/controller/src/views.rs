@@ -52,10 +52,12 @@ impl Contract {
             .user_profiles
             .keys()
             .filter(|account_id| {
-                !self.user_profiles
+                !self
+                    .user_profiles
                     .get(account_id)
                     .unwrap()
-                    .account_borrows.is_empty()
+                    .account_borrows
+                    .is_empty()
             })
             .collect();
 
