@@ -8,8 +8,7 @@ use controller::{ActionType, Config as cConfig};
 use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use dtoken::{Config as dConfig, RepayInfo};
-use general::ratio::Ratio;
-use general::Price;
+use general::{Price, WBalance, ratio::Ratio};
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -207,7 +206,7 @@ pub fn initialize_dtoken(
     utoken_account: AccountId,
     controller_account: AccountId,
     interest_model: InterestRateModel,
-) -> ContractAccount<dtoken::ContractContract> {
+) -> (UserAccount, ContractAccount<dtoken::ContractContract>) {
     let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
     let dtoken = init_dtoken(
         &droot,
@@ -221,7 +220,8 @@ pub fn initialize_dtoken(
         controller_account,
         interest_model,
     );
-    dtoken
+
+    (droot, dtoken)
 }
 
 pub fn initialize_two_dtokens(
@@ -276,6 +276,7 @@ pub fn initialize_three_dtokens(
     interest_model2: InterestRateModel,
     interest_model3: InterestRateModel,
 ) -> (
+    UserAccount,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
@@ -320,7 +321,7 @@ pub fn initialize_three_dtokens(
         controller_account,
         interest_model3,
     );
-    (dtoken1, dtoken2, dtoken3)
+    (droot, dtoken1, dtoken2, dtoken3)
 }
 
 pub fn add_market(
@@ -346,7 +347,8 @@ pub fn mint_tokens(
         utoken.mint(receiver, amount),
         0,
         100000000000000
-    );
+    )
+    .assert_success();
 }
 
 pub fn set_price(
@@ -360,6 +362,57 @@ pub fn set_price(
         deposit = 0
     )
     .assert_success();
+}
+
+pub fn reserve_storage(
+    dtoken_admin: &UserAccount,
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+) {
+    call!(
+        dtoken_admin,
+        utoken.storage_deposit(Some(dtoken.account_id()), None),
+        deposit = to_yocto("0.25")
+    )
+    .assert_success();
+}
+
+pub fn mint_and_reserve(
+    dtoken_admin: &UserAccount,
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+    amount: Balance,
+) {
+    mint_tokens(utoken, dtoken_admin.account_id(), U128(amount));
+    reserve_storage(dtoken_admin, utoken, dtoken);
+
+    let action = "\"Reserve\"".to_string();
+    call!(
+        dtoken_admin,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(amount),
+            Some("RESERVE".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
+    let underlying_balance: WBalance =
+        view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    assert_eq!(
+        underlying_balance,
+        WBalance::from(amount),
+        "Unexpected dtoken balance"
+    );
+
+    let total_reserves: WBalance = view!(dtoken.view_total_reserves()).unwrap_json();
+    assert_eq!(
+        total_reserves,
+        WBalance::from(amount),
+        "Unexpected total reserves"
+    );
 }
 
 pub fn supply(
