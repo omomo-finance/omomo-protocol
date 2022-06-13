@@ -59,7 +59,7 @@ fn supply_fixture() -> (
 fn scenario_supply() {
     let (dweth, controller, weth, user) = supply_fixture();
 
-    dbg!(supply(&user, &weth, dweth.account_id(), SUPPLY_AMOUNT));
+    supply(&user, &weth, dweth.account_id(), SUPPLY_AMOUNT).assert_success();
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance, U128(0), "User balance should be 0");
