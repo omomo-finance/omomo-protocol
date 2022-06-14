@@ -77,6 +77,10 @@ impl Contract {
     pub fn view_reward_campaigns(&self) -> Vec<RewardCampaignExtended> {
         self.get_reward_campaigns_extended()
     }
+
+    pub fn view_rewards_list(&self, user_id: AccountId) -> HashMap<String, Reward> {
+        self.get_rewards_list(user_id)
+    }
 }
 
 #[cfg(test)]
