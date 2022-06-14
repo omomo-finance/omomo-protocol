@@ -115,7 +115,6 @@ fn repay_fixture() -> (
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
-
     borrow(&user, &dweth, WETH_BORROW).assert_success();
 
     borrow(&user, &dwnear, WNEAR_BORROW).assert_success();
