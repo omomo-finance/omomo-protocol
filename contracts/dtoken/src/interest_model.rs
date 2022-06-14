@@ -22,7 +22,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / Ratio::one();
         let util_rate = self.get_util_rate(underlying_balance, total_borrows, total_reserves);
-        
+
         util_rate * rate_to_pool / Ratio::one()
     }
 
@@ -109,7 +109,7 @@ mod tests {
 
         interest_rate_model.set_base_rate_per_block(WRatio::from(0));
         interest_rate_model.set_multiplier_per_block(WRatio::from(500000000));
-        interest_rate_model.set_kink(WRatio::from(8000000000));
+        interest_rate_model.set_kink(WRatio::from(800000000000000000000000));
         interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900000000));
 
         assert_eq!(
@@ -126,7 +126,7 @@ mod tests {
 
         interest_rate_model.set_base_rate_per_block(WRatio::from(0));
         interest_rate_model.set_multiplier_per_block(WRatio::from(500000000));
-        interest_rate_model.set_kink(WRatio::from(8000000000));
+        interest_rate_model.set_kink(WRatio::from(800000000000000000000000));
         interest_rate_model.set_jump_multiplier_per_block(WRatio::from(10900000000));
         interest_rate_model.set_reserve_factor(WRatio::from(700000000));
 

@@ -29,10 +29,10 @@ fn repay_fixture() -> (
     let (weth, wnear, wbtc) = initialize_three_utokens(&root);
     let controller = initialize_controller(&root);
     let interest_rate_model = InterestRateModel {
-        kink: WRatio::from(6500000000),
+        kink: WRatio::from(650000000000000000000000),
         base_rate_per_block: WRatio::from(0),
-        multiplier_per_block: WRatio::from(628),
-        jump_multiplier_per_block: WRatio::from(761),
+        multiplier_per_block: WRatio::from(62800000000000000),
+        jump_multiplier_per_block: WRatio::from(76100000000000000),
         reserve_factor: WRatio::from(1000000000),
     };
     let (droot, dweth, dwnear, dwbtc) = initialize_three_dtokens(

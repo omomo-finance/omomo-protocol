@@ -200,7 +200,7 @@ mod tests {
         let withdraw_info = contract.view_withdraw_info(bob(), U128(1000));
 
         // total interest should be 0
-        // exchange_rate = initial_exchange_rate = 10000000000
+        // exchange_rate = initial_exchange_rate = 1000000000000000000000000
 
         assert_eq!(
             withdraw_info.exchange_rate,

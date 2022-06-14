@@ -67,13 +67,13 @@ near deploy dweth_beta.nearlend.testnet \
         "owner_id":"nearlend.testnet",
         "underlying_token_id":"weth_beta.nearlend.testnet",
         "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"10000000000",
+        "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
-            "kink":"6500000000",
-            "multiplier_per_block":"628",
+            "kink":"650000000000000000000000",
+            "multiplier_per_block":"62800000000000000",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"761",
-            "reserve_factor":"1000000000"
+            "jump_multiplier_per_block":"76100000000000000",
+            "reserve_factor":"10000000000000000000000"
         }
     }'
 near deploy dwnear_beta.nearlend.testnet \
@@ -83,13 +83,13 @@ near deploy dwnear_beta.nearlend.testnet \
         "owner_id":"nearlend.testnet",
         "underlying_token_id":"wnear_beta.nearlend.testnet",
         "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"10000000000",
+        "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
-            "kink":"6500000000",
-            "multiplier_per_block":"628",
+            "kink":"650000000000000000000000",
+            "multiplier_per_block":"62800000000000000",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"761",
-            "reserve_factor":"1000000000"
+            "jump_multiplier_per_block":"76100000000000000",
+            "reserve_factor":"10000000000000000000000"
         }
     }'
 near deploy dusdt_beta.nearlend.testnet \
@@ -99,13 +99,13 @@ near deploy dusdt_beta.nearlend.testnet \
        "owner_id":"nearlend.testnet",
        "underlying_token_id":"usdt_beta.nearlend.testnet",
        "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"10000000000",
+        "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
-           "kink":"8000000000",
-           "multiplier_per_block":"685",
+           "kink":"800000000000000000000000",
+           "multiplier_per_block":"68500000000000000",
            "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"666",
-           "reserve_factor":"1000000000"
+           "jump_multiplier_per_block":"66600000000000000",
+           "reserve_factor":"10000000000000000000000"
         }
     }'
 near deploy dusdc_beta.nearlend.testnet \
@@ -115,13 +115,13 @@ near deploy dusdc_beta.nearlend.testnet \
        "owner_id":"nearlend.testnet",
        "underlying_token_id":"usdc_beta.nearlend.testnet",
        "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"10000000000",
+        "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
-           "kink":"8000000000",
-           "multiplier_per_block":"685",
+           "kink":"800000000000000000000000",
+           "multiplier_per_block":"68500000000000000",
            "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"666",
-           "reserve_factor":"1000000000"
+           "jump_multiplier_per_block":"66600000000000000",
+           "reserve_factor":"10000000000000000000000"
         }
     }'
 
@@ -136,10 +136,10 @@ near deploy controller_beta.nearlend.testnet \
 
 
 # fund dweth_beta.nearlend.testnet
-near call weth_beta.nearlend.testnet storage_deposit '{"account_id": "dweth_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.0025
-near call wnear_beta.nearlend.testnet storage_deposit '{"account_id": "dwnear_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.0025
-near call usdt_beta.nearlend.testnet storage_deposit '{"account_id": "dusdt_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.0025
-near call usdc_beta.nearlend.testnet storage_deposit '{"account_id": "dusdc_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.0025
+near call weth_beta.nearlend.testnet storage_deposit '{"account_id": "dweth_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
+near call wnear_beta.nearlend.testnet storage_deposit '{"account_id": "dwnear_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
+near call usdt_beta.nearlend.testnet storage_deposit '{"account_id": "dusdt_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
+near call usdc_beta.nearlend.testnet storage_deposit '{"account_id": "dusdc_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
 
 # near call weth_beta.nearlend.testnet mint '{"account_id": "dweth_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
 # near call wnear_beta.nearlend.testnet mint '{"account_id": "dwnear_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
@@ -158,3 +158,4 @@ near view controller_beta.nearlend.testnet view_prices '{ "dtokens": ["dwnear_be
 
 
 near call usdt_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "100000000000000000000000000"}' --accountId nearlend.testnet 
+near call weth_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "100000000000000000000000000"}' --accountId nearlend.testnet 

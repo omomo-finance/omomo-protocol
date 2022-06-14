@@ -382,7 +382,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio::from_str("1").unwrap(),
+            Ratio::one(),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -403,7 +403,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio::from_str("1").unwrap(),
+            Ratio::one(),
             contract.calculate_exchange_rate(
                 U128(11_000),
                 total_borrows,
@@ -424,9 +424,30 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio::from_str("1").unwrap(),
+            Ratio::one(),
             contract.calculate_exchange_rate(
                 U128(10_000),
+                total_borrows,
+                total_reserves,
+                total_supplies,
+            )
+        );
+    }
+
+    #[test]
+    fn test_exchange_rate_after_borrow_more_than_supplies() {
+        let contract = init_env();
+
+        // borrow 5000 tokens
+        let total_reserves = 10_000;
+        let total_borrows = 5_000;
+        let total_supplies = 1_000;
+
+        // Ratio that represents xrate = 1
+        assert_eq!(
+            Ratio::one(),
+            contract.calculate_exchange_rate(
+                U128(6_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -450,27 +471,6 @@ mod tests {
                 U128(11_050),
                 total_borrows,
                 total_reserves,
-                total_supplies,
-            )
-        );
-    }
-
-    #[test]
-    fn test_exchange_rate_after_withdraw() {
-        let contract = init_env();
-
-        // withdraw all supplies
-        let total_reserves = 10_002.5;
-        let total_borrows = 0;
-        let total_supplies = 0;
-
-        // Ratio that represents xrate = 1
-        assert_eq!(
-            Ratio::from_str("1").unwrap(),
-            contract.calculate_exchange_rate(
-                U128(10_002.5 as u128),
-                total_borrows,
-                total_reserves as u128,
                 total_supplies,
             )
         );

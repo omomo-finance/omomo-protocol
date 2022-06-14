@@ -70,7 +70,7 @@ mod tests {
         }
 
         let mut contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn set_get_admin() {
         let dtoken_contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: "weth".parse().unwrap(),
             owner_id: "dtoken".parse().unwrap(),
             controller_account_id: "controller".parse().unwrap(),
