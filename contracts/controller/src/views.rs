@@ -50,16 +50,10 @@ impl Contract {
     pub fn view_accounts_with_borrows(&self) -> Vec<AccountData> {
         let users = self
             .user_profiles
-            .keys()
-            .filter(|account_id| {
-                !self
-                    .user_profiles
-                    .get(account_id)
-                    .unwrap()
-                    .account_borrows
-                    .is_empty()
-            })
-            .collect();
+            .iter()
+            .filter(|(_, user_profile)| !user_profile.account_borrows.is_empty())
+            .map(|(account_id, _)| account_id)
+            .collect::<Vec<AccountId>>();
 
         self.view_accounts(users)
     }
