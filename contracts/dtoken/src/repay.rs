@@ -61,7 +61,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
 
         let borrow_accrued_interest = self

@@ -77,7 +77,7 @@ impl Contract {
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
             interest_rate_model.get_reserve_factor(),
         );
         let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
