@@ -46,6 +46,17 @@ impl Contract {
         self.get_markets_list()
     }
 
+    pub fn view_accounts_with_borrows(&self) -> Vec<AccountData> {
+        let users = self
+            .user_profiles
+            .iter()
+            .filter(|(_, user_profile)| !user_profile.account_borrows.is_empty())
+            .map(|(account_id, _)| account_id)
+            .collect::<Vec<AccountId>>();
+
+        self.view_accounts(users)
+    }
+
     pub fn view_accounts(&self, user_ids: Vec<AccountId>) -> Vec<AccountData> {
         return user_ids
             .iter()
