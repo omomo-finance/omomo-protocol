@@ -7,9 +7,10 @@ use general::Price;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_two_dtokens,
-    initialize_two_utokens, mint_tokens, new_user, set_price, supply, view_balance, withdraw,
+    initialize_two_utokens, mint_tokens, mint_and_reserve, new_user, set_price, supply, view_balance, withdraw,
 };
 
+const RESERVE_AMOUNT: Balance = 100;
 const WNEAR_BALANCE: Balance = 50;
 const WETH_BALANCE: Balance = 100;
 const SUPPLY_WETH_AMOUNT: Balance = 100;
@@ -28,7 +29,7 @@ fn withdraw_success_after_failure_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth, dwnear) = initialize_two_dtokens(
+    let (droot, dweth, dwnear) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -37,9 +38,10 @@ fn withdraw_success_after_failure_fixture() -> (
         InterestRateModel::default(),
     );
 
-    mint_tokens(&wnear, dwnear.account_id(), U128(100));
+    mint_and_reserve(&droot, &weth, &dweth, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &dwnear, RESERVE_AMOUNT);
+
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_BALANCE));
-    mint_tokens(&weth, dweth.account_id(), U128(100));
     mint_tokens(&weth, user.account_id(), U128(WETH_BALANCE));
 
     add_market(
@@ -90,7 +92,7 @@ fn scenario_withdraw_success_after_failure() {
     let result = withdraw(&user, &dwnear, 0);
     assert_failure(result, "Amount should be a positive number");
 
-    withdraw(&user, &dweth, SUPPLY_WETH_AMOUNT / 2).assert_success();
+    withdraw(&user, &dweth, SUPPLY_WETH_AMOUNT).assert_success();
 
     let user_supply_balance: Balance =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());
