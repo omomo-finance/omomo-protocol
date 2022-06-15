@@ -229,6 +229,7 @@ pub fn initialize_two_dtokens(
     interest_model1: InterestRateModel,
     interest_model2: InterestRateModel,
 ) -> (
+    UserAccount,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
 ) {
@@ -260,7 +261,7 @@ pub fn initialize_two_dtokens(
         controller_account,
         interest_model2,
     );
-    (dtoken1, dtoken2)
+    (droot, dtoken1, dtoken2)
 }
 
 pub fn initialize_three_dtokens(

@@ -70,8 +70,7 @@ impl Contract {
 
         let exchange_rate =
             self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
-        let dtoken_amount: BigBalance =
-            BigBalance::from(token_amount.0) * Ratio::one() / exchange_rate;
+        let dtoken_amount = WBalance::from((BigBalance::from(token_amount.0) / exchange_rate).round_u128());
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
@@ -89,7 +88,7 @@ impl Contract {
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
-        self.mint(self.get_signer_address(), dtoken_amount.into());
+        self.mint(self.get_signer_address(), dtoken_amount);
         log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
             self.get_signer_address(),
@@ -107,7 +106,7 @@ impl Contract {
         )
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
-            dtoken_amount.into(),
+            dtoken_amount,
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(20),

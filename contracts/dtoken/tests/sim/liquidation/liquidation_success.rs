@@ -32,7 +32,7 @@ fn liquidation_success_fixture() -> (
     let liquidator = new_user(&root, "liquidator".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (dweth, dwnear) = initialize_two_dtokens(
+    let (_, dweth, dwnear) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),

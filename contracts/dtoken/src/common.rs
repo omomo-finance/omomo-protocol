@@ -68,12 +68,11 @@ impl Contract {
         total_supplies: Balance,
     ) -> Ratio {
         if total_supplies == 0 {
-            return Ratio::from(U128(self.initial_exchange_rate));
+            return Ratio::one();
         }
 
         (Ratio::from(underlying_balance.0) + Ratio::from(total_borrows)
-            - Ratio::from(total_reserves))
-            * Ratio::one()
+                - Ratio::from(total_reserves))
             / Ratio::from(total_supplies)
     }
 
@@ -126,7 +125,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
         let user_borrows = self.get_account_borrows(user_id.clone());
 
@@ -162,7 +161,7 @@ impl Contract {
         let supply_rate: Ratio = self.get_supply_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
             interest_rate_model.get_reserve_factor(),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(

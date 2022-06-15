@@ -32,7 +32,7 @@ fn repay_fixture() -> (
         kink: WRatio::from(650000000000000000000000),
         base_rate_per_block: WRatio::from(0),
         multiplier_per_block: WRatio::from(62800000000000000),
-        jump_multiplier_per_block: WRatio::from(76100000000000000),
+        jump_multiplier_per_block: WRatio::from(761),
         reserve_factor: WRatio::from(1000000000),
     };
     let (droot, dweth, dwnear, dwbtc) = initialize_three_dtokens(
