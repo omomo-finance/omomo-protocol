@@ -1,9 +1,12 @@
+use std::str::FromStr;
+
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
     liquidate, mint_tokens, mint_and_reserve, new_user, set_price, supply, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
+use general::ratio::Ratio;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
@@ -122,6 +125,12 @@ fn liquidation_fixture() -> (
         },
     );
 
+    let health_factor: Ratio = view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
+    assert_eq!(
+        health_factor,
+        Ratio::from_str("0.9").unwrap()
+    );
+
     (dweth, dwnear, controller, weth, wnear, borrower, liquidator)
 }
 
@@ -129,7 +138,7 @@ fn liquidation_fixture() -> (
 fn scenario_liquidation_fail_due_to_low_health_factor() {
     let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) = liquidation_fixture();
 
-    let amount = 1500;
+    let amount = 4500;
 
     liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount).assert_success();
 

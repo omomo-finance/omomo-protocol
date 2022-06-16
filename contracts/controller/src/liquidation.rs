@@ -122,7 +122,7 @@ impl Contract {
                 * Ratio::from(collateral_price),
         ) / Ratio::from(borrow_price);
 
-        WBalance::from(max_possible_liquidation_amount)
+        WBalance::from(max_possible_liquidation_amount.round_u128())
     }
 
     pub fn calculate_liquidation_revenue(
@@ -148,7 +148,7 @@ impl Contract {
         );
 
         if liquidation_amount.0 > max_possible_liquidation_amount.0{
-            return Err(String::from("liquidation amount exceeds possible liquidation amount"));
+            return Err(String::from("liquidation amount exceeds maximum possible liquidation amount"));
         }
 
         let revenue_amount = self.get_liquidation_revenue(
