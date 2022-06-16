@@ -205,8 +205,7 @@ fn scenario_liquidation_success() {
     );
 
     // 100% + 5% * liquidation_amount * old_price / new_price
-    let revenue_amount: Balance = (Ratio::from(liquidation_amount) + get_default_liquidation_incentive() * Ratio::from(liquidation_amount) * Ratio::from(START_PRICE) / Ratio::from(CHANGED_PRICE)).round_u128();
-    let revenue_amount: Balance = 10500 * liquidation_amount * START_PRICE / CHANGED_PRICE / 10u128.pow(4u32);
+    let revenue_amount: Balance = ((Ratio::one() + get_default_liquidation_incentive()) * Ratio::from(liquidation_amount) * Ratio::from(START_PRICE) / Ratio::from(CHANGED_PRICE)).round_u128();
 
     assert_eq!(
         user_balance,
