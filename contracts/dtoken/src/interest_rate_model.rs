@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, BigBalance};
+use general::ratio::{BigBalance, Ratio};
 use near_sdk::env::block_height;
 use std::fmt;
 use std::str::FromStr;

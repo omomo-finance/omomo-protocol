@@ -9,9 +9,9 @@ use near_sdk::{
     BorshStorageKey, Gas, PromiseOrValue, PromiseResult,
 };
 
+pub use general::ratio::Ratio;
 #[allow(unused_imports)]
 pub use general::*;
-pub use general::ratio::Ratio;
 
 pub use crate::borrow::*;
 pub use crate::common::*;

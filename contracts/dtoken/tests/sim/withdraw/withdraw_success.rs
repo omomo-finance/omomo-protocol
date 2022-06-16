@@ -1,6 +1,6 @@
 use crate::utils::{
-    add_market, initialize_controller, initialize_dtoken, initialize_utoken, mint_tokens, mint_and_reserve, new_user,
-    set_price, supply, view_balance, withdraw,
+    add_market, initialize_controller, initialize_dtoken, initialize_utoken, mint_and_reserve,
+    mint_tokens, new_user, set_price, supply, view_balance, withdraw,
 };
 use controller::ActionType::Supply;
 use dtoken::InterestRateModel;
@@ -66,7 +66,12 @@ fn scenario_partial_withdraw() {
 
     let user_supply_balance: u128 =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());
-    assert_eq!(user_supply_balance, SUPPLY_AMOUNT - WITHDRAW_AMOUNT, "Balance should be {}", SUPPLY_AMOUNT - WITHDRAW_AMOUNT);
+    assert_eq!(
+        user_supply_balance,
+        SUPPLY_AMOUNT - WITHDRAW_AMOUNT,
+        "Balance should be {}",
+        SUPPLY_AMOUNT - WITHDRAW_AMOUNT
+    );
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance.0, WITHDRAW_AMOUNT);

@@ -288,20 +288,23 @@ impl BorshDeserialize for BigDecimal {
 mod test {
     use std::str::FromStr;
 
-    use crate::ratio::Ratio;
     use crate::ratio::LowU128;
+    use crate::ratio::Ratio;
 
     #[test]
     fn should_be_one_percent() {
         let one_percent = LowU128::from(10000000000000000000000u128);
-        
-        assert_eq!(Ratio::from(one_percent), Ratio::one() / Ratio::from(100u128));
+
+        assert_eq!(
+            Ratio::from(one_percent),
+            Ratio::one() / Ratio::from(100u128)
+        );
     }
 
     #[test]
     fn should_be_ten() {
         let ten = Ratio::from(10u128) * Ratio::one();
-        
+
         assert_eq!(ten, Ratio::from(10u128));
     }
 

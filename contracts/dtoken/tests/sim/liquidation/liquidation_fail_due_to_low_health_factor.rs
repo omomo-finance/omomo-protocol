@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
-    liquidate, mint_tokens, mint_and_reserve, new_user, set_price, supply, view_balance,
+    liquidate, mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
@@ -125,11 +125,9 @@ fn liquidation_fixture() -> (
         },
     );
 
-    let health_factor: Ratio = view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
-    assert_eq!(
-        health_factor,
-        Ratio::from_str("0.9").unwrap()
-    );
+    let health_factor: Ratio =
+        view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
+    assert_eq!(health_factor, Ratio::from_str("0.9").unwrap());
 
     (dweth, dwnear, controller, weth, wnear, borrower, liquidator)
 }
@@ -146,7 +144,8 @@ fn scenario_liquidation_fail_due_to_low_health_factor() {
         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_borrows, BORROWER_BORROW,
-        "Borrow balance on dtoken should be {}", BORROWER_BORROW
+        "Borrow balance on dtoken should be {}",
+        BORROWER_BORROW
     );
 
     let user_borrows: Balance = view_balance(
@@ -157,7 +156,8 @@ fn scenario_liquidation_fail_due_to_low_health_factor() {
     );
     assert_eq!(
         user_borrows, BORROWER_BORROW,
-        "Borrow balance on controller should be {}", BORROWER_BORROW
+        "Borrow balance on controller should be {}",
+        BORROWER_BORROW
     );
 
     let user_balance: Balance = view_balance(

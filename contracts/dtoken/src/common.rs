@@ -72,7 +72,7 @@ impl Contract {
         }
 
         (Ratio::from(underlying_balance.0) + Ratio::from(total_borrows)
-                - Ratio::from(total_reserves))
+            - Ratio::from(total_reserves))
             / Ratio::from(total_supplies)
     }
 

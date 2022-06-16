@@ -7,7 +7,8 @@ use general::Price;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_two_dtokens,
-    initialize_two_utokens, mint_tokens, mint_and_reserve, new_user, set_price, supply, view_balance, withdraw,
+    initialize_two_utokens, mint_and_reserve, mint_tokens, new_user, set_price, supply,
+    view_balance, withdraw,
 };
 
 const RESERVE_AMOUNT: Balance = 100;

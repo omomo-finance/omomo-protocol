@@ -35,15 +35,15 @@ pub mod user_profile;
 mod views;
 
 pub fn get_default_liquidation_incentive() -> Ratio {
-     Ratio::from_str("0.05").unwrap()
+    Ratio::from_str("0.05").unwrap()
 }
 
 pub fn get_default_liquidation_health_factor_threshold() -> Ratio {
-     Ratio::from_str("1.0").unwrap()
+    Ratio::from_str("1.0").unwrap()
 }
 
 pub fn get_default_liquidation_threshold() -> Ratio {
-     Ratio::from_str("1.5").unwrap()
+    Ratio::from_str("1.5").unwrap()
 }
 
 #[derive(BorshSerialize, BorshStorageKey)]

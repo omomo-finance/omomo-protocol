@@ -23,7 +23,7 @@ impl Contract {
             collateral_dtoken,
             liquidation_amount,
         );
-        
+
         if res.is_err() {
             panic!("Liquidation failed on controller, {:?}", res.unwrap_err());
         }
@@ -87,7 +87,8 @@ impl Contract {
             (self.get_liquidation_incentive()
                 * Ratio::from(liquidation_amount.0)
                 * Ratio::from(self.prices.get(&borrowing_dtoken).unwrap().value.0)
-                / (Ratio::from(self.prices.get(&collateral_dtoken).unwrap().value.0))).round_u128(),
+                / (Ratio::from(self.prices.get(&collateral_dtoken).unwrap().value.0)))
+            .round_u128(),
         )
     }
 
@@ -147,15 +148,14 @@ impl Contract {
             collateral_dtoken.clone(),
         );
 
-        if liquidation_amount.0 > max_possible_liquidation_amount.0{
-            return Err(String::from("liquidation amount exceeds maximum possible liquidation amount"));
+        if liquidation_amount.0 > max_possible_liquidation_amount.0 {
+            return Err(String::from(
+                "liquidation amount exceeds maximum possible liquidation amount",
+            ));
         }
 
-        let revenue_amount = self.get_liquidation_revenue(
-            borrowing_dtoken,
-            collateral_dtoken,
-            liquidation_amount,
-        );
+        let revenue_amount =
+            self.get_liquidation_revenue(borrowing_dtoken, collateral_dtoken, liquidation_amount);
         Ok(revenue_amount)
     }
 }

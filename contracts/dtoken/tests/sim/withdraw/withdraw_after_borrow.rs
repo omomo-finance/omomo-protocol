@@ -1,6 +1,6 @@
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
-    mint_tokens, mint_and_reserve, new_user, set_price, supply, view_balance, withdraw,
+    mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance, withdraw,
 };
 use controller::ActionType::Supply;
 use dtoken::InterestRateModel;
@@ -44,7 +44,7 @@ fn withdraw_fixture() -> (
 
     mint_and_reserve(&droot, &weth, &dweth, START_BALANCE);
     mint_and_reserve(&droot, &wbtc, &dwbtc, START_BALANCE);
-    
+
     mint_tokens(&weth, user.account_id(), U128(START_BALANCE));
     mint_tokens(&wbtc, user.account_id(), U128(WBTC_AMOUNT));
 

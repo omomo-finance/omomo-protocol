@@ -91,8 +91,8 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
-        let potential_borrow = Ratio::from(supplies.0) / self.liquidation_threshold
-            - Ratio::from(gotten_borrow.0);
+        let potential_borrow =
+            Ratio::from(supplies.0) / self.liquidation_threshold - Ratio::from(gotten_borrow.0);
         let price = Ratio::from(self.get_price(dtoken_id).unwrap().value.0);
 
         WBalance::from(potential_borrow / price)
