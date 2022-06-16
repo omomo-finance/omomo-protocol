@@ -40,7 +40,7 @@ impl Contract {
             .interest_rate_model
             .get_reserve_factor();
         let total_supplies: Balance =
-            (BigBalance::from(total_supplies_dtokens) * exchange_rate / Ratio::one()).round_u128();
+            (BigBalance::from(total_supplies_dtokens) * exchange_rate).round_u128();
 
         let interest_rate = self.get_supply_rate(
             ft_balance,

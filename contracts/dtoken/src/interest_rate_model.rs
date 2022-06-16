@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::Ratio;
+use general::ratio::{Ratio, BigBalance};
 use near_sdk::env::block_height;
 use std::fmt;
 use std::str::FromStr;
@@ -92,13 +92,12 @@ impl InterestRateModel {
         accrued_interest: AccruedInterest,
     ) -> AccruedInterest {
         let current_block_height = block_height();
-        let accrued_rate = total_borrow
-            * borrow_rate.round_u128()
-            * (current_block_height - accrued_interest.last_recalculation_block) as u128
-            / Ratio::one().round_u128();
+        let accrued_rate = BigBalance::from(total_borrow)
+            * borrow_rate
+            * BigBalance::from(current_block_height - accrued_interest.last_recalculation_block);
 
         AccruedInterest {
-            accumulated_interest: accrued_interest.accumulated_interest + accrued_rate,
+            accumulated_interest: accrued_interest.accumulated_interest + accrued_rate.round_u128(),
             last_recalculation_block: current_block_height,
         }
     }
@@ -111,7 +110,7 @@ impl Default for InterestRateModel {
             base_rate_per_block: WRatio::from(Ratio::one()),
             multiplier_per_block: WRatio::from(Ratio::one()),
             jump_multiplier_per_block: WRatio::from(Ratio::one()),
-            reserve_factor: WRatio::from(Ratio::one() * Ratio::from_str("0.05").unwrap()),
+            reserve_factor: WRatio::from(Ratio::from_str("0.05").unwrap()),
         }
     }
 }

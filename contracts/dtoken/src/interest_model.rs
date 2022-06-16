@@ -63,7 +63,7 @@ impl Contract {
             return Ratio::zero();
         }
 
-        Ratio::from(total_borrows.0) * Ratio::one() / Ratio::from(denominator)
+        Ratio::from(total_borrows.0) / Ratio::from(denominator)
     }
 }
 

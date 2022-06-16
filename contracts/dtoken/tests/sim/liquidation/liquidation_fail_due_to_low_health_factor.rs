@@ -127,7 +127,7 @@ fn liquidation_fixture() -> (
 fn scenario_liquidation_fail_due_to_low_health_factor() {
     let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) = liquidation_fixture();
 
-    let amount = 4500;
+    let amount = 1500;
 
     liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount).assert_success();
 

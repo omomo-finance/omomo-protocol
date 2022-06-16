@@ -283,3 +283,32 @@ impl BorshDeserialize for BigDecimal {
         Ok(Self(U384(BorshDeserialize::deserialize(buf)?)))
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
+
+    use crate::ratio::Ratio;
+    use crate::ratio::LowU128;
+
+    #[test]
+    fn should_be_one_percent() {
+        let one_percent = LowU128::from(10000000000000000000000u128);
+        
+        assert_eq!(Ratio::from(one_percent), Ratio::one() / Ratio::from(100u128));
+    }
+
+    #[test]
+    fn should_be_ten() {
+        let ten = Ratio::from(10u128) * Ratio::one();
+        
+        assert_eq!(ten, Ratio::from(10u128));
+    }
+
+    #[test]
+    fn should_be_0_0000000628() {
+        let _628 = LowU128::from(62800000000000000u128);
+
+        assert_eq!(Ratio::from(_628), Ratio::from_str("0.0000000628").unwrap());
+    }
+}

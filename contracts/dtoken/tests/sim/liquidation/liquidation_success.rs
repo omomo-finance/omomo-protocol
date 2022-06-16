@@ -1,15 +1,19 @@
+use std::str::FromStr;
+
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
-    liquidate, mint_tokens, new_user, set_price, supply, view_balance,
+    liquidate, mint_tokens, mint_and_reserve, new_user, set_price, supply, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
-use dtoken::InterestRateModel;
+use controller::get_default_liquidation_incentive;
+use dtoken::{InterestRateModel};
 use general::ratio::Ratio;
 use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
+const RESERVE_AMOUNT: Balance = 100000000000;
 const BORROWER_SUPPLY: Balance = 60000;
 const BORROWER_BORROW: Balance = 40000;
 const MINT_BALANCE: Balance = 100000000000;
@@ -32,7 +36,7 @@ fn liquidation_success_fixture() -> (
     let liquidator = new_user(&root, "liquidator".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth, dwnear) = initialize_two_dtokens(
+    let (droot, dweth, dwnear) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -41,13 +45,13 @@ fn liquidation_success_fixture() -> (
         InterestRateModel::default(),
     );
 
+    mint_and_reserve(&droot, &weth, &dweth, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &dwnear, RESERVE_AMOUNT);
+
     let mint_amount = U128(MINT_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), mint_amount);
-    mint_tokens(&wnear, dwnear.account_id(), mint_amount);
     mint_tokens(&weth, borrower.account_id(), mint_amount);
     mint_tokens(&wnear, liquidator.account_id(), mint_amount);
     mint_tokens(&weth, liquidator.account_id(), mint_amount);
-    mint_tokens(&wnear, borrower.account_id(), mint_amount);
     mint_tokens(&wnear, borrower.account_id(), mint_amount);
 
     add_market(
@@ -87,8 +91,28 @@ fn liquidation_success_fixture() -> (
     );
 
     supply(&borrower, &wnear, dwnear.account_id(), BORROWER_SUPPLY).assert_success();
+    let health_factor: Ratio = view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
+    assert_eq!(
+        health_factor,
+        Ratio::from_str("1.5").unwrap(),
+        "health factor should be default eq to 150%"
+    );
+
+    // TODO Check max borrow here
+    // let max_borrow: WBalance = view!(controller.view_borrow_max(borrower.account_id(), dweth.account_id())).unwrap_json(); 
+    // assert_eq!(
+    //     max_borrow.0,
+    //     BORROWER_BORROW,
+    //     "max borrow should be {}", BORROWER_BORROW
+    // );
 
     borrow(&borrower, &dweth, BORROWER_BORROW).assert_success();
+    let health_factor: Ratio = view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
+    assert_eq!(
+        health_factor,
+        Ratio::from_str("1.5").unwrap(),
+        "health factor should be eq to 150%"
+    );
 
     let user_balance: Balance =
         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
@@ -120,6 +144,11 @@ fn liquidation_success_fixture() -> (
             fraction_digits: 4,
         },
     );
+    let health_factor: Ratio = view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
+    assert_eq!(
+        health_factor,
+        Ratio::from_str("0.9").unwrap()
+    );
 
     (dweth, dwnear, controller, weth, wnear, borrower, liquidator)
 }
@@ -129,27 +158,24 @@ fn scenario_liquidation_success() {
     let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) =
         liquidation_success_fixture();
 
-    let amount = 3500;
+    let liquidation_amount = 3500;
 
-    liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, amount).assert_success();
+    liquidate(&borrower, &liquidator, &dweth, &dwnear, &weth, liquidation_amount).assert_success();
 
     let weth_ft_balance_of_for_dweth: U128 =
         view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();
 
     assert_eq!(
         Balance::from(weth_ft_balance_of_for_dweth),
-        (MINT_BALANCE - BORROWER_BORROW + amount),
+        (MINT_BALANCE - BORROWER_BORROW + liquidation_amount),
         "dweth_balance_of_on_weth balance of should be {}",
-        (MINT_BALANCE - BORROWER_BORROW + amount)
+        (MINT_BALANCE - BORROWER_BORROW + liquidation_amount)
     );
 
     let user_borrows: Balance =
         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
 
-    let borrow_balance = BORROWER_BORROW - amount;
-
-    let revenue_amount: Balance =
-        (10500 * amount * START_PRICE) / (CHANGED_PRICE * Ratio::one().round_u128());
+    let borrow_balance = BORROWER_BORROW - liquidation_amount;
 
     assert_eq!(
         user_borrows,
@@ -177,6 +203,10 @@ fn scenario_liquidation_success() {
         liquidator.account_id(),
         dwnear.account_id(),
     );
+
+    // 100% + 5% * liquidation_amount * old_price / new_price
+    let revenue_amount: Balance = (Ratio::from(liquidation_amount) + get_default_liquidation_incentive() * Ratio::from(liquidation_amount) * Ratio::from(START_PRICE) / Ratio::from(CHANGED_PRICE)).round_u128();
+    let revenue_amount: Balance = 10500 * liquidation_amount * START_PRICE / CHANGED_PRICE / 10u128.pow(4u32);
 
     assert_eq!(
         user_balance,

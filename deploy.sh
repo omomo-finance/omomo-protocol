@@ -44,19 +44,19 @@ near create-account controller_beta.nearlend.testnet --masterAccount nearlend.te
 near deploy weth_beta.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
     --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Ethereum", "symbol": "WETH", "total_supply": "1000000000"}'
+    --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Ethereum", "symbol": "WETH", "total_supply": "1000000000000000000000000000"}'
 near deploy wnear_beta.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
     --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Near", "symbol": "WNEAR", "total_supply": "1000000000"}'
+    --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Near", "symbol": "WNEAR", "total_supply": "1000000000000000000000000000"}'
 near deploy usdt_beta.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
     --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "Tether", "symbol": "USDT", "total_supply": "1000000000"}'
+    --initArgs '{"owner_id": "nearlend.testnet", "name": "Tether", "symbol": "USDT", "total_supply": "1000000000000000000000000000"}'
 near deploy usdc_beta.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
     --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "USD Coin", "symbol": "USDC", "total_supply": "1000000000"}'
+    --initArgs '{"owner_id": "nearlend.testnet", "name": "USD Coin", "symbol": "USDC", "total_supply": "1000000000000000000000000000"}'
 
 
 # deploy markets
@@ -157,5 +157,17 @@ near view controller_beta.nearlend.testnet view_markets '{}' --accountId control
 near view controller_beta.nearlend.testnet view_prices '{ "dtokens": ["dwnear_beta.nearlend.testnet", "dweth_beta.nearlend.testnet", "dusdt_beta.nearlend.testnet", "dusdc_beta.nearlend.testnet"] }' --accountId controller_beta.nearlend.testnet 
 
 
-near call usdt_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "100000000000000000000000000"}' --accountId nearlend.testnet 
-near call weth_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "100000000000000000000000000"}' --accountId nearlend.testnet 
+near call weth_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
+near call wnear_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
+near call usdt_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
+near call usdc_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
+
+near call weth_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dweth_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+near call wnear_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dwnear_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+near call usdt_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dusdt_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+near call usdc_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dusdc_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+
+near view weth_beta.nearlend.testnet ft_balance_of '{"account_id": "dweth_beta.nearlend.testnet"}'
+near view wnear_beta.nearlend.testnet ft_balance_of '{"account_id": "dwnear_beta.nearlend.testnet"}'
+near view usdt_beta.nearlend.testnet ft_balance_of '{"account_id": "dusdt_beta.nearlend.testnet"}'
+near view usdc_beta.nearlend.testnet ft_balance_of '{"account_id": "dusdc_beta.nearlend.testnet"}'

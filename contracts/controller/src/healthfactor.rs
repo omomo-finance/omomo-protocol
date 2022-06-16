@@ -48,8 +48,7 @@ impl Contract {
         for (token_address, borrow_data) in user_profile.borrow_data.iter() {
             let accrued_interest = Ratio::from(total_borrows)
                 * borrow_data.borrow_rate
-                * Ratio::from((block_height() - borrow_data.borrow_block) as u128)
-                / Ratio::one();
+                * Ratio::from(block_height() - borrow_data.borrow_block);
 
             let price = self.get_price(token_address.clone()).unwrap();
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
@@ -74,7 +73,7 @@ impl Contract {
         if borrows != 0 {
             Ratio::from(collaterals) / Ratio::from(borrows)
         } else {
-            self.get_health_threshold()
+            self.get_liquidation_threshold()
         }
     }
 
@@ -104,9 +103,9 @@ impl Contract {
         }
 
         if borrows != 0 {
-            Ratio::from(collaterals) * Ratio::one() / Ratio::from(borrows)
+            Ratio::from(collaterals) / Ratio::from(borrows)
         } else {
-            self.get_health_threshold()
+            self.get_liquidation_threshold()
         }
     }
 }
@@ -264,7 +263,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            controller_contract.get_health_threshold(),
+            controller_contract.get_liquidation_threshold(),
             "Test for account w/o collaterals and borrows has been failed"
         );
 
@@ -279,12 +278,12 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from(100u128) * controller_contract.get_health_threshold()
+            Ratio::from(100u128) * controller_contract.get_liquidation_threshold()
                 / Ratio::from(100u128),
             "Health factor calculation has been failed"
         );
@@ -306,12 +305,12 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            controller_contract.get_health_threshold(),
+            controller_contract.get_liquidation_threshold(),
             "Test for account w/o collaterals and borrows has been failed"
         );
     }
@@ -332,7 +331,7 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(0),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         // Ratio that represents 150%
@@ -358,7 +357,7 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(70),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         // Ratio that represents 142.85714285%
@@ -384,7 +383,7 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         // Ratio that represents 100%
@@ -422,7 +421,7 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         // Ratio that represents 200%
@@ -472,7 +471,7 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         // Ratio that represents 200%
@@ -522,7 +521,7 @@ mod tests {
             AccountId::new_unchecked("dweth.near".to_string()),
             WBalance::from(50),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         controller_contract.increase_borrows(
@@ -530,7 +529,7 @@ mod tests {
             AccountId::new_unchecked("dwnear.near".to_string()),
             WBalance::from(100),
             0,
-            Ratio::from(0u128),
+            Ratio::zero(),
         );
 
         // Ratio that represents 1.534883720930232558139534%

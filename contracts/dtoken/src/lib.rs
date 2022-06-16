@@ -11,6 +11,7 @@ use near_sdk::{
 
 #[allow(unused_imports)]
 pub use general::*;
+pub use general::ratio::Ratio;
 
 pub use crate::borrow::*;
 pub use crate::common::*;
@@ -49,7 +50,7 @@ enum StorageKeys {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
     ///  Exchange rate in case of zero supplies
-    initial_exchange_rate: u128,
+    initial_exchange_rate: Ratio,
 
     /// Total sum of supplied tokens
     total_reserves: Balance,
@@ -244,7 +245,7 @@ impl Contract {
         require!(!env::state_exists(), "Already initialized");
 
         Self {
-            initial_exchange_rate: Balance::from(config.initial_exchange_rate),
+            initial_exchange_rate: Ratio::from(config.initial_exchange_rate),
             total_reserves: 0,
             user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             underlying_token: config.underlying_token_id.clone(),

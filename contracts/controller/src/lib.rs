@@ -7,7 +7,6 @@ use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
-use general::percent::Percent;
 use general::ratio::Ratio;
 use general::*;
 use std::str::FromStr;
@@ -34,6 +33,18 @@ pub mod repay;
 pub mod user_flow_protection;
 pub mod user_profile;
 mod views;
+
+pub fn get_default_liquidation_incentive() -> Ratio {
+     Ratio::from_str("0.05").unwrap()
+}
+
+pub fn get_default_liquidation_health_factor_threshold() -> Ratio {
+     Ratio::from_str("1.0").unwrap()
+}
+
+pub fn get_default_liquidation_threshold() -> Ratio {
+     Ratio::from_str("1.5").unwrap()
+}
 
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
@@ -68,16 +79,13 @@ pub struct Contract {
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
 
-    pub health_threshold: Ratio,
+    pub liquidation_threshold: Ratio,
 
     /// Liquidation Incentive
     pub liquidation_incentive: Ratio,
 
     /// Liquidation Health Factor
     pub liquidation_health_factor_threshold: Ratio,
-
-    /// Reserve Factor
-    pub reserve_factor: Percent,
 
     ///User action protection
     mutex: ActionMutex,
@@ -164,10 +172,9 @@ impl Contract {
                 liquidate: false,
                 borrow: false,
             },
-            liquidation_incentive: Ratio::from_str("0.05").unwrap() * Ratio::one(),
-            liquidation_health_factor_threshold: Ratio::one(),
-            reserve_factor: Percent(0),
-            health_threshold: Ratio::from_str("1.5").unwrap() * Ratio::one(),
+            liquidation_incentive: get_default_liquidation_incentive(),
+            liquidation_health_factor_threshold: get_default_liquidation_health_factor_threshold(),
+            liquidation_threshold: get_default_liquidation_threshold(),
 
             mutex: ActionMutex::default(),
         }

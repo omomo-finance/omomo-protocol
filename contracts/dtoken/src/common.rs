@@ -68,7 +68,7 @@ impl Contract {
         total_supplies: Balance,
     ) -> Ratio {
         if total_supplies == 0 {
-            return Ratio::one();
+            return self.initial_exchange_rate;
         }
 
         (Ratio::from(underlying_balance.0) + Ratio::from(total_borrows)
@@ -146,8 +146,8 @@ impl Contract {
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
             total_amount: WBalance::from(accumulated_interest + user_borrows),
-            borrow_amount: U128(user_borrows),
-            accumulated_interest: U128(accumulated_interest),
+            borrow_amount: WBalance::from(user_borrows),
+            accumulated_interest: WBalance::from(accumulated_interest),
         }
     }
 

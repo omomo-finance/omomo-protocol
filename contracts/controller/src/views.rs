@@ -66,7 +66,7 @@ impl Contract {
                 let total_supplies = self.get_total_supplies(user_id.clone());
 
                 let total_available_borrows_usd =
-                    (Ratio::from(total_supplies) * Ratio::one() / self.health_threshold).into();
+                    (Ratio::from(total_supplies) / self.liquidation_threshold).into();
 
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
@@ -91,11 +91,11 @@ impl Contract {
         let supplies = self.get_total_supplies(user_id.clone());
         let gotten_borrow = self.get_total_borrows(user_id);
 
-        let potential_borrow = (Ratio::from(supplies) * Ratio::one() / self.health_threshold)
-            - Ratio::from(gotten_borrow);
-        let price = self.get_price(dtoken_id).unwrap().value.0;
+        let potential_borrow = Ratio::from(supplies.0) / self.liquidation_threshold
+            - Ratio::from(gotten_borrow.0);
+        let price = Ratio::from(self.get_price(dtoken_id).unwrap().value.0);
 
-        (potential_borrow * Ratio::from(ONE_TOKEN) / Ratio::from(price)).into()
+        WBalance::from(potential_borrow / price)
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -106,7 +106,7 @@ impl Contract {
 
         let max_withdraw = supplies.0
             - (borrows.0
-                + accrued_interest * self.health_threshold.round_u128()
+                + accrued_interest * self.liquidation_threshold.round_u128()
                     / Ratio::one().round_u128());
         let price = self.get_price(dtoken_id).unwrap().value.0;
         let max_withdraw_in_token =
@@ -255,7 +255,7 @@ mod tests {
 
         assert_eq!(
             result[0].total_available_borrows_usd,
-            // total_supplies_usd * Ratio::one() / self.health_threshold
+            // total_supplies_usd * Ratio::one() / self.liquidation_threshold
             U128(100 * 20000 * 1000000000000000000000000 / 1500000000000000000000000),
             "View accounts total supplies check has been failed"
         );
