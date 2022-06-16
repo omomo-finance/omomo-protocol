@@ -98,14 +98,6 @@ fn liquidation_success_fixture() -> (
         "health factor should be default eq to 150%"
     );
 
-    // TODO Check max borrow here
-    // let max_borrow: WBalance = view!(controller.view_borrow_max(borrower.account_id(), dweth.account_id())).unwrap_json(); 
-    // assert_eq!(
-    //     max_borrow.0,
-    //     BORROWER_BORROW,
-    //     "max borrow should be {}", BORROWER_BORROW
-    // );
-
     borrow(&borrower, &dweth, BORROWER_BORROW).assert_success();
     let health_factor: Ratio = view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
     assert_eq!(
