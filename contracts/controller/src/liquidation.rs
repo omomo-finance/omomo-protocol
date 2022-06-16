@@ -143,7 +143,7 @@ impl Contract {
         }
 
         let max_possible_liquidation_amount = self.maximum_possible_liquidation_amount(
-            borrower.clone(),
+            borrower,
             borrowing_dtoken.clone(),
             collateral_dtoken.clone(),
         );
