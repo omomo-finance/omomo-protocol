@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::Ratio;
+use general::ratio::{Ratio, RATIO_DECIMALS};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use std::cmp::min;
 use std::fmt;
@@ -280,10 +280,40 @@ impl Contract {
         }
         result
     }
+
+    pub fn claim_or_unlock_request(
+        &mut self,
+        account_id: AccountId,
+        transfer_amount: WBalance,
+        msg: String,
+        token_address: AccountId,
+        claimed_amount: WBalance,
+        unlocked_amount: WBalance,
+        reward: Reward,
+    ) {
+        underlying_token::ft_transfer(
+            account_id.clone(),
+            transfer_amount,
+            Some(msg),
+            token_address,
+            ONE_YOCTO,
+            self.terra_gas(10),
+        )
+        .then(ext_self::claim_reward_ft_transfer_callback(
+            reward,
+            account_id,
+            claimed_amount,
+            unlocked_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        ));
+    }
 }
 
 #[near_bindgen]
 impl Contract {
+
     pub fn add_reward_campaign(&mut self, reward_campaign: RewardCampaign) -> String {
         require!(
             self.is_valid_admin_call(),
@@ -307,7 +337,7 @@ impl Contract {
         self.reward_campaigns.remove(&campaign_id);
     }
 
-    pub fn claim_reward(&mut self, campaign_id: String, amount: WBalance) {
+    pub fn claim_rewards(&mut self, campaign_id: String, amount: WBalance) {
         let account_id = env::signer_account_id();
         let reward = self.adjust_reward(campaign_id.clone());
         let available_amount = self.get_amount_available_to_claim(reward.clone());
@@ -319,25 +349,49 @@ impl Contract {
             available_amount
         );
 
-        underlying_token::ft_transfer(
-            account_id.clone(),
-            amount,
-            Some(format!("Claim reward with token_amount {}", amount.0)),
-            campaign.token,
-            ONE_YOCTO,
-            self.terra_gas(10),
-        )
-        .then(ext_self::claim_reward_ft_transfer_callback(
-            reward,
+        let message = format!("Claim reward with token_amount {}", amount.0);
+        self.claim_or_unlock_request(
             account_id,
             amount,
+            message,
+            campaign.token,
+            amount,
             WBalance::from(0),
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(5),
-        ));
+            reward,
+        )
     }
 
+    pub fn unlock_rewards(&mut self, campaign_id: String, amount: WBalance) {
+        let account_id = env::signer_account_id();
+        let reward = self.adjust_reward(campaign_id.clone());
+        let available_to_claim_amount = self.get_amount_available_to_claim(reward.clone());
+        let available_to_unlock_amount = reward.amount.0 - available_to_claim_amount;
+        let campaign = self.get_reward_campaign_by_id(campaign_id).unwrap();
+
+        assert!(
+            amount.0 <= available_to_unlock_amount,
+            "There are not enough amount to unlock. Possible amount is {}",
+            available_to_unlock_amount
+        );
+
+        let amount_with_penalty =
+            WBalance::from(amount.0 * campaign.vesting.penalty.0 / RATIO_DECIMALS.0);
+        let message = format!(
+            "Unlock rewards with amount {} and amount_with_penalty {}",
+            amount.0, amount_with_penalty.0
+        );
+        self.claim_or_unlock_request(
+            account_id,
+            amount_with_penalty,
+            message,
+            campaign.token,
+            amount,
+            amount_with_penalty,
+            reward,
+        )
+    }
+
+    #[private]
     pub fn claim_reward_ft_transfer_callback(
         &mut self,
         reward: Reward,
@@ -409,7 +463,7 @@ mod tests {
         let vesting = Vesting {
             start_time: 1651362400,
             end_time: 1651372400,
-            penalty: Ratio(100),
+            penalty: Ratio(5000),
         };
         let campaign = RewardCampaign {
             campaign_type: CampaignType::Supply,
