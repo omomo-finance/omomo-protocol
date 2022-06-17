@@ -229,6 +229,13 @@ trait InternalTokenInterface {
         action: Actions,
         amount: WBalance,
     ) -> PromiseOrValue<WBalance>;
+    fn claim_reward_ft_transfer_callback(
+        &mut self,
+        reward: Reward,
+        account_id: AccountId,
+        amount: WBalance,
+        unlocked: WBalance,
+    );
 }
 
 #[near_bindgen]

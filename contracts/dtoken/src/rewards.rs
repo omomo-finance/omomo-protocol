@@ -151,13 +151,11 @@ impl Contract {
 
     fn insert_map_if_not_exists(&mut self, account_id: AccountId) {
         let rewards_map: HashMap<String, Reward> = HashMap::new();
-        if self.rewards.get(&account_id).is_none() {
-            self.rewards.insert(account_id, rewards_map);
-        }
+        *self.rewards.entry(account_id).or_default() = rewards_map;
     }
 
     pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> WBalance {
-        if let Some(campaign) = self.get_reward_campaign_by_id(campaign_id.clone())  {
+        if let Some(campaign) = self.get_reward_campaign_by_id(campaign_id.clone()) {
             let reward_rate = self.get_rewards_per_second(campaign.clone());
             let total = self.get_market_total(campaign.clone());
             let current_time = min(env::block_timestamp(), campaign.end_time);
@@ -181,9 +179,8 @@ impl Contract {
     pub fn update_reward_campaign(&mut self, campaign_id: String) -> RewardCampaign {
         let mut campaign = self.get_reward_campaign_by_id(campaign_id.clone()).unwrap();
         let accrued_tokens = self.get_accrued_rewards_per_token(campaign_id.clone());
-        campaign.rewards_per_token = WBalance::from(
-            campaign.rewards_per_token.0 + accrued_tokens.0
-        );
+        campaign.rewards_per_token =
+            WBalance::from(campaign.rewards_per_token.0 + accrued_tokens.0);
         campaign.last_update_time = min(env::block_timestamp(), campaign.end_time);
         self.reward_campaigns.insert(&campaign_id, &campaign);
         campaign
@@ -193,9 +190,13 @@ impl Contract {
         self.get_updated_reward_amount_with_accrued(reward, account_id, 0)
     }
 
-    pub fn get_updated_reward_amount_with_accrued(&self, reward: &Reward, account_id: AccountId, accrued: Balance) -> WBalance  {
-        let campaign_option = self
-            .get_reward_campaign_by_id(reward.campaign_id.clone());
+    pub fn get_updated_reward_amount_with_accrued(
+        &self,
+        reward: &Reward,
+        account_id: AccountId,
+        accrued: Balance,
+    ) -> WBalance {
+        let campaign_option = self.get_reward_campaign_by_id(reward.campaign_id.clone());
 
         assert!(
             campaign_option.is_some(),
@@ -206,7 +207,8 @@ impl Contract {
         let total = self.get_account_total(campaign.clone(), account_id);
         WBalance::from(
             reward.amount.0
-                + (total.0 * (campaign.rewards_per_token.0 - reward.rewards_per_token_paid.0 + accrued)),
+                + (total.0
+                    * (campaign.rewards_per_token.0 - reward.rewards_per_token_paid.0 + accrued)),
         )
     }
 
@@ -228,11 +230,20 @@ impl Contract {
         reward
     }
 
-    pub fn adjust_reward(&mut self, campaign_id: String) {
+    pub fn update_reward_in_state(&mut self, account_id: AccountId, reward: Reward) -> Reward {
+        let default_reward = Reward::new(reward.campaign_id.clone());
+        *self
+            .rewards
+            .entry(account_id)
+            .or_default()
+            .entry(reward.campaign_id.clone())
+            .or_insert(default_reward) = reward.clone();
+        reward
+    }
+    pub fn adjust_reward(&mut self, campaign_id: String) -> Reward {
         let account_id = env::signer_account_id();
-        let default_reward = Reward::new(campaign_id.clone());
-        let reward = self.update_reward(campaign_id.clone(), account_id.clone());
-        *self.rewards.entry(account_id).or_default().entry(campaign_id).or_insert(default_reward) = reward;
+        let reward = self.update_reward(campaign_id, account_id.clone());
+        self.update_reward_in_state(account_id, reward)
     }
 
     pub fn get_rewards_list(&self, account_id: AccountId) -> HashMap<String, Reward> {
@@ -243,17 +254,31 @@ impl Contract {
             let accrued = self.get_accrued_rewards_per_token(campaign_id.clone());
             let new_reward = Reward {
                 campaign_id: reward.campaign_id.clone(),
-                amount: self.get_updated_reward_amount_with_accrued(reward, account_id.clone(), accrued.0),
+                amount: self.get_updated_reward_amount_with_accrued(
+                    reward,
+                    account_id.clone(),
+                    accrued.0,
+                ),
                 rewards_per_token_paid: reward.rewards_per_token_paid,
                 claimed: reward.claimed,
                 unlocked: reward.unlocked,
             };
-            view_rewards.insert(
-                campaign_id.clone(),
-                new_reward
-            );
+            view_rewards.insert(campaign_id.clone(), new_reward);
         });
         view_rewards
+    }
+
+    pub fn get_amount_available_to_claim(&self, reward: Reward) -> Balance {
+        let mut result: Balance = 0;
+        if let Some(campaign) = self.get_reward_campaign_by_id(reward.campaign_id.clone()) {
+            if campaign.vesting.start_time > env::block_timestamp() {
+                return result;
+            };
+            result = ((reward.amount.0 - reward.claimed.0)
+                * Balance::from(env::block_timestamp() - campaign.vesting.start_time))
+                / Balance::from(campaign.vesting.end_time - campaign.vesting.start_time);
+        }
+        result
     }
 }
 
@@ -281,6 +306,57 @@ impl Contract {
         );
         self.reward_campaigns.remove(&campaign_id);
     }
+
+    pub fn claim_reward(&mut self, campaign_id: String, amount: WBalance) {
+        let account_id = env::signer_account_id();
+        let reward = self.adjust_reward(campaign_id.clone());
+        let available_amount = self.get_amount_available_to_claim(reward.clone());
+        let campaign = self.get_reward_campaign_by_id(campaign_id).unwrap();
+
+        assert!(
+            amount.0 <= available_amount,
+            "There are not enough amount to claim. Possible amount is {}",
+            available_amount
+        );
+
+        underlying_token::ft_transfer(
+            account_id.clone(),
+            amount,
+            Some(format!("Claim reward with token_amount {}", amount.0)),
+            campaign.token,
+            ONE_YOCTO,
+            self.terra_gas(10),
+        )
+        .then(ext_self::claim_reward_ft_transfer_callback(
+            reward,
+            account_id,
+            amount,
+            WBalance::from(0),
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        ));
+    }
+
+    pub fn claim_reward_ft_transfer_callback(
+        &mut self,
+        reward: Reward,
+        account_id: AccountId,
+        amount: WBalance,
+        unlocked: WBalance,
+    ) {
+        assert!(is_promise_success(), "Claim operation wasn't successful");
+        self.update_reward_in_state(
+            account_id,
+            Reward {
+                campaign_id: reward.campaign_id,
+                amount: reward.amount,
+                rewards_per_token_paid: reward.rewards_per_token_paid,
+                claimed: WBalance::from(reward.claimed.0 + amount.0),
+                unlocked: WBalance::from(reward.unlocked.0 + unlocked.0),
+            },
+        );
+    }
 }
 
 #[cfg(test)]
@@ -292,7 +368,7 @@ mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{testing_env, AccountId, Balance, BlockHeight, VMContext, env};
+    use near_sdk::{env, testing_env, AccountId, Balance, BlockHeight, VMContext};
 
     use general::WBalance;
     use std::convert::TryFrom;
@@ -331,9 +407,9 @@ mod tests {
 
     fn get_campaign() -> RewardCampaign {
         let vesting = Vesting {
-            start_time: 1652562000,
-            end_time: 1653858000,
-            penalty: Ratio(99999),
+            start_time: 1651362400,
+            end_time: 1651372400,
+            penalty: Ratio(100),
         };
         let campaign = RewardCampaign {
             campaign_type: CampaignType::Supply,
@@ -364,12 +440,20 @@ mod tests {
         contract.adjust_reward(campaign_id.clone());
 
         let result1 = contract.get_rewards_list(account_id.clone());
-        assert_eq!(result1.len(), 1 , "Rewards list length doesn't match to expected");
+        assert_eq!(
+            result1.len(),
+            1,
+            "Rewards list length doesn't match to expected"
+        );
 
         let context = get_custom_context(false, 1651362400, 1);
         testing_env!(context);
         let result2 = contract.get_rewards_list(account_id.clone());
-        assert_eq!(result2.len(), 1 , "Rewards list length doesn't match to expected");
+        assert_eq!(
+            result2.len(),
+            1,
+            "Rewards list length doesn't match to expected"
+        );
         assert_ne!(
             result1.get(&campaign_id).unwrap().amount,
             result2.get(&campaign_id).unwrap().amount,
@@ -383,7 +467,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_get_updated_reward_amount(){
+    pub fn test_get_updated_reward_amount() {
         let account_id = AccountId::try_from(alice().to_string()).unwrap();
         let mut contract = init_env();
         let mut campaign = get_campaign();
@@ -399,8 +483,7 @@ mod tests {
         let result = contract.get_updated_reward_amount(&reward, account_id);
 
         assert_eq!(
-            result.0,
-            1000,
+            result.0, 1000,
             "Reward amount doesn't match to expected value"
         );
     }
