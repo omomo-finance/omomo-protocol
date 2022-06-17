@@ -246,24 +246,58 @@ impl Contract {
         self.update_reward_in_state(account_id, reward)
     }
 
+    pub fn get_view_reward_state_for_user(
+        &self,
+        account_id: AccountId,
+        campaign_id: String,
+        reward: Reward,
+    ) -> Reward {
+        let accrued = self.get_accrued_rewards_per_token(campaign_id);
+        let new_reward = Reward {
+            campaign_id: reward.campaign_id.clone(),
+            amount: self.get_updated_reward_amount_with_accrued(
+                &reward,
+                account_id.clone(),
+                accrued.0,
+            ),
+            rewards_per_token_paid: reward.rewards_per_token_paid,
+            claimed: reward.claimed,
+            unlocked: reward.unlocked,
+        };
+        new_reward
+    }
+
+    pub fn get_reward_state(&self, account_id: AccountId, campaign_id: String) {
+        let default_reward = Reward::new(campaign_id.clone());
+        let reward = self
+            .rewards
+            .get(&account_id)
+            .unwrap_or_default()
+            .get(&campaign_id)
+            .unwrap_or(&default_reward);
+
+        let updated_reward =
+            self.get_view_reward_state_for_user(account_id, campaign_id, reward.clone());
+
+        let available_to_claim_amount = self.get_amount_available_to_claim(updated_reward.clone());
+        let available_to_unlock_amount = updated_reward.amount.0 - available_to_claim_amount;
+
+        //TODO: implement Struct for return to FE
+    }
+
     pub fn get_rewards_list(&self, account_id: AccountId) -> HashMap<String, Reward> {
         let account_rewards = self.rewards.get(&account_id).unwrap();
         let mut view_rewards: HashMap<String, Reward> = HashMap::new();
 
         account_rewards.iter().for_each(|(campaign_id, reward)| {
-            let accrued = self.get_accrued_rewards_per_token(campaign_id.clone());
-            let new_reward = Reward {
-                campaign_id: reward.campaign_id.clone(),
-                amount: self.get_updated_reward_amount_with_accrued(
-                    reward,
+            view_rewards.insert(
+                campaign_id.clone(),
+                self.get_view_reward_state_for_user(
                     account_id.clone(),
-                    accrued.0,
+                    campaign_id.clone(),
+                    reward.clone(),
                 ),
-                rewards_per_token_paid: reward.rewards_per_token_paid,
-                claimed: reward.claimed,
-                unlocked: reward.unlocked,
-            };
-            view_rewards.insert(campaign_id.clone(), new_reward);
+            );
         });
         view_rewards
     }
@@ -313,7 +347,6 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-
     pub fn add_reward_campaign(&mut self, reward_campaign: RewardCampaign) -> String {
         require!(
             self.is_valid_admin_call(),
