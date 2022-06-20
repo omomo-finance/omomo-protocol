@@ -32,7 +32,36 @@ impl Contract {
     }
 
     pub fn get_supplies_by_account(&self, account: AccountId) -> Balance {
-        self.token.accounts.get(&account).unwrap_or(0)
+        self.get_account_supplies(account)
+    }
+
+    pub fn decrease_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let supplies = self.get_account_supplies(account.clone());
+        let new_supplies = supplies - Balance::from(token_amount);
+
+        self.set_account_supplies(account, U128(new_supplies))
+    }
+
+    pub fn increase_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let supplies: Balance = self.get_account_supplies(account.clone());
+        let new_supplies = supplies + Balance::from(token_amount);
+
+        self.set_account_supplies(account, U128(new_supplies))
+    }
+
+    pub fn set_account_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        let mut user = self.user_profiles.get(&account).unwrap_or_default();
+        user.supplies = Balance::from(token_amount);
+        self.user_profiles.insert(&account, &user);
+
+        self.get_account_supplies(account)
+    }
+
+    pub fn get_account_supplies(&self, account: AccountId) -> Balance {
+        self.user_profiles
+            .get(&account)
+            .unwrap_or_default()
+            .supplies
     }
 }
 
@@ -89,7 +118,9 @@ impl Contract {
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
-        self.mint(self.get_signer_address(), dtoken_amount);
+        self.mint(self.get_signer_address(), dtoken_amount.into());
+        self.increase_supplies(self.get_signer_address(), token_amount);
+
         log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
             self.get_signer_address(),
@@ -131,6 +162,7 @@ impl Contract {
                 )
             );
             self.burn(&self.get_signer_address(), dtoken_amount);
+            self.decrease_supplies(self.get_signer_address(), amount);
 
             self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
