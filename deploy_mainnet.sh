@@ -136,21 +136,3 @@ near call controller.omomo.near add_market '{"asset_id": "dac17f958d2ee523a22062
 near call controller.omomo.near add_market '{"asset_id": "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.factory.bridge.near", "dtoken": "usdc.omomo.near", "ticker_id": "weth"}' --accountId omomo.near
 near call controller.omomo.near add_market '{"asset_id": "6b175474e89094c44da98b954eedeac495271d0f.factory.bridge.near", "dtoken": "dai.omomo.near", "ticker_id": "weth"}' --accountId omomo.near
 near call controller.omomo.near add_market '{"asset_id": "token.omomo.near", "dtoken": "omomo.omomo.near", "ticker_id": "weth"}' --accountId omomo.near
-
-
-
-
-# ============================
-# REDEPLOY SCRIPT           ||
-# ============================
-near deploy controller.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/controller.wasm
-
-near deploy wnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy weth.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy stnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy wbtc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy aurora.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy usdt.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy usdc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy dai.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy omomo.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
