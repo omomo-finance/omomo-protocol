@@ -118,7 +118,7 @@ impl Contract {
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
-        self.mint(self.get_signer_address(), dtoken_amount.into());
+        self.mint(self.get_signer_address(), dtoken_amount);
         self.increase_supplies(self.get_signer_address(), token_amount);
 
         log!(
