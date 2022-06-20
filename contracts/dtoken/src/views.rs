@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio};
+use general::ratio::Ratio;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
