@@ -70,6 +70,14 @@ impl fmt::Display for RewardCampaignExtended {
     }
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct RewardState {
+    max_claim_amount: WBalance,
+
+    max_unlock_amount: WBalance,
+}
+
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Reward {
@@ -159,10 +167,10 @@ impl Contract {
             let reward_rate = self.get_rewards_per_second(campaign.clone());
             let total = self.get_market_total(campaign.clone());
             let current_time = min(env::block_timestamp(), campaign.end_time);
-            println!(
-                "current_time {}, last_update_time {}, reward_rate {}, total {}",
-                current_time, campaign.last_update_time, reward_rate.0, total.0
-            );
+            // println!(
+            //     "current_time {}, last_update_time {}, reward_rate {}, total {}",
+            //     current_time, campaign.last_update_time, reward_rate.0, total.0
+            // );
             if total.0 == 0 {
                 return WBalance::from(0);
             };
@@ -253,26 +261,21 @@ impl Contract {
         reward: Reward,
     ) -> Reward {
         let accrued = self.get_accrued_rewards_per_token(campaign_id);
-        let new_reward = Reward {
+        Reward {
             campaign_id: reward.campaign_id.clone(),
-            amount: self.get_updated_reward_amount_with_accrued(
-                &reward,
-                account_id.clone(),
-                accrued.0,
-            ),
+            amount: self.get_updated_reward_amount_with_accrued(&reward, account_id, accrued.0),
             rewards_per_token_paid: reward.rewards_per_token_paid,
             claimed: reward.claimed,
             unlocked: reward.unlocked,
-        };
-        new_reward
+        }
     }
 
-    pub fn get_reward_state(&self, account_id: AccountId, campaign_id: String) {
+    pub fn get_reward_state(&self, account_id: AccountId, campaign_id: String) -> RewardState {
         let default_reward = Reward::new(campaign_id.clone());
         let reward = self
             .rewards
             .get(&account_id)
-            .unwrap_or_default()
+            .unwrap()
             .get(&campaign_id)
             .unwrap_or(&default_reward);
 
@@ -281,8 +284,10 @@ impl Contract {
 
         let available_to_claim_amount = self.get_amount_available_to_claim(updated_reward.clone());
         let available_to_unlock_amount = updated_reward.amount.0 - available_to_claim_amount;
-
-        //TODO: implement Struct for return to FE
+        RewardState {
+            max_claim_amount: WBalance::from(available_to_claim_amount),
+            max_unlock_amount: WBalance::from(available_to_unlock_amount),
+        }
     }
 
     pub fn get_rewards_list(&self, account_id: AccountId) -> HashMap<String, Reward> {
@@ -407,6 +412,7 @@ impl Contract {
             available_to_unlock_amount
         );
 
+        //TODO: review after will be merged with new BigDecimals
         let amount_with_penalty =
             WBalance::from(amount.0 * campaign.vesting.penalty.0 / RATIO_DECIMALS.0);
         let message = format!(
