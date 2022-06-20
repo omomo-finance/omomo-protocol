@@ -11,6 +11,7 @@ pub struct AccruedInterest {
 #[serde(crate = "near_sdk::serde")]
 pub struct UserProfile {
     pub borrows: Balance,
+    pub supplies: Balance,
 
     pub borrow_interest: AccruedInterest,
     pub supply_interest: AccruedInterest,
