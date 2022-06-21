@@ -209,6 +209,7 @@ impl Contract {
         }
     }
 
+    #[private]
     pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let mut user = self.user_profiles.get(&account).unwrap_or_default();
         user.borrows = Balance::from(token_amount);
