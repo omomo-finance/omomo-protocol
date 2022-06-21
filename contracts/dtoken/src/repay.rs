@@ -1,15 +1,8 @@
+use std::cmp::Ordering;
 use near_sdk::env::{block_height, signer_account_id};
 use crate::*;
 
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct RepayAmount {
-    borrow: Balance,
-    accumulated_interest: Balance,
-}
-
 
 impl Contract {
     pub fn repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
@@ -66,8 +59,9 @@ impl Contract {
                 .unwrap()
                 .into(),
         };
+
         let borrow_rate = self.get_borrow_rate(
-            U128(balance_of - Balance::from(token_amount)),
+            U128(balance_of),
             U128(self.get_total_borrows()),
             U128(self.get_total_reserves()),
         );
@@ -91,14 +85,20 @@ impl Contract {
 
         let mut fund_total_reserve = 0u128;
 
-        if borrow_accumulated_interest - token_amount.0 > 0 {
-            accumulated_interest += borrow_accumulated_interest - token_amount.0;
+        match token_amount.0.cmp(&borrow_accumulated_interest) {
+            Ordering::Less => {
+                accumulated_interest += borrow_accumulated_interest - token_amount.0;
 
-            fund_total_reserve += token_amount.0;
-        } else {
-            token_to_repay += token_amount.0 - borrow_accumulated_interest;
+                fund_total_reserve += token_amount.0;
+            }
+            Ordering::Equal => {
+                fund_total_reserve += borrow_accumulated_interest;
+            }
+            Ordering::Greater => {
+                token_to_repay += token_amount.0 - borrow_accumulated_interest;
 
-            fund_total_reserve += borrow_accumulated_interest;
+                fund_total_reserve += borrow_accumulated_interest;
+            }
         }
 
         let new_borrow_accrued_interest = AccruedInterest {
@@ -113,17 +113,15 @@ impl Contract {
             * self.model.get_reserve_factor().round_u128();
         self.set_total_reserves(new_total_reserve);
 
-
         if token_to_repay > borrow_amount {
             token_to_repay = borrow_amount;
         }
-
 
         controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
             U128(token_to_repay),
-            new_borrow_accrued_interest.last_recalculation_block,
+            block_height(),
             U128::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
@@ -156,13 +154,16 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(token_to_repay);
+            return PromiseOrValue::Value(token_amount);
         }
+
+        self.decrease_borrows(env::signer_account_id(), token_to_repay);
+
         let user_borrows = self.get_account_borrows(signer_account_id());
 
 
         let mut extra_balance = 0;
-        let mut accumulated_interest_have_left=0;
+        let mut accumulated_interest_have_left = 0;
 
         if token_amount.0 < accumulated_interest.0 {
             accumulated_interest_have_left += accumulated_interest.0 - token_amount.0;
@@ -178,7 +179,6 @@ impl Contract {
         };
 
         self.set_accrued_borrow_interest(env::signer_account_id(), accrued_borrow_interest);
-        self.decrease_borrows(env::signer_account_id(), token_to_repay);
 
         self.mutex_account_unlock();
         log!(
