@@ -129,15 +129,18 @@ impl Contract {
             .collect::<Vec<RewardCampaignExtended>>()
     }
 
-    pub fn get_rewards_per_second(&self, campaign: RewardCampaign) -> WBalance {
-        let rewards_per_second: u128 =
-            campaign.reward_amount.0 / u128::from(campaign.end_time - campaign.start_time);
+    pub fn get_rewards_per_time(&self, campaign: RewardCampaign, seconds: u128) -> WBalance {
+        let rewards_per_second: u128 = campaign.reward_amount.0 * seconds
+            / u128::from(campaign.end_time - campaign.start_time);
         WBalance::from(rewards_per_second)
     }
 
+    pub fn get_rewards_per_second(&self, campaign: RewardCampaign) -> WBalance {
+        self.get_rewards_per_time(campaign, 1)
+    }
+
     pub fn get_reward_tokens_per_day(&self, campaign: RewardCampaign) -> WBalance {
-        let rewards_per_second = self.get_rewards_per_second(campaign);
-        WBalance::from(24 * 60 * 60 * rewards_per_second.0)
+        self.get_rewards_per_time(campaign, 24 * 60 * 60)
     }
 
     pub fn get_market_total(&self, campaign: RewardCampaign) -> WBalance {
@@ -164,18 +167,18 @@ impl Contract {
 
     pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> WBalance {
         if let Some(campaign) = self.get_reward_campaign_by_id(campaign_id.clone()) {
-            let reward_rate = self.get_rewards_per_second(campaign.clone());
             let total = self.get_market_total(campaign.clone());
             let current_time = min(env::block_timestamp(), campaign.end_time);
-            // println!(
-            //     "current_time {}, last_update_time {}, reward_rate {}, total {}",
-            //     current_time, campaign.last_update_time, reward_rate.0, total.0
-            // );
             if total.0 == 0 {
                 return WBalance::from(0);
             };
+
             return WBalance::from(
-                (u128::from(current_time - campaign.last_update_time) * reward_rate.0) / total.0,
+                self.get_rewards_per_time(
+                    campaign.clone(),
+                    u128::from(current_time - campaign.last_update_time),
+                )
+                .0 / total.0,
             );
         }
         panic!(
@@ -248,6 +251,22 @@ impl Contract {
             .or_insert(default_reward) = reward.clone();
         reward
     }
+
+    pub fn adjust_rewards_by_campaign_type(&mut self, campaign_type: CampaignType) {
+        let campaigns = self
+            .reward_campaigns
+            .iter()
+            .filter(|(_, campaign)| {
+                campaign.campaign_type == campaign_type && campaign.end_time > env::block_height()
+            })
+            .map(|(campaign_id, _)| campaign_id)
+            .collect::<Vec<String>>();
+
+        campaigns.iter().for_each(|campaign_id| {
+            self.adjust_reward(campaign_id.clone());
+        });
+    }
+
     pub fn adjust_reward(&mut self, campaign_id: String) -> Reward {
         let account_id = env::signer_account_id();
         let reward = self.update_reward(campaign_id, account_id.clone());
@@ -362,6 +381,30 @@ impl Contract {
         campaign_id
     }
 
+    pub fn get_all_rewards_by_campaign_id(
+        &self,
+        campaign_id: String,
+    ) -> HashMap<AccountId, Reward> {
+        let mut result: HashMap<AccountId, Reward> = HashMap::new();
+        self.rewards.iter().for_each(|(account_id, rewards)| {
+            if let Some(reward) = rewards.get(&campaign_id) {
+                result.insert(account_id.clone(), reward.clone());
+            }
+        });
+        result
+    }
+
+    pub fn remove_rewards_entries_by_campaign_id(&mut self, campaign_id: String) {
+        self.get_all_rewards_by_campaign_id(campaign_id)
+            .iter()
+            .for_each(|(account_id, reward)| {
+                self.rewards
+                    .get_mut(account_id)
+                    .unwrap()
+                    .remove(&reward.campaign_id);
+            });
+    }
+
     pub fn remove_reward_campaign(&mut self, campaign_id: String) {
         require!(
             self.is_valid_admin_call(),
@@ -372,6 +415,7 @@ impl Contract {
                 .is_some(),
             "Reward campaign by this key doesn't exists"
         );
+        self.remove_rewards_entries_by_campaign_id(campaign_id.clone());
         self.reward_campaigns.remove(&campaign_id);
     }
 
@@ -380,7 +424,10 @@ impl Contract {
         let reward = self.adjust_reward(campaign_id.clone());
         let available_amount = self.get_amount_available_to_claim(reward.clone());
         let campaign = self.get_reward_campaign_by_id(campaign_id).unwrap();
-
+        assert!(
+            env::block_timestamp() > campaign.vesting.start_time,
+            "No rewards amount available to claim, because vesting is not started"
+        );
         assert!(
             amount.0 <= available_amount,
             "There are not enough amount to claim. Possible amount is {}",
@@ -405,7 +452,10 @@ impl Contract {
         let available_to_claim_amount = self.get_amount_available_to_claim(reward.clone());
         let available_to_unlock_amount = reward.amount.0 - available_to_claim_amount;
         let campaign = self.get_reward_campaign_by_id(campaign_id).unwrap();
-
+        assert!(
+            env::block_timestamp() > campaign.vesting.start_time,
+            "No unlock amount available to claim, because vesting is not started"
+        );
         assert!(
             amount.0 <= available_to_unlock_amount,
             "There are not enough amount to unlock. Possible amount is {}",
@@ -516,6 +566,46 @@ mod tests {
             vesting,
         };
         return campaign;
+    }
+
+    #[test]
+    fn test_get_amount_available_to_claim() {
+        let mut contract = init_env();
+        let mut campaign = get_campaign();
+        campaign.campaign_type = CampaignType::Borrow;
+
+        let context = get_custom_context(false, 1651362400, 1);
+        testing_env!(context);
+        let account_id = env::signer_account_id();
+        let campaign_id = contract.add_reward_campaign(campaign.clone());
+
+        contract.increase_borrows(account_id.clone(), WBalance::from(1000));
+        let reward = contract.adjust_reward(campaign_id.clone());
+
+        println!("{}", reward);
+        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim, 0,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let context1 = get_custom_context(false, 1651367400, 1);
+        testing_env!(context1);
+
+        let amount_available_to_claim1 = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim1,
+            reward.amount.0 / 2,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let context2 = get_custom_context(false, 1651372400, 1);
+        testing_env!(context2);
+        let amount_available_to_claim2 = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim2, reward.amount.0,
+            "Amount for claim doesn't match to expected"
+        );
     }
 
     #[test]
