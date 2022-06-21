@@ -170,8 +170,9 @@ trait InternalTokenInterface {
     fn borrow_ft_transfer_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn controller_repay_borrows_callback(
         &mut self,
-        amount: WBalance,
-        borrow_amount: WBalance,
+        token_to_repay: WBalance,
+        token_amount: WBalance,
+        accumulated_interest: WBalance,
     ) -> PromiseOrValue<WBalance>;
     fn controller_decrease_borrows_fail_callback(
         &mut self,
