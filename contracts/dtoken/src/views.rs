@@ -44,7 +44,7 @@ impl Contract {
             ft_balance,
             WBalance::from(total_borrows),
             WBalance::from(total_reserves),
-            WBalance::from(reserve_factor.0),
+            reserve_factor,
         );
         let borrow_rate = self.get_borrow_rate(
             ft_balance,
@@ -56,9 +56,9 @@ impl Contract {
             total_supplies: WBalance::from(total_supplies),
             total_borrows: WBalance::from(total_borrows),
             total_reserves: WBalance::from(total_reserves),
-            exchange_rate_ratio: WRatio::from(exchange_rate.0),
-            interest_rate_ratio: WRatio::from(interest_rate.0),
-            borrow_rate_ratio: WRatio::from(borrow_rate.0),
+            exchange_rate_ratio: WRatio::from(exchange_rate),
+            interest_rate_ratio: WRatio::from(interest_rate),
+            borrow_rate_ratio: WRatio::from(borrow_rate),
         }
     }
 
@@ -105,7 +105,7 @@ mod tests {
         }
 
         let mut contract = Contract::new(Config {
-            initial_exchange_rate: U128(10000000000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -158,9 +158,9 @@ mod tests {
             total_supplies: U128(0),
             total_borrows: U128(0),
             total_reserves: U128(200),
-            exchange_rate_ratio: U128(10000000000),
+            exchange_rate_ratio: U128::from(Ratio::one()),
             interest_rate_ratio: U128(0),
-            borrow_rate_ratio: U128(10000000000),
+            borrow_rate_ratio: U128::from(Ratio::one()),
         };
 
         assert_eq!(
@@ -196,11 +196,11 @@ mod tests {
         let withdraw_info = contract.view_withdraw_info(bob(), U128(1000));
 
         // total interest should be 0
-        // exchange_rate = initial_exchange_rate = 10000000000
+        // exchange_rate = initial_exchange_rate = 1000000000000000000000000
 
         assert_eq!(
             withdraw_info.exchange_rate,
-            Ratio(10000000000),
+            U128::from(Ratio::one()),
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(

@@ -2,8 +2,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{env, near_bindgen, require, AccountId};
 use std::collections::HashMap;
 
-use general::percent::Percent;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 
 use crate::*;
 
@@ -106,33 +105,24 @@ impl Contract {
         self.markets.remove(&key);
     }
 
-    pub fn get_reserve_factor(self) -> Percent {
-        require!(
-            self.is_valid_admin_call(),
-            "this functionality is allowed to be called by admin or contract only"
-        );
-
-        self.reserve_factor
-    }
-
     pub fn get_liquidation_incentive(&self) -> Ratio {
         // TODO: Move this kind of getter that don't require admin rights somewhere else
         // incentive % + 100 %
-        self.liquidation_incentive + Ratio(1) * RATIO_DECIMALS
+        self.liquidation_incentive + Ratio::one()
     }
 
-    pub fn get_health_threshold(&self) -> Ratio {
-        self.health_threshold
+    pub fn get_liquidation_threshold(&self) -> Ratio {
+        self.liquidation_threshold
     }
 
     pub fn set_health_factor_threshold(mut self, value: Ratio) {
-        // TODO: Maybe change name of this funcction
+        // TODO: Maybe change name of this function
         require!(
             self.is_valid_admin_call(),
             "this functionality is allowed to be called by admin or contract only"
         );
 
-        self.health_threshold = value;
+        self.liquidation_threshold = value;
     }
 
     pub fn set_liquidation_incentive(mut self, value: Ratio) {
@@ -142,15 +132,6 @@ impl Contract {
         );
 
         self.liquidation_incentive = value;
-    }
-
-    pub fn set_reserve_factor(mut self, value: Percent) {
-        require!(
-            self.is_valid_admin_call(),
-            "this functionality is allowed to be called by admin or contract only"
-        );
-
-        self.reserve_factor = value;
     }
 
     pub fn pause_method(mut self, method: MethodType) {

@@ -87,7 +87,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             U128(balance_of),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
         let borrow_accrued_interest = self
             .config
@@ -106,7 +106,7 @@ impl Contract {
             self.get_contract_address(),
             token_amount,
             borrow_accrued_interest.last_recalculation_block,
-            WRatio::from(borrow_rate.0),
+            WRatio::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),

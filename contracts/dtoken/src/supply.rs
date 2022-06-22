@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::{BigBalance, Ratio};
 
 const GAS_FOR_SUPPLY: Gas = Gas(120_000_000_000_000);
 
@@ -97,17 +97,17 @@ impl Contract {
             }
         };
 
-        let exchange_rate: Balance = self
-            .get_exchange_rate((balance_of - Balance::from(token_amount)).into())
-            .0;
-        let dtoken_amount = token_amount.0 * RATIO_DECIMALS.0 / exchange_rate;
+        let exchange_rate =
+            self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
+        let dtoken_amount =
+            WBalance::from((BigBalance::from(token_amount.0) / exchange_rate).round_u128());
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            U128(self.get_total_reserves()),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
@@ -118,7 +118,7 @@ impl Contract {
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
 
         // Dtokens minting and adding them to the user account
-        self.mint(self.get_signer_address(), dtoken_amount.into());
+        self.mint(self.get_signer_address(), dtoken_amount);
         self.increase_supplies(self.get_signer_address(), token_amount);
 
         log!(
@@ -138,7 +138,7 @@ impl Contract {
         )
         .then(ext_self::controller_increase_supplies_callback(
             token_amount,
-            U128(dtoken_amount),
+            dtoken_amount,
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(20),

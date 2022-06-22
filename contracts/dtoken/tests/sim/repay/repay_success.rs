@@ -136,6 +136,9 @@ fn scenario_repay() {
     let (dwnear, controller, wnear, user) = repay_fixture();
 
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
+    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
+
     let repay_info = repay_info(&user, &dwnear, dwnear_balance);
     let repay_amount = Balance::from(repay_info.total_amount);
 
