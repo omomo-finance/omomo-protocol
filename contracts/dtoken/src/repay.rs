@@ -74,9 +74,7 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
 
-        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
-
-        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
+        let borrow_with_rate_amount = self.get_account_borrows(env::signer_account_id()) + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
 
         let new_total_reserve = self.get_total_reserves()
@@ -84,9 +82,14 @@ impl Contract {
                 * self.model.get_reserve_factor().round_u128();
         self.set_total_reserves(new_total_reserve);
 
-        if token_amount.0 < borrow_with_rate_amount {
-            borrow_amount = token_amount.0;
-        }
+        // Repay whole borrow if given amount covers borrow interest
+        let borrow_amount = if token_amount.0 >= borrow_with_rate_amount {
+            self.get_account_borrows(env::signer_account_id())
+        } else if token_amount.0 > borrow_accrued_interest.accumulated_interest {
+            token_amount.0 - borrow_accrued_interest.accumulated_interest
+        } else {
+            token_amount.0
+        };
 
         controller::repay_borrows(
             env::signer_account_id(),
@@ -128,8 +131,16 @@ impl Contract {
 
         let mut extra_balance = 0;
 
-        if amount.0 < borrow_amount.0 {
-            self.decrease_borrows(env::signer_account_id(), amount);
+        let mut borrow_interest = self.get_accrued_borrow_interest(env::signer_account_id());
+        if amount.0 < borrow_interest.accumulated_interest {
+            borrow_interest.accumulated_interest -= amount.0;
+            self.set_accrued_borrow_interest(env::signer_account_id(), borrow_interest);
+        } else if amount.0 < borrow_amount.0 {
+            self.decrease_borrows(
+                env::signer_account_id(),
+                WBalance::from(amount.0 - borrow_interest.accumulated_interest)
+            );
+            self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
         } else {
             extra_balance += Balance::from(amount) - Balance::from(borrow_amount);
             self.decrease_borrows(

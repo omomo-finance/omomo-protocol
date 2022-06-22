@@ -123,12 +123,6 @@ impl Contract {
         let existing_borrows: Balance =
             self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
-        // TODO This assert should consider interest charges
-        assert!(
-            existing_borrows >= Balance::from(token_amount),
-            "Too much borrowed assets trying to pay out"
-        );
-
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         let mut borrow_rate = borrow_rate.0;
