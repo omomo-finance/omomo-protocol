@@ -45,8 +45,8 @@ impl Contract {
             multiplier = util - kink;
         }
 
-        min(util, kink) * multiplier_per_block / Ratio::one()
-            + multiplier * jump_multiplier_per_block / Ratio::one()
+        min(util, kink) * multiplier_per_block
+            + multiplier * jump_multiplier_per_block
             + base_rate_per_block
     }
 

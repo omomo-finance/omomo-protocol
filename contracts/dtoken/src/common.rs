@@ -146,7 +146,7 @@ impl Contract {
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
         let accrued_interest_per_block =
-            user_borrows * borrow_rate.round_u128() / Ratio::one().round_u128();
+            user_borrows * U128::from(borrow_rate).0;
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
