@@ -10,7 +10,10 @@ pub struct AccruedInterest {
 // Cannot derive Default as `last_recalculation_block` by default should be current block
 impl Default for AccruedInterest {
     fn default() -> Self {
-        AccruedInterest { last_recalculation_block: env::block_height(), accumulated_interest: 0 }
+        AccruedInterest {
+            last_recalculation_block: env::block_height(),
+            accumulated_interest: 0,
+        }
     }
 }
 
