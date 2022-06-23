@@ -8,6 +8,7 @@ use near_sdk::{
     env, ext_contract, is_promise_success, log, near_bindgen, AccountId, Balance, BlockHeight,
     BorshStorageKey, Gas, PromiseOrValue, PromiseResult,
 };
+use std::collections::HashMap;
 
 #[allow(unused_imports)]
 pub use general::*;
@@ -19,6 +20,7 @@ pub use crate::ft::*;
 pub use crate::interest_model::*;
 pub use crate::interest_rate_model::*;
 pub use crate::repay::*;
+pub use crate::rewards::*;
 pub use crate::supply::*;
 pub use crate::user_profile::*;
 pub use crate::views::*;
@@ -34,6 +36,7 @@ mod interest_rate_model;
 mod liquidation;
 mod repay;
 mod reserve;
+mod rewards;
 mod supply;
 mod user_profile;
 mod views;
@@ -43,6 +46,7 @@ mod withdraw;
 enum StorageKeys {
     Config,
     UserProfiles,
+    RewardCampaigns,
 }
 
 #[near_bindgen]
@@ -70,6 +74,15 @@ pub struct Contract {
 
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
+
+    /// Campaign id -> Reward campaign
+    reward_campaigns: UnorderedMap<String, RewardCampaign>,
+
+    /// Unique incremental identifier
+    uid: u64,
+
+    /// User account_id -> { campaign_id -> reward }
+    rewards: HashMap<AccountId, HashMap<String, Reward>>,
 }
 
 impl Default for Contract {
@@ -216,6 +229,13 @@ trait InternalTokenInterface {
         action: Actions,
         amount: WBalance,
     ) -> PromiseOrValue<WBalance>;
+    fn claim_reward_ft_transfer_callback(
+        &mut self,
+        reward: Reward,
+        account_id: AccountId,
+        amount: WBalance,
+        unlocked: WBalance,
+    );
 }
 
 #[near_bindgen]
@@ -252,6 +272,9 @@ impl Contract {
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
             admin: config.owner_id,
+            reward_campaigns: UnorderedMap::new(StorageKeys::RewardCampaigns),
+            uid: 0,
+            rewards: HashMap::new(),
         }
     }
 }

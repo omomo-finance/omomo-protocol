@@ -8,6 +8,7 @@ impl Contract {
         if !is_promise_success() {
             return PromiseOrValue::Value(dtoken_amount);
         }
+        self.adjust_rewards_by_campaign_type(CampaignType::Supply);
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),

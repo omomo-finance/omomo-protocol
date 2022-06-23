@@ -107,10 +107,12 @@ impl Contract {
     }
 
     pub fn get_total_supplies(&self) -> Balance {
+        // Dtoken amount
         self.token.total_supply
     }
 
     pub fn get_total_borrows(&self) -> Balance {
+        // Token amount
         self.user_profiles
             .iter()
             .map(|(_, value)| value.borrows)
@@ -182,6 +184,15 @@ impl Contract {
     pub fn set_total_reserves(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
         self.get_total_reserves()
+    }
+
+    pub fn get_unique_id(&self) -> String {
+        self.uid.to_string()
+    }
+
+    pub fn request_unique_id(&mut self) -> String {
+        self.uid += 1;
+        self.get_unique_id()
     }
 }
 
@@ -367,6 +378,19 @@ mod tests {
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
         })
+    }
+
+    #[test]
+    fn test_request_unique_id() {
+        let mut contract = init_env();
+        let uuid = contract.request_unique_id();
+
+        assert_eq!(
+            uuid,
+            contract.get_unique_id(),
+            "uuid {} doesn't match to state value",
+            uuid
+        );
     }
 
     #[test]
