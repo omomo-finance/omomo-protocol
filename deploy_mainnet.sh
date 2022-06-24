@@ -50,8 +50,8 @@ near deploy wnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknow
     "owner_id": "omomo.near",
     "underlying_token_id": "wrap.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
-    "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
+    "initial_exchange_rate": "10000000000",
+    "interest_rate_model": {"kink": "6500000000", "multiplier_per_block": "628", "base_rate_per_block": "0", "jump_multiplier_per_block": "761", "reserve_factor": "1000000000"}}'
 
 near deploy weth.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
   --initFunction 'new_with_config'
@@ -59,8 +59,8 @@ near deploy weth.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown
     "owner_id": "omomo.near",
     "underlying_token_id": "c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2.factory.bridge.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
-    "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
+    "initial_exchange_rate": "10000000000",
+    "interest_rate_model": {"kink": "6500000000", "multiplier_per_block": "628", "base_rate_per_block": "0", "jump_multiplier_per_block": "761", "reserve_factor": "1000000000"}}'
 
 near deploy stnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
   --initFunction 'new_with_config'
@@ -68,7 +68,7 @@ near deploy stnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unkno
     "owner_id": "omomo.near",
     "underlying_token_id": "meta-pool.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
+    "initial_exchange_rate": "1000000000000000000000000",
     "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
 
 
@@ -78,7 +78,7 @@ near deploy wbtc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown
     "owner_id": "omomo.near",
     "underlying_token_id": "2260fac5e5542a773aa44fbcfedf7c193bc2c599.factory.bridge.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
+    "initial_exchange_rate": "1000000000000000000000000",
     "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
 
 near deploy aurora.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
@@ -87,7 +87,7 @@ near deploy aurora.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unkno
     "owner_id": "omomo.near",
     "underlying_token_id": "aaaaaa20d9e0e2461697782ef11675f668207961.factory.bridge.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
+    "initial_exchange_rate": "1000000000000000000000000",
     "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
 
 near deploy usdt.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
@@ -96,8 +96,8 @@ near deploy usdt.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown
     "owner_id": "omomo.near",
     "underlying_token_id": "dac17f958d2ee523a2206206994597c13d831ec7.factory.bridge.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
-    "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
+    "initial_exchange_rate": "10000000000",
+    "interest_rate_model": {"kink": "8000000000", "multiplier_per_block": "685", "base_rate_per_block": "0", "jump_multiplier_per_block": "666", "reserve_factor": "1000000000"}}'
 
 near deploy usdc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
   --initFunction 'new_with_config'
@@ -105,8 +105,8 @@ near deploy usdc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown
     "owner_id": "omomo.near",
     "underlying_token_id": "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.factory.bridge.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
-    "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
+    "initial_exchange_rate": "10000000000",
+    "interest_rate_model": {"kink": "8000000000", "multiplier_per_block": "685", "base_rate_per_block": "0", "jump_multiplier_per_block": "666", "reserve_factor": "1000000000"}}'
 
 near deploy dai.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
   --initFunction 'new_with_config'
@@ -114,7 +114,7 @@ near deploy dai.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/
     "owner_id": "omomo.near",
     "underlying_token_id": "6b175474e89094c44da98b954eedeac495271d0f.factory.bridge.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
+    "initial_exchange_rate": "1000000000000000000000000",
     "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}' 
 
 near deploy omomo.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
@@ -123,7 +123,7 @@ near deploy omomo.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknow
     "owner_id": "omomo.near",
     "underlying_token_id": "token.omomo.near",
     "controller_account_id": "controller.omomo.near",
-    "initial_exchange_rate": "10000",
+    "initial_exchange_rate": "1000000000000000000000000",
     "interest_rate_model": {"kink": "XYZ", "multiplier_per_block": "XYZ", "base_rate_per_block": "XYZ", "jump_multiplier_per_block": "XYZ", "reserve_factor": "XYZ"}}'
 
 
@@ -136,21 +136,3 @@ near call controller.omomo.near add_market '{"asset_id": "dac17f958d2ee523a22062
 near call controller.omomo.near add_market '{"asset_id": "a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48.factory.bridge.near", "dtoken": "usdc.omomo.near", "ticker_id": "weth"}' --accountId omomo.near
 near call controller.omomo.near add_market '{"asset_id": "6b175474e89094c44da98b954eedeac495271d0f.factory.bridge.near", "dtoken": "dai.omomo.near", "ticker_id": "weth"}' --accountId omomo.near
 near call controller.omomo.near add_market '{"asset_id": "token.omomo.near", "dtoken": "omomo.omomo.near", "ticker_id": "weth"}' --accountId omomo.near
-
-
-
-
-# ============================
-# REDEPLOY SCRIPT           ||
-# ============================
-near deploy controller.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/controller.wasm
-
-near deploy wnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy weth.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy stnear.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy wbtc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy aurora.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy usdt.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy usdc.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy dai.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-near deploy omomo.omomo.near --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm

@@ -6,7 +6,7 @@ Feature: User liquidation flow
 			And Digital token DWNEAR contract with supplied  100 tokens by borrower
 			And Digital token DWETH contract with borrowed 50 tokens by borrower
 			And Utoken WETH contract with 50 tokens minted for liquidator account
-			And health_threshold should be equal 150% === 15000 in Ratio format
+			And liquidation_threshold should be equal 150% === 15000 in Ratio format
 			And liquidation_incentive = 5%
 			And Contracts accrued interests should be equal 0
 			And token = 10^24
@@ -23,7 +23,7 @@ Feature: User liquidation flow
 			And Digital token DWNEAR contract with supplied  100 tokens by borrower
 			And Digital token DWETH contract with borrowed 50 tokens by borrower
 			And Utoken WETH contract with 50 tokens minted for liquidator account
-			And health_threshold should be equal 150% === 15000 in Ratio format
+			And liquidation_threshold should be equal 150% === 15000 in Ratio format
 			And liquidation_incentive = 5%
 			And Contracts accrued interests should be equal 0
 			And token = 10^24

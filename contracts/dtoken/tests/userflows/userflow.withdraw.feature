@@ -54,7 +54,7 @@ Rule: Borrows are exist
 		And Digital token DWETH contract with supplied 100 tokens by user Bob
 		And Digital token DWBTC contract with borrow 50 tokens by user Bob
 		And Price for WETH = 5$, WBTC = 5$
-		And health_threshold should be equal 100% === 10000 in Ratio format
+		And liquidation_threshold should be equal 100% === 10000 in Ratio format
 		And Exchange_rate for contracts equal 1
 		And Contracts accrued interests should be equal 0
 		And token = 10^24

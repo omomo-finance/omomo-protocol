@@ -8,7 +8,7 @@ use controller::{ActionType, Config as cConfig};
 use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use dtoken::{Config as dConfig, RepayInfo};
-use general::Price;
+use general::{ratio::Ratio, Price, WBalance};
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -95,7 +95,7 @@ fn internal_utoken_initialize(
 }
 
 pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<test_utoken::ContractContract> {
-    let uroot = root.create_user("utoken".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot = root.create_user("utoken".parse().unwrap(), to_yocto("1200000"));
     let utoken = init_utoken(
         &uroot,
         AccountId::new_unchecked("utoken_contract".to_string()),
@@ -110,14 +110,14 @@ pub fn initialize_two_utokens(
     ContractAccount<test_utoken::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
 ) {
-    let uroot1 = root.create_user("utoken1".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot1 = root.create_user("utoken1".parse().unwrap(), to_yocto("1200000"));
     let utoken1 = init_utoken(
         &uroot1,
         AccountId::new_unchecked("utoken_contract1".to_string()),
     );
     internal_utoken_initialize(&utoken1.user_account, &utoken1, uroot1.account_id());
 
-    let uroot2 = root.create_user("utoken2".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot2 = root.create_user("utoken2".parse().unwrap(), to_yocto("1200000"));
     let utoken2 = init_utoken(
         &uroot2,
         AccountId::new_unchecked("utoken_contract2".to_string()),
@@ -134,21 +134,21 @@ pub fn initialize_three_utokens(
     ContractAccount<test_utoken::ContractContract>,
     ContractAccount<test_utoken::ContractContract>,
 ) {
-    let uroot1 = root.create_user("utoken1".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot1 = root.create_user("utoken1".parse().unwrap(), to_yocto("1200000"));
     let utoken1 = init_utoken(
         &uroot1,
         AccountId::new_unchecked("utoken_contract1".to_string()),
     );
     internal_utoken_initialize(&utoken1.user_account, &utoken1, uroot1.account_id());
 
-    let uroot2 = root.create_user("utoken2".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot2 = root.create_user("utoken2".parse().unwrap(), to_yocto("1200000"));
     let utoken2 = init_utoken(
         &uroot2,
         AccountId::new_unchecked("utoken_contract2".to_string()),
     );
     internal_utoken_initialize(&utoken2.user_account, &utoken2, uroot2.account_id());
 
-    let uroot3 = root.create_user("utoken3".parse().unwrap(), 1200000000000000000000000000000);
+    let uroot3 = root.create_user("utoken3".parse().unwrap(), to_yocto("1200000"));
     let utoken3 = init_utoken(
         &uroot3,
         AccountId::new_unchecked("utoken_contract3".to_string()),
@@ -159,10 +159,7 @@ pub fn initialize_three_utokens(
 }
 
 pub fn initialize_controller(root: &UserAccount) -> ContractAccount<controller::ContractContract> {
-    let croot = root.create_user(
-        "controller".parse().unwrap(),
-        1200000000000000000000000000000,
-    );
+    let croot = root.create_user("controller".parse().unwrap(), to_yocto("1200000"));
     let controller = init_controller(
         &croot,
         AccountId::new_unchecked("controller_contract".to_string()),
@@ -190,7 +187,7 @@ fn internal_dtoken_initialize(
     call!(
         account,
         dtoken.new(dConfig {
-            initial_exchange_rate: U128(10000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken_account,
             owner_id: owner,
             controller_account_id: controller_account,
@@ -206,8 +203,8 @@ pub fn initialize_dtoken(
     utoken_account: AccountId,
     controller_account: AccountId,
     interest_model: InterestRateModel,
-) -> ContractAccount<dtoken::ContractContract> {
-    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+) -> (UserAccount, ContractAccount<dtoken::ContractContract>) {
+    let droot = root.create_user("dtoken".parse().unwrap(), to_yocto("1200000"));
     let dtoken = init_dtoken(
         &droot,
         AccountId::new_unchecked("dtoken_contract".to_string()),
@@ -220,7 +217,8 @@ pub fn initialize_dtoken(
         controller_account,
         interest_model,
     );
-    dtoken
+
+    (droot, dtoken)
 }
 
 pub fn initialize_two_dtokens(
@@ -231,10 +229,11 @@ pub fn initialize_two_dtokens(
     interest_model1: InterestRateModel,
     interest_model2: InterestRateModel,
 ) -> (
+    UserAccount,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
 ) {
-    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let droot = root.create_user("dtoken".parse().unwrap(), to_yocto("1200000"));
     let dtoken1 = init_dtoken(
         &droot,
         AccountId::new_unchecked("dtoken_contract1".to_string()),
@@ -262,7 +261,7 @@ pub fn initialize_two_dtokens(
         controller_account,
         interest_model2,
     );
-    (dtoken1, dtoken2)
+    (droot, dtoken1, dtoken2)
 }
 
 pub fn initialize_three_dtokens(
@@ -275,11 +274,12 @@ pub fn initialize_three_dtokens(
     interest_model2: InterestRateModel,
     interest_model3: InterestRateModel,
 ) -> (
+    UserAccount,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
 ) {
-    let droot = root.create_user("dtoken".parse().unwrap(), 1200000000000000000000000000000);
+    let droot = root.create_user("dtoken".parse().unwrap(), to_yocto("1200000"));
     let dtoken1 = init_dtoken(
         &droot,
         AccountId::new_unchecked("dtoken_contract1".to_string()),
@@ -319,7 +319,7 @@ pub fn initialize_three_dtokens(
         controller_account,
         interest_model3,
     );
-    (dtoken1, dtoken2, dtoken3)
+    (droot, dtoken1, dtoken2, dtoken3)
 }
 
 pub fn add_market(
@@ -345,7 +345,8 @@ pub fn mint_tokens(
         utoken.mint(receiver, amount),
         0,
         100000000000000
-    );
+    )
+    .assert_success();
 }
 
 pub fn set_price(
@@ -359,6 +360,57 @@ pub fn set_price(
         deposit = 0
     )
     .assert_success();
+}
+
+pub fn reserve_storage(
+    dtoken_admin: &UserAccount,
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+) {
+    call!(
+        dtoken_admin,
+        utoken.storage_deposit(Some(dtoken.account_id()), None),
+        deposit = to_yocto("0.25")
+    )
+    .assert_success();
+}
+
+pub fn mint_and_reserve(
+    dtoken_admin: &UserAccount,
+    utoken: &ContractAccount<test_utoken::ContractContract>,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+    amount: Balance,
+) {
+    mint_tokens(utoken, dtoken_admin.account_id(), U128(amount));
+    reserve_storage(dtoken_admin, utoken, dtoken);
+
+    let action = "\"Reserve\"".to_string();
+    call!(
+        dtoken_admin,
+        utoken.ft_transfer_call(
+            dtoken.account_id(),
+            U128(amount),
+            Some("RESERVE".to_string()),
+            action
+        ),
+        deposit = 1
+    )
+    .assert_success();
+
+    let underlying_balance: WBalance =
+        view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
+    assert_eq!(
+        underlying_balance,
+        WBalance::from(amount),
+        "Unexpected dtoken balance"
+    );
+
+    let total_reserves: WBalance = view!(dtoken.view_total_reserves()).unwrap_json();
+    assert_eq!(
+        total_reserves,
+        WBalance::from(amount),
+        "Unexpected total reserves"
+    );
 }
 
 pub fn supply(
@@ -427,7 +479,7 @@ pub fn liquidate(
         liquidator,
         borrowing_utoken.ft_transfer_call(
             borrowing_dtoken.account_id(),
-            U128(amount),
+            U128::from(amount),
             None,
             action
         ),

@@ -1,16 +1,16 @@
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
-    mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance,
+    mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
 use dtoken::{InterestRateModel, WRatio};
-use general::Price;
+use general::{ratio::Ratio, Price, WBalance};
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
+const RESERVE_AMOUNT: Balance = 1000;
 const WETH_AMOUNT: Balance = 60;
 const WNEAR_AMOUNT: Balance = 70;
-const WBTC_AMOUNT: Balance = 100;
 const WETH_BORROW: Balance = 30;
 const WNEAR_BORROW: Balance = 40;
 const START_BALANCE: Balance = 100;
@@ -34,7 +34,7 @@ fn repay_fixture() -> (
         jump_multiplier_per_block: WRatio::from(0),
         reserve_factor: WRatio::from(0),
     };
-    let (dweth, dwnear, dwbtc) = initialize_three_dtokens(
+    let (droot, dweth, dwnear, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -45,10 +45,11 @@ fn repay_fixture() -> (
         interest_rate_model,
     );
 
+    mint_and_reserve(&droot, &weth, &dweth, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &dwnear, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wbtc, &dwbtc, RESERVE_AMOUNT);
+
     let mint_amount = U128(START_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), U128(WETH_AMOUNT));
-    mint_tokens(&wnear, dwnear.account_id(), U128(WNEAR_AMOUNT));
-    mint_tokens(&wbtc, dwbtc.account_id(), U128(WBTC_AMOUNT));
     mint_tokens(&weth, user.account_id(), mint_amount);
     mint_tokens(&wnear, user.account_id(), mint_amount);
     mint_tokens(&wbtc, user.account_id(), mint_amount);
@@ -108,11 +109,23 @@ fn repay_fixture() -> (
     );
 
     supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+    let underlying_balance: WBalance = view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();
+    assert_eq!(
+        underlying_balance,
+        WBalance::from(RESERVE_AMOUNT + WETH_AMOUNT),
+        "Unexpected dweth balance"
+    );
 
     supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
+    let underlying_balance: WBalance =
+        view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    assert_eq!(
+        underlying_balance,
+        WBalance::from(RESERVE_AMOUNT + WNEAR_AMOUNT),
+        "Unexpected dwnear balance"
+    );
 
     borrow(&user, &dweth, WETH_BORROW).assert_success();
-
     borrow(&user, &dwnear, WNEAR_BORROW).assert_success();
 
     (dwnear, controller, wnear, user)
@@ -123,9 +136,10 @@ fn scenario_repay() {
     let (dwnear, controller, wnear, user) = repay_fixture();
 
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
+    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
     let repay_info = repay_info(&user, &dwnear, dwnear_balance);
-
     let repay_amount = Balance::from(repay_info.total_amount);
 
     repay(&user, dwnear.account_id(), &wnear, repay_amount).assert_success();
@@ -143,4 +157,8 @@ fn scenario_repay() {
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+
+    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
+    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 }

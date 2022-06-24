@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::{Ratio, BigBalance};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use std::cmp::min;
 use std::fmt;
@@ -464,7 +464,7 @@ impl Contract {
 
         //TODO: review after will be merged with new BigDecimals
         let amount_with_penalty =
-            WBalance::from(amount.0 * campaign.vesting.penalty.0 / RATIO_DECIMALS.0);
+            WBalance::from(BigBalance::from(amount) * campaign.vesting.penalty);
         let message = format!(
             "Unlock rewards with amount {} and amount_with_penalty {}",
             amount.0, amount_with_penalty.0
@@ -552,7 +552,7 @@ mod tests {
         let vesting = Vesting {
             start_time: 1651362400,
             end_time: 1651372400,
-            penalty: Ratio(5000),
+            penalty: Ratio::from(5000u128),
         };
         let campaign = RewardCampaign {
             campaign_type: CampaignType::Supply,
@@ -694,6 +694,7 @@ mod tests {
         let total_supply: Balance = 100;
         testing_env!(context);
         contract.mint(contract.get_signer_address(), WBalance::from(total_supply));
+        contract.set_account_supplies(contract.get_signer_address(), WBalance::from(total_supply));
 
         let campaign_id = contract.add_reward_campaign(campaign.clone());
         let campaign_result = contract.get_accrued_rewards_per_token(campaign_id);

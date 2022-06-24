@@ -31,7 +31,7 @@ fn withdraw_fixture() -> (
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
     };
-    let (dweth, dwbtc) = initialize_two_dtokens(
+    let (_, dweth, dwbtc) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wbtc.account_id(),

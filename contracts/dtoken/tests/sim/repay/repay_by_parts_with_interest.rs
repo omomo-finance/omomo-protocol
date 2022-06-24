@@ -29,11 +29,11 @@ fn repay_fixture() -> (
     let (weth, wnear, wbtc) = initialize_three_utokens(&root);
     let controller = initialize_controller(&root);
     let interest_rate_model = InterestRateModel {
-        kink: WRatio::from(0),
+        kink: WRatio::from(650000000000000000000000),
         base_rate_per_block: WRatio::from(0),
-        multiplier_per_block: WRatio::from(0),
-        jump_multiplier_per_block: WRatio::from(0),
-        reserve_factor: WRatio::from(0),
+        multiplier_per_block: WRatio::from(62800000000000000),
+        jump_multiplier_per_block: WRatio::from(761),
+        reserve_factor: WRatio::from(1000000000),
     };
     let (droot, dweth, dwnear, dwbtc) = initialize_three_dtokens(
         &root,
@@ -110,10 +110,8 @@ fn repay_fixture() -> (
     );
 
     supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+
     supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
-    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
-    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
     borrow(&user, &dweth, WETH_BORROW).assert_success();
 
@@ -123,14 +121,20 @@ fn repay_fixture() -> (
 }
 
 #[test]
-fn scenario_repay_by_parts() {
+fn repay_by_parts_with_interest() {
     let (dwnear, controller, wnear, user) = repay_fixture();
 
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+
     let repay_info = repay_info(&user, &dwnear, dwnear_balance);
+    println!("{:?}", repay_info);
+
     let repay_amount = Balance::from(repay_info.total_amount);
 
     repay(&user, dwnear.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
+    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
+    assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(

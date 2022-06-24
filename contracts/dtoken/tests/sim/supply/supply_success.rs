@@ -24,7 +24,7 @@ fn supply_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let weth = initialize_utoken(&root);
     let controller = initialize_controller(&root);
-    let dweth = initialize_dtoken(
+    let (_, dweth) = initialize_dtoken(
         &root,
         weth.account_id(),
         controller.account_id(),
@@ -63,6 +63,14 @@ fn scenario_supply() {
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance, U128(0), "User balance should be 0");
+
+    let user_dtoken_balance: U128 = view!(dweth.ft_balance_of(user.account_id())).unwrap_json();
+    assert_eq!(
+        user_dtoken_balance,
+        U128(SUPPLY_AMOUNT),
+        "User dtoken balance should be {}",
+        SUPPLY_AMOUNT
+    );
 
     let user_balance: Balance =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());

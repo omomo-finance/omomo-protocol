@@ -1,5 +1,4 @@
 use crate::*;
-use general::ratio::RATIO_DECIMALS;
 
 const GAS_FOR_REPAY: Gas = Gas(120_000_000_000_000);
 
@@ -62,9 +61,8 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             U128(balance_of - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
-        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
 
         let borrow_accrued_interest = self
             .config
@@ -76,12 +74,15 @@ impl Contract {
                 self.get_account_borrows(env::signer_account_id()),
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
-        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
-        let new_total_reserve = self.get_total_reserves()
-            + borrow_accrued_interest.accumulated_interest * self.model.get_reserve_factor().0
-                / RATIO_DECIMALS.0;
 
+        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
+
+        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
+
+        let new_total_reserve = self.get_total_reserves()
+            + borrow_accrued_interest.accumulated_interest
+                * self.model.get_reserve_factor().round_u128();
         self.set_total_reserves(new_total_reserve);
 
         if token_amount.0 < borrow_with_rate_amount {
@@ -93,7 +94,7 @@ impl Contract {
             self.get_contract_address(),
             U128(borrow_amount),
             borrow_accrued_interest.last_recalculation_block,
-            U128(borrow_rate.0),
+            U128::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),
@@ -136,9 +137,8 @@ impl Contract {
                 env::signer_account_id(),
                 U128(self.get_account_borrows(env::signer_account_id())),
             );
+            self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
         }
-
-        self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
 
         self.mutex_account_unlock();
         log!(

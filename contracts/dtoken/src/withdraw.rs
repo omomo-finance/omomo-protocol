@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 
 const GAS_FOR_WITHDRAW: Gas = Gas(180_000_000_000_000);
 
@@ -27,17 +27,17 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, dtoken_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn withdraw(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_WITHDRAW,
             "Prepaid gas is not enough for withdraw flow"
         );
         assert!(
-            Balance::from(dtoken_amount) > 0,
+            Balance::from(amount) > 0,
             "Amount should be a positive number"
         );
         assert!(
-            dtoken_amount.0
+            amount.0
                 <= self
                     .token
                     .accounts
@@ -45,7 +45,7 @@ impl Contract {
                     .unwrap_or(0),
             "The account doesn't have enough digital tokens to do withdraw"
         );
-        self.mutex_account_lock(Actions::Withdraw, dtoken_amount, GAS_FOR_WITHDRAW)
+        self.mutex_account_lock(Actions::Withdraw, amount, GAS_FOR_WITHDRAW)
     }
 
     #[private]
@@ -80,8 +80,8 @@ impl Contract {
         let supply_rate: Ratio = self.get_supply_rate(
             U128(balance_of),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            U128(self.get_total_reserves()),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -89,7 +89,7 @@ impl Contract {
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
 
-        let token_amount: Balance = dtoken_amount * RATIO_DECIMALS.0 / exchange_rate.0;
+        let token_amount: Balance = (Ratio::from(dtoken_amount) / exchange_rate).round_u128();
         let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
 
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
@@ -165,6 +165,7 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
+            self.decrease_supplies(env::signer_account_id(), token_amount);
             self.mutex_account_unlock();
             log!(
                 "{}",

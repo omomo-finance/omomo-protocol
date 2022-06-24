@@ -107,7 +107,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             U128(balance_of - liquidation_amount.0),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
 
         let liquidation_revenue_amount: WBalance =
@@ -122,7 +122,7 @@ impl Contract {
             liquidator,
             liquidation_amount,
             liquidation_revenue_amount,
-            U128(borrow_rate.0),
+            U128::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(40),
