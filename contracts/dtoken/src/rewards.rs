@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, BigBalance};
+use general::ratio::{BigBalance, Ratio};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use std::cmp::min;
 use std::fmt;
