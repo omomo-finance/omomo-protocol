@@ -39,6 +39,7 @@ mod supply;
 mod user_profile;
 mod views;
 mod withdraw;
+mod upgrade;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
