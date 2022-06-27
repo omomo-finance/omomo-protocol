@@ -153,9 +153,8 @@ impl Contract {
 
     pub fn get_account_total(&self, campaign: RewardCampaign, account_id: AccountId) -> WBalance {
         let account_total = match campaign.campaign_type {
-            //TODO: uncomment get_account_supplies()
-            CampaignType::Supply => 0, // self.get_account_supplies(account_id), // Tokens
-            CampaignType::Borrow => self.get_account_borrows(account_id), // Tokens
+            CampaignType::Supply => self.get_account_supplies(account_id),
+            CampaignType::Borrow => self.get_account_borrows(account_id),
         };
         WBalance::from(account_total)
     }
@@ -462,7 +461,6 @@ impl Contract {
             available_to_unlock_amount
         );
 
-        //TODO: review after will be merged with new BigDecimals
         let amount_with_penalty =
             WBalance::from(BigBalance::from(amount) * campaign.vesting.penalty);
         let message = format!(

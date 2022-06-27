@@ -75,9 +75,9 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
 
-        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
-
-        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
+        // let borrow_amount = self.get_account_borrows(env::signer_account_id());
+        //
+        // let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
 
         let borrow_amount = self.get_account_borrows(env::signer_account_id());
