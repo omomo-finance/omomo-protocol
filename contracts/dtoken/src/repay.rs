@@ -15,6 +15,7 @@ impl Contract {
         if !is_promise_success() {
             return PromiseOrValue::Value(token_amount);
         }
+        self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
         underlying_token::ft_balance_of(
             self.get_contract_address(),
             self.get_underlying_contract_address(),
@@ -74,7 +75,11 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
 
+        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
+
+        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
+
         let borrow_amount = self.get_account_borrows(env::signer_account_id());
 
         // first we repay borrow interest and only then repay borrow
