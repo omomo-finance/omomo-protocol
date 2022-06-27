@@ -92,14 +92,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            gas,
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                gas,
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -145,7 +145,7 @@ impl Contract {
                 self.get_accrued_borrow_interest(user_id),
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        let accrued_interest_per_block = user_borrows * U128::from(borrow_rate).0;
+        let accrued_interest_per_block = Ratio::from(user_borrows) * borrow_rate;
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
