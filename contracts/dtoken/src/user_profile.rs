@@ -1,10 +1,20 @@
 use crate::*;
 
-#[derive(Default, BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct AccruedInterest {
     pub last_recalculation_block: BlockHeight,
     pub accumulated_interest: Balance,
+}
+
+// Cannot derive Default as `last_recalculation_block` by default should be current block
+impl Default for AccruedInterest {
+    fn default() -> Self {
+        AccruedInterest {
+            last_recalculation_block: env::block_height(),
+            accumulated_interest: 0,
+        }
+    }
 }
 
 #[derive(Default, BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
