@@ -4,6 +4,7 @@ use near_sdk::{env, require, AccountId};
 
 use crate::*;
 
+#[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
         self.admin.clone()
@@ -16,7 +17,9 @@ impl Contract {
         );
         self.admin = account;
     }
+}
 
+impl Contract {
     pub fn is_valid_admin_call(&self) -> bool {
         env::signer_account_id() == self.admin
             || env::signer_account_id() == env::current_account_id()

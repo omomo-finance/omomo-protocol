@@ -168,3 +168,9 @@ near view weth.omomo-finance.testnet ft_balance_of '{"account_id": "dweth.omomo-
 near view wrap.testnet ft_balance_of '{"account_id": "dwnear.omomo-finance.testnet"}'
 near view usdt.omomo-finance.testnet ft_balance_of '{"account_id": "dusdt.omomo-finance.testnet"}'
 near view usdc.omomo-finance.testnet ft_balance_of '{"account_id": "dusdc.omomo-finance.testnet"}'
+
+
+near call dweth.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
+near call dwnear.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
+near call dusdt.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
+near call dusdc.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
