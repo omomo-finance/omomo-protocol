@@ -29,7 +29,7 @@ fn supply_success_after_failure_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (dweth, dwnear) = initialize_two_dtokens(
+    let (_, dweth, dwnear) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),

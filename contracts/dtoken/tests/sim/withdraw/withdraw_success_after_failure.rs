@@ -7,9 +7,11 @@ use general::Price;
 
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_two_dtokens,
-    initialize_two_utokens, mint_tokens, new_user, set_price, supply, view_balance, withdraw,
+    initialize_two_utokens, mint_and_reserve, mint_tokens, new_user, set_price, supply,
+    view_balance, withdraw,
 };
 
+const RESERVE_AMOUNT: Balance = 100;
 const WNEAR_BALANCE: Balance = 50;
 const WETH_BALANCE: Balance = 100;
 const SUPPLY_WETH_AMOUNT: Balance = 100;
@@ -28,7 +30,7 @@ fn withdraw_success_after_failure_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (dweth, dwnear) = initialize_two_dtokens(
+    let (droot, dweth, dwnear) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -37,9 +39,10 @@ fn withdraw_success_after_failure_fixture() -> (
         InterestRateModel::default(),
     );
 
-    mint_tokens(&wnear, dwnear.account_id(), U128(100));
+    mint_and_reserve(&droot, &weth, &dweth, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &dwnear, RESERVE_AMOUNT);
+
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_BALANCE));
-    mint_tokens(&weth, dweth.account_id(), U128(100));
     mint_tokens(&weth, user.account_id(), U128(WETH_BALANCE));
 
     add_market(
@@ -94,13 +97,8 @@ fn scenario_withdraw_success_after_failure() {
 
     let user_supply_balance: Balance =
         view_balance(&controller, Supply, user.account_id(), dweth.account_id());
-    assert_eq!(
-        user_supply_balance,
-        SUPPLY_WETH_AMOUNT / 2,
-        "Balance should be {}",
-        SUPPLY_WETH_AMOUNT / 2
-    );
+    assert_eq!(user_supply_balance, 0, "Balance should be {}", 0);
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
-    assert_eq!(user_balance.0, SUPPLY_WETH_AMOUNT / 2);
+    assert_eq!(user_balance.0, SUPPLY_WETH_AMOUNT);
 }

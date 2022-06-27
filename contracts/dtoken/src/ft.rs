@@ -6,10 +6,6 @@ use near_sdk::AccountId;
 
 #[near_bindgen]
 impl FungibleTokenReceiver for Contract {
-    /// Receives the transfer from the underlying fungible token and executes method call on controller
-    /// Requires to be called by the fungible underlying token account.
-    /// amount - Token amount
-    #[allow(unreachable_code)]
     fn ft_on_transfer(
         &mut self,
         sender_id: AccountId,

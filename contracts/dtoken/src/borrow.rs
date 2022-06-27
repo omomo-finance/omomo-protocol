@@ -43,18 +43,18 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn borrow(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
 
         assert!(
-            Balance::from(token_amount) > 0,
+            Balance::from(amount) > 0,
             "Amount should be a positive number"
         );
 
-        self.mutex_account_lock(Actions::Borrow, token_amount, self.terra_gas(180))
+        self.mutex_account_lock(Actions::Borrow, amount, self.terra_gas(180))
     }
 
     #[private]
@@ -87,7 +87,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             U128(balance_of),
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
         let borrow_accrued_interest = self
             .config
@@ -106,7 +106,7 @@ impl Contract {
             self.get_contract_address(),
             token_amount,
             borrow_accrued_interest.last_recalculation_block,
-            WRatio::from(borrow_rate.0),
+            WRatio::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
@@ -209,6 +209,7 @@ impl Contract {
         }
     }
 
+    #[private]
     pub fn set_account_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let mut user = self.user_profiles.get(&account).unwrap_or_default();
         user.borrows = Balance::from(token_amount);

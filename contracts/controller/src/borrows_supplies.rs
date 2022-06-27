@@ -34,7 +34,7 @@ impl Contract {
             token_address,
             token_amount,
             borrow_block,
-            Ratio(borrow_rate.0),
+            Ratio::from(borrow_rate.0),
         );
     }
 
@@ -123,6 +123,7 @@ impl Contract {
         let existing_borrows: Balance =
             self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
+        // TODO This assert should consider interest charges
         assert!(
             existing_borrows >= Balance::from(token_amount),
             "Too much borrowed assets trying to pay out"
@@ -136,7 +137,7 @@ impl Contract {
         }
         let borrow_data = BorrowData {
             borrow_block,
-            borrow_rate: Ratio(borrow_rate),
+            borrow_rate: Ratio::from(borrow_rate),
         };
         self.user_profiles
             .get(&account)
@@ -199,7 +200,7 @@ impl Contract {
             account
         );
         self.get_potential_health_factor(account, token_address, token_amount, Supply)
-            >= self.get_health_threshold()
+            >= self.get_liquidation_threshold()
     }
 
     #[warn(dead_code)]
@@ -211,7 +212,7 @@ impl Contract {
     ) -> bool {
         require!(!self.is_action_paused.borrow, "borrowing is paused");
         self.get_potential_health_factor(account, token_address, token_amount, Borrow)
-            >= self.get_health_threshold()
+            >= self.get_liquidation_threshold()
     }
 
     pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
@@ -307,14 +308,14 @@ mod tests {
             token_address.clone(),
             U128(10),
             0,
-            Ratio(0),
+            Ratio::zero(),
         );
         near_contract.increase_borrows(
             user_account.clone(),
             AccountId::new_unchecked("test.nearlend".to_string()),
             U128(100),
             0,
-            Ratio(0),
+            Ratio::zero(),
         );
 
         assert_eq!(
@@ -417,7 +418,7 @@ mod tests {
             token_address.clone(),
             U128(10),
             0,
-            Ratio(0),
+            Ratio::zero(),
         );
 
         near_contract.decrease_borrows(user_account, token_address, U128(20), 0, WRatio::from(0));
@@ -450,7 +451,13 @@ mod tests {
             fraction_digits: 4u32,
         };
         near_contract.upsert_price(token_address.clone(), &price);
-        near_contract.increase_borrows(user_account.clone(), token_address, U128(10), 0, Ratio(0));
+        near_contract.increase_borrows(
+            user_account.clone(),
+            token_address,
+            U128(10),
+            0,
+            Ratio::zero(),
+        );
 
         assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
     }

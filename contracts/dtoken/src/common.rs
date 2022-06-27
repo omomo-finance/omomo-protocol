@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::{Ratio, RATIO_DECIMALS};
+use general::ratio::Ratio;
 use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use std::fmt;
 
@@ -68,12 +68,12 @@ impl Contract {
         total_supplies: Balance,
     ) -> Ratio {
         if total_supplies == 0 {
-            return Ratio(self.initial_exchange_rate);
+            return self.initial_exchange_rate;
         }
-        Ratio(
-            (Balance::from(underlying_balance) + total_borrows - total_reserves) * RATIO_DECIMALS.0
-                / total_supplies,
-        )
+
+        (Ratio::from(underlying_balance.0) + Ratio::from(total_borrows)
+            - Ratio::from(total_reserves))
+            / Ratio::from(total_supplies)
     }
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
@@ -107,12 +107,15 @@ impl Contract {
     }
 
     pub fn get_total_supplies(&self) -> Balance {
-        // Dtoken amount
-        self.token.total_supply
+        // Tokens amount
+        self.user_profiles
+            .iter()
+            .map(|(_, value)| value.supplies)
+            .sum()
     }
 
     pub fn get_total_borrows(&self) -> Balance {
-        // Token amount
+        // Tokens amount
         self.user_profiles
             .iter()
             .map(|(_, value)| value.borrows)
@@ -127,7 +130,7 @@ impl Contract {
         let borrow_rate = self.get_borrow_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
+            U128(self.get_total_reserves()),
         );
         let user_borrows = self.get_account_borrows(user_id.clone());
 
@@ -142,13 +145,13 @@ impl Contract {
                 self.get_accrued_borrow_interest(user_id),
             );
         let accumulated_interest = borrow_accrued_interest.accumulated_interest;
-        let accrued_interest_per_block = user_borrows * borrow_rate.0 / RATIO_DECIMALS.0;
+        let accrued_interest_per_block = user_borrows * U128::from(borrow_rate).0;
 
         RepayInfo {
             accrued_interest_per_block: WBalance::from(accrued_interest_per_block),
             total_amount: WBalance::from(accumulated_interest + user_borrows),
-            borrow_amount: U128(user_borrows),
-            accumulated_interest: U128(accumulated_interest),
+            borrow_amount: WBalance::from(user_borrows),
+            accumulated_interest: WBalance::from(accumulated_interest),
         }
     }
 
@@ -157,13 +160,13 @@ impl Contract {
         user_id: AccountId,
         underlying_balance: WBalance,
     ) -> WithdrawInfo {
-        let exchange_rate: Ratio = self.get_exchange_rate(underlying_balance);
+        let exchange_rate = U128::from(self.get_exchange_rate(underlying_balance));
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
             underlying_balance,
             U128(self.get_total_borrows()),
-            U128(self.total_reserves),
-            U128(interest_rate_model.get_reserve_factor().0),
+            U128(self.get_total_reserves()),
+            interest_rate_model.get_reserve_factor(),
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
@@ -366,13 +369,14 @@ mod tests {
     use general::ratio::Ratio;
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
+    use std::str::FromStr;
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
             (alice(), bob(), carol());
 
         Contract::new(Config {
-            initial_exchange_rate: U128(10000),
+            initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
@@ -403,7 +407,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio::one(),
             contract.calculate_exchange_rate(
                 U128(10_000),
                 total_borrows,
@@ -424,7 +428,7 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio::one(),
             contract.calculate_exchange_rate(
                 U128(11_000),
                 total_borrows,
@@ -445,9 +449,30 @@ mod tests {
 
         // Ratio that represents xrate = 1
         assert_eq!(
-            Ratio(10000),
+            Ratio::one(),
             contract.calculate_exchange_rate(
                 U128(10_000),
+                total_borrows,
+                total_reserves,
+                total_supplies,
+            )
+        );
+    }
+
+    #[test]
+    fn test_exchange_rate_after_borrow_more_than_supplies() {
+        let contract = init_env();
+
+        // borrow 5000 tokens
+        let total_reserves = 10_000;
+        let total_borrows = 5_000;
+        let total_supplies = 1_000;
+
+        // Ratio that represents xrate = 1
+        assert_eq!(
+            Ratio::one(),
+            contract.calculate_exchange_rate(
+                U128(6_000),
                 total_borrows,
                 total_reserves,
                 total_supplies,
@@ -466,32 +491,11 @@ mod tests {
 
         // Ratio that represents xrate = 1.05
         assert_eq!(
-            Ratio(10500),
+            Ratio::from_str("1.05").unwrap(),
             contract.calculate_exchange_rate(
                 U128(11_050),
                 total_borrows,
                 total_reserves,
-                total_supplies,
-            )
-        );
-    }
-
-    #[test]
-    fn test_exchange_rate_after_withdraw() {
-        let contract = init_env();
-
-        // withdraw all supplies
-        let total_reserves = 10_002.5;
-        let total_borrows = 0;
-        let total_supplies = 0;
-
-        // Ratio that represents xrate = 1
-        assert_eq!(
-            Ratio(10000),
-            contract.calculate_exchange_rate(
-                U128(10_002.5 as u128),
-                total_borrows,
-                total_reserves as u128,
                 total_supplies,
             )
         );

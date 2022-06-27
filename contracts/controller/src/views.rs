@@ -1,6 +1,5 @@
 use crate::borrows_supplies::ActionType::Supply;
 use crate::*;
-use general::ratio::RATIO_DECIMALS;
 use std::collections::HashMap;
 
 use crate::admin::Market;
@@ -27,7 +26,7 @@ impl Default for AccountData {
             total_supplies_usd: U128(0),
             total_available_borrows_usd: U128(0),
             blocked: false,
-            health_factor_ratio: WRatio::from(RATIO_DECIMALS.0),
+            health_factor_ratio: WRatio::from(Ratio::one()),
             user_profile: Default::default(),
         }
     }
@@ -47,6 +46,17 @@ impl Contract {
         self.get_markets_list()
     }
 
+    pub fn view_accounts_with_borrows(&self) -> Vec<AccountData> {
+        let users = self
+            .user_profiles
+            .iter()
+            .filter(|(_, user_profile)| !user_profile.account_borrows.is_empty())
+            .map(|(account_id, _)| account_id)
+            .collect::<Vec<AccountId>>();
+
+        self.view_accounts(users)
+    }
+
     pub fn view_accounts(&self, user_ids: Vec<AccountId>) -> Vec<AccountData> {
         return user_ids
             .iter()
@@ -56,7 +66,7 @@ impl Contract {
                 let total_supplies = self.get_total_supplies(user_id.clone());
 
                 let total_available_borrows_usd =
-                    (total_supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0).into();
+                    (Ratio::from(total_supplies) / self.liquidation_threshold).into();
 
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
@@ -66,7 +76,7 @@ impl Contract {
                     total_available_borrows_usd,
                     total_supplies_usd: total_supplies,
                     blocked: false,
-                    health_factor_ratio: WRatio::from(health_factor.0),
+                    health_factor_ratio: WRatio::from(health_factor),
                     user_profile,
                 }
             })
@@ -82,10 +92,10 @@ impl Contract {
         let gotten_borrow = self.get_total_borrows(user_id);
 
         let potential_borrow =
-            (supplies.0 * RATIO_DECIMALS.0 / self.health_threshold.0) - gotten_borrow.0;
-        let price = self.get_price(dtoken_id).unwrap().value.0;
+            Ratio::from(supplies.0) / self.liquidation_threshold - Ratio::from(gotten_borrow.0);
+        let price = Ratio::from(self.get_price(dtoken_id).unwrap().value.0);
 
-        (potential_borrow * ONE_TOKEN / price).into()
+        WBalance::from(potential_borrow / price)
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -95,9 +105,12 @@ impl Contract {
         let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
 
         let max_withdraw = supplies.0
-            - ((borrows.0 + accrued_interest) * self.health_threshold.0 / RATIO_DECIMALS.0);
+            - (borrows.0
+                + accrued_interest * self.liquidation_threshold.round_u128()
+                    / Ratio::one().round_u128());
         let price = self.get_price(dtoken_id).unwrap().value.0;
-        let max_withdraw_in_token = max_withdraw * ONE_TOKEN / price;
+        let max_withdraw_in_token =
+            max_withdraw * Ratio::from(ONE_TOKEN).round_u128() / Ratio::from(price).round_u128();
         if supply_by_token <= max_withdraw_in_token {
             supply_by_token.into()
         } else {
@@ -242,14 +255,14 @@ mod tests {
 
         assert_eq!(
             result[0].total_available_borrows_usd,
-            // total_supplies_usd * RATIO_DECIMALS / self.health_threshold
-            U128(100 * 20000 * 10000 / 15000),
+            // total_supplies_usd * Ratio::one() / self.liquidation_threshold
+            U128(100 * 20000 * 1000000000000000000000000 / 1500000000000000000000000),
             "View accounts total supplies check has been failed"
         );
 
         assert_eq!(
             result[0].health_factor_ratio,
-            U128(15000),
+            U128(1500000000000000000000000),
             "View accounts health factor check has been failed"
         );
     }

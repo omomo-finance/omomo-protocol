@@ -20,10 +20,10 @@ impl Contract {
 
     fn set_total_reserve(&mut self, amount: Balance) -> Balance {
         self.total_reserves = amount;
-        self.total_reserves
+        self.get_total_reserves()
     }
 
     pub fn increase_reserve(&mut self, token_amount: WBalance) -> Balance {
-        self.set_total_reserve(self.total_reserves + Balance::from(token_amount))
+        self.set_total_reserve(self.get_total_reserves() + Balance::from(token_amount))
     }
 }
