@@ -1,6 +1,6 @@
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::{AccountId, Balance};
+use near_sdk::{AccountId, Balance, Gas};
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 
 use controller::ContractContract as Controller;
@@ -498,4 +498,17 @@ pub fn repay_info(
         deposit = 0
     )
     .unwrap_json::<RepayInfo>()
+}
+
+pub fn upgrade_controller(
+    controller: &ContractAccount<controller::ContractContract>,
+    contract_bytes: &[u8],
+) -> ExecutionResult {
+    const MAX_GAS: Gas = Gas(Gas::ONE_TERA.0 * 300);
+
+    controller
+        .user_account
+        .create_transaction(controller.account_id())
+        .function_call("upgrade".to_string(), contract_bytes.to_vec(), MAX_GAS.0, 0)
+        .submit()
 }

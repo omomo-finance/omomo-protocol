@@ -33,6 +33,7 @@ pub mod repay;
 pub mod user_flow_protection;
 pub mod user_profile;
 mod views;
+mod upgrade;
 
 pub fn get_default_liquidation_incentive() -> Ratio {
     Ratio::from_str("0.05").unwrap()
@@ -54,6 +55,7 @@ pub enum StorageKeys {
     Config,
     Borrows,
     UserProfiles,
+    NewMockField,
 }
 
 #[near_bindgen]
@@ -89,6 +91,9 @@ pub struct Contract {
 
     ///User action protection
     mutex: ActionMutex,
+
+    /// New field to test out
+    new_mock_field: LookupMap<AccountId, bool>,
 }
 
 impl Default for Contract {
@@ -177,6 +182,7 @@ impl Contract {
             liquidation_threshold: get_default_liquidation_threshold(),
 
             mutex: ActionMutex::default(),
+            new_mock_field: LookupMap::new(StorageKeys::NewMockField),
         }
     }
 }
