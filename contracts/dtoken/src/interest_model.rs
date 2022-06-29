@@ -39,11 +39,11 @@ impl Contract {
         let base_rate_per_block = interest_rate_model.get_base_rate_per_block();
         let jump_multiplier_per_block = interest_rate_model.get_jump_multiplier_per_block();
 
-        let mut multiplier = Ratio::zero();
-
-        if util > kink {
-            multiplier = util - kink;
-        }
+        let multiplier = if util > kink {
+            util - kink
+        } else {
+            Ratio::zero()
+        };
 
         min(util, kink) * multiplier_per_block
             + multiplier * jump_multiplier_per_block

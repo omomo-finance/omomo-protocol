@@ -8,7 +8,7 @@ impl Contract {
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(asset.clone()).unwrap();
+                let price = self.get_price(&asset).unwrap();
 
                 Percentage::from(price.volatility.0).apply_to(
                     Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits),
@@ -50,7 +50,7 @@ impl Contract {
                 * borrow_data.borrow_rate
                 * Ratio::from(block_height() - borrow_data.borrow_block);
 
-            let price = self.get_price(token_address.clone()).unwrap();
+            let price = self.get_price(&token_address).unwrap();
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
                 Balance::from(price.value) * accrued_interest.round_u128()
                     / 10u128.pow(price.fraction_digits),
@@ -89,7 +89,7 @@ impl Contract {
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
-        let price = self.get_price(token_address).unwrap();
+        let price = self.get_price(&token_address).unwrap();
         let usd_amount = Percentage::from(price.volatility.0).apply_to(
             Balance::from(price.value) * Balance::from(amount) / 10u128.pow(price.fraction_digits),
         );

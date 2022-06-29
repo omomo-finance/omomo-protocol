@@ -12,14 +12,14 @@ impl Contract {
     pub fn get_prices_for_dtokens(&self, dtokens: Vec<AccountId>) -> HashMap<AccountId, Price> {
         let mut result = HashMap::new();
         for dtoken in dtokens {
-            if let Some(price) = self.get_price(dtoken.clone()) {
+            if let Some(price) = self.get_price(&dtoken) {
                 result.insert(dtoken, price);
             }
         }
         result
     }
 
-    pub fn get_price(&self, dtoken_id: AccountId) -> Option<Price> {
+    pub fn get_price(&self, dtoken_id: &AccountId) -> Option<Price> {
         self.prices.get(&dtoken_id)
     }
 }
@@ -70,7 +70,7 @@ mod tests {
 
         near_contract.upsert_price(token_address.clone(), &price);
 
-        let gotten_price = near_contract.get_price(token_address).unwrap();
+        let gotten_price = near_contract.get_price(&token_address).unwrap();
         assert_matches!(
             &gotten_price,
             _price,

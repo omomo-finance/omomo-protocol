@@ -131,7 +131,7 @@ impl Contract {
         controller::increase_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
-            token_amount,
+            dtoken_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(5),

@@ -23,16 +23,16 @@ near delete controller_beta.nearlend.testnet nearlend.testnet
 
 # create underlying tokens and markets
 near create-account weth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dweth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5 
+near create-account dweth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
 
 near create-account wnear_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dwnear_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5 
+near create-account dwnear_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
 
 near create-account usdt_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dusdt_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5 
+near create-account dusdt_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
 
 near create-account usdc_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dusdc_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 5 
+near create-account dusdc_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
 
 
 # create controller

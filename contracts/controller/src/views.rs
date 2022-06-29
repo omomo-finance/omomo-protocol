@@ -1,8 +1,10 @@
 use crate::borrows_supplies::ActionType::Supply;
 use crate::*;
 use std::collections::HashMap;
+use std::cmp::min;
 
 use crate::admin::Market;
+use general::ratio::{BigBalance, Ratio};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -35,11 +37,11 @@ impl Default for AccountData {
 #[near_bindgen]
 impl Contract {
     pub fn view_total_borrows_usd(&self, user_id: AccountId) -> USD {
-        self.get_total_borrows(user_id)
+        self.get_total_borrows(&user_id)
     }
 
     pub fn view_total_supplies_usd(&self, user_id: AccountId) -> USD {
-        self.get_total_supplies(user_id)
+        self.get_total_supplies(&user_id)
     }
 
     pub fn view_markets(&self) -> Vec<Market> {
@@ -62,8 +64,8 @@ impl Contract {
             .iter()
             .filter(|user_id| self.user_profiles.get(user_id).is_some())
             .map(|user_id| {
-                let total_borrows = self.get_total_borrows(user_id.clone());
-                let total_supplies = self.get_total_supplies(user_id.clone());
+                let total_borrows = self.get_total_borrows(&user_id);
+                let total_supplies = self.get_total_supplies(&user_id);
 
                 let total_available_borrows_usd =
                     (Ratio::from(total_supplies) / self.liquidation_threshold).into();
@@ -88,34 +90,28 @@ impl Contract {
     }
 
     pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
-        let supplies = self.get_total_supplies(user_id.clone());
-        let gotten_borrow = self.get_total_borrows(user_id);
+        let supplies = self.get_total_supplies(&user_id);
+        let gotten_borrow = self.get_total_borrows(&user_id);
 
         let potential_borrow =
             Ratio::from(supplies.0) / self.liquidation_threshold - Ratio::from(gotten_borrow.0);
-        let price = Ratio::from(self.get_price(dtoken_id).unwrap().value.0);
+        let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
 
         WBalance::from(potential_borrow / price)
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
-        let supplies = self.get_total_supplies(user_id.clone());
-        let borrows = self.get_total_borrows(user_id.clone());
-        let accrued_interest = self.calculate_accrued_borrow_interest(user_id.clone());
-        let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
+        let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
+        let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
+        let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
+        
+        let max_withdraw = supplies - self.liquidation_threshold * (borrows + accrued_interest);
 
-        let max_withdraw = supplies.0
-            - (borrows.0
-                + accrued_interest * self.liquidation_threshold.round_u128()
-                    / Ratio::one().round_u128());
-        let price = self.get_price(dtoken_id).unwrap().value.0;
-        let max_withdraw_in_token =
-            max_withdraw * Ratio::from(ONE_TOKEN).round_u128() / Ratio::from(price).round_u128();
-        if supply_by_token <= max_withdraw_in_token {
-            supply_by_token.into()
-        } else {
-            max_withdraw_in_token.into()
-        }
+        let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
+        let max_withdraw_in_token = max_withdraw / price;
+            
+        let supply_by_token = BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
+        min(supply_by_token, max_withdraw_in_token).into()
     }
 }
 
@@ -275,12 +271,19 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            5420000000000000000000000, // in yocto == 5.42 Near
+            10000000000000000000000000, // in yocto == 10 Near
         );
 
-        // we are able to withdraw all the supplied funds hence 5 NEAR
+        near_contract.set_entity_by_token(
+            Borrow,
+            user.clone(),
+            token_address.clone(),
+            5000000000000000000000000, // in yocto == 5 Near
+        );
+
+        // we are able to withdraw 10.0 - 150% * (5.0 + 0.0) = 2.5 Near
         assert_eq!(
-            U128(5420000000000000000000000),
+            U128(2500000000000000000000000),
             near_contract.view_withdraw_max(user, token_address)
         );
     }

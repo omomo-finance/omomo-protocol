@@ -97,7 +97,7 @@ impl Contract {
         controller::withdraw_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
-            token_amount.into(),
+            dtoken_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
