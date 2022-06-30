@@ -73,6 +73,10 @@ impl Contract {
     pub fn view_withdraw_info(&self, user_id: AccountId, ft_balance: WBalance) -> WithdrawInfo {
         self.get_withdraw_info(user_id, ft_balance)
     }
+
+    pub fn view_mock_field(&self) -> u64 {
+        self.new_mock_field.len()
+    }
 }
 
 #[cfg(test)]

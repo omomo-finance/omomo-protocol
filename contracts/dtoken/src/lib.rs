@@ -45,6 +45,7 @@ mod upgrade;
 enum StorageKeys {
     Config,
     UserProfiles,
+    NewMockField,
 }
 
 #[near_bindgen]
@@ -72,6 +73,11 @@ pub struct Contract {
 
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
+
+
+    /// New field to test out
+    pub new_mock_field: UnorderedMap<AccountId, bool>,
+
 }
 
 impl Default for Contract {
@@ -254,6 +260,7 @@ impl Contract {
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
             admin: config.owner_id,
+            new_mock_field: UnorderedMap::new(StorageKeys::NewMockField),
         }
     }
 }

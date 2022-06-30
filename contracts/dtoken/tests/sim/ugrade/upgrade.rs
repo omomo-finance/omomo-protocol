@@ -1,111 +1,77 @@
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    CONTROLLER_WASM_BYTES => "../../res/controller.wasm",
-    CONTROLLER_PREV_WASM_BYTES => "../../res/controller_prev.wasm",
+    DTOKEN_WASM_BYTES => "../../res/dtoken.wasm",
+    PREV_DTOKEN_WASM_BYTES => "../../res/prev_dtoken.wasm",
 }
 
 const CURRENT_VERSION: &str = "0.0.1";
 
-use controller::ContractContract as Controller;
-use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount, deploy, call, to_yocto};
+
 use near_sdk::AccountId;
-use controller::Config as cConfig;
+use crate::utils::{new_user, upgrade_dtoken};
+use dtoken::InterestRateModel;
+use near_sdk::json_types::U128;
+use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount, deploy, to_yocto};
+use dtoken::ContractContract as Dtoken;
+use dtoken::Config as dConfig;
+use general::ratio::Ratio;
 
-
-
-fn upgrade_fixture() -> (UserAccount,
-                         ContractAccount<controller::ContractContract>)
-{
+fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
 
-    let croot = root.create_user("controller".parse().unwrap(), to_yocto("1200000"));
+    let user = new_user(&root, "user".parse().unwrap());
 
-    let controller = deploy!(
-        contract: Controller,
-        contract_id: AccountId::new_unchecked("controller_contract".to_string()),
-        bytes: &CONTROLLER_PREV_WASM_BYTES,
-        signer_account: croot
+    let droot = root.create_user("dtoken".parse().unwrap(), to_yocto("1200000"));
+    let contract_id = AccountId::new_unchecked("dtoken_contract".to_string());
+    let dtoken = deploy!(
+        contract: Dtoken,
+        contract_id: contract_id,
+        bytes: &PREV_DTOKEN_WASM_BYTES,
+        signer_account: droot
     );
 
-
     call!(
-        controller.user_account,
-        controller.new(cConfig {
-            owner_id: croot.account_id(),
-            oracle_account_id: "oracle".parse().unwrap()
+        dtoken.user_account,
+        dtoken.new(dConfig {
+            initial_exchange_rate: U128::from(Ratio::one()),
+            underlying_token_id: "utoken".parse().unwrap(),
+            owner_id: droot.account_id,
+            controller_account_id: "controller".parse().unwrap(),
+            interest_rate_model: InterestRateModel::default()
         }),
         deposit = 0
     )
         .assert_success();
 
-    (root, controller)
+
+    call!(
+        dtoken.user_account,
+        dtoken.mint(user.account_id(), U128(1000)),
+        0,
+        100000000000000
+    );
+
+    let user_balance: U128 = view!(dtoken.ft_balance_of(user.account_id())).unwrap_json();
+    assert_eq!(user_balance.0, 1000);
+
+    let version: String = view!(dtoken.get_version()).unwrap_json();
+    assert_eq!(version, CURRENT_VERSION);
+
+    (dtoken, user)
 }
+
 
 #[test]
 fn test_upgrade() {
-    const NEXT_VERSION: &str = "0.0.2";
+    let (dtoken, user) = upgrade_fixture();
 
-    let( root, controller) = upgrade_fixture();
+    // ViewResult is an error: "wasm execution failed with error: FunctionCallError(MethodResolveError(MethodNotFound))"
+    // let mock_field_check: u64 = view!(dtoken.view_mock_field(user.account_id())).unwrap_json();
 
-    root.call(
-        controller.user_account.account_id.clone(),
-        "upgrade",
-        &CONTROLLER_PREV_WASM_BYTES,
-        near_sdk_sim::DEFAULT_GAS,
-        0,
-    )
-        .assert_success();
+    upgrade_dtoken(&dtoken, &DTOKEN_WASM_BYTES).assert_success();
 
-    // upgrade_controller(&controller, &CONTROLLER_WASM_BYTES).assert_success();
-    //
-    let version: String = view!(controller.get_version()).unwrap_json();
-    assert_eq!(version, NEXT_VERSION);
+    let user_balance: U128 = view!(dtoken.ft_balance_of(user.account_id())).unwrap_json();
+    assert_eq!(user_balance.0, 1000);
+
+    let mock_field_check_len: u64 = view!(dtoken.view_mock_field()).unwrap_json();
+    assert_eq!(mock_field_check_len, 0);
 }
-
-
-// #[test]
-// fn test_upgrade_with_less_fields() {
-//     let (user, dtoken) = upgrade_fixture();
-//
-//
-//     const NEXT_VERSION: &str = "0.0.3";
-//
-//     let reserve: U128 = view!(dtoken.view_total_reserves()).unwrap_json();
-//     assert_eq!(reserve.0, 0);
-//
-//     // New contract without reserve field
-//     upgrade(&dtoken, &DTOKEN_WASM_BYTES_PREV).assert_success();
-//
-//     let user_balance: U128 = view!(dtoken.ft_balance_of(user.account_id())).unwrap_json();
-//     assert_eq!(user_balance.0, 1000);
-//
-//     // Call view method of removed field
-//     // FunctionCallError(MethodResolveError(MethodNotFound))
-//     // let reserve: U128 = view!(dtoken.view_total_reserves()).unwrap_json();
-//
-//     let version: String = view!(dtoken.get_version()).unwrap_json();
-//     assert_eq!(version, NEXT_VERSION);
-// }
-
-// #[test]
-// fn test_upgrade_with_additional_field() {
-//     let (user, dtoken) = upgrade_fixture();
-//
-//
-//     const NEXT_VERSION: &str = "0.0.2";
-//
-//     let reserve: U128 = view!(dtoken.view_total_reserves()).unwrap_json();
-//     assert_eq!(reserve.0, 0);
-//
-//     // New contract with additional Vector field
-//     upgrade(&dtoken, &DTOKEN_WASM_BYTES_PREV).assert_success();
-//
-//     let user_balance: U128 = view!(dtoken.ft_balance_of(user.account_id())).unwrap_json();
-//     assert_eq!(user_balance.0, 1000);
-//
-//     // Return the value of new empty vector
-//     // FunctionCallError(HostError(GuestPanic { panic_msg: \"panicked at 'index out of bounds: the len is 0 but the index is 2'
-//     // let reserve: U128 = view!(dtoken.view_total_reserves()).unwrap_json();
-//
-//     let version: String = view!(dtoken.get_version()).unwrap_json();
-//     assert_eq!(version, NEXT_VERSION);
-// }

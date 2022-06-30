@@ -7,5 +7,4 @@ contracts/test-utoken/target
 contracts/general/target
 /.idea
 /node_modules/
-/res/
 /.near-credentials

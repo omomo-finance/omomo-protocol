@@ -500,15 +500,15 @@ pub fn repay_info(
     .unwrap_json::<RepayInfo>()
 }
 
-pub fn upgrade_controller(
-    controller: &ContractAccount<controller::ContractContract>,
+pub fn upgrade_dtoken(
+    dtoken: &ContractAccount<dtoken::ContractContract>,
     contract_bytes: &[u8],
 ) -> ExecutionResult {
     const MAX_GAS: Gas = Gas(Gas::ONE_TERA.0 * 300);
 
-    controller
+    dtoken
         .user_account
-        .create_transaction(controller.account_id())
+        .create_transaction(dtoken.account_id())
         .function_call("upgrade".to_string(), contract_bytes.to_vec(), MAX_GAS.0, 0)
         .submit()
 }

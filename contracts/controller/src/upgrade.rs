@@ -1,52 +1,16 @@
 use crate::*;
-use near_sdk::PanicOnDefault;
-
 
 #[near_bindgen]
 impl Contract {
     #[init(ignore_state)]
     #[private]
-    pub fn migrate_with_new_field() -> Self {
-        #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+    pub fn migrate() -> Self {
         // adding new field to contract before it to migrate all the information
-        struct OldContract {
-            pub markets: UnorderedMap<AccountId, MarketProfile>,
+        let contract: Contract = env::state_read().expect("Contract is not initialized");
 
-            user_profiles: UnorderedMap<AccountId, UserProfile>,
-
-            pub prices: LookupMap<AccountId, Price>,
-
-            pub config: LazyOption<Config>,
-
-            pub admin: AccountId,
-
-            pub is_action_paused: ActionStatus,
-
-            pub liquidation_threshold: Ratio,
-
-            pub liquidation_incentive: Ratio,
-
-            pub liquidation_health_factor_threshold: Ratio,
-
-            mutex: ActionMutex,
-        }
-
-        let contract: OldContract = env::state_read().expect("Contract is not initialized");
-
-        Self {
-            markets: contract.markets,
-            user_profiles: contract.user_profiles,
-            prices: contract.prices,
-            config: contract.config,
-            admin: contract.admin,
-            is_action_paused: contract.is_action_paused,
-            liquidation_threshold: contract.liquidation_threshold,
-            liquidation_incentive: contract.liquidation_incentive,
-            liquidation_health_factor_threshold: contract.liquidation_health_factor_threshold,
-            mutex: contract.mutex,
-            new_mock_field: LookupMap::new(StorageKeys::NewMockField),
-        }
+        contract
     }
+
 
     // Return a version of contract
     pub fn get_version(&self) -> String {

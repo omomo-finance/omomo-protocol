@@ -1,14 +1,50 @@
 use crate::*;
-
+use near_sdk::PanicOnDefault;
 #[near_bindgen]
 impl Contract {
     #[init(ignore_state)]
     #[private]
     pub fn migrate() -> Self {
         // adding new field to contract before it to migrate all the information
-        let contract: Contract = env::state_read().expect("Contract is not initialized");
+        #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+        struct OldContract {
+            ///  Exchange rate in case of zero supplies
+            initial_exchange_rate: Ratio,
 
-        contract
+            /// Total sum of supplied tokens
+            total_reserves: Balance,
+
+            /// Account Id -> Token's amount
+            user_profiles: UnorderedMap<AccountId, UserProfile>,
+
+            /// Address of underlying token
+            underlying_token: AccountId,
+
+            /// Pointer for contract token
+            token: FungibleToken,
+
+            /// Contract configuration object
+            config: LazyOption<Config>,
+
+            model: InterestRateModel,
+
+            /// Contract admin account (dtoken itself by default)
+            pub admin: AccountId,
+        }
+
+        let contract: OldContract = env::state_read().expect("Contract is not initialized");
+
+        Self {
+            initial_exchange_rate: contract.initial_exchange_rate,
+            total_reserves: contract.total_reserves,
+            user_profiles: contract.user_profiles,
+            underlying_token: contract.underlying_token,
+            token: contract.token,
+            config: contract.config,
+            model: contract.model,
+            admin: contract.admin,
+            new_mock_field: UnorderedMap::new(StorageKeys::NewMockField),
+        }
     }
 
     // Return a version of contract
@@ -41,7 +77,7 @@ impl Contract {
             //1st action, deploy/upgrade code (takes code from register 0)
             near_sys::promise_batch_action_deploy_contract(promise_id, u64::MAX as _, 0);
 
-            // 2nd action, schedule a call to "migrate_with_new_field()".
+            // 2nd action, schedule a call to "migrate()".
             // Will execute on the **new code**
             near_sys::promise_batch_action_function_call(
                 promise_id,
