@@ -36,10 +36,10 @@ mod liquidation;
 mod repay;
 mod reserve;
 mod supply;
+mod upgrade;
 mod user_profile;
 mod views;
 mod withdraw;
-mod upgrade;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
@@ -74,10 +74,8 @@ pub struct Contract {
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
 
-
     /// New field to test out
     pub new_mock_field: UnorderedMap<AccountId, bool>,
-
 }
 
 impl Default for Contract {

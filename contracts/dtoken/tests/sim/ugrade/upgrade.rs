@@ -5,15 +5,14 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 
 const CURRENT_VERSION: &str = "0.0.1";
 
-
-use near_sdk::AccountId;
 use crate::utils::{new_user, upgrade_dtoken};
-use dtoken::InterestRateModel;
-use near_sdk::json_types::U128;
-use near_sdk_sim::{call, init_simulator, view, ContractAccount, UserAccount, deploy, to_yocto};
-use dtoken::ContractContract as Dtoken;
 use dtoken::Config as dConfig;
+use dtoken::ContractContract as Dtoken;
+use dtoken::InterestRateModel;
 use general::ratio::Ratio;
+use near_sdk::json_types::U128;
+use near_sdk::AccountId;
+use near_sdk_sim::{call, deploy, init_simulator, to_yocto, view, ContractAccount, UserAccount};
 
 fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount) {
     let root = init_simulator(None);
@@ -40,8 +39,7 @@ fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount)
         }),
         deposit = 0
     )
-        .assert_success();
-
+    .assert_success();
 
     call!(
         dtoken.user_account,
@@ -58,7 +56,6 @@ fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, UserAccount)
 
     (dtoken, user)
 }
-
 
 #[test]
 fn test_upgrade() {

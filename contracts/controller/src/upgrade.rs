@@ -11,12 +11,10 @@ impl Contract {
         contract
     }
 
-
     // Return a version of contract
     pub fn get_version(&self) -> String {
         env!("CARGO_PKG_VERSION").to_string()
     }
-
 
     #[cfg(target_arch = "wasm32")]
     pub fn upgrade(self) {
@@ -36,8 +34,10 @@ impl Contract {
             near_sys::input(0);
 
             //prepare self-call promise
-            let promise_id =
-                near_sys::promise_batch_create(current_id.as_bytes().len() as _, current_id.as_bytes().as_ptr() as _);
+            let promise_id = near_sys::promise_batch_create(
+                current_id.as_bytes().len() as _,
+                current_id.as_bytes().as_ptr() as _,
+            );
 
             //1st action, deploy/upgrade code (takes code from register 0)
             near_sys::promise_batch_action_deploy_contract(promise_id, u64::MAX as _, 0);
@@ -56,7 +56,6 @@ impl Contract {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
