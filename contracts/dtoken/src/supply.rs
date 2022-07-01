@@ -36,6 +36,8 @@ impl Contract {
     }
 
     pub fn decrease_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        return 0;
+
         let supplies = self.get_account_supplies(account.clone());
         let new_supplies = supplies - Balance::from(token_amount);
 
@@ -43,6 +45,8 @@ impl Contract {
     }
 
     pub fn increase_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
+        return 0;
+
         let supplies: Balance = self.get_account_supplies(account.clone());
         let new_supplies = supplies + Balance::from(token_amount);
 
