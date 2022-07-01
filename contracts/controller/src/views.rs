@@ -90,14 +90,21 @@ impl Contract {
     }
 
     pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
-        let supplies = self.get_total_supplies(&user_id);
-        let gotten_borrow = self.get_total_borrows(&user_id);
+        let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
+        let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
+        let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
+        
+        let supply_limit = supplies / self.liquidation_threshold;
+        let max_borrow = if supply_limit > (borrows + accrued_interest) {
+            supply_limit - (borrows + accrued_interest)
+        } else {
+            BigBalance::zero()
+        };
 
-        let potential_borrow =
-            Ratio::from(supplies.0) / self.liquidation_threshold - Ratio::from(gotten_borrow.0);
         let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
+        let max_borrow_in_token = max_borrow / price;
 
-        WBalance::from(potential_borrow / price)
+        max_borrow_in_token.into()
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
@@ -105,7 +112,12 @@ impl Contract {
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
         let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
         
-        let max_withdraw = supplies - self.liquidation_threshold * (borrows + accrued_interest);
+        let borrow_limit = self.liquidation_threshold * (borrows + accrued_interest);
+        let max_withdraw = if supplies > borrow_limit {
+            supplies - borrow_limit
+        } else {
+            BigBalance::zero()
+        };
 
         let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
         let max_withdraw_in_token = max_withdraw / price;
@@ -281,7 +293,9 @@ mod tests {
             5000000000000000000000000, // in yocto == 5 Near
         );
 
-        // we are able to withdraw 10.0 - 150% * (5.0 + 0.0) = 2.5 Near
+        // (supplies - max_withdraw) / (borrows + accrued) = threshold
+        // max_withdraw = supplies - threshold * (borrows + accrued)
+        // max_withdraw = 10.0 - 150% * (5.0 + 0.0) = 2.5 Near
         assert_eq!(
             U128(2500000000000000000000000),
             near_contract.view_withdraw_max(user, token_address)
@@ -296,26 +310,21 @@ mod tests {
             Supply,
             user.clone(),
             token_address.clone(),
-            54240000000000000000000000, // in yocto == 54.24 Near
+            10000000000000000000000000, // in yocto == 10 Near
         );
 
         near_contract.set_entity_by_token(
             Borrow,
             user.clone(),
             token_address.clone(),
-            10 * ONE_TOKEN, // in yocto == 10 Near
+            5000000000000000000000000, // in yocto == 5 Near
         );
 
-        // max_withdraw = (54.24 * 20_000 * 10^4 / 15000) - 10 * 20_000 = 523_200;
-        // amount = 523_200 / 20_000 = 26.16
-
-        // as we borrow and supply same token the easiest way to check is
-        // 50 (supplied) / 1.5 (health threshold) = 36.16
-        // hence we have 36.16 - 10 = 26.16 left to borrow not to violate health threshold
-
-        // we still have some tokens to borrow  26.16 Near
+        // supplies / (borrows + accrued + max_borrow) = threshold
+        // max_borrow = supplies / threshold - borrows - accrued
+        // max_borrow = 10.0 / 150% - 5.0 - 0.0 
         assert_eq!(
-            U128(26160000000000000000000000),
+            U128(1666666666666666666666666),
             near_contract.view_borrow_max(user, token_address)
         );
     }
