@@ -171,7 +171,7 @@ near view wnear_beta.nearlend.testnet ft_balance_of '{"account_id": "dwnear_beta
 near view usdt_beta.nearlend.testnet ft_balance_of '{"account_id": "dusdt_beta.nearlend.testnet"}'
 near view usdc_beta.nearlend.testnet ft_balance_of '{"account_id": "dusdc_beta.nearlend.testnet"}'
 
-
+# set shared admin as admin for dtokens
 near call dweth_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet
 near call dwnear_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet
 near call dusdt_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet

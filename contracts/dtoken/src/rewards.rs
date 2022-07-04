@@ -309,7 +309,8 @@ impl Contract {
     }
 
     pub fn get_rewards_list(&self, account_id: AccountId) -> HashMap<String, Reward> {
-        let account_rewards = self.rewards.get(&account_id).unwrap();
+        let default_map: HashMap<String, Reward> = HashMap::new();
+        let account_rewards = self.rewards.get(&account_id).unwrap_or(&default_map);
         let mut view_rewards: HashMap<String, Reward> = HashMap::new();
 
         account_rewards.iter().for_each(|(campaign_id, reward)| {
@@ -563,7 +564,7 @@ mod tests {
             rewards_per_token: U128(0),
             vesting,
         };
-        return campaign;
+        campaign
     }
 
     #[test]
@@ -575,10 +576,10 @@ mod tests {
         let context = get_custom_context(false, 1651362400, 1);
         testing_env!(context);
         let account_id = env::signer_account_id();
-        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        let campaign_id = contract.add_reward_campaign(campaign);
 
-        contract.increase_borrows(account_id.clone(), WBalance::from(1000));
-        let reward = contract.adjust_reward(campaign_id.clone());
+        contract.increase_borrows(account_id, WBalance::from(1000));
+        let reward = contract.adjust_reward(campaign_id);
 
         println!("{}", reward);
         let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
@@ -615,7 +616,7 @@ mod tests {
         let context = get_custom_context(false, 1651357400, 1);
         testing_env!(context);
         let account_id = env::signer_account_id();
-        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        let campaign_id = contract.add_reward_campaign(campaign);
 
         contract.increase_borrows(account_id.clone(), WBalance::from(1000));
         contract.adjust_reward(campaign_id.clone());
@@ -629,7 +630,7 @@ mod tests {
 
         let context = get_custom_context(false, 1651362400, 1);
         testing_env!(context);
-        let result2 = contract.get_rewards_list(account_id.clone());
+        let result2 = contract.get_rewards_list(account_id);
         assert_eq!(
             result2.len(),
             1,
@@ -656,7 +657,7 @@ mod tests {
         let context = get_context(false);
         testing_env!(context);
         campaign.campaign_type = CampaignType::Borrow;
-        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        let campaign_id = contract.add_reward_campaign(campaign);
 
         let reward = Reward::new(campaign_id);
         contract.increase_borrows(account_id.clone(), WBalance::from(100));
@@ -717,7 +718,7 @@ mod tests {
         );
 
         campaign.campaign_type = CampaignType::Borrow;
-        let borrow_total = contract.get_market_total(campaign.clone());
+        let borrow_total = contract.get_market_total(campaign);
         assert_eq!(
             borrow_total.0,
             contract.get_total_borrows(),
@@ -754,13 +755,13 @@ mod tests {
         let context = get_context(false);
         testing_env!(context);
 
-        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        let campaign_id = contract.add_reward_campaign(campaign);
         assert!(
             contract
                 .get_reward_campaign_by_id(campaign_id.clone())
                 .is_some(),
             "Campaign with id {} wasn't added",
-            campaign_id.clone()
+            campaign_id
         );
 
         contract.remove_reward_campaign(campaign_id.clone());
