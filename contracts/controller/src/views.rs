@@ -1,7 +1,7 @@
 use crate::borrows_supplies::ActionType::Supply;
 use crate::*;
-use std::collections::HashMap;
 use std::cmp::min;
+use std::collections::HashMap;
 
 use crate::admin::Market;
 use general::ratio::{BigBalance, Ratio};
@@ -93,7 +93,7 @@ impl Contract {
         let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
         let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
-        
+
         let supply_limit = supplies / self.liquidation_threshold;
         let max_borrow = if supply_limit > (borrows + accrued_interest) {
             supply_limit - (borrows + accrued_interest)
@@ -111,7 +111,7 @@ impl Contract {
         let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
         let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
-        
+
         let borrow_limit = self.liquidation_threshold * (borrows + accrued_interest);
         let max_withdraw = if supplies > borrow_limit {
             supplies - borrow_limit
@@ -121,8 +121,9 @@ impl Contract {
 
         let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
         let max_withdraw_in_token = max_withdraw / price;
-            
-        let supply_by_token = BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
+
+        let supply_by_token =
+            BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
         min(supply_by_token, max_withdraw_in_token).into()
     }
 }
@@ -322,7 +323,7 @@ mod tests {
 
         // supplies / (borrows + accrued + max_borrow) = threshold
         // max_borrow = supplies / threshold - borrows - accrued
-        // max_borrow = 10.0 / 150% - 5.0 - 0.0 
+        // max_borrow = 10.0 / 150% - 5.0 - 0.0
         assert_eq!(
             U128(1666666666666666666666666),
             near_contract.view_borrow_max(user, token_address)
