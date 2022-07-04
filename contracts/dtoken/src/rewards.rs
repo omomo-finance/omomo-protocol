@@ -309,7 +309,8 @@ impl Contract {
     }
 
     pub fn get_rewards_list(&self, account_id: AccountId) -> HashMap<String, Reward> {
-        let account_rewards = self.rewards.get(&account_id).unwrap();
+        let default_map: HashMap<String, Reward> = HashMap::new();
+        let account_rewards = self.rewards.get(&account_id).unwrap_or(&default_map);
         let mut view_rewards: HashMap<String, Reward> = HashMap::new();
 
         account_rewards.iter().for_each(|(campaign_id, reward)| {
