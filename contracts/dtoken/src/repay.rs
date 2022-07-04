@@ -131,7 +131,10 @@ impl Contract {
         let mut borrow_interest = self.get_accrued_borrow_interest(env::signer_account_id());
         // update total reserves only after successful repay
         let new_total_reserve = self.get_total_reserves()
-            + U128::from(Ratio::from(borrow_interest.accumulated_interest) * self.model.get_reserve_factor()).0;
+            + U128::from(
+                Ratio::from(borrow_interest.accumulated_interest) * self.model.get_reserve_factor(),
+            )
+            .0;
         self.set_total_reserves(new_total_reserve);
 
         let dust_balance = repay_amount
