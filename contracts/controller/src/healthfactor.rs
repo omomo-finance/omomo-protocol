@@ -1,6 +1,6 @@
 use crate::*;
 
-use general::ratio::Ratio;
+use general::ratio::{BigBalance, Ratio};
 use near_sdk::env::block_height;
 use std::collections::HashMap;
 
@@ -9,10 +9,9 @@ impl Contract {
         map.iter()
             .map(|(asset, balance)| {
                 let price = self.get_price(asset.clone()).unwrap();
-
-                Percentage::from(price.volatility.0).apply_to(
-                    Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits),
-                )
+                let assets_in_usd = BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) / Ratio::from(10u128.pow(price.fraction_digits));
+                
+                Percentage::from(price.volatility.0).apply_to(assets_in_usd.0.as_u128())
             })
             .sum()
     }
@@ -51,9 +50,9 @@ impl Contract {
                 * Ratio::from(block_height() - borrow_data.borrow_block);
 
             let price = self.get_price(token_address.clone()).unwrap();
+            let assets_in_usd = BigBalance::from(price.value) * accrued_interest / Ratio::from(10u128.pow(price.fraction_digits)); 
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
-                Balance::from(price.value) * accrued_interest.round_u128()
-                    / 10u128.pow(price.fraction_digits),
+                assets_in_usd.0.as_u128()
             );
 
             total_accrued_interest += accrued_interest_amount;
@@ -90,8 +89,10 @@ impl Contract {
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
         let price = self.get_price(token_address).unwrap();
+        let assets_in_usd = BigBalance::from(price.value) * BigBalance::from(amount) / Ratio::from(10u128.pow(price.fraction_digits)); 
+        
         let usd_amount = Percentage::from(price.volatility.0).apply_to(
-            Balance::from(price.value) * Balance::from(amount) / 10u128.pow(price.fraction_digits),
+            assets_in_usd.0.as_u128()
         );
         match action {
             ActionType::Supply => {

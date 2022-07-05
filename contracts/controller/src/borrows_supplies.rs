@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 use crate::borrows_supplies::ActionType::{Borrow, Supply};
 use crate::*;
+use general::ratio::{BigBalance, Ratio};
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -214,7 +215,7 @@ impl Contract {
             .map(|(asset, balance)| {
                 let price = self.get_price(asset.clone()).unwrap();
 
-                Balance::from(price.value) * balance / ONE_TOKEN
+                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) / BigBalance::from(ONE_TOKEN)).0.as_u128()
             })
             .sum()
     }
