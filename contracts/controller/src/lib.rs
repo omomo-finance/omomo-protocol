@@ -7,7 +7,7 @@ use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use percentage::Percentage;
 
-use general::ratio::Ratio;
+use general::ratio::{BigBalance, Ratio};
 use general::*;
 use std::str::FromStr;
 
