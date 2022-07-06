@@ -93,7 +93,7 @@ impl Contract {
         let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
         let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
-        
+
         let supply_limit = supplies / self.liquidation_threshold;
         let max_borrow = if supply_limit > (borrows + accrued_interest) {
             supply_limit - (borrows + accrued_interest)
@@ -107,11 +107,11 @@ impl Contract {
         max_borrow_in_token.into()
     }
 
-    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
+    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> (WBalance, Ratio, Ratio) {
         let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
         let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
-        
+
         let borrow_limit = self.liquidation_threshold * (borrows + accrued_interest);
         let max_withdraw = if supplies > borrow_limit {
             supplies - borrow_limit
@@ -121,9 +121,9 @@ impl Contract {
 
         let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
         let max_withdraw_in_token = max_withdraw / price;
-            
+
         let supply_by_token = BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
-        min(supply_by_token, max_withdraw_in_token).into()
+        (min(supply_by_token, max_withdraw_in_token).into(), supply_by_token, max_withdraw_in_token)
     }
 }
 
@@ -137,7 +137,7 @@ mod tests {
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
 
-    pub fn init_test_env() -> (Contract, AccountId, AccountId) {
+    pub fn init_test_env() -> (Contract, AccountId, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());
 
         let mut controller_contract = Contract::new(Config {
@@ -163,7 +163,8 @@ mod tests {
         controller_contract.add_market(asset_id_1, dtoken_id_1, ticker_id_1.clone());
         controller_contract.add_market(asset_id_2, dtoken_id_2, ticker_id_2.clone());
 
-        let token_address: AccountId = "dtoken.wnear".parse().unwrap();
+        let token_address_1: AccountId = "dtoken.wnear".parse().unwrap();
+        let token_address_2: AccountId = "dtoken.weth".parse().unwrap();
 
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
@@ -184,12 +185,12 @@ mod tests {
             price_list: prices,
         });
 
-        (controller_contract, token_address, user_account)
+        (controller_contract, token_address_1, token_address_2, user_account)
     }
 
     #[test]
     fn test_view_markets() {
-        let (near_contract, _, _) = init_test_env();
+        let (near_contract, _, _, _) = init_test_env();
 
         let ticker_id_1 = "weth".to_string();
         let asset_id_1 = AccountId::new_unchecked("token.weth".to_string());
@@ -230,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_view_accounts() {
-        let (mut near_contract, token_address, _) = init_test_env();
+        let (mut near_contract, token_address, _, _) = init_test_env();
         let mut accounts = Vec::new();
 
         accounts.push(alice());
@@ -276,35 +277,64 @@ mod tests {
     }
 
     #[test]
-    fn test_view_withdraw_max() {
-        let (mut near_contract, token_address, user) = init_test_env();
+    fn test_view_withdraw_max_without_borrows() {
+        let (mut near_contract, token_address_1, token_address_2, user) = init_test_env();
 
         near_contract.set_entity_by_token(
             Supply,
             user.clone(),
-            token_address.clone(),
-            10000000000000000000000000, // in yocto == 10 Near
+            token_address_1.clone(),
+            100000000000000000000000000, // in yocto == 100 Near
         );
 
         near_contract.set_entity_by_token(
-            Borrow,
+            Supply,
             user.clone(),
-            token_address.clone(),
-            5000000000000000000000000, // in yocto == 5 Near
+            token_address_2.clone(),
+            100000000000000000000000000, // in yocto == 10 Eth
         );
 
         // (supplies - max_withdraw) / (borrows + accrued) = threshold
         // max_withdraw = supplies - threshold * (borrows + accrued)
         // max_withdraw = 10.0 - 150% * (5.0 + 0.0) = 2.5 Near
         assert_eq!(
-            U128(2500000000000000000000000),
-            near_contract.view_withdraw_max(user, token_address)
+            U128(100000000000000000000000000),
+            near_contract.view_withdraw_max(user, token_address_1).0
         );
     }
 
+
+    #[test]
+    fn test_view_withdraw_max_with_borrows() {
+        let (mut near_contract, token_address_1, _, user) = init_test_env();
+
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            token_address_1.clone(),
+            100000000000000000000000000, // in yocto == 100 Near
+        );
+
+        near_contract.set_entity_by_token(
+            Borrow,
+            user.clone(),
+            token_address_1.clone(),
+            50000000000000000000000000, // in yocto == 50 Near
+        );
+
+        // (supplies - max_withdraw) / (borrows + accrued) = threshold
+        // max_withdraw = supplies - threshold * (borrows + accrued)
+        // max_withdraw = 100.0 - 150% * (50.0 + 0.0) = 25.0 Near
+        assert_eq!(
+            U128(25000000000000000000000000),
+            near_contract.view_withdraw_max(user, token_address_1).0
+        );
+    }
+
+
     #[test]
     fn test_view_borrow_max() {
-        let (mut near_contract, token_address, user) = init_test_env();
+        let (mut near_contract, token_address, _, user) = init_test_env();
 
         near_contract.set_entity_by_token(
             Supply,
