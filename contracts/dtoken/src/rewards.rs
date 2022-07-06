@@ -553,7 +553,8 @@ mod tests {
             end_time: 1651372400,
             penalty: Ratio::from(5000u128),
         };
-        let campaign = RewardCampaign {
+        
+        RewardCampaign {
             campaign_type: CampaignType::Supply,
             start_time: 1651352400,
             end_time: 1651362400,
@@ -563,8 +564,7 @@ mod tests {
             last_update_time: 1651352400,
             rewards_per_token: U128(0),
             vesting,
-        };
-        campaign
+        }
     }
 
     #[test]

@@ -64,8 +64,8 @@ impl Contract {
             .iter()
             .filter(|user_id| self.user_profiles.get(user_id).is_some())
             .map(|user_id| {
-                let total_borrows = self.get_total_borrows(&user_id);
-                let total_supplies = self.get_total_supplies(&user_id);
+                let total_borrows = self.get_total_borrows(user_id);
+                let total_supplies = self.get_total_supplies(user_id);
 
                 let total_available_borrows_usd =
                     (Ratio::from(total_supplies) / self.liquidation_threshold).into();
@@ -92,7 +92,7 @@ impl Contract {
     pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
         let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
-        let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
+        let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id));
 
         let supply_limit = supplies / self.liquidation_threshold;
         let max_borrow = if supply_limit > (borrows + accrued_interest) {
@@ -122,7 +122,7 @@ impl Contract {
         let price = self.get_price(&dtoken_id).unwrap();
         let max_withdraw_in_token = max_withdraw / BigBalance::from(price.value.0);
 
-        let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
+        let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id);
         min(supply_by_token, max_withdraw_in_token.0.as_u128()).into()
     }
 }

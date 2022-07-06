@@ -212,7 +212,7 @@ impl Contract {
     pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(&asset).unwrap();
+                let price = self.get_price(asset).unwrap();
 
                 Balance::from(price.value) * balance / ONE_TOKEN
             })
@@ -222,7 +222,7 @@ impl Contract {
     pub fn get_total_supplies(&self, user_id: &AccountId) -> USD {
         let supplies = self
             .user_profiles
-            .get(&user_id)
+            .get(user_id)
             .unwrap_or_default()
             .account_supplies;
 
@@ -232,7 +232,7 @@ impl Contract {
     pub fn get_total_borrows(&self, user_id: &AccountId) -> USD {
         let borrows = self
             .user_profiles
-            .get(&user_id)
+            .get(user_id)
             .unwrap_or_default()
             .account_borrows;
 

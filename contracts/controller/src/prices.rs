@@ -20,7 +20,7 @@ impl Contract {
     }
 
     pub fn get_price(&self, dtoken_id: &AccountId) -> Option<Price> {
-        self.prices.get(&dtoken_id)
+        self.prices.get(dtoken_id)
     }
 }
 
