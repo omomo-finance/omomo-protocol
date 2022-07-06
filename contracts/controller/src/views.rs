@@ -280,20 +280,10 @@ mod tests {
         let (mut near_contract, dwnear, dweth, user) = init_test_env();
 
         let dwnear_supply = 100000000000000000000000000u128; // in yocto == 100 Near
-        near_contract.set_entity_by_token(
-            Supply,
-            user.clone(),
-            dwnear.clone(),
-            dwnear_supply,
-        );
+        near_contract.set_entity_by_token(Supply, user.clone(), dwnear.clone(), dwnear_supply);
 
         let dweth_supply = 3141592653589793238462643u128; // Pi in yocto == 3141592653589793238462643
-        near_contract.set_entity_by_token(
-            Supply,
-            user.clone(),
-            dweth.clone(),
-            dweth_supply
-        );
+        near_contract.set_entity_by_token(Supply, user.clone(), dweth.clone(), dweth_supply);
 
         assert_eq!(
             U128::from(dwnear_supply),
@@ -305,7 +295,6 @@ mod tests {
             near_contract.view_withdraw_max(user, dweth)
         );
     }
-
 
     #[test]
     fn test_view_withdraw_max_with_borrows() {
@@ -333,7 +322,6 @@ mod tests {
             near_contract.view_withdraw_max(user, dwnear)
         );
     }
-
 
     #[test]
     fn test_view_borrow_max() {
