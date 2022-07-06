@@ -553,7 +553,7 @@ mod tests {
             end_time: 1651372400,
             penalty: Ratio::from(5000u128),
         };
-        
+
         RewardCampaign {
             campaign_type: CampaignType::Supply,
             start_time: 1651352400,
