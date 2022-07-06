@@ -35,24 +35,6 @@ impl Contract {
         self.get_account_supplies(account)
     }
 
-    pub fn decrease_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        return 0;
-
-        let supplies = self.get_account_supplies(account.clone());
-        let new_supplies = supplies - Balance::from(token_amount);
-
-        self.set_account_supplies(account, U128(new_supplies))
-    }
-
-    pub fn increase_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        return 0;
-
-        let supplies: Balance = self.get_account_supplies(account.clone());
-        let new_supplies = supplies + Balance::from(token_amount);
-
-        self.set_account_supplies(account, U128(new_supplies))
-    }
-
     pub fn set_account_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
         let mut user = self.user_profiles.get(&account).unwrap_or_default();
         user.supplies = Balance::from(token_amount);
@@ -123,7 +105,6 @@ impl Contract {
 
         // Dtokens minting and adding them to the user account
         self.mint(self.get_signer_address(), dtoken_amount);
-        self.increase_supplies(self.get_signer_address(), token_amount);
 
         log!(
             "Supply from Account {} to Dtoken contract {} with tokens amount {} was successfully done!",
@@ -166,7 +147,6 @@ impl Contract {
                 )
             );
             self.burn(&self.get_signer_address(), dtoken_amount);
-            self.decrease_supplies(self.get_signer_address(), amount);
 
             self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);

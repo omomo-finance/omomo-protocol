@@ -107,7 +107,7 @@ impl Contract {
         max_borrow_in_token.into()
     }
 
-    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> (WBalance, Ratio, Ratio) {
+    pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
         let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
         let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
         let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
@@ -119,12 +119,11 @@ impl Contract {
             BigBalance::zero()
         };
 
-        let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
-        let max_withdraw_in_token = max_withdraw / price;
+        let price = self.get_price(&dtoken_id).unwrap();
+        let max_withdraw_in_token = max_withdraw / BigBalance::from(price.value.0);
 
-        let supply_by_token =
-            BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
-        min(supply_by_token, max_withdraw_in_token).into()
+        let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id.clone());
+        min(supply_by_token, max_withdraw_in_token.0.as_u128()).into()
     }
 }
 
@@ -164,9 +163,6 @@ mod tests {
         controller_contract.add_market(asset_id_1, dtoken_id_1, ticker_id_1.clone());
         controller_contract.add_market(asset_id_2, dtoken_id_2, ticker_id_2.clone());
 
-        let token_address_1: AccountId = "dtoken.wnear".parse().unwrap();
-        let token_address_2: AccountId = "dtoken.weth".parse().unwrap();
-
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {
             ticker_id: ticker_id_2,
@@ -186,7 +182,9 @@ mod tests {
             price_list: prices,
         });
 
-        (controller_contract, token_address_1, token_address_2, user_account)
+        let dwnear: AccountId = "dtoken.wnear".parse().unwrap();
+        let dweth: AccountId = "dtoken.weth".parse().unwrap();
+        (controller_contract, dwnear, dweth, user_account)
     }
 
     #[test]
@@ -279,56 +277,60 @@ mod tests {
 
     #[test]
     fn test_view_withdraw_max_without_borrows() {
-        let (mut near_contract, token_address_1, token_address_2, user) = init_test_env();
+        let (mut near_contract, dwnear, dweth, user) = init_test_env();
 
+        let dwnear_supply = 100000000000000000000000000u128; // in yocto == 100 Near
         near_contract.set_entity_by_token(
             Supply,
             user.clone(),
-            token_address_1.clone(),
-            100000000000000000000000000, // in yocto == 100 Near
+            dwnear.clone(),
+            dwnear_supply,
         );
 
+        let dweth_supply = 3141592653589793238462643u128; // Pi in yocto == 3141592653589793238462643
         near_contract.set_entity_by_token(
             Supply,
             user.clone(),
-            token_address_2.clone(),
-            100000000000000000000000000, // in yocto == 10 Eth
+            dweth.clone(),
+            dweth_supply
         );
 
-        // (supplies - max_withdraw) / (borrows + accrued) = threshold
-        // max_withdraw = supplies - threshold * (borrows + accrued)
-        // max_withdraw = 10.0 - 150% * (5.0 + 0.0) = 2.5 Near
         assert_eq!(
-            U128(100000000000000000000000000),
-            near_contract.view_withdraw_max(user, token_address_1).0
+            U128::from(dwnear_supply),
+            near_contract.view_withdraw_max(user.clone(), dwnear)
+        );
+
+        assert_eq!(
+            U128::from(dweth_supply),
+            near_contract.view_withdraw_max(user, dweth)
         );
     }
 
 
     #[test]
     fn test_view_withdraw_max_with_borrows() {
-        let (mut near_contract, token_address_1, _, user) = init_test_env();
+        let (mut near_contract, dwnear, _, user) = init_test_env();
 
         near_contract.set_entity_by_token(
             Supply,
             user.clone(),
-            token_address_1.clone(),
-            100000000000000000000000000, // in yocto == 100 Near
+            dwnear.clone(),
+            10000000000000000000000000u128, // in yocto == 10 Near
         );
 
         near_contract.set_entity_by_token(
             Borrow,
             user.clone(),
-            token_address_1.clone(),
-            50000000000000000000000000, // in yocto == 50 Near
+            dwnear.clone(),
+            3141592653589793238462643u128, // Pi in yocto == 3141592653589793238462643
         );
 
         // (supplies - max_withdraw) / (borrows + accrued) = threshold
         // max_withdraw = supplies - threshold * (borrows + accrued)
-        // max_withdraw = 100.0 - 150% * (50.0 + 0.0) = 25.0 Near
+        // max_withdraw = 10.0 - 150% * (3.141592653589793238462643u128 + 0.0) = 5.287611019615310142306035 Near
         assert_eq!(
-            U128(25000000000000000000000000),
-            near_contract.view_withdraw_max(user, token_address_1).0
+            U128(5287675000000000000000000),
+            near_contract.view_withdraw_max(user, dwnear)
         );
     }
 

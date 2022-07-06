@@ -165,7 +165,6 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
-            self.decrease_supplies(env::signer_account_id(), token_amount);
             self.mutex_account_unlock();
             log!(
                 "{}",
