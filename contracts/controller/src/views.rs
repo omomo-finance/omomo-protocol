@@ -1,7 +1,7 @@
 use crate::borrows_supplies::ActionType::Supply;
 use crate::*;
-use std::collections::HashMap;
 use std::cmp::min;
+use std::collections::HashMap;
 
 use crate::admin::Market;
 use general::ratio::{BigBalance, Ratio};
@@ -122,8 +122,9 @@ impl Contract {
         let price = Ratio::from(self.get_price(&dtoken_id).unwrap().value.0);
         let max_withdraw_in_token = max_withdraw / price;
 
-        let supply_by_token = BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
-        (min(supply_by_token, max_withdraw_in_token).into(), supply_by_token, max_withdraw_in_token)
+        let supply_by_token =
+            BigBalance::from(self.get_entity_by_token(Supply, user_id, dtoken_id.clone()));
+        min(supply_by_token, max_withdraw_in_token).into()
     }
 }
 
@@ -352,7 +353,7 @@ mod tests {
 
         // supplies / (borrows + accrued + max_borrow) = threshold
         // max_borrow = supplies / threshold - borrows - accrued
-        // max_borrow = 10.0 / 150% - 5.0 - 0.0 
+        // max_borrow = 10.0 / 150% - 5.0 - 0.0
         assert_eq!(
             U128(1666666666666666666666666),
             near_contract.view_borrow_max(user, token_address)

@@ -21,20 +21,21 @@ near delete controller.omomo-finance.testnet omomo-finance.testnet
 
 
 # create underlying tokens and markets
-near create-account weth.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 3 
-near create-account dweth.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5 
+near create-account weth.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
+near create-account dweth.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10
 
-# near create-account wnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 3 
-near create-account dwnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5 
+# near create-account wnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
+near create-account dwnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10
 
-near create-account usdt.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 3 
-near create-account dusdt.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5 
+near create-account usdt.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
+near create-account dusdt.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10
 
-near create-account usdc.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 3 
-near create-account dusdc.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5 
+near create-account usdc.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
+near create-account dusdc.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10
 
 # create controller
-near create-account controller.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10 
+near create-account controller.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 15 
+
 
 
 # deploy underlyings
@@ -169,8 +170,8 @@ near view wrap.testnet ft_balance_of '{"account_id": "dwnear.omomo-finance.testn
 near view usdt.omomo-finance.testnet ft_balance_of '{"account_id": "dusdt.omomo-finance.testnet"}'
 near view usdc.omomo-finance.testnet ft_balance_of '{"account_id": "dusdc.omomo-finance.testnet"}'
 
-
-near call dweth.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
-near call dwnear.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
-near call dusdt.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
-near call dusdc.omomo-finance.testnet omomo-finance.testnet set_admin '{"account": "omomo-finance.testnet"}' --accountId omomo-finance.testnet
+# set shared admin as admin for dtokens
+near call dweth.omomo-finance.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId omomo-finance.testnet
+near call dwnear.omomo-finance.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId omomo-finance.testnet
+near call dusdt.omomo-finance.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId omomo-finance.testnet
+near call dusdc.omomo-finance.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId omomo-finance.testnet
