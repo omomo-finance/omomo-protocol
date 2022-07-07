@@ -214,7 +214,9 @@ impl Contract {
             .map(|(asset, balance)| {
                 let price = self.get_price(asset.clone()).unwrap();
 
-                Balance::from(price.value) * balance / ONE_TOKEN
+                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                    / BigBalance::from(U128(ONE_TOKEN)))
+                .round_u128()
             })
             .sum()
     }
