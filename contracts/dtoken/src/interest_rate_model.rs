@@ -97,7 +97,7 @@ impl InterestRateModel {
             * BigBalance::from(current_block_height - accrued_interest.last_recalculation_block);
 
         AccruedInterest {
-            accumulated_interest: accrued_interest.accumulated_interest + accrued_rate.round_u128(),
+            accumulated_interest: accrued_interest.accumulated_interest + U128::from(accrued_rate).0,
             last_recalculation_block: current_block_height,
         }
     }
