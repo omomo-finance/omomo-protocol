@@ -533,7 +533,7 @@ mod tests {
         );
 
         let result = controller_contract.get_potential_health_factor(
-            user_account.clone(),
+            user_account,
             AccountId::new_unchecked("dweth.near".to_string()),
             U128(1000),
             ActionType::Borrow,
