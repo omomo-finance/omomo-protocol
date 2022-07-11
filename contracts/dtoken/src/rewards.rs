@@ -717,7 +717,6 @@ mod tests {
         let total_supply: Balance = 100;
         testing_env!(context);
         contract.mint(contract.get_signer_address(), WBalance::from(total_supply));
-        contract.set_account_supplies(contract.get_signer_address(), WBalance::from(total_supply));
 
         let campaign_id = contract.add_reward_campaign(campaign.clone());
         let campaign_result = contract.get_accrued_rewards_per_token(campaign_id);
