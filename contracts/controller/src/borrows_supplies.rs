@@ -212,7 +212,7 @@ impl Contract {
     pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(asset.clone()).unwrap();
+                let price = self.get_price(asset).unwrap();
 
                 (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
                     / BigBalance::from(U128(ONE_TOKEN)))
@@ -221,20 +221,20 @@ impl Contract {
             .sum()
     }
 
-    pub fn get_total_supplies(&self, user_id: AccountId) -> USD {
+    pub fn get_total_supplies(&self, user_id: &AccountId) -> USD {
         let supplies = self
             .user_profiles
-            .get(&user_id)
+            .get(user_id)
             .unwrap_or_default()
             .account_supplies;
 
         self.calculate_assets_price(&supplies).into()
     }
 
-    pub fn get_total_borrows(&self, user_id: AccountId) -> USD {
+    pub fn get_total_borrows(&self, user_id: &AccountId) -> USD {
         let borrows = self
             .user_profiles
-            .get(&user_id)
+            .get(user_id)
             .unwrap_or_default()
             .account_borrows;
 
@@ -433,7 +433,7 @@ mod tests {
         near_contract.upsert_price(token_address.clone(), &price);
         near_contract.increase_supplies(user_account.clone(), token_address, U128(10));
 
-        assert_eq!(near_contract.get_total_supplies(user_account), U128(1000));
+        assert_eq!(near_contract.get_total_supplies(&user_account), U128(1000));
     }
 
     #[test]
@@ -455,6 +455,6 @@ mod tests {
             Ratio::zero(),
         );
 
-        assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
+        assert_eq!(near_contract.get_total_borrows(&user_account), U128(1000));
     }
 }

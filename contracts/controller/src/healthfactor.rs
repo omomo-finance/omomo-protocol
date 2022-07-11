@@ -8,7 +8,8 @@ impl Contract {
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(asset.clone()).unwrap();
+                let price = self.get_price(asset).unwrap();
+
                 Percentage::from(price.volatility.0).apply_to(
                     (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
                         / Ratio::from(10u128.pow(price.fraction_digits)))
@@ -52,7 +53,7 @@ impl Contract {
                 * borrow_data.borrow_rate
                 * Ratio::from(block_height() - borrow_data.borrow_block);
 
-            let price = self.get_price(token_address.clone()).unwrap();
+            let price = self.get_price(token_address).unwrap();
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
                 (BigBalance::from(price.value) * accrued_interest
                     / Ratio::from(10u128.pow(price.fraction_digits)))
@@ -93,7 +94,7 @@ impl Contract {
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
-        let price = self.get_price(token_address).unwrap();
+        let price = self.get_price(&token_address).unwrap();
         let usd_amount = Percentage::from(price.volatility.0).apply_to(
             (BigBalance::from(price.value) * BigBalance::from(amount.0)
                 / Ratio::from(10u128.pow(price.fraction_digits)))
@@ -532,7 +533,7 @@ mod tests {
         );
 
         let result = controller_contract.get_potential_health_factor(
-            user_account.clone(),
+            user_account,
             AccountId::new_unchecked("dweth.near".to_string()),
             U128(1000),
             ActionType::Borrow,
