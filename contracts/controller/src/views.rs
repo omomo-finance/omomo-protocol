@@ -168,13 +168,13 @@ mod tests {
             ticker_id: ticker_id_2,
             value: U128(20000),
             volatility: U128(80),
-            fraction_digits: 4,
+            fraction_digits: 24,
         });
         prices.push(Price {
             ticker_id: ticker_id_1,
             value: U128(20000),
             volatility: U128(100),
-            fraction_digits: 4,
+            fraction_digits: 24,
         });
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -318,7 +318,7 @@ mod tests {
         // max_withdraw = supplies - threshold * (borrows + accrued)
         // max_withdraw = 10.0 - 150% * (3.141592653589793238462643u128 + 0.0) = 5.287611019615310142306035 Near
         assert_eq!(
-            U128(5287675000000000000000000),
+            U128(5287600000000000000000000),
             near_contract.view_withdraw_max(user, dwnear)
         );
     }
