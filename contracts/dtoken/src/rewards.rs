@@ -161,7 +161,9 @@ impl Contract {
 
     fn insert_map_if_not_exists(&mut self, account_id: AccountId) {
         let rewards_map: HashMap<String, Reward> = HashMap::new();
-        *self.rewards.entry(account_id).or_default() = rewards_map;
+        self.rewards
+            .entry(account_id)
+            .or_insert_with(|| rewards_map);
     }
 
     pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> WBalance {
@@ -565,6 +567,28 @@ mod tests {
             rewards_per_token: U128(0),
             vesting,
         }
+    }
+
+    #[test]
+    fn test_adjust_rewards_by_campaign_type() {
+        let mut contract = init_env();
+        let campaign1 = get_campaign();
+        let campaign2 = get_campaign();
+
+        let context = get_custom_context(false, 1651362400, 1);
+        testing_env!(context.clone());
+
+        contract.add_reward_campaign(campaign1);
+        contract.add_reward_campaign(campaign2);
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+
+        assert_eq!(
+            contract
+                .get_rewards_list(context.signer_account_id.clone())
+                .len(),
+            2,
+            "Rewards list should be consist of 2 rewards"
+        )
     }
 
     #[test]
