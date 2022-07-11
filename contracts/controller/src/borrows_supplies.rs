@@ -123,12 +123,6 @@ impl Contract {
         let existing_borrows: Balance =
             self.get_entity_by_token(Borrow, account.clone(), token_address.clone());
 
-        // TODO This assert should consider interest charges
-        assert!(
-            existing_borrows >= Balance::from(token_amount),
-            "Too much borrowed assets trying to pay out"
-        );
-
         let decreased_borrows: Balance = existing_borrows - Balance::from(token_amount);
 
         let mut borrow_rate = borrow_rate.0;
@@ -218,27 +212,29 @@ impl Contract {
     pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(asset.clone()).unwrap();
+                let price = self.get_price(asset).unwrap();
 
-                Balance::from(price.value) * balance / ONE_TOKEN
+                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                    / BigBalance::from(U128(ONE_TOKEN)))
+                .round_u128()
             })
             .sum()
     }
 
-    pub fn get_total_supplies(&self, user_id: AccountId) -> USD {
+    pub fn get_total_supplies(&self, user_id: &AccountId) -> USD {
         let supplies = self
             .user_profiles
-            .get(&user_id)
+            .get(user_id)
             .unwrap_or_default()
             .account_supplies;
 
         self.calculate_assets_price(&supplies).into()
     }
 
-    pub fn get_total_borrows(&self, user_id: AccountId) -> USD {
+    pub fn get_total_borrows(&self, user_id: &AccountId) -> USD {
         let borrows = self
             .user_profiles
-            .get(&user_id)
+            .get(user_id)
             .unwrap_or_default()
             .account_borrows;
 
@@ -437,7 +433,7 @@ mod tests {
         near_contract.upsert_price(token_address.clone(), &price);
         near_contract.increase_supplies(user_account.clone(), token_address, U128(10));
 
-        assert_eq!(near_contract.get_total_supplies(user_account), U128(1000));
+        assert_eq!(near_contract.get_total_supplies(&user_account), U128(1000));
     }
 
     #[test]
@@ -459,6 +455,6 @@ mod tests {
             Ratio::zero(),
         );
 
-        assert_eq!(near_contract.get_total_borrows(user_account), U128(1000));
+        assert_eq!(near_contract.get_total_borrows(&user_account), U128(1000));
     }
 }

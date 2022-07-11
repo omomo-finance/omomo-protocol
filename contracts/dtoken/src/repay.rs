@@ -75,24 +75,30 @@ impl Contract {
                 self.get_accrued_borrow_interest(env::signer_account_id()),
             );
 
-        let mut borrow_amount = self.get_account_borrows(env::signer_account_id());
-
-        let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
+        // let borrow_amount = self.get_account_borrows(env::signer_account_id());
+        //
+        // let borrow_with_rate_amount = borrow_amount + borrow_accrued_interest.accumulated_interest;
         self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
 
-        let new_total_reserve = self.get_total_reserves()
-            + borrow_accrued_interest.accumulated_interest
-                * self.model.get_reserve_factor().round_u128();
-        self.set_total_reserves(new_total_reserve);
+        let borrow_amount = self.get_account_borrows(env::signer_account_id());
 
-        if token_amount.0 < borrow_with_rate_amount {
-            borrow_amount = token_amount.0;
-        }
+        // if borrow is less then accrued interest then we do not decerease borrows on controller
+        // if borrow is up to borrows + accrued then we repay accrued and decrease remaining tokens on controller
+        // if borrow is over borrows + accrued then we decrease full borrows on controller
+        let borrow_decrease_amount = if token_amount.0
+            <= borrow_accrued_interest.accumulated_interest
+        {
+            0u128
+        } else if token_amount.0 <= borrow_amount + borrow_accrued_interest.accumulated_interest {
+            token_amount.0 - borrow_accrued_interest.accumulated_interest
+        } else {
+            borrow_amount
+        };
 
         controller::repay_borrows(
             env::signer_account_id(),
             self.get_contract_address(),
-            U128(borrow_amount),
+            U128(borrow_decrease_amount),
             borrow_accrued_interest.last_recalculation_block,
             U128::from(borrow_rate),
             self.get_controller_address(),
@@ -101,7 +107,6 @@ impl Contract {
         )
         .then(ext_self::controller_repay_borrows_callback(
             token_amount,
-            U128(borrow_with_rate_amount),
             env::current_account_id(),
             NO_DEPOSIT,
             self.terra_gas(20),
@@ -112,39 +117,57 @@ impl Contract {
     #[private]
     pub fn controller_repay_borrows_callback(
         &mut self,
-        amount: WBalance,
-        borrow_amount: WBalance,
+        token_amount: WBalance,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             log!(
                 "{}",
                 Events::RepayFailedToUpdateUserBalance(
                     env::signer_account_id(),
-                    Balance::from(borrow_amount)
+                    Balance::from(token_amount)
                 )
             );
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(amount);
+            return PromiseOrValue::Value(token_amount);
         }
 
-        let mut extra_balance = 0;
+        let mut borrow_interest = self.get_accrued_borrow_interest(env::signer_account_id());
+        // update total reserves only after successful repay
+        let new_total_reserve = self.get_total_reserves()
+            + borrow_interest.accumulated_interest * self.model.get_reserve_factor().round_u128();
+        self.set_total_reserves(new_total_reserve);
 
-        if amount.0 < borrow_amount.0 {
-            self.decrease_borrows(env::signer_account_id(), amount);
-        } else {
-            extra_balance += Balance::from(amount) - Balance::from(borrow_amount);
+        let dust_balance = token_amount
+            .0
+            .saturating_sub(self.get_account_borrows(env::signer_account_id()))
+            .saturating_sub(borrow_interest.accumulated_interest);
+
+        let borrow_accrued_interest = self.get_accrued_borrow_interest(env::signer_account_id());
+        let borrow_amount = self.get_account_borrows(env::signer_account_id());
+
+        // if borrow is less then accrued interest then we decerease only accrued interest
+        // if borrow is up to borrows + accrued then we repay accrued and decrease borrows by remaining tokens
+        // if borrow is over borrows + accrued then we decrease full borrows
+        if token_amount.0 <= borrow_accrued_interest.accumulated_interest {
+            borrow_interest.accumulated_interest -= token_amount.0;
+            self.set_accrued_borrow_interest(env::signer_account_id(), borrow_interest);
+        } else if token_amount.0 <= borrow_amount + borrow_accrued_interest.accumulated_interest {
             self.decrease_borrows(
                 env::signer_account_id(),
-                U128(self.get_account_borrows(env::signer_account_id())),
+                WBalance::from(token_amount.0 - borrow_interest.accumulated_interest),
             );
             self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
-        }
+        } else {
+            self.decrease_borrows(env::signer_account_id(), U128(borrow_amount));
+            self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
+        };
 
         self.mutex_account_unlock();
         log!(
             "{}",
-            Events::RepaySuccess(env::signer_account_id(), Balance::from(borrow_amount))
+            Events::RepaySuccess(env::signer_account_id(), Balance::from(token_amount))
         );
-        PromiseOrValue::Value(U128(extra_balance))
+
+        PromiseOrValue::Value(U128(dust_balance))
     }
 }

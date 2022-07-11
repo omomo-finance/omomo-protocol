@@ -89,7 +89,7 @@ impl Contract {
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
 
-        let token_amount: Balance = (Ratio::from(dtoken_amount) / exchange_rate).round_u128();
+        let token_amount: Balance = (Ratio::from(dtoken_amount) * exchange_rate).round_u128();
         let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
 
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
@@ -97,7 +97,7 @@ impl Contract {
         controller::withdraw_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
-            token_amount.into(),
+            dtoken_amount.into(),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
@@ -165,7 +165,6 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
             self.burn(&env::signer_account_id(), dtoken_amount);
-            self.decrease_supplies(env::signer_account_id(), token_amount);
             self.mutex_account_unlock();
             log!(
                 "{}",

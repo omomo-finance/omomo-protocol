@@ -4,6 +4,7 @@ use near_sdk::{env, require, AccountId};
 
 use crate::*;
 
+#[near_bindgen]
 impl Contract {
     pub fn get_admin(&self) -> AccountId {
         self.admin.clone()
@@ -16,7 +17,9 @@ impl Contract {
         );
         self.admin = account;
     }
+}
 
+impl Contract {
     pub fn is_valid_admin_call(&self) -> bool {
         env::signer_account_id() == self.admin
             || env::signer_account_id() == env::current_account_id()
@@ -110,7 +113,7 @@ mod tests {
             controller_account_id: "controller".parse().unwrap(),
             interest_rate_model: InterestRateModel::default(),
         });
-        dtoken_contract.increase_supplies(bob(), U128(10000));
+        dtoken_contract.mint(bob(), U128(10000));
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
         assert_eq!(exchange_rate, Ratio::from_str("2").unwrap());
 

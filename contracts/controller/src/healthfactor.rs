@@ -8,10 +8,13 @@ impl Contract {
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(asset.clone()).unwrap();
+                let price = self.get_price(asset).unwrap();
 
                 Percentage::from(price.volatility.0).apply_to(
-                    Balance::from(price.value) * balance / 10u128.pow(price.fraction_digits),
+                    (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                        / Ratio::from(10u128.pow(price.fraction_digits)))
+                    .0
+                    .low_u128(),
                 )
             })
             .sum()
@@ -50,10 +53,12 @@ impl Contract {
                 * borrow_data.borrow_rate
                 * Ratio::from(block_height() - borrow_data.borrow_block);
 
-            let price = self.get_price(token_address.clone()).unwrap();
+            let price = self.get_price(token_address).unwrap();
             let accrued_interest_amount = Percentage::from(price.volatility.0).apply_to(
-                Balance::from(price.value) * accrued_interest.round_u128()
-                    / 10u128.pow(price.fraction_digits),
+                (BigBalance::from(price.value) * accrued_interest
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                .0
+                .low_u128(),
             );
 
             total_accrued_interest += accrued_interest_amount;
@@ -89,9 +94,12 @@ impl Contract {
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
-        let price = self.get_price(token_address).unwrap();
+        let price = self.get_price(&token_address).unwrap();
         let usd_amount = Percentage::from(price.volatility.0).apply_to(
-            Balance::from(price.value) * Balance::from(amount) / 10u128.pow(price.fraction_digits),
+            (BigBalance::from(price.value) * BigBalance::from(amount.0)
+                / Ratio::from(10u128.pow(price.fraction_digits)))
+            .0
+            .low_u128(),
         );
         match action {
             ActionType::Supply => {
@@ -503,6 +511,35 @@ mod tests {
             controller_contract.get_health_factor(user_account),
             Ratio::from_str("2.25").unwrap()
         );
+    }
+
+    #[test]
+    fn test_get_potential_health_factor() {
+        let (mut controller_contract, _token_address, user_account) =
+            init_price_volatility(300, 59, 400, 36);
+
+        controller_contract.increase_supplies(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(200),
+        );
+
+        controller_contract.increase_borrows(
+            user_account.clone(),
+            AccountId::new_unchecked("dweth.near".to_string()),
+            WBalance::from(50),
+            0,
+            Ratio::zero(),
+        );
+
+        let result = controller_contract.get_potential_health_factor(
+            user_account,
+            AccountId::new_unchecked("dweth.near".to_string()),
+            U128(1000),
+            ActionType::Borrow,
+        );
+
+        assert_eq!(result, Ratio::from(2u128) / Ratio::from(14u128));
     }
 
     #[test]

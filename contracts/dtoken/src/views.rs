@@ -95,7 +95,7 @@ mod tests {
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{testing_env, Balance, VMContext};
+    use near_sdk::{testing_env, VMContext};
 
     use crate::views::MarketData;
     use crate::{Config, Contract};
@@ -135,28 +135,28 @@ mod tests {
     fn test_view_repay_info() {
         let contract = init_test_env(false);
 
-        let repay = contract.view_repay_info(bob(), WBalance::from(1000));
+        let repay = contract.view_repay_info(bob(), WBalance::from(0));
 
         assert_eq!(
             // as there are no borrows yet accrued_interest_per_block = 0
-            Balance::from(repay.accrued_interest_per_block),
-            0,
-            "RepayInfo structure is not matches to expected"
+            repay.accrued_interest_per_block,
+            WBalance::from(Ratio::one()),
+            "RepayInfo accrued_interest_per_block is not matches to expected"
         );
         assert_eq!(
-            Balance::from(repay.total_amount),
-            0,
-            "RepayInfo structure is not matches to expected"
+            repay.total_amount,
+            WBalance::from(0u128),
+            "RepayInfo total_amount is not matches to expected"
         );
         assert_eq!(
-            Balance::from(repay.borrow_amount),
-            0,
-            "RepayInfo structure is not matches to expected"
+            repay.borrow_amount,
+            WBalance::from(0u128),
+            "RepayInfo borrow_amount is not matches to expected"
         );
         assert_eq!(
-            Balance::from(repay.accumulated_interest),
-            0,
-            "RepayInfo structure is not matches to expected"
+            repay.accumulated_interest,
+            WBalance::from(0u128),
+            "RepayInfo accumulated_interest is not matches to expected"
         );
     }
 
