@@ -129,7 +129,7 @@ mod tests {
     use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
     use general::ratio::Ratio;
-    use general::{Price, ONE_TOKEN};
+    use general::{Price, WRatio, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
@@ -253,7 +253,7 @@ mod tests {
             token_address,
             100 * ONE_TOKEN,
         );
-        let result = near_contract.view_accounts(accounts);
+        let result = near_contract.view_accounts(accounts.clone());
 
         assert_eq!(result.len(), 1, "View accounts response doesn't match");
         assert_eq!(
@@ -275,13 +275,15 @@ mod tests {
         assert_eq!(
             result[0].total_available_borrows_usd,
             // total_supplies_usd * Ratio::one() / self.liquidation_threshold
-            U128(100 * 20000 * 1000000000000000000000000 / 1500000000000000000000000),
+            U128(100 * 20000 * 6 / 10),
             "View accounts total supplies check has been failed"
         );
 
         assert_eq!(
             result[0].health_factor_ratio,
-            U128(1500000000000000000000000),
+            WRatio::from(
+                near_contract.get_standart_hf_with_supply_and_no_borrow(accounts[0].clone())
+            ),
             "View accounts health factor check has been failed"
         );
     }
@@ -325,11 +327,11 @@ mod tests {
             3141592653589793238462643u128, // Pi in yocto == 3141592653589793238462643
         );
 
-        // (supplies - max_withdraw) / (borrows + accrued) = threshold
-        // max_withdraw = supplies - threshold * (borrows + accrued)
-        // max_withdraw = 10.0 - 150% * (3.141592653589793238462643u128 + 0.0) = 5.287611019615310142306035 Near
+        // collaterals = SUM(borrows / market.ltv )
+        // max_withdraw = supplies - (accrued_interest + collaterals)
+        // max_withdraw = 10.0 - (3.141592653589793238462643u128 / 0.6) = 4.764050000000000000000000 Near
         assert_eq!(
-            U128(5287600000000000000000000),
+            U128(4764050000000000000000000),
             near_contract.view_withdraw_max(user, dwnear)
         );
     }
@@ -352,11 +354,10 @@ mod tests {
             5000000000000000000000000, // in yocto == 5 Near
         );
 
-        // supplies / (borrows + accrued + max_borrow) = threshold
-        // max_borrow = supplies / threshold - borrows - accrued
-        // max_borrow = 10.0 / 150% - 5.0 - 0.0
+        // max_borrow = theoretical_borrows_max - borrows - accrued
+        // max_borrow = 10.0 * 0.6 - 5.0
         assert_eq!(
-            U128(1666666666666666666666666),
+            U128(ONE_TOKEN),
             near_contract.view_borrow_max(user, token_address)
         );
     }

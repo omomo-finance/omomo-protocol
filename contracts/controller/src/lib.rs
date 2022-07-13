@@ -13,6 +13,7 @@ use std::str::FromStr;
 
 pub use crate::borrows_supplies::*;
 pub use crate::config::*;
+pub use crate::healthfactor::*;
 pub use crate::liquidation::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
@@ -57,6 +58,8 @@ pub enum StorageKeys {
 pub struct Contract {
     /// Utoken Id [Underlying asset name] -> Dtoken address
     /// Utoken Id [Underlying asset name] -> Ticker Id
+    /// Utoken Id [Underlying asset name] -> LTV
+    /// Utoken Id [Underlying asset name] -> LTH
     pub markets: UnorderedMap<AccountId, MarketProfile>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
@@ -101,7 +104,7 @@ pub struct PriceJsonList {
     pub price_list: Vec<Price>,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MarketProfile {
     /// Dtoken address

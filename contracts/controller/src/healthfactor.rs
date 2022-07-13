@@ -3,6 +3,7 @@ use crate::*;
 use general::ratio::Ratio;
 use near_sdk::env::block_height;
 use std::collections::HashMap;
+use std::ops::Add;
 
 impl Contract {
     pub fn calculate_supplies_weighted_price_and_lth(&self, user_id: AccountId) -> Balance {
@@ -14,12 +15,16 @@ impl Contract {
 
         supplies
             .iter()
-            .map(|(asset, balance)| {
-                let price = self.get_price(asset).unwrap();
-                let market = self.markets.get(asset).unwrap();
+            .map(|(dtoken, balance)| {
+                let price = self.get_price(dtoken).unwrap();
+                let market = self.get_market_by_dtoken(dtoken.clone());
 
-                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) * market.lth)
-                    .round_u128()
+                ((BigBalance::from(price.value)
+                    * BigBalance::from(balance.to_owned())
+                    * market.lth)
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                .0
+                .low_u128()
             })
             .sum()
     }
@@ -33,16 +38,40 @@ impl Contract {
 
         let collaterals: Balance = borrows
             .iter()
-            .map(|(asset, balance)| {
-                let price = self.get_price(asset).unwrap();
-                let market = self.markets.get(asset).unwrap();
+            .map(|(dtoken, balance)| {
+                let price = self.get_price(dtoken).unwrap();
+                let market = self.get_market_by_dtoken(dtoken.clone());
 
-                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) / market.ltv)
-                    .round_u128()
+                ((BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                    / market.ltv)
+                    .0
+                    .low_u128()
             })
             .sum();
 
         USD::from(collaterals)
+    }
+
+    pub fn get_average_hf_by_markets_ltv(&self) -> Ratio {
+        let mut avg_hf: Ratio = Ratio::zero();
+        self.markets.iter().for_each(|(_, market)| {
+            avg_hf = avg_hf.add(market.ltv);
+        });
+        avg_hf / Ratio::from(self.markets.len())
+    }
+
+    pub fn get_market_by_dtoken(&self, dtoken: AccountId) -> MarketProfile {
+        let markets = self
+            .markets
+            .iter()
+            .filter(|(_, market)| market.dtoken == dtoken)
+            .map(|(_, market)| market)
+            .collect::<Vec<MarketProfile>>();
+
+        let market = markets.first().unwrap();
+
+        market.clone()
     }
 
     pub fn get_theoretical_borrows_max(&self, user_id: AccountId) -> USD {
@@ -54,12 +83,16 @@ impl Contract {
 
         let borrow_max: Balance = supplies
             .iter()
-            .map(|(asset, balance)| {
-                let price = self.get_price(asset).unwrap();
-                let market = self.markets.get(asset).unwrap();
+            .map(|(dtoken, balance)| {
+                let price = self.get_price(dtoken).unwrap();
+                let market = self.get_market_by_dtoken(dtoken.clone());
 
-                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) * market.ltv)
-                    .round_u128()
+                ((BigBalance::from(price.value)
+                    * BigBalance::from(balance.to_owned())
+                    * market.ltv)
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                .0
+                .low_u128()
             })
             .sum();
 
@@ -72,7 +105,7 @@ impl Contract {
                 let price = self.get_price(asset).unwrap();
 
                 Percentage::from(price.volatility.0).apply_to(
-                    (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                    ((BigBalance::from(balance.to_owned()) * BigBalance::from(price.value))
                         / Ratio::from(10u128.pow(price.fraction_digits)))
                     .0
                     .low_u128(),
@@ -126,6 +159,14 @@ impl Contract {
         }
         total_accrued_interest
     }
+
+    pub fn get_standart_hf_with_supply_and_no_borrow(&self, user_account: AccountId) -> Ratio {
+        let supplies_weighted_lth =
+            self.calculate_supplies_weighted_price_and_lth(user_account.clone());
+        let max_borrows = self.get_theoretical_borrows_max(user_account);
+
+        Ratio::from(supplies_weighted_lth) / Ratio::from(max_borrows.0)
+    }
 }
 
 #[near_bindgen]
@@ -133,15 +174,16 @@ impl Contract {
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
         let supplies_weighted_lth =
             self.calculate_supplies_weighted_price_and_lth(user_account.clone());
-        let max_borrows = self.get_theoretical_borrows_max(user_account.clone());
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
 
         borrows += self.calculate_accrued_borrow_interest(user_account.clone());
 
         if borrows != 0 {
             Ratio::from(supplies_weighted_lth) / Ratio::from(borrows)
+        } else if supplies_weighted_lth > 0 {
+            self.get_standart_hf_with_supply_and_no_borrow(user_account)
         } else {
-            Ratio::from(supplies_weighted_lth) / Ratio::from(max_borrows.0)
+            self.get_average_hf_by_markets_ltv()
         }
     }
 
@@ -342,7 +384,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            controller_contract.get_liquidation_threshold(),
+            controller_contract.get_average_hf_by_markets_ltv(),
             "Test for account w/o collaterals and borrows has been failed"
         );
 
@@ -361,9 +403,8 @@ mod tests {
         );
 
         assert_eq!(
-            controller_contract.get_health_factor(user_account),
-            Ratio::from(100u128) * controller_contract.get_liquidation_threshold()
-                / Ratio::from(100u128),
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_standart_hf_with_supply_and_no_borrow(user_account),
             "Health factor calculation has been failed"
         );
     }
@@ -389,7 +430,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            controller_contract.get_liquidation_threshold(),
+            controller_contract.get_average_hf_by_markets_ltv(),
             "Test for account w/o collaterals and borrows has been failed"
         );
     }
@@ -413,10 +454,10 @@ mod tests {
             Ratio::zero(),
         );
 
-        // Ratio that represents 150%
+        // Ratio that represents standart_hf_with_supply_and_no_borrow
         assert_eq!(
-            controller_contract.get_health_factor(user_account),
-            Ratio::from_str("1.5").unwrap()
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_standart_hf_with_supply_and_no_borrow(user_account)
         );
     }
 
@@ -439,10 +480,10 @@ mod tests {
             Ratio::zero(),
         );
 
-        // Ratio that represents 142.85714285%
+        // Ratio that represents (100 * 1 * LTH(0.8) / 70)  = 1.142857142857142857142857%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("1.428571428571428571428571").unwrap()
+            Ratio::from_str("1.142857142857142857142857").unwrap()
         );
     }
 
@@ -465,10 +506,10 @@ mod tests {
             Ratio::zero(),
         );
 
-        // Ratio that represents 100%
+        // Ratio that represents (100 * 1 * LTH(0.8) / 100) 80%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from_str("1").unwrap()
+            Ratio::from_str("0.8").unwrap()
         );
 
         controller_contract.increase_supplies(
@@ -477,10 +518,10 @@ mod tests {
             WBalance::from(100),
         );
 
-        // Ratio that represents 200%
+        // Ratio that represents (200 * 1 * LTH(0.8) / 100) 80%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("2").unwrap()
+            Ratio::from_str("1.6").unwrap()
         );
     }
 
@@ -503,10 +544,10 @@ mod tests {
             Ratio::zero(),
         );
 
-        // Ratio that represents 200%
+        // Ratio that represents 160% = (200 * LTH(80%) / 100)
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from_str("2").unwrap()
+            Ratio::from_str("1.6").unwrap()
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -527,10 +568,10 @@ mod tests {
             ],
         });
 
-        // Ratio that represents 50%
+        // Ratio that represents 40% = (200 * 0.5 * LTH(80%) / 100 * 2)
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("0.5").unwrap()
+            Ratio::from_str("0.4").unwrap()
         );
     }
 
@@ -553,10 +594,10 @@ mod tests {
             Ratio::zero(),
         );
 
-        // Ratio that represents 200%
+        // Ratio that represents (200 * 1 * LTH(0.8) / 100) = 160%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from_str("2").unwrap()
+            Ratio::from_str("1.6").unwrap()
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -577,10 +618,10 @@ mod tests {
             ],
         });
 
-        // Ratio that represents 225%
+        // Ratio that represents (200 * 1 * LTH(0.8) / 100 * Volatility (0.8)) = 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("2.25").unwrap()
+            Ratio::from_str("2").unwrap()
         );
     }
 
@@ -610,7 +651,7 @@ mod tests {
             ActionType::Borrow,
         );
 
-        assert_eq!(result, Ratio::from(2u128) / Ratio::from(14u128));
+        assert_eq!(result, Ratio::from(6u128) / Ratio::from(14u128));
     }
 
     #[test]
@@ -640,10 +681,11 @@ mod tests {
             Ratio::zero(),
         );
 
-        // Ratio that represents 1.534883720930232558139534%
+        // Ratio that represents (200 * 1.1 * LTH(0.8) / 50 * 1.1 * 0.9 + 100 * 1 * 0.8)
+        // Ratio that represents 1.364341085271317829457364%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("1.534883720930232558139534").unwrap()
+            Ratio::from_str("1.364341085271317829457364").unwrap()
         );
     }
 }
