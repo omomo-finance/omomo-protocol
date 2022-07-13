@@ -94,10 +94,13 @@ impl InterestRateModel {
         let current_block_height = block_height();
         let accrued_rate = BigBalance::from(total_borrow)
             * borrow_rate
-            * BigBalance::from(U128((current_block_height - accrued_interest.last_recalculation_block) as u128));
+            * BigBalance::from(U128(
+                (current_block_height - accrued_interest.last_recalculation_block) as u128,
+            ));
 
         AccruedInterest {
-            accumulated_interest: accrued_interest.accumulated_interest + U128::from(accrued_rate).0,
+            accumulated_interest: accrued_interest.accumulated_interest
+                + U128::from(accrued_rate).0,
             last_recalculation_block: current_block_height,
         }
     }
