@@ -6,6 +6,7 @@ use controller::ActionType::Borrow;
 use dtoken::{InterestRateModel, WRatio};
 use general::{ratio::Ratio, Price, ONE_TOKEN};
 use near_sdk::{json_types::U128, Balance};
+use near_sdk::env::promise_batch_action_delete_account;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
 const WETH_AMOUNT: Balance = 60 * ONE_TOKEN;
@@ -129,11 +130,15 @@ fn repay_by_parts_with_interest() {
     let first_repay_info = repay_info(&user, &dwnear, dwnear_balance);
     println!("{:?}", first_repay_info);
 
+    let initial_total_reserve = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
+
     repay(&user, dwnear.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
 
+    let total_reserve_after_first_repay = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
+    assert!(total_reserve_after_first_repay.0 > initial_total_reserve.0);
     assert!(exchange_rate > Ratio::one(), "xrate should greater than 1.0");
 
     assert_eq!(
@@ -162,7 +167,6 @@ fn repay_by_parts_with_interest() {
     //
 
     let second_repay_info = repay_info(&user, &dwnear, dwnear_balance);
-    println!("{:?}", second_repay_info);
 
     repay(
         &user,
@@ -172,6 +176,10 @@ fn repay_by_parts_with_interest() {
         second_repay_info.total_amount.0 + ONE_TOKEN,
     )
         .assert_success();
+
+
+    let total_reserve_after_second_repay = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
+    assert!(total_reserve_after_second_repay.0 > total_reserve_after_first_repay.0);
 
     let balance_after_first_repay =
         START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY;
