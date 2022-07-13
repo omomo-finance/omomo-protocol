@@ -4,7 +4,7 @@ use std::cmp::min;
 use std::collections::HashMap;
 
 use crate::admin::Market;
-use general::ratio::{BigBalance, Ratio};
+use general::ratio::{BigBalance, BigDecimal, Ratio};
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -67,8 +67,7 @@ impl Contract {
                 let total_borrows = self.get_total_borrows(user_id);
                 let total_supplies = self.get_total_supplies(user_id);
 
-                let total_available_borrows_usd =
-                    (Ratio::from(total_supplies) / self.liquidation_threshold).into();
+                let total_available_borrows_usd = self.get_theoretical_borrows_max(user_id.clone());
 
                 let health_factor = self.get_health_factor(user_id.clone());
                 let user_profile = self.user_profiles.get(user_id).unwrap().get_wrapped();
@@ -90,13 +89,12 @@ impl Contract {
     }
 
     pub fn view_borrow_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
-        let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
-        let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
-        let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id));
+        let borrows = self.get_total_borrows(&user_id).0;
+        let accrued_interest = self.calculate_accrued_borrow_interest(user_id.clone());
+        let theoretical_max_borrow = self.get_theoretical_borrows_max(user_id);
 
-        let supply_limit = supplies / self.liquidation_threshold;
-        let max_borrow = if supply_limit > (borrows + accrued_interest) {
-            supply_limit - (borrows + accrued_interest)
+        let max_borrow = if theoretical_max_borrow.0 > (borrows + accrued_interest) {
+            BigDecimal::from(theoretical_max_borrow.0 - (borrows + accrued_interest))
         } else {
             BigBalance::zero()
         };
@@ -108,21 +106,20 @@ impl Contract {
     }
 
     pub fn view_withdraw_max(&self, user_id: AccountId, dtoken_id: AccountId) -> WBalance {
-        let supplies = BigBalance::from(self.get_total_supplies(&user_id).0);
-        let borrows = BigBalance::from(self.get_total_borrows(&user_id).0);
-        let accrued_interest = Ratio::from(self.calculate_accrued_borrow_interest(user_id.clone()));
+        let supplies = self.get_total_supplies(&user_id);
+        let collaterals = self.get_collaterals_by_borrows(user_id.clone());
+        let accrued_interest = self.calculate_accrued_borrow_interest(user_id.clone());
 
-        let borrow_limit = self.liquidation_threshold * (borrows + accrued_interest);
-        let max_withdraw = if supplies > borrow_limit {
-            supplies - borrow_limit
+        let max_withdraw_limit = if supplies.0 > (accrued_interest + collaterals.0) {
+            BigBalance::from(supplies.0 - (accrued_interest + collaterals.0))
         } else {
             BigBalance::zero()
         };
 
         let price = self.get_price(&dtoken_id).unwrap();
-        let max_withdraw_in_token = max_withdraw / BigBalance::from(price.value.0);
-
+        let max_withdraw_in_token = max_withdraw_limit / BigBalance::from(price.value.0);
         let supply_by_token = self.get_entity_by_token(Supply, user_id, dtoken_id);
+
         min(supply_by_token, max_withdraw_in_token.0.as_u128()).into()
     }
 }
@@ -131,11 +128,13 @@ impl Contract {
 mod tests {
     use crate::ActionType::{Borrow, Supply};
     use crate::{Config, Contract, OraclePriceHandlerHook, PriceJsonList};
+    use general::ratio::Ratio;
     use general::{Price, ONE_TOKEN};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId};
+    use std::str::FromStr;
 
     pub fn init_test_env() -> (Contract, AccountId, AccountId, AccountId) {
         let (owner_account, _oracle_account, user_account) = (alice(), bob(), carol());
@@ -160,8 +159,20 @@ mod tests {
         let asset_id_2 = AccountId::new_unchecked("token.wnear".to_string());
         let dtoken_id_2 = AccountId::new_unchecked("dtoken.wnear".to_string());
 
-        controller_contract.add_market(asset_id_1, dtoken_id_1, ticker_id_1.clone());
-        controller_contract.add_market(asset_id_2, dtoken_id_2, ticker_id_2.clone());
+        controller_contract.add_market(
+            asset_id_1,
+            dtoken_id_1,
+            ticker_id_1.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
+        );
+        controller_contract.add_market(
+            asset_id_2,
+            dtoken_id_2,
+            ticker_id_2.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
+        );
 
         let mut prices: Vec<Price> = Vec::new();
         prices.push(Price {

@@ -42,10 +42,6 @@ pub fn get_default_liquidation_health_factor_threshold() -> Ratio {
     Ratio::from_str("1.0").unwrap()
 }
 
-pub fn get_default_liquidation_threshold() -> Ratio {
-    Ratio::from_str("1.5").unwrap()
-}
-
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
     Markets,
@@ -78,8 +74,6 @@ pub struct Contract {
 
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
-
-    pub liquidation_threshold: Ratio,
 
     /// Liquidation Incentive
     pub liquidation_incentive: Ratio,
@@ -115,6 +109,12 @@ pub struct MarketProfile {
 
     /// Ticker name
     pub ticker_id: String,
+
+    /// Loan to value for the market
+    pub ltv: Ratio,
+
+    /// Liquidation threshold for the market
+    pub lth: Ratio,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
@@ -174,8 +174,6 @@ impl Contract {
             },
             liquidation_incentive: get_default_liquidation_incentive(),
             liquidation_health_factor_threshold: get_default_liquidation_health_factor_threshold(),
-            liquidation_threshold: get_default_liquidation_threshold(),
-
             mutex: ActionMutex::default(),
         }
     }

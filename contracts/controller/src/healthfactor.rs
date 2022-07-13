@@ -5,6 +5,67 @@ use near_sdk::env::block_height;
 use std::collections::HashMap;
 
 impl Contract {
+    pub fn calculate_supplies_weighted_price_and_lth(&self, user_id: AccountId) -> Balance {
+        let supplies = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_supplies;
+
+        supplies
+            .iter()
+            .map(|(asset, balance)| {
+                let price = self.get_price(asset).unwrap();
+                let market = self.markets.get(asset).unwrap();
+
+                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) * market.lth)
+                    .round_u128()
+            })
+            .sum()
+    }
+
+    pub fn get_collaterals_by_borrows(&self, user_id: AccountId) -> USD {
+        let borrows = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_borrows;
+
+        let collaterals: Balance = borrows
+            .iter()
+            .map(|(asset, balance)| {
+                let price = self.get_price(asset).unwrap();
+                let market = self.markets.get(asset).unwrap();
+
+                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) / market.ltv)
+                    .round_u128()
+            })
+            .sum();
+
+        USD::from(collaterals)
+    }
+
+    pub fn get_theoretical_borrows_max(&self, user_id: AccountId) -> USD {
+        let supplies = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_supplies;
+
+        let borrow_max: Balance = supplies
+            .iter()
+            .map(|(asset, balance)| {
+                let price = self.get_price(asset).unwrap();
+                let market = self.markets.get(asset).unwrap();
+
+                (BigBalance::from(price.value) * BigBalance::from(balance.to_owned()) * market.ltv)
+                    .round_u128()
+            })
+            .sum();
+
+        USD::from(borrow_max)
+    }
+
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
@@ -70,15 +131,17 @@ impl Contract {
 #[near_bindgen]
 impl Contract {
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
-        let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
+        let supplies_weighted_lth =
+            self.calculate_supplies_weighted_price_and_lth(user_account.clone());
+        let max_borrows = self.get_theoretical_borrows_max(user_account.clone());
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
 
-        borrows += self.calculate_accrued_borrow_interest(user_account);
+        borrows += self.calculate_accrued_borrow_interest(user_account.clone());
 
         if borrows != 0 {
-            Ratio::from(collaterals) / Ratio::from(borrows)
+            Ratio::from(supplies_weighted_lth) / Ratio::from(borrows)
         } else {
-            self.get_liquidation_threshold()
+            Ratio::from(supplies_weighted_lth) / Ratio::from(max_borrows.0)
         }
     }
 
@@ -89,8 +152,8 @@ impl Contract {
         amount: WBalance,
         action: ActionType,
     ) -> Ratio {
-        let mut collaterals =
-            self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
+        let mut collaterals = self.calculate_supplies_weighted_price_and_lth(user_account.clone());
+        let max_borrows = self.get_theoretical_borrows_max(user_account.clone());
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
@@ -113,7 +176,7 @@ impl Contract {
         if borrows != 0 {
             Ratio::from(collaterals) / Ratio::from(borrows)
         } else {
-            self.get_liquidation_threshold()
+            Ratio::from(collaterals) / Ratio::from(max_borrows.0)
         }
     }
 }
@@ -147,6 +210,8 @@ mod tests {
             utoken_address_near,
             dtoken_address_near,
             ticker_id_near.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
@@ -157,6 +222,8 @@ mod tests {
             utoken_address_eth,
             dtoken_address_eth,
             ticker_id_eth.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
         let mut prices: Vec<Price> = Vec::new();
@@ -201,6 +268,8 @@ mod tests {
             utoken_address_near,
             dtoken_address_near,
             ticker_id_near.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
@@ -211,6 +280,8 @@ mod tests {
             utoken_address_eth,
             dtoken_address_eth,
             ticker_id_eth.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
         let mut prices: Vec<Price> = Vec::new();
