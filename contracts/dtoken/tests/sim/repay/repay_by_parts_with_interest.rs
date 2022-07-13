@@ -131,11 +131,14 @@ fn repay_by_parts_with_interest() {
     println!("{:?}", first_repay_info);
 
     let initial_total_reserve = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
+    let old_dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
 
     repay(&user, dwnear.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
+
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
+    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
 
     let total_reserve_after_first_repay = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
     assert!(total_reserve_after_first_repay.0 > initial_total_reserve.0);
@@ -151,23 +154,12 @@ fn repay_by_parts_with_interest() {
         START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY
     );
 
-    // let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
-    // assert_eq!(
-    //     user_balance,
-    //     WNEAR_BORROW - FIRST_PART_TO_REPAY,
-    //     "Borrow balance on dtoken should be {}",
-    //     WNEAR_BORROW - FIRST_PART_TO_REPAY
-    // );
-
-    // let user_balance: Balance =
-    //     view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
-    // assert_eq!(
-    //     user_balance,
-    //     WNEAR_BORROW - FIRST_PART_TO_REPAY,
-    //     "Borrow balance on controller should be {}",
-    //     WNEAR_BORROW - FIRST_PART_TO_REPAY
-    // );
-    //
+    assert_eq!(
+        dwnear_balance.0,
+        old_dwnear_balance.0 + FIRST_PART_TO_REPAY,
+        "Repay was partially done, dtoken balance should be {}",
+        old_dwnear_balance.0 + FIRST_PART_TO_REPAY,
+    );
 
     let second_repay_info = repay_info(&user, &dwnear, dwnear_balance);
 
@@ -175,32 +167,46 @@ fn repay_by_parts_with_interest() {
         &user,
         dwnear.account_id(),
         &wnear,
-        // paying one token more to emulate slippage ( so the interest that has counted whilst executing transaction is included )
-        second_repay_info.total_amount.0 + ONE_TOKEN,
+        second_repay_info.total_amount.0,
     )
-    .assert_success();
+        .assert_success();
 
     let total_reserve_after_second_repay =
         view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
     assert!(total_reserve_after_second_repay.0 > total_reserve_after_first_repay.0);
 
-    let _balance_after_first_repay =
+    let balance_after_first_repay =
         START_BALANCE - WNEAR_AMOUNT + WNEAR_BORROW - FIRST_PART_TO_REPAY;
 
-    let _user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
-    // assert_eq!(
-    //     user_balance.0,
-    //     balance_after_first_repay - second_repay_info.total_amount.0,
-    //     "Repay was fully done, user balance should be {}",
-    //     balance_after_first_repay - second_repay_info.total_amount.0
-    // );
+    let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
+
+    assert_eq!(
+        user_balance.0,
+        balance_after_first_repay - second_repay_info.total_amount.0,
+        "Repay was fully done, user balance should be {}",
+        balance_after_first_repay - second_repay_info.total_amount.0
+    );
 
     let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
-    assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
+    assert_ne!(user_balance, 0, "Borrow balance on dtoken should be 0");
+
+    repay(
+        &user,
+        dwnear.account_id(),
+        &wnear,
+        // paying out the rest have left so there is no borrow
+        second_repay_info.total_amount.0,
+    )
+        .assert_success();
+
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
+
+    let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
+    assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
+
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
     assert!(
