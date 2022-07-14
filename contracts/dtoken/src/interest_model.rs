@@ -20,10 +20,10 @@ impl Contract {
         );
         let rest_of_supply_factor = Ratio::one() - reserve_factor;
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
-        let rate_to_pool = borrow_rate * rest_of_supply_factor / Ratio::one();
+        let rate_to_pool = borrow_rate * rest_of_supply_factor;
         let util_rate = self.get_util_rate(underlying_balance, total_borrows, total_reserves);
 
-        util_rate * rate_to_pool / Ratio::one()
+        util_rate * rate_to_pool
     }
 
     pub fn get_borrow_rate(
@@ -56,16 +56,17 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let denominator = if Balance::from(underlying_balance) + Balance::from(total_borrows)
-            > Balance::from(total_reserves)
+        // TODO fix this weird case when some actions exhausted the contract balance
+        if Balance::from(underlying_balance) + Balance::from(total_borrows)
+            < Balance::from(total_reserves)
         {
-            BigBalance::from(
+            return self.config.get().unwrap().interest_rate_model.get_kink();
+        }
+
+        let denominator = BigBalance::from(
                 Balance::from(underlying_balance) + Balance::from(total_borrows)
                     - Balance::from(total_reserves),
-            )
-        } else {
-            self.config.get().unwrap().interest_rate_model.get_kink()
-        };
+            );
 
         // this may happen when there is no supplies
         if denominator == Ratio::zero() {

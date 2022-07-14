@@ -71,7 +71,7 @@ near deploy dweth.omomo-finance.testnet \
             "multiplier_per_block":"62800000000000000",
             "base_rate_per_block":"0",
             "jump_multiplier_per_block":"76100000000000000",
-            "reserve_factor":"10000000000000000000000"
+            "reserve_factor":"100000000000000000000000"
         }
     }'
 near deploy dwnear.omomo-finance.testnet \
@@ -87,7 +87,7 @@ near deploy dwnear.omomo-finance.testnet \
             "multiplier_per_block":"62800000000000000",
             "base_rate_per_block":"0",
             "jump_multiplier_per_block":"76100000000000000",
-            "reserve_factor":"10000000000000000000000"
+            "reserve_factor":"100000000000000000000000"
         }
     }'
 # near deploy dwnear.omomo-finance.testnet \
@@ -103,7 +103,7 @@ near deploy dwnear.omomo-finance.testnet \
 #             "multiplier_per_block":"62800000000000000",
 #             "base_rate_per_block":"0",
 #             "jump_multiplier_per_block":"76100000000000000",
-#             "reserve_factor":"10000000000000000000000"
+#             "reserve_factor":"100000000000000000000000"
 #         }
 #     }'
 near deploy dusdt.omomo-finance.testnet \
@@ -119,7 +119,7 @@ near deploy dusdt.omomo-finance.testnet \
            "multiplier_per_block":"68500000000000000",
            "base_rate_per_block":"0",
            "jump_multiplier_per_block":"66600000000000000",
-           "reserve_factor":"10000000000000000000000"
+           "reserve_factor":"100000000000000000000000"
         }
     }'
 near deploy dusdc.omomo-finance.testnet \
@@ -135,7 +135,7 @@ near deploy dusdc.omomo-finance.testnet \
            "multiplier_per_block":"68500000000000000",
            "base_rate_per_block":"0",
            "jump_multiplier_per_block":"66600000000000000",
-           "reserve_factor":"10000000000000000000000"
+           "reserve_factor":"100000000000000000000000"
         }
     }'
 
