@@ -1,4 +1,8 @@
-use crate::utils::{add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens, mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, supply, upgrade_dtoken, view_balance};
+use crate::utils::{
+    add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
+    mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, supply, upgrade_dtoken,
+    view_balance,
+};
 use controller::ActionType::{Borrow, Supply};
 use dtoken::{InterestRateModel, WRatio};
 use general::{ratio::Ratio, Price, WBalance};
@@ -13,11 +17,9 @@ const WNEAR_BORROW: Balance = 40;
 const START_BALANCE: Balance = 100;
 const START_PRICE: Balance = 10000;
 
-
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     DTOKEN_CURRENT_WASM_BYTES => "../../res/dtoken.wasm",
 }
-
 
 fn upgrade_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -138,7 +140,10 @@ fn upgrade_fixture() -> (
 fn test_upgrade_check_state() {
     let (dwnear, controller, wnear, user) = upgrade_fixture();
 
-    assert_eq!(view!(dwnear.get_version()).unwrap_json::<String>(), env!("CARGO_PKG_VERSION").to_string());
+    assert_eq!(
+        view!(dwnear.get_version()).unwrap_json::<String>(),
+        env!("CARGO_PKG_VERSION").to_string()
+    );
 
     let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
@@ -148,7 +153,6 @@ fn test_upgrade_check_state() {
     let repay_info = repay_info(&user, &dwnear, dwnear_balance);
     let repay_amount = Balance::from(repay_info.total_amount);
 
-
     let old_total_supplies = view!(dwnear.view_total_supplies()).unwrap_json::<U128>();
     let old_total_borrows = view!(dwnear.view_total_borrows()).unwrap_json::<U128>();
     let old_total_reserves = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
@@ -157,10 +161,12 @@ fn test_upgrade_check_state() {
     let old_user_supplies: Balance =
         view_balance(&controller, Supply, user.account_id(), dwnear.account_id());
 
-
     upgrade_dtoken(&dwnear, &DTOKEN_CURRENT_WASM_BYTES).assert_success();
 
-    assert_eq!(view!(dwnear.get_version()).unwrap_json::<String>(), env!("CARGO_PKG_VERSION").to_string());
+    assert_eq!(
+        view!(dwnear.get_version()).unwrap_json::<String>(),
+        env!("CARGO_PKG_VERSION").to_string()
+    );
 
     repay(&user, dwnear.account_id(), &wnear, repay_amount).assert_success();
 
@@ -182,10 +188,21 @@ fn test_upgrade_check_state() {
     let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
-
-    assert_eq!(old_total_supplies, view!(dwnear.view_total_supplies()).unwrap_json::<U128>());
+    assert_eq!(
+        old_total_supplies,
+        view!(dwnear.view_total_supplies()).unwrap_json::<U128>()
+    );
     assert!(old_total_borrows.0 > view!(dwnear.view_total_borrows()).unwrap_json::<U128>().0);
-    assert_eq!(old_total_reserves.0, view!(dwnear.view_total_reserves()).unwrap_json::<U128>().0);
-    assert!(old_user_borrows >  view!(dwnear.get_account_borrows(user.account_id())).unwrap_json::<Balance>());
-    assert_eq!(old_user_supplies, view_balance(&controller, Supply, user.account_id(), dwnear.account_id()));
+    assert_eq!(
+        old_total_reserves.0,
+        view!(dwnear.view_total_reserves()).unwrap_json::<U128>().0
+    );
+    assert!(
+        old_user_borrows
+            > view!(dwnear.get_account_borrows(user.account_id())).unwrap_json::<Balance>()
+    );
+    assert_eq!(
+        old_user_supplies,
+        view_balance(&controller, Supply, user.account_id(), dwnear.account_id())
+    );
 }

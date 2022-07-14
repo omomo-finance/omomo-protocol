@@ -6,18 +6,26 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 
 const PREVIOUS_VERSION: &str = "0.0.1";
 
-use crate::utils::{add_market, initialize_controller, initialize_utoken, new_user, set_price, upgrade_dtoken, view_balance};
+use crate::utils::{
+    add_market, initialize_controller, initialize_utoken, new_user, set_price, upgrade_dtoken,
+    view_balance,
+};
+use controller::ActionType::Supply;
 use dtoken::Config as dConfig;
 use dtoken::ContractContract as Dtoken;
 use dtoken::InterestRateModel;
 use general::ratio::Ratio;
+use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance};
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, view, ContractAccount, UserAccount};
-use controller::ActionType::Supply;
-use general::Price;
 
-fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAccount<controller::ContractContract>, ContractAccount<test_utoken::ContractContract>, UserAccount) {
+fn upgrade_fixture() -> (
+    ContractAccount<dtoken::ContractContract>,
+    ContractAccount<controller::ContractContract>,
+    ContractAccount<test_utoken::ContractContract>,
+    UserAccount,
+) {
     let root = init_simulator(None);
 
     let user = new_user(&root, "user".parse().unwrap());
@@ -45,7 +53,7 @@ fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcco
         }),
         deposit = 0
     )
-        .assert_success();
+    .assert_success();
 
     call!(
         dtoken.user_account,
@@ -59,7 +67,6 @@ fn upgrade_fixture() -> (ContractAccount<dtoken::ContractContract>, ContractAcco
 
     let version: String = view!(dtoken.get_version()).unwrap_json();
     assert_eq!(version, PREVIOUS_VERSION);
-
 
     add_market(
         &controller,
@@ -96,15 +103,33 @@ fn test_upgrade_without_field() {
 
     upgrade_dtoken(&dtoken, &DTOKEN_CURRENT_WASM_BYTES).assert_success();
 
-    assert_eq!(view!(dtoken.get_version()).unwrap_json::<String>(), env!("CARGO_PKG_VERSION").to_string());
+    assert_eq!(
+        view!(dtoken.get_version()).unwrap_json::<String>(),
+        env!("CARGO_PKG_VERSION").to_string()
+    );
 
     // there are no such field so Err occurred
     // no method named `view_mock_field` found for struct `dtoken::ContractContract` in the current scope
     // let mock_field_after_upgrade_check = view!(dtoken.view_mock_field(user.account_id())).unwrap_json();
 
-    assert_eq!(old_total_supplies, view!(dtoken.view_total_supplies()).unwrap_json::<U128>());
-    assert_eq!(old_total_borrows, view!(dtoken.view_total_borrows()).unwrap_json::<U128>());
-    assert_eq!(old_total_reserves, view!(dtoken.view_total_reserves()).unwrap_json::<U128>());
-    assert_eq!(old_user_borrows, view!(dtoken.get_account_borrows(user.account_id())).unwrap_json::<Balance>());
-    assert_eq!(old_user_supplies, view_balance(&controller, Supply, user.account_id(), dtoken.account_id()));
+    assert_eq!(
+        old_total_supplies,
+        view!(dtoken.view_total_supplies()).unwrap_json::<U128>()
+    );
+    assert_eq!(
+        old_total_borrows,
+        view!(dtoken.view_total_borrows()).unwrap_json::<U128>()
+    );
+    assert_eq!(
+        old_total_reserves,
+        view!(dtoken.view_total_reserves()).unwrap_json::<U128>()
+    );
+    assert_eq!(
+        old_user_borrows,
+        view!(dtoken.get_account_borrows(user.account_id())).unwrap_json::<Balance>()
+    );
+    assert_eq!(
+        old_user_supplies,
+        view_balance(&controller, Supply, user.account_id(), dtoken.account_id())
+    );
 }

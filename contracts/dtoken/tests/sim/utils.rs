@@ -500,7 +500,6 @@ pub fn repay_info(
     .unwrap_json::<RepayInfo>()
 }
 
-
 pub fn upgrade_dtoken(
     dtoken: &ContractAccount<dtoken::ContractContract>,
     contract_bytes: &[u8],
@@ -513,4 +512,3 @@ pub fn upgrade_dtoken(
         .function_call("upgrade".to_string(), contract_bytes.to_vec(), MAX_GAS.0, 0)
         .submit()
 }
-
