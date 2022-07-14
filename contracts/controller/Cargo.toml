@@ -13,3 +13,4 @@ percentage = "0.1.0"
 assert_matches = "1.5.0"
 general = { path = "../general" }
 partial-min-max = "0.4.0"
+near-sys = "0.2.0"

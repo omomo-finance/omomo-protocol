@@ -33,6 +33,7 @@ pub mod repay;
 pub mod user_flow_protection;
 pub mod user_profile;
 mod views;
+mod upgrade;
 
 pub fn get_default_liquidation_incentive() -> Ratio {
     Ratio::from_str("0.05").unwrap()
