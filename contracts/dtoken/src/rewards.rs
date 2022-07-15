@@ -130,8 +130,11 @@ impl Contract {
     }
 
     pub fn get_rewards_per_time(&self, campaign: RewardCampaign, seconds: u128) -> WBalance {
-        let rewards_per_second: u128 = campaign.reward_amount.0 * seconds
-            / u128::from(campaign.end_time - campaign.start_time);
+        let divider = u128::from(campaign.end_time - campaign.start_time);
+        let rewards_per_second = match divider {
+            0 => campaign.reward_amount.0 * seconds,
+            _ => campaign.reward_amount.0 * seconds / divider,
+        };
         WBalance::from(rewards_per_second)
     }
 
@@ -334,9 +337,17 @@ impl Contract {
             if campaign.vesting.start_time > env::block_timestamp() {
                 return result;
             };
-            result = ((reward.amount.0 - reward.claimed.0)
-                * Balance::from(env::block_timestamp() - campaign.vesting.start_time))
-                / Balance::from(campaign.vesting.end_time - campaign.vesting.start_time);
+            let vesting_duration =
+                Balance::from(campaign.vesting.end_time - campaign.vesting.start_time);
+
+            result = match vesting_duration {
+                0 => reward.amount.0 - reward.claimed.0,
+                _ => {
+                    ((reward.amount.0 - reward.claimed.0)
+                        * Balance::from(env::block_timestamp() - campaign.vesting.start_time))
+                        / vesting_duration
+                }
+            }
         }
         result
     }
