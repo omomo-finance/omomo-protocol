@@ -39,6 +39,7 @@ mod repay;
 mod reserve;
 mod rewards;
 mod supply;
+mod upgrade;
 mod user_profile;
 mod views;
 mod withdraw;
