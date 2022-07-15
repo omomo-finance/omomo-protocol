@@ -13,6 +13,7 @@ use std::str::FromStr;
 
 pub use crate::borrows_supplies::*;
 pub use crate::config::*;
+pub use crate::healthfactor::*;
 pub use crate::liquidation::*;
 pub use crate::oraclehook::*;
 pub use crate::prices::*;
@@ -42,10 +43,6 @@ pub fn get_default_liquidation_health_factor_threshold() -> Ratio {
     Ratio::from_str("1.0").unwrap()
 }
 
-pub fn get_default_liquidation_threshold() -> Ratio {
-    Ratio::from_str("1.5").unwrap()
-}
-
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKeys {
     Markets,
@@ -61,6 +58,8 @@ pub enum StorageKeys {
 pub struct Contract {
     /// Utoken Id [Underlying asset name] -> Dtoken address
     /// Utoken Id [Underlying asset name] -> Ticker Id
+    /// Utoken Id [Underlying asset name] -> LTV
+    /// Utoken Id [Underlying asset name] -> LTH
     pub markets: UnorderedMap<AccountId, MarketProfile>,
 
     /// User Account ID -> Dtoken address -> Supplies balance
@@ -78,8 +77,6 @@ pub struct Contract {
 
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
-
-    pub liquidation_threshold: Ratio,
 
     /// Liquidation Incentive
     pub liquidation_incentive: Ratio,
@@ -107,7 +104,7 @@ pub struct PriceJsonList {
     pub price_list: Vec<Price>,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MarketProfile {
     /// Dtoken address
@@ -115,6 +112,12 @@ pub struct MarketProfile {
 
     /// Ticker name
     pub ticker_id: String,
+
+    /// Loan to value for the market
+    pub ltv: Ratio,
+
+    /// Liquidation threshold for the market
+    pub lth: Ratio,
 }
 
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
@@ -174,8 +177,6 @@ impl Contract {
             },
             liquidation_incentive: get_default_liquidation_incentive(),
             liquidation_health_factor_threshold: get_default_liquidation_health_factor_threshold(),
-            liquidation_threshold: get_default_liquidation_threshold(),
-
             mutex: ActionMutex::default(),
         }
     }
