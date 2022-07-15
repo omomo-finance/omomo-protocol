@@ -208,7 +208,9 @@ impl Contract {
         );
         match action {
             ActionType::Supply => {
-                collaterals -= usd_amount;
+                if borrows != 0 {
+                    collaterals -= usd_amount
+                }
             }
             ActionType::Borrow => {
                 borrows += usd_amount;
