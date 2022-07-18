@@ -1,7 +1,7 @@
 use crate::*;
 use general::ratio::{BigBalance, Ratio};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::fmt;
 
 #[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
@@ -180,7 +180,7 @@ impl Contract {
             return WBalance::from(
                 self.get_rewards_per_time(
                     campaign.clone(),
-                    u128::from(current_time - campaign.last_update_time),
+                    u128::from(current_time - max(campaign.last_update_time, campaign.start_time)),
                 )
                 .0 / total.0,
             );
@@ -541,6 +541,22 @@ mod tests {
         })
     }
 
+    fn get_custom_context_with_signer(
+        is_view: bool,
+        block_timestamp: u64,
+        block_index: BlockHeight,
+        signer: AccountId,
+    ) -> VMContext {
+        VMContextBuilder::new()
+            .current_account_id(signer.clone())
+            .signer_account_id(signer.clone())
+            .predecessor_account_id(signer)
+            .block_index(block_index)
+            .block_timestamp(block_timestamp)
+            .is_view(is_view)
+            .build()
+    }
+
     fn get_custom_context(
         is_view: bool,
         block_timestamp: u64,
@@ -574,7 +590,7 @@ mod tests {
             token: carol(),
             ticker_id: "CAROL".to_string(),
             reward_amount: U128(100000),
-            last_update_time: 1651352400,
+            last_update_time: 0,
             rewards_per_token: U128(0),
             vesting,
         }
@@ -586,20 +602,81 @@ mod tests {
         let campaign1 = get_campaign();
         let campaign2 = get_campaign();
 
-        let context = get_custom_context(false, 1651362400, 1);
+        let context = get_custom_context(false, 1651352400, 1);
         testing_env!(context.clone());
 
-        contract.add_reward_campaign(campaign1);
-        contract.add_reward_campaign(campaign2);
+        let campaign_id1 = contract.add_reward_campaign(campaign1.clone());
+        contract.add_reward_campaign(campaign2.clone());
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(100));
+
+        let context = get_custom_context(false, 1651357400, 1);
+        testing_env!(context.clone());
+
+        let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
 
         assert_eq!(
-            contract
-                .get_rewards_list(context.signer_account_id.clone())
-                .len(),
+            rewards_list_on_half_way.len(),
             2,
             "Rewards list should be consist of 2 rewards"
-        )
+        );
+
+        assert_eq!(
+            rewards_list_on_half_way
+                .get(campaign_id1.as_str())
+                .unwrap()
+                .amount
+                .0,
+            50000,
+            "Rewards amount should be half of full campaign rewards"
+        );
+
+        let context1 = get_custom_context_with_signer(false, 1651357400, 1, bob());
+        testing_env!(context1.clone());
+
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(300));
+
+        let context1 = get_custom_context_with_signer(false, 1651362400, 1, bob());
+        testing_env!(context1.clone());
+
+        let rewards_list_on_finish_alice =
+            contract.get_rewards_list(context.signer_account_id.clone());
+
+        let rewards_list_on_finish_bob =
+            contract.get_rewards_list(context1.signer_account_id.clone());
+
+        assert_eq!(
+            rewards_list_on_finish_alice.len(),
+            2,
+            "Rewards list should be consist of 2 rewards"
+        );
+
+        assert_eq!(
+            rewards_list_on_finish_alice
+                .get(campaign_id1.as_str())
+                .unwrap()
+                .amount
+                .0,
+            62500,
+            "Rewards amount should be 50000 + (50000 * 0.25)"
+        );
+
+        assert_eq!(
+            rewards_list_on_finish_bob.len(),
+            2,
+            "Rewards list should be consist of 2 rewards"
+        );
+
+        assert_eq!(
+            rewards_list_on_finish_bob
+                .get(campaign_id1.as_str())
+                .unwrap()
+                .amount
+                .0,
+            37500,
+            "Rewards amount should be 0 + (50000 * 0.75)"
+        );
     }
 
     #[test]
