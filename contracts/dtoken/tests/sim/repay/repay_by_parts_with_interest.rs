@@ -169,7 +169,7 @@ fn repay_by_parts_with_interest() {
         &wnear,
         second_repay_info.total_amount.0,
     )
-        .assert_success();
+    .assert_success();
 
     let total_reserve_after_second_repay =
         view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
@@ -198,7 +198,7 @@ fn repay_by_parts_with_interest() {
         // paying out the rest have left so there is no borrow
         second_repay_info.total_amount.0,
     )
-        .assert_success();
+    .assert_success();
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
