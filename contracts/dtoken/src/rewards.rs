@@ -342,11 +342,10 @@ impl Contract {
 
             result = match vesting_duration {
                 0 => reward.amount.0 - reward.claimed.0,
-                _ => {
-                    ((reward.amount.0 - reward.claimed.0)
-                        * Balance::from(env::block_timestamp() - campaign.vesting.start_time))
-                        / vesting_duration
-                }
+                _ => ((BigBalance::from(reward.amount.0 - reward.claimed.0)
+                    * BigBalance::from(env::block_timestamp() - campaign.vesting.start_time))
+                    / BigBalance::from(vesting_duration))
+                .round_u128(),
             }
         }
         result
