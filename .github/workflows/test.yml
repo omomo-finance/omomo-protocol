@@ -8,14 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: ls -laR
+      - run: ls -daR
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
       # cache for dependencies
-      - run: ls -laR
+      - run: ls -daR
       - uses: actions/cache@v3
         with:
           path: |
@@ -27,23 +27,23 @@ jobs:
             ~/.cargo/.crates2.json
             contracts/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/contracts/Cargo.lock') }}
-      - run: ls -laR
+      - run: ls -daR
       # linter checks
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
           args:  --manifest-path ./contracts/Cargo.toml --all -- --check
-      - run: ls -laR
+      - run: ls -daR
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
           args:  --manifest-path ./contracts/Cargo.toml -- -A clippy::too-many-arguments -A clippy::ptr-offset-with-cast -A clippy::assign-op-pattern -A clippy::manual-range-contains -D warnings
 
-      - run: ls -laR
+      - run: ls -daR
       - run: ./build.sh
-      - run: ls -laR
+      - run: ls -daR
       - run: ./test.sh
-      - run: ls -laR
+      - run: ls -daR
 
   # deployment:
   #   runs-on: ubuntu-latest
