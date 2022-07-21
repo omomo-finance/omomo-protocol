@@ -40,13 +40,8 @@ jobs:
       - run: ./test.sh
       - uses: actions-rs/cargo@v1
         with:
-          command: debug
-      - uses: actions-rs/cargo@v1
-        with:
-          command: release
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+          command: build
+          args: --debug
       - run: find . -type d
       - run: cat .git/info/exclude
 
