@@ -38,9 +38,15 @@ jobs:
 
       - run: ./build.sh
       - run: ./test.sh
-      - run: rust debug
-      - run: rust release
-      - run: rust test
+      - uses: actions-rs/cargo@v1
+        with:
+          command: debug
+      - uses: actions-rs/cargo@v1
+        with:
+          command: release
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
       - run: find . -type d
       - run: cat .git/info/exclude
 
