@@ -38,10 +38,6 @@ jobs:
 
       - run: ./build.sh
       - run: ./test.sh
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
       - run: find . -type d
       - run: cat .git/info/exclude
 
