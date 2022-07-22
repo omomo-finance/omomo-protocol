@@ -40,7 +40,7 @@ pub struct RewardCampaign {
     /// Last time when rewardPerToken was recomputed/updated
     last_update_time: u64,
     /// Represent the token rewards amount which contract should pay for 1 token putted into liquidity
-    rewards_per_token: WBalance,
+    rewards_per_token: BigBalance,
     /// Vesting configuration
     vesting: Vesting,
 }
@@ -86,7 +86,7 @@ pub struct Reward {
     /// Total rewards amount, default = 0
     amount: WBalance,
     /// The last rewards_per_token which used for rewards adjustment, default = 0
-    rewards_per_token_paid: WBalance,
+    rewards_per_token_paid: BigBalance,
     /// Tokens total amount that has been claimed by the user
     claimed: WBalance,
     /// Tokens amount which were unlocked with penalty
@@ -104,7 +104,7 @@ impl Reward {
         Reward {
             campaign_id: campaig_id,
             amount: U128(0),
-            rewards_per_token_paid: U128(0),
+            rewards_per_token_paid: BigBalance::zero(),
             claimed: U128(0),
             unlocked: U128(0),
         }
@@ -119,7 +119,6 @@ impl Contract {
     pub fn get_reward_campaigns_extended(&self) -> Vec<RewardCampaignExtended> {
         self.reward_campaigns
             .iter()
-            .filter(|(_, campaign)| campaign.end_time > env::block_height())
             .map(|(id, campaign)| RewardCampaignExtended {
                 campaign_id: id,
                 campaign: campaign.clone(),
@@ -131,11 +130,11 @@ impl Contract {
 
     pub fn get_rewards_per_time(&self, campaign: RewardCampaign, seconds: u128) -> WBalance {
         let divider = u128::from(campaign.end_time - campaign.start_time);
-        let rewards_per_second = match divider {
-            0 => campaign.reward_amount.0 * seconds,
+        let rewards_per_time = match divider {
+            0 => 0,
             _ => campaign.reward_amount.0 * seconds / divider,
         };
-        WBalance::from(rewards_per_second)
+        WBalance::from(rewards_per_time)
     }
 
     pub fn get_timestamp_in_seconds(&self) -> u64 {
@@ -173,21 +172,22 @@ impl Contract {
             .or_insert_with(|| rewards_map);
     }
 
-    pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> WBalance {
+    pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> BigBalance {
         if let Some(campaign) = self.get_reward_campaign_by_id(campaign_id.clone()) {
             let total = self.get_market_total(campaign.clone());
             let current_time = min(self.get_timestamp_in_seconds(), campaign.end_time);
             if total.0 == 0 {
-                return WBalance::from(0);
+                return BigBalance::zero();
             };
 
-            return WBalance::from(
-                self.get_rewards_per_time(
-                    campaign.clone(),
-                    u128::from(current_time - max(campaign.last_update_time, campaign.start_time)),
-                )
-                .0 / total.0,
+            let rewards_per_time = self.get_rewards_per_time(
+                campaign.clone(),
+                u128::from(current_time - max(campaign.last_update_time, campaign.start_time)),
             );
+
+            let result = (BigBalance::from(rewards_per_time.0) / BigBalance::from(total.0))
+                * BigBalance::from(ONE_TOKEN);
+            return result;
         }
         panic!(
             "Campaign {} wasn't found on the current contract",
@@ -198,22 +198,21 @@ impl Contract {
     pub fn update_reward_campaign(&mut self, campaign_id: String) -> RewardCampaign {
         let mut campaign = self.get_reward_campaign_by_id(campaign_id.clone()).unwrap();
         let accrued_tokens = self.get_accrued_rewards_per_token(campaign_id.clone());
-        campaign.rewards_per_token =
-            WBalance::from(campaign.rewards_per_token.0 + accrued_tokens.0);
+        campaign.rewards_per_token = campaign.rewards_per_token + accrued_tokens;
         campaign.last_update_time = min(self.get_timestamp_in_seconds(), campaign.end_time);
         self.reward_campaigns.insert(&campaign_id, &campaign);
         campaign
     }
 
     pub fn get_updated_reward_amount(&self, reward: &Reward, account_id: AccountId) -> WBalance {
-        self.get_updated_reward_amount_with_accrued(reward, account_id, 0)
+        self.get_updated_reward_amount_with_accrued(reward, account_id, BigBalance::zero())
     }
 
     pub fn get_updated_reward_amount_with_accrued(
         &self,
         reward: &Reward,
         account_id: AccountId,
-        accrued: Balance,
+        accrued: BigBalance,
     ) -> WBalance {
         let campaign_option = self.get_reward_campaign_by_id(reward.campaign_id.clone());
 
@@ -226,8 +225,10 @@ impl Contract {
         let total = self.get_account_total(campaign.clone(), account_id);
         WBalance::from(
             reward.amount.0
-                + (total.0
-                    * (campaign.rewards_per_token.0 - reward.rewards_per_token_paid.0 + accrued)),
+                + (BigBalance::from(total.0)
+                    * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
+                    / BigBalance::from(ONE_TOKEN))
+                .round_u128(),
         )
     }
 
@@ -265,7 +266,8 @@ impl Contract {
             .reward_campaigns
             .iter()
             .filter(|(_, campaign)| {
-                campaign.campaign_type == campaign_type && campaign.end_time > env::block_height()
+                campaign.campaign_type == campaign_type
+                    && campaign.end_time >= self.get_timestamp_in_seconds()
             })
             .map(|(campaign_id, _)| campaign_id)
             .collect::<Vec<String>>();
@@ -290,7 +292,7 @@ impl Contract {
         let accrued = self.get_accrued_rewards_per_token(campaign_id);
         Reward {
             campaign_id: reward.campaign_id.clone(),
-            amount: self.get_updated_reward_amount_with_accrued(&reward, account_id, accrued.0),
+            amount: self.get_updated_reward_amount_with_accrued(&reward, account_id, accrued),
             rewards_per_token_paid: reward.rewards_per_token_paid,
             claimed: reward.claimed,
             unlocked: reward.unlocked,
@@ -528,16 +530,16 @@ mod tests {
     use crate::rewards::{CampaignType, Vesting};
     use crate::{Config, Contract, Reward};
     use crate::{InterestRateModel, RewardCampaign};
-    use general::ratio::Ratio;
+    use general::ratio::{BigBalance, Ratio};
     use near_sdk::json_types::U128;
     use near_sdk::test_utils::test_env::{alice, bob, carol};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{env, testing_env, AccountId, Balance, BlockHeight, VMContext};
 
-    use general::WBalance;
+    use general::{WBalance, ONE_TOKEN};
     use std::convert::TryFrom;
 
-    const REWARD_AMOUNT: Balance = 100000;
+    const REWARD_AMOUNT: Balance = 100000 * 10u128.pow(0);
 
     pub fn init_env() -> Contract {
         let (dtoken_account, underlying_token_account, controller_account) =
@@ -602,7 +604,7 @@ mod tests {
             ticker_id: "CAROL".to_string(),
             reward_amount: U128(REWARD_AMOUNT),
             last_update_time: 0,
-            rewards_per_token: U128(0),
+            rewards_per_token: BigBalance::zero(),
             vesting,
         }
     }
@@ -613,15 +615,15 @@ mod tests {
         let campaign1 = get_campaign();
         let campaign2 = get_campaign();
 
-        let context = get_custom_context(false, 1651352400000000000, 1);
+        let context = get_custom_context(false, 1651352400000000000, 95459174);
         testing_env!(context.clone());
 
         let campaign_id1 = contract.add_reward_campaign(campaign1.clone());
         contract.add_reward_campaign(campaign2.clone());
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(100));
+        contract.mint(contract.get_signer_address(), WBalance::from(100000));
 
-        let context = get_custom_context(false, 1651357400000000000, 1);
+        let context = get_custom_context(false, 1651357400000000000, 95459174);
         testing_env!(context.clone());
 
         let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
@@ -638,17 +640,17 @@ mod tests {
                 .unwrap()
                 .amount
                 .0,
-            50000,
+            campaign1.reward_amount.0 / 2,
             "Rewards amount should be half of full campaign rewards"
         );
 
-        let context1 = get_custom_context_with_signer(false, 1651357400000000000, 1, bob());
+        let context1 = get_custom_context_with_signer(false, 1651357400000000000, 95459174, bob());
         testing_env!(context1.clone());
 
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(300));
+        contract.mint(contract.get_signer_address(), WBalance::from(300000));
 
-        let context1 = get_custom_context_with_signer(false, 1651362400000000000, 1, bob());
+        let context1 = get_custom_context_with_signer(false, 1651362400000000000, 95459174, bob());
         testing_env!(context1.clone());
 
         let rewards_list_on_finish_alice =
@@ -663,13 +665,14 @@ mod tests {
             "Rewards list should be consist of 2 rewards"
         );
 
+        let half_reward = campaign1.reward_amount.0 / 2;
         assert_eq!(
             rewards_list_on_finish_alice
                 .get(campaign_id1.as_str())
                 .unwrap()
                 .amount
                 .0,
-            62500,
+            half_reward + half_reward / 4,
             "Rewards amount should be 50000 + (50000 * 0.25)"
         );
 
@@ -685,7 +688,7 @@ mod tests {
                 .unwrap()
                 .amount
                 .0,
-            37500,
+            half_reward * 3 / 4,
             "Rewards amount should be 0 + (50000 * 0.75)"
         );
     }
@@ -776,7 +779,7 @@ mod tests {
         let account_id = AccountId::try_from(alice().to_string()).unwrap();
         let mut contract = init_env();
         let mut campaign = get_campaign();
-        campaign.rewards_per_token = WBalance::from(10);
+        campaign.rewards_per_token = BigBalance::from(10 * ONE_TOKEN);
         let context = get_context(false);
         testing_env!(context);
         campaign.campaign_type = CampaignType::Borrow;
@@ -803,7 +806,8 @@ mod tests {
         let campaign_result = contract.get_accrued_rewards_per_token(campaign_id);
 
         assert_eq!(
-            0, campaign_result.0,
+            BigBalance::zero(),
+            campaign_result,
             "Get accrued rewards should return 0 due to empty total supply"
         );
     }
@@ -821,8 +825,9 @@ mod tests {
         let campaign_result = contract.get_accrued_rewards_per_token(campaign_id);
 
         assert_eq!(
-            campaign.reward_amount.0 / total_supply,
-            campaign_result.0,
+            (BigBalance::from(campaign.reward_amount.0) * BigBalance::from(ONE_TOKEN)
+                / BigBalance::from(total_supply)),
+            campaign_result,
             "Get accrued rewards value doesn't match"
         );
     }
