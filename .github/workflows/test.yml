@@ -40,6 +40,7 @@ jobs:
       - run: ./test.sh
       - run: find . -type d
       - run: cat .git/info/exclude
+      - run: git diff
 
   # deployment:
   #   runs-on: ubuntu-latest
