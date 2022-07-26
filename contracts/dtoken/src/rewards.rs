@@ -345,13 +345,12 @@ impl Contract {
             };
             let vesting_duration =
                 Balance::from(campaign.vesting.end_time - campaign.vesting.start_time);
+            let current_time = min(self.get_timestamp_in_seconds(), campaign.vesting.end_time);
 
             result = match vesting_duration {
                 0 => reward.amount.0 - reward.claimed.0,
                 _ => ((BigBalance::from(reward.amount.0 - reward.claimed.0)
-                    * BigBalance::from(
-                        self.get_timestamp_in_seconds() - campaign.vesting.start_time,
-                    ))
+                    * BigBalance::from(current_time - campaign.vesting.start_time))
                     / BigBalance::from(vesting_duration))
                 .round_u128(),
             }
@@ -729,6 +728,14 @@ mod tests {
         let amount_available_to_claim2 = contract.get_amount_available_to_claim(reward.clone());
         assert_eq!(
             amount_available_to_claim2, reward.amount.0,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let context3 = get_custom_context(false, 1651375400000000000, 1);
+        testing_env!(context3);
+        let amount_available_to_claim3 = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim3, reward.amount.0,
             "Amount for claim doesn't match to expected"
         );
     }
