@@ -136,6 +136,7 @@ impl Contract {
             self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
         }
+        self.update_campaigns_market_total_by_type(CampaignType::Supply);
         log!(
             "{}",
             Events::SupplySuccess(env::signer_account_id(), Balance::from(amount))

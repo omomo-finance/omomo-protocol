@@ -164,6 +164,7 @@ impl Contract {
         };
 
         self.mutex_account_unlock();
+        self.update_campaigns_market_total_by_type(CampaignType::Borrow);
         log!(
             "{}",
             Events::RepaySuccess(env::signer_account_id(), Balance::from(token_amount))

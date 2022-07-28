@@ -207,6 +207,7 @@ impl Contract {
             );
             return PromiseOrValue::Value(token_amount);
         }
+        self.update_campaigns_market_total_by_type(CampaignType::Supply);
         self.mutex_account_unlock();
         log!(
             "{}",

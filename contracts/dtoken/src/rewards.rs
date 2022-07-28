@@ -41,6 +41,8 @@ pub struct RewardCampaign {
     last_update_time: u64,
     /// Represent the token rewards amount which contract should pay for 1 token putted into liquidity
     rewards_per_token: BigBalance,
+    /// Last market total by campaign type value
+    last_market_total: WBalance,
     /// Vesting configuration
     vesting: Vesting,
 }
@@ -150,6 +152,9 @@ impl Contract {
     }
 
     pub fn get_market_total(&self, campaign: RewardCampaign) -> WBalance {
+        if self.get_timestamp_in_seconds() > campaign.end_time {
+            return campaign.last_market_total;
+        }
         let total_amount = match campaign.campaign_type {
             CampaignType::Supply => self.get_total_supplies(), // Tokens
             CampaignType::Borrow => self.get_total_borrows(),  // Tokens
@@ -200,6 +205,13 @@ impl Contract {
         let accrued_tokens = self.get_accrued_rewards_per_token(campaign_id.clone());
         campaign.rewards_per_token = campaign.rewards_per_token + accrued_tokens;
         campaign.last_update_time = min(self.get_timestamp_in_seconds(), campaign.end_time);
+        self.reward_campaigns.insert(&campaign_id, &campaign);
+        campaign
+    }
+
+    pub fn update_campaign_market_total(&mut self, campaign_id: String) -> RewardCampaign {
+        let mut campaign = self.get_reward_campaign_by_id(campaign_id.clone()).unwrap();
+        campaign.last_market_total = self.get_market_total(campaign.clone());
         self.reward_campaigns.insert(&campaign_id, &campaign);
         campaign
     }
@@ -261,19 +273,30 @@ impl Contract {
         reward
     }
 
-    pub fn adjust_rewards_by_campaign_type(&mut self, campaign_type: CampaignType) {
-        let campaigns = self
-            .reward_campaigns
+    pub fn get_campaigns_by_campaign_type(&mut self, campaign_type: CampaignType) -> Vec<String> {
+        self.reward_campaigns
             .iter()
             .filter(|(_, campaign)| {
                 campaign.campaign_type == campaign_type
                     && campaign.end_time >= self.get_timestamp_in_seconds()
             })
             .map(|(campaign_id, _)| campaign_id)
-            .collect::<Vec<String>>();
+            .collect::<Vec<String>>()
+    }
+
+    pub fn adjust_rewards_by_campaign_type(&mut self, campaign_type: CampaignType) {
+        let campaigns = self.get_campaigns_by_campaign_type(campaign_type);
 
         campaigns.iter().for_each(|campaign_id| {
             self.adjust_reward(campaign_id.clone());
+        });
+    }
+
+    pub fn update_campaigns_market_total_by_type(&mut self, campaign_type: CampaignType) {
+        let campaigns = self.get_campaigns_by_campaign_type(campaign_type);
+
+        campaigns.iter().for_each(|campaign_id| {
+            self.update_campaign_market_total(campaign_id.clone());
         });
     }
 
@@ -604,6 +627,7 @@ mod tests {
             reward_amount: U128(REWARD_AMOUNT),
             last_update_time: 0,
             rewards_per_token: BigBalance::zero(),
+            last_market_total: U128(0),
             vesting,
         }
     }
@@ -621,6 +645,7 @@ mod tests {
         contract.add_reward_campaign(campaign2.clone());
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(100000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
 
         let context = get_custom_context(false, 1651357400000000000, 95459174);
         testing_env!(context.clone());
@@ -648,6 +673,7 @@ mod tests {
 
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(300000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
 
         let context1 = get_custom_context_with_signer(false, 1651362400000000000, 95459174, bob());
         testing_env!(context1.clone());
@@ -689,6 +715,39 @@ mod tests {
                 .0,
             half_reward * 3 / 4,
             "Rewards amount should be 0 + (50000 * 0.75)"
+        );
+
+        let context2 =
+            get_custom_context_with_signer(false, 1651372400000000000, 95459174, carol());
+        testing_env!(context2.clone());
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(600000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+
+        let rewards_list_on_finish_alice =
+            contract.get_rewards_list(context.signer_account_id.clone());
+
+        let rewards_list_on_finish_bob =
+            contract.get_rewards_list(context1.signer_account_id.clone());
+
+        assert_eq!(
+            rewards_list_on_finish_alice
+                .get(campaign_id1.as_str())
+                .unwrap()
+                .amount
+                .0,
+            half_reward + half_reward / 4,
+            "Counting after campaign has been finished! Rewards amount should be 50000 + (50000 * 0.25)"
+        );
+
+        assert_eq!(
+            rewards_list_on_finish_bob
+                .get(campaign_id1.as_str())
+                .unwrap()
+                .amount
+                .0,
+            half_reward * 3 / 4,
+            "Counting after campaign has been finished! Rewards amount should be 0 + (50000 * 0.75)"
         );
     }
 
