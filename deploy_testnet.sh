@@ -68,9 +68,9 @@ near deploy dweth.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
             "kink":"650000000000000000000000",
-            "multiplier_per_block":"62800000000000000",
+            "multiplier_per_block":"3044140030441400",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"76100000000000000",
+            "jump_multiplier_per_block":"38051750380517500",
             "reserve_factor":"10000000000000000000000"
         }
     }'
@@ -84,9 +84,9 @@ near deploy dwnear.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
             "kink":"650000000000000000000000",
-            "multiplier_per_block":"62800000000000000",
+            "multiplier_per_block":"3044140030441400",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"76100000000000000",
+            "jump_multiplier_per_block":"38051750380517500",
             "reserve_factor":"10000000000000000000000"
         }
     }'
@@ -100,9 +100,9 @@ near deploy dwnear.omomo-finance.testnet \
 #         "initial_exchange_rate":"1000000000000000000000000",
 #         "interest_rate_model":{
 #             "kink":"650000000000000000000000",
-#             "multiplier_per_block":"62800000000000000",
+#             "multiplier_per_block":"3044140030441400",
 #             "base_rate_per_block":"0",
-#             "jump_multiplier_per_block":"76100000000000000",
+#             "jump_multiplier_per_block":"38051750380517500",
 #             "reserve_factor":"10000000000000000000000"
 #         }
 #     }'
@@ -116,9 +116,9 @@ near deploy dusdt.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
            "kink":"800000000000000000000000",
-           "multiplier_per_block":"68500000000000000",
+           "multiplier_per_block":"1522070015220700",
            "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"66600000000000000",
+           "jump_multiplier_per_block":"28538812785388100",
            "reserve_factor":"10000000000000000000000"
         }
     }'
@@ -132,9 +132,9 @@ near deploy dusdc.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
            "kink":"800000000000000000000000",
-           "multiplier_per_block":"68500000000000000",
+           "multiplier_per_block":"1522070015220700",
            "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"66600000000000000",
+           "jump_multiplier_per_block":"28538812785388100",
            "reserve_factor":"10000000000000000000000"
         }
     }'
