@@ -122,6 +122,7 @@ mod tests {
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         });
 
         if is_admin {

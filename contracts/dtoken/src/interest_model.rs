@@ -97,6 +97,7 @@ mod tests {
             owner_id: user_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         })
     }
 

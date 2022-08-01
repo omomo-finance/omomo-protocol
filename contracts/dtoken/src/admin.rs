@@ -78,6 +78,7 @@ mod tests {
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         });
 
         if is_admin {
@@ -95,6 +96,7 @@ mod tests {
             owner_id: "dtoken".parse().unwrap(),
             controller_account_id: "controller".parse().unwrap(),
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         });
 
         assert_eq!(dtoken_contract.admin, dtoken_contract.get_admin());
@@ -112,6 +114,7 @@ mod tests {
             owner_id: "dtoken".parse().unwrap(),
             controller_account_id: "controller".parse().unwrap(),
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         });
         dtoken_contract.mint(bob(), U128(10000));
         let exchange_rate = dtoken_contract.get_exchange_rate(U128(20000));
