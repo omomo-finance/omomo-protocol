@@ -31,23 +31,8 @@ impl Contract {
         .into()
     }
 
-    pub fn get_supplies_by_account(&self, account: AccountId) -> Balance {
-        self.get_account_supplies(account)
-    }
-
-    pub fn set_account_supplies(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
-        let mut user = self.user_profiles.get(&account).unwrap_or_default();
-        user.supplies = Balance::from(token_amount);
-        self.user_profiles.insert(&account, &user);
-
-        self.get_account_supplies(account)
-    }
-
     pub fn get_account_supplies(&self, account: AccountId) -> Balance {
-        self.user_profiles
-            .get(&account)
-            .unwrap_or_default()
-            .supplies
+        self.token.accounts.get(&account).unwrap_or_default()
     }
 }
 
@@ -98,7 +83,7 @@ impl Contract {
         let accrued_interest = self.get_accrued_supply_interest(env::signer_account_id());
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
-            self.get_supplies_by_account(env::signer_account_id()),
+            self.get_account_supplies(env::signer_account_id()),
             accrued_interest,
         );
         self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
@@ -151,6 +136,7 @@ impl Contract {
             self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
         }
+        self.update_campaigns_market_total_by_type(CampaignType::Supply);
         log!(
             "{}",
             Events::SupplySuccess(env::signer_account_id(), Balance::from(amount))

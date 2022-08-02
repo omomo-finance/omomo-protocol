@@ -85,7 +85,7 @@ impl Contract {
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
-            self.get_supplies_by_account(env::signer_account_id()),
+            self.get_account_supplies(env::signer_account_id()),
             self.get_accrued_supply_interest(env::signer_account_id()),
         );
 
@@ -207,6 +207,7 @@ impl Contract {
             );
             return PromiseOrValue::Value(token_amount);
         }
+        self.update_campaigns_market_total_by_type(CampaignType::Supply);
         self.mutex_account_unlock();
         log!(
             "{}",

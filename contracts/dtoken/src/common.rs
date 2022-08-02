@@ -166,7 +166,7 @@ impl Contract {
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
-            self.get_supplies_by_account(user_id.clone()),
+            self.get_account_supplies(user_id.clone()),
             self.get_accrued_supply_interest(user_id.clone()),
         );
         let total_interest = self
