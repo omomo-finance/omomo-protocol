@@ -13,6 +13,7 @@
 * [Liquidation](product/liquidation.md)
 * [Interest rate model](product/interest\_rate\_model.md)
 * [Tokenomics](product/tokenomics.md)
+* [Rewards](product/rewards.md)
 
 ## Developers
 
