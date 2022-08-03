@@ -160,7 +160,7 @@ impl Contract {
         total_accrued_interest
     }
 
-    pub fn get_standart_hf_with_supply_and_no_borrow(&self, user_account: AccountId) -> Ratio {
+    pub fn get_hf_with_supply_and_no_borrow(&self, user_account: AccountId) -> Ratio {
         let supplies_weighted_lth =
             self.calculate_supplies_weighted_price_and_lth(user_account.clone());
         let max_borrows = self.get_theoretical_borrows_max(user_account);
@@ -181,7 +181,7 @@ impl Contract {
         if borrows != 0 {
             Ratio::from(supplies_weighted_lth) / Ratio::from(borrows)
         } else if supplies_weighted_lth > 0 {
-            self.get_standart_hf_with_supply_and_no_borrow(user_account)
+            self.get_hf_with_supply_and_no_borrow(user_account)
         } else {
             self.get_average_hf_by_markets_ltv()
         }
@@ -406,7 +406,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            controller_contract.get_standart_hf_with_supply_and_no_borrow(user_account),
+            controller_contract.get_hf_with_supply_and_no_borrow(user_account),
             "Health factor calculation has been failed"
         );
     }
@@ -459,7 +459,7 @@ mod tests {
         // Ratio that represents standart_hf_with_supply_and_no_borrow
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            controller_contract.get_standart_hf_with_supply_and_no_borrow(user_account)
+            controller_contract.get_hf_with_supply_and_no_borrow(user_account)
         );
     }
 

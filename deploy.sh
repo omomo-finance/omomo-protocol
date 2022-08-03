@@ -146,10 +146,10 @@ near call usdc_beta.nearlend.testnet storage_deposit '{"account_id": "dusdc_beta
 # near call usdc_beta.nearlend.testnet mint '{"account_id": "dusdc_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
 
 # register market
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "weth_beta.nearlend.testnet", "dtoken": "dweth_beta.nearlend.testnet", "ticker_id": "weth"}' --accountId nearlend.testnet 
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "wnear_beta.nearlend.testnet", "dtoken": "dwnear_beta.nearlend.testnet", "ticker_id": "wnear"}' --accountId nearlend.testnet 
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "usdt_beta.nearlend.testnet", "dtoken": "dusdt_beta.nearlend.testnet", "ticker_id": "usdt"}' --accountId nearlend.testnet 
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "usdc_beta.nearlend.testnet", "dtoken": "dusdc_beta.nearlend.testnet", "ticker_id": "usdc"}' --accountId nearlend.testnet 
+near call controller_beta.nearlend.testnet add_market '{"asset_id": "weth_beta.nearlend.testnet", "dtoken": "dweth_beta.nearlend.testnet", "ticker_id": "weth", "ltv": "0.4", "lth": "0.8"}' --accountId nearlend.testnet 
+near call controller_beta.nearlend.testnet add_market '{"asset_id": "wnear_beta.nearlend.testnet", "dtoken": "dwnear_beta.nearlend.testnet", "ticker_id": "wnear", "ltv": "0.5", "lth": "0.8"}' --accountId nearlend.testnet 
+near call controller_beta.nearlend.testnet add_market '{"asset_id": "usdt_beta.nearlend.testnet", "dtoken": "dusdt_beta.nearlend.testnet", "ticker_id": "usdt", "ltv": "0.8", "lth": "0.9"}' --accountId nearlend.testnet 
+near call controller_beta.nearlend.testnet add_market '{"asset_id": "usdc_beta.nearlend.testnet", "dtoken": "dusdc_beta.nearlend.testnet", "ticker_id": "usdc", "ltv": "0.8", "lth": "0.9"}' --accountId nearlend.testnet 
 
 near view controller_beta.nearlend.testnet view_markets '{}' --accountId controller_beta.nearlend.testnet
 

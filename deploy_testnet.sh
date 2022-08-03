@@ -145,10 +145,10 @@ near call usdc.omomo-finance.testnet storage_deposit '{"account_id": "dusdc.omom
 # near call usdc.omomo-finance.testnet mint '{"account_id": "dusdc.omomo-finance.testnet", "amount": "1"}' --accountId omomo-finance.testnet 
 
 # register market
-near call controller.omomo-finance.testnet add_market '{"asset_id": "weth.omomo-finance.testnet", "dtoken": "dweth.omomo-finance.testnet", "ticker_id": "weth"}' --accountId omomo-finance.testnet 
-near call controller.omomo-finance.testnet add_market '{"asset_id": "wrap.testnet", "dtoken": "dwnear.omomo-finance.testnet", "ticker_id": "wnear"}' --accountId omomo-finance.testnet 
-near call controller.omomo-finance.testnet add_market '{"asset_id": "usdt.omomo-finance.testnet", "dtoken": "dusdt.omomo-finance.testnet", "ticker_id": "usdt"}' --accountId omomo-finance.testnet 
-near call controller.omomo-finance.testnet add_market '{"asset_id": "usdc.omomo-finance.testnet", "dtoken": "dusdc.omomo-finance.testnet", "ticker_id": "usdc"}' --accountId omomo-finance.testnet 
+near call controller.omomo-finance.testnet add_market '{"asset_id": "weth.omomo-finance.testnet", "dtoken": "dweth.omomo-finance.testnet", "ticker_id": "weth", "ltv": "0.4", "lth": "0.8"}' --accountId omomo-finance.testnet 
+near call controller.omomo-finance.testnet add_market '{"asset_id": "wrap.testnet", "dtoken": "dwnear.omomo-finance.testnet", "ticker_id": "wnear", "ltv": "0.4", "lth": "0.8"}' --accountId omomo-finance.testnet 
+near call controller.omomo-finance.testnet add_market '{"asset_id": "usdt.omomo-finance.testnet", "dtoken": "dusdt.omomo-finance.testnet", "ticker_id": "usdt", "ltv": "0.8", "lth": "0.9"}' --accountId omomo-finance.testnet 
+near call controller.omomo-finance.testnet add_market '{"asset_id": "usdc.omomo-finance.testnet", "dtoken": "dusdc.omomo-finance.testnet", "ticker_id": "usdc", "ltv": "0.8", "lth": "0.9"}' --accountId omomo-finance.testnet 
 
 near view controller.omomo-finance.testnet view_markets '{}' --accountId controller.omomo-finance.testnet
 

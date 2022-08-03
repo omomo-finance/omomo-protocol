@@ -282,7 +282,7 @@ mod tests {
         assert_eq!(
             result[0].health_factor_ratio,
             WRatio::from(
-                near_contract.get_standart_hf_with_supply_and_no_borrow(accounts[0].clone())
+                near_contract.get_hf_with_supply_and_no_borrow(accounts[0].clone())
             ),
             "View accounts health factor check has been failed"
         );
