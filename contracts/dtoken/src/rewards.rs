@@ -573,6 +573,7 @@ mod tests {
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         })
     }
 
@@ -639,10 +640,10 @@ mod tests {
         let campaign2 = get_campaign();
 
         let context = get_custom_context(false, 1651352400000000000, 95459174);
-        testing_env!(context.clone());
+        testing_env!(context);
 
         let campaign_id1 = contract.add_reward_campaign(campaign1.clone());
-        contract.add_reward_campaign(campaign2.clone());
+        contract.add_reward_campaign(campaign2);
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(100000));
         contract.update_campaigns_market_total_by_type(CampaignType::Supply);
@@ -669,7 +670,7 @@ mod tests {
         );
 
         let context1 = get_custom_context_with_signer(false, 1651357400000000000, 95459174, bob());
-        testing_env!(context1.clone());
+        testing_env!(context1);
 
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(300000));
@@ -719,16 +720,14 @@ mod tests {
 
         let context2 =
             get_custom_context_with_signer(false, 1651372400000000000, 95459174, carol());
-        testing_env!(context2.clone());
+        testing_env!(context2);
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(600000));
         contract.update_campaigns_market_total_by_type(CampaignType::Supply);
 
-        let rewards_list_on_finish_alice =
-            contract.get_rewards_list(context.signer_account_id.clone());
+        let rewards_list_on_finish_alice = contract.get_rewards_list(context.signer_account_id);
 
-        let rewards_list_on_finish_bob =
-            contract.get_rewards_list(context1.signer_account_id.clone());
+        let rewards_list_on_finish_bob = contract.get_rewards_list(context1.signer_account_id);
 
         assert_eq!(
             rewards_list_on_finish_alice

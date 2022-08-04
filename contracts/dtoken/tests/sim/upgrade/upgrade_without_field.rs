@@ -49,7 +49,8 @@ fn upgrade_fixture() -> (
             underlying_token_id: utoken.account_id(),
             owner_id: droot.account_id,
             controller_account_id: controller.account_id(),
-            interest_rate_model: InterestRateModel::default()
+            interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true
         }),
         deposit = 0
     )

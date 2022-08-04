@@ -191,7 +191,8 @@ fn internal_dtoken_initialize(
             underlying_token_id: utoken_account,
             owner_id: owner,
             controller_account_id: controller_account,
-            interest_rate_model: model
+            interest_rate_model: model,
+            disable_transfer_token: true,
         }),
         deposit = 0
     )

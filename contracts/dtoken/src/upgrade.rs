@@ -71,6 +71,7 @@ impl Upgradable for Contract {
             reward_campaigns: contract.reward_campaigns,
             uid: contract.uid,
             rewards: contract.rewards,
+            disable_transfer: true,
         }
     }
 
