@@ -63,8 +63,7 @@ impl FungibleTokenCore for Contract {
         msg: String,
     ) -> PromiseOrValue<U128> {
         require!(!self.disable_transfer, "Transfer dtoken is disabled");
-        self.token
-            .ft_transfer_call(receiver_id, amount, memo, msg)
+        self.token.ft_transfer_call(receiver_id, amount, memo, msg)
     }
 
     fn ft_total_supply(&self) -> U128 {

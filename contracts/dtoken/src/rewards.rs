@@ -725,11 +725,9 @@ mod tests {
         contract.mint(contract.get_signer_address(), WBalance::from(600000));
         contract.update_campaigns_market_total_by_type(CampaignType::Supply);
 
-        let rewards_list_on_finish_alice =
-            contract.get_rewards_list(context.signer_account_id);
+        let rewards_list_on_finish_alice = contract.get_rewards_list(context.signer_account_id);
 
-        let rewards_list_on_finish_bob =
-            contract.get_rewards_list(context1.signer_account_id);
+        let rewards_list_on_finish_bob = contract.get_rewards_list(context1.signer_account_id);
 
         assert_eq!(
             rewards_list_on_finish_alice
