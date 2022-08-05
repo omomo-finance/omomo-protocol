@@ -656,7 +656,7 @@ mod tests {
     }
 
     #[test]
-    fn test_adjust_rewards_by_campaign_type_one_campaign() {
+    fn test_rewards_by_campaign_for_user_after_supply() {
         let mut contract = init_env();
         let campaign1 = get_campaign_rewards();
         let context = get_custom_context(false, 1659339620*1000000000, 95459174);
