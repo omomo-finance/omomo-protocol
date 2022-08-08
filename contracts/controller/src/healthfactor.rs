@@ -247,7 +247,7 @@ mod tests {
         });
 
         let utoken_address_near = AccountId::new_unchecked("wnear.near".to_string());
-        let dtoken_address_near = AccountId::new_unchecked("dwnear.near".to_string());
+        let dtoken_address_near = AccountId::new_unchecked("wnear_market.near".to_string());
         let ticker_id_near = "wnear".to_string();
 
         controller_contract.add_market(
@@ -259,7 +259,7 @@ mod tests {
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
-        let dtoken_address_eth = AccountId::new_unchecked("dweth.near".to_string());
+        let dtoken_address_eth = AccountId::new_unchecked("weth_market.near".to_string());
         let ticker_id_eth = "weth".to_string();
 
         controller_contract.add_market(
@@ -305,7 +305,7 @@ mod tests {
         });
 
         let utoken_address_near = AccountId::new_unchecked("wnear.near".to_string());
-        let dtoken_address_near = AccountId::new_unchecked("dwnear.near".to_string());
+        let dtoken_address_near = AccountId::new_unchecked("wnear_market.near".to_string());
         let ticker_id_near = "wnear".to_string();
 
         controller_contract.add_market(
@@ -317,7 +317,7 @@ mod tests {
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
-        let dtoken_address_eth = AccountId::new_unchecked("dweth.near".to_string());
+        let dtoken_address_eth = AccountId::new_unchecked("weth_market.near".to_string());
         let ticker_id_eth = "weth".to_string();
 
         controller_contract.add_market(
@@ -369,7 +369,7 @@ mod tests {
         let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
-        raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
+        raw_map.insert(AccountId::new_unchecked("wnear_market.near".to_string()), 100);
 
         assert_eq!(
             controller_contract.calculate_assets_weighted_price(&raw_map),
@@ -392,13 +392,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(balance),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
             0,
             Ratio::zero(),
@@ -418,13 +418,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
             0,
             Ratio::zero(),
@@ -444,13 +444,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
             0,
             Ratio::zero(),
@@ -470,13 +470,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(70),
             0,
             Ratio::zero(),
@@ -496,13 +496,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
@@ -516,7 +516,7 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
@@ -534,13 +534,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
@@ -584,13 +584,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
@@ -634,13 +634,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(50),
             0,
             Ratio::zero(),
@@ -648,7 +648,7 @@ mod tests {
 
         let result = controller_contract.get_potential_health_factor(
             user_account,
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             U128(1000),
             ActionType::Borrow,
         );
@@ -663,13 +663,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(50),
             0,
             Ratio::zero(),
@@ -677,7 +677,7 @@ mod tests {
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),

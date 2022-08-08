@@ -7,32 +7,32 @@
 
 # clean up previous deployment
 near delete weth.qa.nearlend.testnet qa.nearlend.testnet 
-near delete dweth.qa.nearlend.testnet qa.nearlend.testnet 
+near delete weth_market.qa.nearlend.testnet qa.nearlend.testnet 
 
 near delete wnear.qa.nearlend.testnet qa.nearlend.testnet 
-near delete dwnear.qa.nearlend.testnet qa.nearlend.testnet 
+near delete wnear_market.qa.nearlend.testnet qa.nearlend.testnet 
 
 near delete usdt.qa.nearlend.testnet qa.nearlend.testnet 
-near delete dusdt.qa.nearlend.testnet qa.nearlend.testnet 
+near delete usdt_market.qa.nearlend.testnet qa.nearlend.testnet 
 
 near delete usdc.qa.nearlend.testnet qa.nearlend.testnet 
-near delete dusdc.qa.nearlend.testnet qa.nearlend.testnet 
+near delete usdc_market.qa.nearlend.testnet qa.nearlend.testnet 
 
 near delete controller.qa.nearlend.testnet qa.nearlend.testnet 
 
 
 # create underlying tokens and markets
 near create-account weth.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 3 
-near create-account dweth.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
+near create-account weth_market.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
 
 near create-account wnear.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 3 
-near create-account dwnear.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
+near create-account wnear_market.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
 
 near create-account usdt.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 3 
-near create-account dusdt.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
+near create-account usdt_market.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
 
 near create-account usdc.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 3 
-near create-account dusdc.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
+near create-account usdc_market.qa.nearlend.testnet --masterAccount qa.nearlend.testnet --initialBalance 7 
 
 
 # create controller
@@ -59,7 +59,7 @@ near deploy usdc.qa.nearlend.testnet \
 
 
 # deploy markets
-near deploy dweth.qa.nearlend.testnet \
+near deploy weth_market.qa.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
     --initFunction 'new_with_config' \
     --initArgs '{
@@ -75,7 +75,7 @@ near deploy dweth.qa.nearlend.testnet \
             "reserve_factor":"10000000000000000000000"
         }
     }'
-near deploy dwnear.qa.nearlend.testnet \
+near deploy wnear_market.qa.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
     --initFunction 'new_with_config' \
     --initArgs '{
@@ -91,7 +91,7 @@ near deploy dwnear.qa.nearlend.testnet \
             "reserve_factor":"10000000000000000000000"
         }
     }'
-near deploy dusdt.qa.nearlend.testnet \
+near deploy usdt_market.qa.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
     --initFunction 'new_with_config' \
     --initArgs '{
@@ -107,7 +107,7 @@ near deploy dusdt.qa.nearlend.testnet \
            "reserve_factor":"10000000000000000000000"
         }
     }'
-near deploy dusdc.qa.nearlend.testnet \
+near deploy usdc_market.qa.nearlend.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
     --initFunction 'new_with_config' \
     --initArgs '{
@@ -134,26 +134,26 @@ near deploy controller.qa.nearlend.testnet \
     }'
 
 
-# fund dweth.qa.nearlend.testnet
-near call weth.qa.nearlend.testnet storage_deposit '{"account_id": "dweth.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
-near call wnear.qa.nearlend.testnet storage_deposit '{"account_id": "dwnear.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
-near call usdt.qa.nearlend.testnet storage_deposit '{"account_id": "dusdt.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
-near call usdc.qa.nearlend.testnet storage_deposit '{"account_id": "dusdc.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
+# fund weth_market.qa.nearlend.testnet
+near call weth.qa.nearlend.testnet storage_deposit '{"account_id": "weth_market.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
+near call wnear.qa.nearlend.testnet storage_deposit '{"account_id": "wnear_market.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
+near call usdt.qa.nearlend.testnet storage_deposit '{"account_id": "usdt_market.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
+near call usdc.qa.nearlend.testnet storage_deposit '{"account_id": "usdc_market.qa.nearlend.testnet"}' --accountId qa.nearlend.testnet --amount 0.25
 
-# near call weth.qa.nearlend.testnet mint '{"account_id": "dweth.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
-# near call wnear.qa.nearlend.testnet mint '{"account_id": "dwnear.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
-# near call usdt.qa.nearlend.testnet mint '{"account_id": "dusdt.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
-# near call usdc.qa.nearlend.testnet mint '{"account_id": "dusdc.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
+# near call weth.qa.nearlend.testnet mint '{"account_id": "weth_market.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
+# near call wnear.qa.nearlend.testnet mint '{"account_id": "wnear_market.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
+# near call usdt.qa.nearlend.testnet mint '{"account_id": "usdt_market.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
+# near call usdc.qa.nearlend.testnet mint '{"account_id": "usdc_market.qa.nearlend.testnet", "amount": "1"}' --accountId qa.nearlend.testnet 
 
 # register market
-near call controller.qa.nearlend.testnet add_market '{"asset_id": "weth.qa.nearlend.testnet", "dtoken": "dweth.qa.nearlend.testnet", "ticker_id": "weth"}' --accountId qa.nearlend.testnet 
-near call controller.qa.nearlend.testnet add_market '{"asset_id": "wnear.qa.nearlend.testnet", "dtoken": "dwnear.qa.nearlend.testnet", "ticker_id": "wnear"}' --accountId qa.nearlend.testnet 
-near call controller.qa.nearlend.testnet add_market '{"asset_id": "usdt.qa.nearlend.testnet", "dtoken": "dusdt.qa.nearlend.testnet", "ticker_id": "usdt"}' --accountId qa.nearlend.testnet 
-near call controller.qa.nearlend.testnet add_market '{"asset_id": "usdc.qa.nearlend.testnet", "dtoken": "dusdc.qa.nearlend.testnet", "ticker_id": "usdc"}' --accountId qa.nearlend.testnet 
+near call controller.qa.nearlend.testnet add_market '{"asset_id": "weth.qa.nearlend.testnet", "dtoken": "weth_market.qa.nearlend.testnet", "ticker_id": "weth"}' --accountId qa.nearlend.testnet 
+near call controller.qa.nearlend.testnet add_market '{"asset_id": "wnear.qa.nearlend.testnet", "dtoken": "wnear_market.qa.nearlend.testnet", "ticker_id": "wnear"}' --accountId qa.nearlend.testnet 
+near call controller.qa.nearlend.testnet add_market '{"asset_id": "usdt.qa.nearlend.testnet", "dtoken": "usdt_market.qa.nearlend.testnet", "ticker_id": "usdt"}' --accountId qa.nearlend.testnet 
+near call controller.qa.nearlend.testnet add_market '{"asset_id": "usdc.qa.nearlend.testnet", "dtoken": "usdc_market.qa.nearlend.testnet", "ticker_id": "usdc"}' --accountId qa.nearlend.testnet 
 
 near view controller.qa.nearlend.testnet view_markets '{}' --accountId controller.qa.nearlend.testnet
 
-near view controller.qa.nearlend.testnet view_prices '{ "dtokens": ["dwnear.qa.nearlend.testnet", "dweth.qa.nearlend.testnet", "dusdt.qa.nearlend.testnet", "dusdc.qa.nearlend.testnet"] }' --accountId controller.qa.nearlend.testnet 
+near view controller.qa.nearlend.testnet view_prices '{ "dtokens": ["wnear_market.qa.nearlend.testnet", "weth_market.qa.nearlend.testnet", "usdt_market.qa.nearlend.testnet", "usdc_market.qa.nearlend.testnet"] }' --accountId controller.qa.nearlend.testnet 
 
 
 near call weth.qa.nearlend.testnet mint '{"account_id": "qa.nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId qa.nearlend.testnet
@@ -161,18 +161,18 @@ near call wnear.qa.nearlend.testnet mint '{"account_id": "qa.nearlend.testnet", 
 near call usdt.qa.nearlend.testnet mint '{"account_id": "qa.nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId qa.nearlend.testnet
 near call usdc.qa.nearlend.testnet mint '{"account_id": "qa.nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId qa.nearlend.testnet
 
-near call weth.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "dweth.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
-near call wnear.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "dwnear.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
-near call usdt.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "dusdt.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
-near call usdc.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "dusdc.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
+near call weth.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "weth_market.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
+near call wnear.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "wnear_market.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
+near call usdt.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "usdt_market.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
+near call usdc.qa.nearlend.testnet ft_transfer_call '{"receiver_id": "usdc_market.qa.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId qa.nearlend.testnet
 
-near view weth.qa.nearlend.testnet ft_balance_of '{"account_id": "dweth.qa.nearlend.testnet"}'
-near view wnear.qa.nearlend.testnet ft_balance_of '{"account_id": "dwnear.qa.nearlend.testnet"}'
-near view usdt.qa.nearlend.testnet ft_balance_of '{"account_id": "dusdt.qa.nearlend.testnet"}'
-near view usdc.qa.nearlend.testnet ft_balance_of '{"account_id": "dusdc.qa.nearlend.testnet"}'
+near view weth.qa.nearlend.testnet ft_balance_of '{"account_id": "weth_market.qa.nearlend.testnet"}'
+near view wnear.qa.nearlend.testnet ft_balance_of '{"account_id": "wnear_market.qa.nearlend.testnet"}'
+near view usdt.qa.nearlend.testnet ft_balance_of '{"account_id": "usdt_market.qa.nearlend.testnet"}'
+near view usdc.qa.nearlend.testnet ft_balance_of '{"account_id": "usdc_market.qa.nearlend.testnet"}'
 
 # set shared admin as admin for dtokens
-near call dweth.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
-near call dwnear.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
-near call dusdt.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
-near call dusdc.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
+near call weth_market.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
+near call wnear_market.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
+near call usdt_market.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet
+near call usdc_market.qa.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId qa.nearlend.testnet

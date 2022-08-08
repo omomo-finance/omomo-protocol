@@ -30,7 +30,7 @@ fn withdraw_success_after_failure_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (droot, dweth, dwnear) = initialize_two_dtokens(
+    let (droot, weth_market, wnear_market) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -39,8 +39,8 @@ fn withdraw_success_after_failure_fixture() -> (
         InterestRateModel::default(),
     );
 
-    mint_and_reserve(&droot, &weth, &dweth, RESERVE_AMOUNT);
-    mint_and_reserve(&droot, &wnear, &dwnear, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &weth, &weth_market, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &wnear_market, RESERVE_AMOUNT);
 
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_BALANCE));
     mint_tokens(&weth, user.account_id(), U128(WETH_BALANCE));
@@ -48,20 +48,20 @@ fn withdraw_success_after_failure_fixture() -> (
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -72,7 +72,7 @@ fn withdraw_success_after_failure_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -81,22 +81,22 @@ fn withdraw_success_after_failure_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), SUPPLY_WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), SUPPLY_WETH_AMOUNT).assert_success();
 
-    (dweth, dwnear, controller, weth, wnear, user)
+    (weth_market, wnear_market, controller, weth, wnear, user)
 }
 
 #[test]
 fn scenario_withdraw_success_after_failure() {
-    let (dweth, dwnear, controller, weth, _wnear, user) = withdraw_success_after_failure_fixture();
+    let (weth_market, wnear_market, controller, weth, _wnear, user) = withdraw_success_after_failure_fixture();
 
-    let result = withdraw(&user, &dwnear, 0);
+    let result = withdraw(&user, &wnear_market, 0);
     assert_failure(result, "Amount should be a positive number");
 
-    withdraw(&user, &dweth, SUPPLY_WETH_AMOUNT).assert_success();
+    withdraw(&user, &weth_market, SUPPLY_WETH_AMOUNT).assert_success();
 
     let user_supply_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+        view_balance(&controller, Supply, user.account_id(), weth_market.account_id());
     assert_eq!(user_supply_balance, 0, "Balance should be {}", 0);
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();

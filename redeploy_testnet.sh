@@ -18,12 +18,12 @@ echo 'y' | near deploy usdc.omomo-finance.testnet --wasmFile ./contracts/target/
 echo 'y' | near deploy dai.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm
 echo 'y' | near deploy token.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm
 
-echo 'y' | near deploy dwnear.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-echo 'y' | near deploy dweth.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
+echo 'y' | near deploy wnear_market.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
+echo 'y' | near deploy weth_market.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
 echo 'y' | near deploy dstnear.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
 echo 'y' | near deploy dwbtc.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
 echo 'y' | near deploy daurora.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-echo 'y' | near deploy dusdt.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
-echo 'y' | near deploy dusdc.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
+echo 'y' | near deploy usdt_market.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
+echo 'y' | near deploy usdc_market.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm
 
 echo 'y' | near deploy ddai.omomo-finance.testnet --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm

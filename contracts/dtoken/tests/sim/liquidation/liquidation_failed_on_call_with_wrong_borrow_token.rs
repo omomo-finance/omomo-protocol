@@ -31,7 +31,7 @@ fn liquidation_fixture() -> (
     let liquidator = new_user(&root, "liquidator".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth, dwnear) = initialize_two_dtokens(
+    let (_, weth_market, wnear_market) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -41,8 +41,8 @@ fn liquidation_fixture() -> (
     );
 
     let mint_amount = U128(MINT_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), mint_amount);
-    mint_tokens(&wnear, dwnear.account_id(), mint_amount);
+    mint_tokens(&weth, weth_market.account_id(), mint_amount);
+    mint_tokens(&wnear, wnear_market.account_id(), mint_amount);
     mint_tokens(&weth, borrower.account_id(), mint_amount);
     mint_tokens(&wnear, liquidator.account_id(), mint_amount);
     mint_tokens(&weth, liquidator.account_id(), mint_amount);
@@ -52,20 +52,20 @@ fn liquidation_fixture() -> (
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -76,7 +76,7 @@ fn liquidation_fixture() -> (
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -85,12 +85,12 @@ fn liquidation_fixture() -> (
         },
     );
 
-    supply(&borrower, &wnear, dwnear.account_id(), BORROWER_SUPPLY).assert_success();
+    supply(&borrower, &wnear, wnear_market.account_id(), BORROWER_SUPPLY).assert_success();
 
-    borrow(&borrower, &dweth, BORROWER_BORROW).assert_success();
+    borrow(&borrower, &weth_market, BORROWER_BORROW).assert_success();
 
     let user_balance: Balance =
-        view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+        view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_balance, BORROWER_BORROW,
         "Borrow balance on dtoken should be {}",
@@ -101,7 +101,7 @@ fn liquidation_fixture() -> (
         &controller,
         Borrow,
         borrower.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
     );
     assert_eq!(
         user_balance, BORROWER_BORROW,
@@ -111,7 +111,7 @@ fn liquidation_fixture() -> (
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(CHANGED_PRICE),
@@ -120,18 +120,18 @@ fn liquidation_fixture() -> (
         },
     );
 
-    (dweth, dwnear, controller, weth, wnear, borrower, liquidator)
+    (weth_market, wnear_market, controller, weth, wnear, borrower, liquidator)
 }
 
 #[test]
 fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
-    let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) = liquidation_fixture();
+    let (weth_market, wnear_market, controller, weth, _wnear, borrower, liquidator) = liquidation_fixture();
 
     let amount = 70000;
-    liquidate(&borrower, &liquidator, &dwnear, &dwnear, &weth, amount);
+    liquidate(&borrower, &liquidator, &wnear_market, &wnear_market, &weth, amount);
 
     let user_borrows: Balance =
-        view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+        view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();
     assert_eq!(
         user_borrows, BORROWER_BORROW,
         "Borrow balance on dtoken should be BORROWER_BORROW"
@@ -141,7 +141,7 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
         &controller,
         Borrow,
         borrower.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
     );
     assert_eq!(
         user_borrows, BORROWER_BORROW,
@@ -152,7 +152,7 @@ fn scenario_liquidation_failed_on_call_with_wrong_borrow_token() {
         &controller,
         Supply,
         liquidator.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
     );
 
     assert_eq!(user_balance, 0, "Supply balance on dtoken should be 0");

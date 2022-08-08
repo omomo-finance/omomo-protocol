@@ -35,7 +35,7 @@ fn repay_fixture() -> (
         jump_multiplier_per_block: WRatio::from(0),
         reserve_factor: WRatio::from(0),
     };
-    let (_, dweth, dwnear, dwbtc) = initialize_three_dtokens(
+    let (_, weth_market, wnear_market, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -47,8 +47,8 @@ fn repay_fixture() -> (
     );
 
     let mint_amount = U128(START_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), U128(WETH_AMOUNT));
-    mint_tokens(&wnear, dwnear.account_id(), U128(WNEAR_AMOUNT));
+    mint_tokens(&weth, weth_market.account_id(), U128(WETH_AMOUNT));
+    mint_tokens(&wnear, wnear_market.account_id(), U128(WNEAR_AMOUNT));
     mint_tokens(&wbtc, dwbtc.account_id(), U128(WBTC_AMOUNT));
     mint_tokens(&weth, user.account_id(), mint_amount);
     mint_tokens(&wnear, user.account_id(), mint_amount);
@@ -57,14 +57,14 @@ fn repay_fixture() -> (
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
@@ -77,7 +77,7 @@ fn repay_fixture() -> (
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -88,7 +88,7 @@ fn repay_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -108,30 +108,30 @@ fn repay_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
 
-    supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
+    supply(&user, &wnear, wnear_market.account_id(), WNEAR_AMOUNT).assert_success();
 
-    borrow(&user, &dweth, WETH_BORROW).assert_success();
+    borrow(&user, &weth_market, WETH_BORROW).assert_success();
 
-    borrow(&user, &dwnear, WNEAR_BORROW).assert_success();
+    borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
 
-    (dwnear, controller, wnear, user)
+    (wnear_market, controller, wnear, user)
 }
 
 #[test]
 fn scenario_repay_success_after_failure() {
-    let (dwnear, controller, wnear, user) = repay_fixture();
+    let (wnear_market, controller, wnear, user) = repay_fixture();
 
-    let result = repay(&user, dwnear.account_id(), &wnear, 0);
+    let result = repay(&user, wnear_market.account_id(), &wnear, 0);
     assert_failure(result, "The amount should be a positive number");
 
-    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
-    let repay_info = repay_info(&user, &dwnear, dwnear_balance);
+    let repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
     let repay_amount = Balance::from(repay_info.total_amount);
 
-    repay(&user, dwnear.account_id(), &wnear, repay_amount).assert_success();
+    repay(&user, wnear_market.account_id(), &wnear, repay_amount).assert_success();
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
@@ -140,10 +140,10 @@ fn scenario_repay_success_after_failure() {
         "Repay wasn`t done"
     );
 
-    let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
     let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
+        view_balance(&controller, Borrow, user.account_id(), wnear_market.account_id());
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }

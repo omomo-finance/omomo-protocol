@@ -1,1 +1,1 @@
-near call --depositYocto 1 --gas 300000000000000 weth_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "WRONG_CONTRACT.nearlend.testnet", "amount": "10", "msg":"{\"action\": \"SUPPLY\"}"}' --accountId "$1"
+near call --depositYocto 1 --gas 300000000000000 weth.nearlend.testnet ft_transfer_call '{"receiver_id": "WRONG_CONTRACT.nearlend.testnet", "amount": "10", "msg":"{\"action\": \"SUPPLY\"}"}' --accountId "$1"

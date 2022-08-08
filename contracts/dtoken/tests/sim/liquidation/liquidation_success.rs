@@ -36,7 +36,7 @@
 //     let liquidator = new_user(&root, "liquidator".parse().unwrap());
 //     let (weth, wnear) = initialize_two_utokens(&root);
 //     let controller = initialize_controller(&root);
-//     let (droot, dweth, dwnear) = initialize_two_dtokens(
+//     let (droot, weth_market, wnear_market) = initialize_two_dtokens(
 //         &root,
 //         weth.account_id(),
 //         wnear.account_id(),
@@ -45,8 +45,8 @@
 //         InterestRateModel::default(),
 //     );
 
-//     mint_and_reserve(&droot, &weth, &dweth, RESERVE_AMOUNT);
-//     mint_and_reserve(&droot, &wnear, &dwnear, RESERVE_AMOUNT);
+//     mint_and_reserve(&droot, &weth, &weth_market, RESERVE_AMOUNT);
+//     mint_and_reserve(&droot, &wnear, &wnear_market, RESERVE_AMOUNT);
 
 //     let mint_amount = U128(MINT_BALANCE);
 //     mint_tokens(&weth, borrower.account_id(), mint_amount);
@@ -57,20 +57,20 @@
 //     add_market(
 //         &controller,
 //         weth.account_id(),
-//         dweth.account_id(),
+//         weth_market.account_id(),
 //         "weth".to_string(),
 //     );
 
 //     add_market(
 //         &controller,
 //         wnear.account_id(),
-//         dwnear.account_id(),
+//         wnear_market.account_id(),
 //         "wnear".to_string(),
 //     );
 
 //     set_price(
 //         &controller,
-//         dweth.account_id(),
+//         weth_market.account_id(),
 //         &Price {
 //             ticker_id: "weth".to_string(),
 //             value: U128(START_PRICE),
@@ -81,7 +81,7 @@
 
 //     set_price(
 //         &controller,
-//         dwnear.account_id(),
+//         wnear_market.account_id(),
 //         &Price {
 //             ticker_id: "wnear".to_string(),
 //             value: U128(START_PRICE),
@@ -90,7 +90,7 @@
 //         },
 //     );
 
-//     supply(&borrower, &wnear, dwnear.account_id(), BORROWER_SUPPLY).assert_success();
+//     supply(&borrower, &wnear, wnear_market.account_id(), BORROWER_SUPPLY).assert_success();
 //     let health_factor: Ratio =
 //         view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
 //     assert_eq!(
@@ -99,7 +99,7 @@
 //         "health factor should be default eq to 150%"
 //     );
 
-//     borrow(&borrower, &dweth, BORROWER_BORROW).assert_success();
+//     borrow(&borrower, &weth_market, BORROWER_BORROW).assert_success();
 //     let health_factor: Ratio =
 //         view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
 //     assert_eq!(
@@ -109,7 +109,7 @@
 //     );
 
 //     let user_balance: Balance =
-//         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+//         view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();
 //     assert_eq!(
 //         user_balance, BORROWER_BORROW,
 //         "Borrow balance on dtoken should be {}",
@@ -120,7 +120,7 @@
 //         &controller,
 //         Borrow,
 //         borrower.account_id(),
-//         dweth.account_id(),
+//         weth_market.account_id(),
 //     );
 //     assert_eq!(
 //         user_balance, BORROWER_BORROW,
@@ -130,7 +130,7 @@
 
 //     set_price(
 //         &controller,
-//         dwnear.account_id(),
+//         wnear_market.account_id(),
 //         &Price {
 //             ticker_id: "wnear".to_string(),
 //             value: U128(CHANGED_PRICE),
@@ -142,12 +142,12 @@
 //         view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
 //     assert_eq!(health_factor, Ratio::from_str("0.9").unwrap());
 
-//     (dweth, dwnear, controller, weth, wnear, borrower, liquidator)
+//     (weth_market, wnear_market, controller, weth, wnear, borrower, liquidator)
 // }
 
 // #[test]
 // fn scenario_liquidation_success() {
-//     let (dweth, dwnear, controller, weth, _wnear, borrower, liquidator) =
+//     let (weth_market, wnear_market, controller, weth, _wnear, borrower, liquidator) =
 //         liquidation_success_fixture();
 
 //     let liquidation_amount = 3500;
@@ -155,25 +155,25 @@
 //     liquidate(
 //         &borrower,
 //         &liquidator,
-//         &dweth,
-//         &dwnear,
+//         &weth_market,
+//         &wnear_market,
 //         &weth,
 //         liquidation_amount,
 //     )
 //     .assert_success();
 
-//     let weth_ft_balance_of_for_dweth: U128 =
-//         view!(weth.ft_balance_of(dweth.account_id())).unwrap_json();
+//     let weth_ft_balance_of_for_weth_market: U128 =
+//         view!(weth.ft_balance_of(weth_market.account_id())).unwrap_json();
 
 //     assert_eq!(
-//         Balance::from(weth_ft_balance_of_for_dweth),
+//         Balance::from(weth_ft_balance_of_for_weth_market),
 //         (MINT_BALANCE - BORROWER_BORROW + liquidation_amount),
-//         "dweth_balance_of_on_weth balance of should be {}",
+//         "weth_market_balance_of_on_weth balance of should be {}",
 //         (MINT_BALANCE - BORROWER_BORROW + liquidation_amount)
 //     );
 
 //     let user_borrows: Balance =
-//         view!(dweth.get_account_borrows(borrower.account_id())).unwrap_json();
+//         view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();
 
 //     let borrow_balance = BORROWER_BORROW - liquidation_amount;
 
@@ -188,7 +188,7 @@
 //         &controller,
 //         Borrow,
 //         borrower.account_id(),
-//         dweth.account_id(),
+//         weth_market.account_id(),
 //     );
 //     assert_eq!(
 //         user_borrows,
@@ -201,7 +201,7 @@
 //         &controller,
 //         Supply,
 //         liquidator.account_id(),
-//         dwnear.account_id(),
+//         wnear_market.account_id(),
 //     );
 
 //     // 100% + 5% * liquidation_amount * old_price / new_price
@@ -218,21 +218,21 @@
 //         revenue_amount.clone()
 //     );
 
-//     let borrower_dwnear_balance: U128 =
-//         view!(dwnear.ft_balance_of(borrower.account_id())).unwrap_json();
+//     let borrower_wnear_market_balance: U128 =
+//         view!(wnear_market.ft_balance_of(borrower.account_id())).unwrap_json();
 
 //     assert_eq!(
-//         Balance::from(borrower_dwnear_balance),
+//         Balance::from(borrower_wnear_market_balance),
 //         BORROWER_SUPPLY - revenue_amount,
 //         "Borrower balance on dtokn ft should be {}",
 //         BORROWER_SUPPLY - revenue_amount
 //     );
 
-//     let liquidator_dwnear_balance: U128 =
-//         view!(dwnear.ft_balance_of(liquidator.account_id())).unwrap_json();
+//     let liquidator_wnear_market_balance: U128 =
+//         view!(wnear_market.ft_balance_of(liquidator.account_id())).unwrap_json();
 
 //     assert_eq!(
-//         Balance::from(liquidator_dwnear_balance),
+//         Balance::from(liquidator_wnear_market_balance),
 //         revenue_amount.clone(),
 //         "Liquidator balance on utoken should be {}",
 //         revenue_amount.clone()
