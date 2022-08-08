@@ -31,6 +31,7 @@ mod liquidation;
 mod oraclehook;
 mod prices;
 pub mod repay;
+mod upgrade;
 pub mod user_flow_protection;
 pub mod user_profile;
 mod views;

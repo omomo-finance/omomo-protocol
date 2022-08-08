@@ -1,6 +1,6 @@
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
-use near_sdk::{AccountId, Balance};
+use near_sdk::{AccountId, Balance, Gas};
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
 use std::str::FromStr;
 
@@ -192,7 +192,8 @@ fn internal_dtoken_initialize(
             underlying_token_id: utoken_account,
             owner_id: owner,
             controller_account_id: controller_account,
-            interest_rate_model: model
+            interest_rate_model: model,
+            disable_transfer_token: true,
         }),
         deposit = 0
     )
@@ -501,4 +502,17 @@ pub fn repay_info(
         deposit = 0
     )
     .unwrap_json::<RepayInfo>()
+}
+
+pub fn upgrade_dtoken(
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+    contract_bytes: &[u8],
+) -> ExecutionResult {
+    const MAX_GAS: Gas = Gas(Gas::ONE_TERA.0 * 300);
+
+    dtoken
+        .user_account
+        .create_transaction(dtoken.account_id())
+        .function_call("upgrade".to_string(), contract_bytes.to_vec(), MAX_GAS.0, 0)
+        .submit()
 }

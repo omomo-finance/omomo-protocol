@@ -1,5 +1,5 @@
 use crate::*;
-
+use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use near_contract_standards::fungible_token::receiver::FungibleTokenReceiver;
 use near_sdk::serde_json;
 use near_sdk::AccountId;
@@ -45,5 +45,32 @@ impl FungibleTokenReceiver for Contract {
                 panic!("Incorrect action in transfer")
             }
         }
+    }
+}
+
+#[near_bindgen]
+impl FungibleTokenCore for Contract {
+    fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) {
+        require!(!self.disable_transfer, "Transfer dtoken is disabled");
+        self.token.ft_transfer(receiver_id, amount, memo);
+    }
+
+    fn ft_transfer_call(
+        &mut self,
+        receiver_id: AccountId,
+        amount: U128,
+        memo: Option<String>,
+        msg: String,
+    ) -> PromiseOrValue<U128> {
+        require!(!self.disable_transfer, "Transfer dtoken is disabled");
+        self.token.ft_transfer_call(receiver_id, amount, memo, msg)
+    }
+
+    fn ft_total_supply(&self) -> U128 {
+        self.token.ft_total_supply()
+    }
+
+    fn ft_balance_of(&self, account_id: AccountId) -> U128 {
+        self.token.ft_balance_of(account_id)
     }
 }

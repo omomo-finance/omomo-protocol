@@ -8,7 +8,7 @@
 near delete weth.omomo-finance.testnet omomo-finance.testnet 
 near delete dweth.omomo-finance.testnet omomo-finance.testnet 
 
-# near delete wnear.omomo-finance.testnet omomo-finance.testnet 
+near delete wnear.omomo-finance.testnet omomo-finance.testnet 
 near delete dwnear.omomo-finance.testnet omomo-finance.testnet 
 
 near delete usdt.omomo-finance.testnet omomo-finance.testnet 
@@ -24,7 +24,7 @@ near delete controller.omomo-finance.testnet omomo-finance.testnet
 near create-account weth.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
 near create-account dweth.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10
 
-# near create-account wnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
+near create-account wnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
 near create-account dwnear.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 10
 
 near create-account usdt.omomo-finance.testnet --masterAccount omomo-finance.testnet --initialBalance 5
@@ -43,10 +43,10 @@ near deploy weth.omomo-finance.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
     --initFunction 'new_default_meta' \
     --initArgs '{"owner_id": "omomo-finance.testnet", "name": "Wrapped Ethereum", "symbol": "WETH", "total_supply": "1000000000000000000000000000"}'
-# near deploy wnear.omomo-finance.testnet \
-#     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
-#     --initFunction 'new_default_meta' \
-#     --initArgs '{"owner_id": "omomo-finance.testnet", "name": "Wrapped Near", "symbol": "WNEAR", "total_supply": "1000000000000000000000000000"}'
+near deploy wnear.omomo-finance.testnet \
+    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+    --initFunction 'new_default_meta' \
+    --initArgs '{"owner_id": "omomo-finance.testnet", "name": "Wrapped Near", "symbol": "WNEAR", "total_supply": "1000000000000000000000000000"}'
 near deploy usdt.omomo-finance.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
     --initFunction 'new_default_meta' \
@@ -68,9 +68,9 @@ near deploy dweth.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
             "kink":"650000000000000000000000",
-            "multiplier_per_block":"62800000000000000",
+            "multiplier_per_block":"3044140030441400",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"76100000000000000",
+            "jump_multiplier_per_block":"38051750380517500",
             "reserve_factor":"10000000000000000000000"
         }
     }'
@@ -79,17 +79,33 @@ near deploy dwnear.omomo-finance.testnet \
     --initFunction 'new_with_config' \
     --initArgs '{
         "owner_id":"omomo-finance.testnet",
-        "underlying_token_id":"wrap.testnet",
+        "underlying_token_id":"wnear.omomo-finance.testnet",
         "controller_account_id":"controller.omomo-finance.testnet",
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
             "kink":"650000000000000000000000",
-            "multiplier_per_block":"62800000000000000",
+            "multiplier_per_block":"3044140030441400",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"76100000000000000",
+            "jump_multiplier_per_block":"38051750380517500",
             "reserve_factor":"10000000000000000000000"
         }
     }'
+# near deploy dwnear.omomo-finance.testnet \
+#     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+#     --initFunction 'new_with_config' \
+#     --initArgs '{
+#         "owner_id":"omomo-finance.testnet",
+#         "underlying_token_id":"wrap.testnet",
+#         "controller_account_id":"controller.omomo-finance.testnet",
+#         "initial_exchange_rate":"1000000000000000000000000",
+#         "interest_rate_model":{
+#             "kink":"650000000000000000000000",
+#             "multiplier_per_block":"3044140030441400",
+#             "base_rate_per_block":"0",
+#             "jump_multiplier_per_block":"38051750380517500",
+#             "reserve_factor":"10000000000000000000000"
+#         }
+#     }'
 near deploy dusdt.omomo-finance.testnet \
     --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
     --initFunction 'new_with_config' \
@@ -100,9 +116,9 @@ near deploy dusdt.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
            "kink":"800000000000000000000000",
-           "multiplier_per_block":"68500000000000000",
+           "multiplier_per_block":"1522070015220700",
            "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"66600000000000000",
+           "jump_multiplier_per_block":"28538812785388100",
            "reserve_factor":"10000000000000000000000"
         }
     }'
@@ -116,9 +132,9 @@ near deploy dusdc.omomo-finance.testnet \
         "initial_exchange_rate":"1000000000000000000000000",
         "interest_rate_model":{
            "kink":"800000000000000000000000",
-           "multiplier_per_block":"68500000000000000",
+           "multiplier_per_block":"1522070015220700",
            "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"66600000000000000",
+           "jump_multiplier_per_block":"28538812785388100",
            "reserve_factor":"10000000000000000000000"
         }
     }'
@@ -135,7 +151,8 @@ near deploy controller.omomo-finance.testnet \
 
 # fund dweth.omomo-finance.testnet
 near call weth.omomo-finance.testnet storage_deposit '{"account_id": "dweth.omomo-finance.testnet"}' --accountId omomo-finance.testnet --amount 0.25
-near call wrap.testnet storage_deposit '{"account_id": "dwnear.omomo-finance.testnet"}' --accountId omomo-finance.testnet --amount 0.25
+near call wnear.omomo-finance.testnet storage_deposit '{"account_id": "dwnear.omomo-finance.testnet"}' --accountId omomo-finance.testnet --amount 0.25
+# near call wrap.testnet storage_deposit '{"account_id": "dwnear.omomo-finance.testnet"}' --accountId omomo-finance.testnet --amount 0.25
 near call usdt.omomo-finance.testnet storage_deposit '{"account_id": "dusdt.omomo-finance.testnet"}' --accountId omomo-finance.testnet --amount 0.25
 near call usdc.omomo-finance.testnet storage_deposit '{"account_id": "dusdc.omomo-finance.testnet"}' --accountId omomo-finance.testnet --amount 0.25
 
@@ -156,17 +173,18 @@ near view controller.omomo-finance.testnet view_prices '{ "dtokens": ["dwnear.om
 
 
 near call weth.omomo-finance.testnet mint '{"account_id": "omomo-finance.testnet", "amount": "1000000000000000000000000000"}' --accountId omomo-finance.testnet
-# near call wnear.omomo-finance.testnet mint '{"account_id": "omomo-finance.testnet", "amount": "1000000000000000000000000000"}' --accountId omomo-finance.testnet
+near call wnear.omomo-finance.testnet mint '{"account_id": "omomo-finance.testnet", "amount": "1000000000000000000000000000"}' --accountId omomo-finance.testnet
 near call usdt.omomo-finance.testnet mint '{"account_id": "omomo-finance.testnet", "amount": "1000000000000000000000000000"}' --accountId omomo-finance.testnet
 near call usdc.omomo-finance.testnet mint '{"account_id": "omomo-finance.testnet", "amount": "1000000000000000000000000000"}' --accountId omomo-finance.testnet
 
 near call weth.omomo-finance.testnet ft_transfer_call '{"receiver_id": "dweth.omomo-finance.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId omomo-finance.testnet
-# near call wnear.omomo-finance.testnet ft_transfer_call '{"receiver_id": "dwnear.omomo-finance.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId omomo-finance.testnet
+near call wnear.omomo-finance.testnet ft_transfer_call '{"receiver_id": "dwnear.omomo-finance.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId omomo-finance.testnet
 near call usdt.omomo-finance.testnet ft_transfer_call '{"receiver_id": "dusdt.omomo-finance.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId omomo-finance.testnet
 near call usdc.omomo-finance.testnet ft_transfer_call '{"receiver_id": "dusdc.omomo-finance.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId omomo-finance.testnet
 
 near view weth.omomo-finance.testnet ft_balance_of '{"account_id": "dweth.omomo-finance.testnet"}'
-near view wrap.testnet ft_balance_of '{"account_id": "dwnear.omomo-finance.testnet"}'
+near view wnear.omomo-finance.testnet ft_balance_of '{"account_id": "dweth.omomo-finance.testnet"}'
+# near view wrap.testnet ft_balance_of '{"account_id": "dwnear.omomo-finance.testnet"}'
 near view usdt.omomo-finance.testnet ft_balance_of '{"account_id": "dusdt.omomo-finance.testnet"}'
 near view usdc.omomo-finance.testnet ft_balance_of '{"account_id": "dusdc.omomo-finance.testnet"}'
 

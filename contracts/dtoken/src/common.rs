@@ -1,6 +1,5 @@
 use crate::*;
 use general::ratio::Ratio;
-use near_contract_standards::fungible_token::core::FungibleTokenCore;
 use std::fmt;
 
 pub enum Events {
@@ -166,7 +165,7 @@ impl Contract {
         );
         let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
             supply_rate,
-            self.get_supplies_by_account(user_id.clone()),
+            self.get_account_supplies(user_id.clone()),
             self.get_accrued_supply_interest(user_id.clone()),
         );
         let total_interest = self
@@ -228,14 +227,6 @@ impl Contract {
                 panic!("Incorrect action at mutex lock callback")
             }
         }
-    }
-
-    pub fn ft_total_supply(&self) -> U128 {
-        self.token.ft_total_supply()
-    }
-
-    pub fn ft_balance_of(&self, account_id: AccountId) -> U128 {
-        self.token.ft_balance_of(account_id)
     }
 }
 
@@ -377,6 +368,7 @@ mod tests {
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         })
     }
 

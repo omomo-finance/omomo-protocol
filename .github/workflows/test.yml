@@ -41,21 +41,21 @@ jobs:
       - run: ./build.sh
       - run: ./test.sh
 
-  deployment:
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 14
-      - name: use near
-        run: npm install -g near-cli
-      - name: deploy
-        run: |
-          echo "${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY}}" > ${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}
-          ./deploy.sh --keyPath=${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}
+  # deployment:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 150
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         target: wasm32-unknown-unknown
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 14
+  #     - name: use near
+  #       run: npm install -g near-cli
+  #     - name: deploy
+  #       run: |
+  #         echo "${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY}}" > ${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}
+  #         ./deploy.sh --keyPath=${{secrets.MAIN_NEAR_CLI_PRIVATE_KEY_PATH}}

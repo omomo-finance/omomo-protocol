@@ -18,6 +18,9 @@ pub struct Config {
 
     /// The interest rate model with custom values
     pub interest_rate_model: InterestRateModel,
+
+    /// The flag that dtoken can be transferred
+    pub disable_transfer_token: bool,
 }
 
 impl Contract {

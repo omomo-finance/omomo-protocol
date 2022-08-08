@@ -1,5 +1,5 @@
 use crate::*;
-use general::ratio::Ratio;
+use general::ratio::{BigBalance, Ratio};
 use std::cmp::min;
 
 #[near_bindgen]
@@ -56,14 +56,23 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let denominator = Balance::from(underlying_balance) + Balance::from(total_borrows)
-            - Balance::from(total_reserves);
+        let denominator = if Balance::from(underlying_balance) + Balance::from(total_borrows)
+            > Balance::from(total_reserves)
+        {
+            BigBalance::from(
+                Balance::from(underlying_balance) + Balance::from(total_borrows)
+                    - Balance::from(total_reserves),
+            )
+        } else {
+            self.config.get().unwrap().interest_rate_model.get_kink()
+        };
+
         // this may happen when there is no supplies
-        if denominator == 0u128 {
+        if denominator == Ratio::zero() {
             return Ratio::zero();
         }
 
-        Ratio::from(total_borrows.0) / Ratio::from(denominator)
+        BigBalance::from(total_borrows.0) / denominator
     }
 }
 
@@ -88,6 +97,7 @@ mod tests {
             owner_id: user_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),
+            disable_transfer_token: true,
         })
     }
 
