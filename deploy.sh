@@ -272,8 +272,8 @@ configure_acl() {
     wait
 }
 
-ROOT_ACCOUNT=qa.nearlend.testnet
-CONTROLLER_ACCOUNT=controller
+ROOT_ACCOUNT=nearlend.testnet
+CONTROLLER_ACCOUNT=controller_beta
 
 # build_and_test
 clean_up_previous_deployment $ROOT_ACCOUNT
