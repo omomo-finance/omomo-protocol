@@ -250,12 +250,13 @@ impl Contract {
         let campaign = campaign_option.unwrap();
         let total = self.get_account_total(campaign.clone(), account_id);
 
-        let value = reward.amount.0
-            + (BigBalance::from(total.0)
-                * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
-                / BigBalance::from(ONE_TOKEN))
-            .round_u128();
-        WBalance::from(value)
+        WBalance::from(
+            reward.amount.0
+                + (BigBalance::from(total.0)
+                    * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
+                    / BigBalance::from(ONE_TOKEN))
+                .round_u128(),
+        )
     }
 
     pub fn update_reward(&mut self, campaign_id: String, account_id: AccountId) -> Reward {
