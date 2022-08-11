@@ -137,6 +137,7 @@ impl Contract {
             return PromiseOrValue::Value(amount);
         }
         self.update_campaigns_market_total_by_type(CampaignType::Supply);
+        self.update_campaigns_total_by_campaign_type(amount, CampaignType::Supply);
         log!(
             "{}",
             Events::SupplySuccess(env::signer_account_id(), Balance::from(amount))

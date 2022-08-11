@@ -43,6 +43,8 @@ pub struct RewardCampaign {
     rewards_per_token: BigBalance,
     /// Last market total by campaign type value
     last_market_total: WBalance,
+    /// Last campaign total by campaign type value
+    last_campaign_total: WBalance,
     /// Vesting configuration
     vesting: Vesting,
 }
@@ -179,13 +181,13 @@ impl Contract {
 
     pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> BigBalance {
         if let Some(campaign) = self.get_reward_campaign_by_id(campaign_id.clone()) {
-            let total = self.get_market_total(campaign.clone());
+            //let total = self.get_market_total(campaign.clone());
+            let total = campaign.last_campaign_total;
             let current_time = min(self.get_timestamp_in_seconds(), campaign.end_time);
             if total.0 == 0 {
                 return BigBalance::zero();
             };
-            println!("campaign_id:{:?}",campaign_id);
-            println!("campaign:{:?}",campaign);
+
             let rewards_per_time = self.get_rewards_per_time(
                 campaign.clone(),
                 u128::from(current_time - max(campaign.last_update_time, campaign.start_time)),
@@ -217,6 +219,18 @@ impl Contract {
         campaign
     }
 
+    pub fn update_campaign_total(
+        &mut self,
+        amount: WBalance,
+        campaign_id: String,
+    ) -> RewardCampaign {
+        let mut campaign = self.get_reward_campaign_by_id(campaign_id.clone()).unwrap();
+        let new_campaign_total = u128::from(campaign.last_campaign_total) + u128::from(amount);
+        campaign.last_campaign_total = U128(new_campaign_total);
+        self.reward_campaigns.insert(&campaign_id, &campaign);
+        campaign
+    }
+
     pub fn get_updated_reward_amount(&self, reward: &Reward, account_id: AccountId) -> WBalance {
         self.get_updated_reward_amount_with_accrued(reward, account_id, BigBalance::zero())
     }
@@ -236,13 +250,13 @@ impl Contract {
         );
         let campaign = campaign_option.unwrap();
         let total = self.get_account_total(campaign.clone(), account_id);
-        WBalance::from(
-            reward.amount.0
-                + (BigBalance::from(total.0)
-                    * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
-                    / BigBalance::from(ONE_TOKEN))
-                .round_u128(),
-        )
+
+        let value = reward.amount.0
+            + (BigBalance::from(total.0)
+                * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
+                / BigBalance::from(ONE_TOKEN))
+            .round_u128();
+        WBalance::from(value)
     }
 
     pub fn update_reward(&mut self, campaign_id: String, account_id: AccountId) -> Reward {
@@ -298,6 +312,18 @@ impl Contract {
 
         campaigns.iter().for_each(|campaign_id| {
             self.update_campaign_market_total(campaign_id.clone());
+        });
+    }
+
+    pub fn update_campaigns_total_by_campaign_type(
+        &mut self,
+        amount: WBalance,
+        campaign_type: CampaignType,
+    ) {
+        let campaigns = self.get_campaigns_by_campaign_type(campaign_type);
+
+        campaigns.iter().for_each(|campaign_id| {
+            self.update_campaign_total(amount, campaign_id.clone());
         });
     }
 
@@ -600,9 +626,9 @@ mod tests {
         block_index: BlockHeight,
     ) -> VMContext {
         VMContextBuilder::new()
-            .current_account_id(AccountId::try_from(alice().to_string()).unwrap())
-            .signer_account_id(AccountId::try_from(alice().to_string()).unwrap())
-            .predecessor_account_id(AccountId::try_from(alice().to_string()).unwrap())
+            .current_account_id(alice())
+            .signer_account_id(alice())
+            .predecessor_account_id(alice())
             .block_index(block_index)
             .block_timestamp(block_timestamp)
             .is_view(is_view)
@@ -630,265 +656,32 @@ mod tests {
             last_update_time: 0,
             rewards_per_token: BigBalance::zero(),
             last_market_total: U128(0),
+            last_campaign_total: U128(0),
             vesting,
         }
     }
 
-    fn get_closed_campaign( timestamp: u64,) -> RewardCampaign {
-        const REWARD_AMOUNT: Balance = 5 * 10u128.pow(0);
+    fn get_campaign_with(timestamp: u64, reward: Balance) -> RewardCampaign {
+        let reward_amount: Balance = reward * 10u128.pow(0);
         let vesting = Vesting {
+            start_time: timestamp + 1800,
+            end_time: timestamp + 2400,
+            penalty: Ratio::from(5000u128),
+        };
+
+        RewardCampaign {
+            campaign_type: CampaignType::Supply,
             start_time: timestamp,
-            end_time: timestamp+600,
-            penalty: Ratio::from(5000u128),
-        };
-
-        RewardCampaign {
-            campaign_type: CampaignType::Supply,
-            start_time: timestamp-1800,
-            end_time: timestamp,
+            end_time: timestamp + 1800,
             token: carol(),
             ticker_id: "CAROL".to_string(),
-            reward_amount: U128(REWARD_AMOUNT),
+            reward_amount: U128(reward_amount),
             last_update_time: 0,
             rewards_per_token: BigBalance::zero(),
             last_market_total: U128(0),
+            last_campaign_total: U128(0),
             vesting,
         }
-    }
-
-
-    fn get_campaign_rewards() -> RewardCampaign {
-        const REWARD_AMOUNT: Balance = 2 * 10u128.pow(0);
-        let vesting = Vesting {
-            start_time: 1659341422,
-            end_time: 1659342022,
-            penalty: Ratio::from(5000u128),
-        };
-
-        RewardCampaign {
-            campaign_type: CampaignType::Supply,
-            start_time: 1659339622,
-            end_time: 1659341422,
-            token: carol(),
-            ticker_id: "CAROL".to_string(),
-            reward_amount: U128(REWARD_AMOUNT),
-            last_update_time: 0,
-            rewards_per_token: BigBalance::zero(),
-            last_market_total: U128(0),
-            vesting,
-        }
-    }
-
-    #[test]
-    fn test_rewards_by_campaign_for_user_after_supply() {
-        let mut contract = init_env();
-        let campaign = get_campaign_rewards();
-        let expected_reward_amount = 2;
-        let rewards_count = 1;
-        let context = get_custom_context(false, 1659339620 * 1000000000, 95459174);
-        testing_env!(context.clone());
-
-        let campaign_id = contract.add_reward_campaign(campaign.clone());
-        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(100000));
-        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
-        contract.supply(WBalance::from(100));
-
-        let context = get_custom_context(false, 1659351422 * 1000000000, 95459174);
-        testing_env!(context.clone());
-
-        let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
-
-        assert_eq!(
-            rewards_list_on_half_way.len(),
-            rewards_count,
-            "Rewards list should be consist of 1 rewards"
-        );
-
-        assert_eq!(
-            rewards_list_on_half_way
-                .get(campaign_id.as_str())
-                .unwrap()
-                .amount
-                .0,
-            campaign.reward_amount.0,
-            "Rewards amount should be full campaign rewards"
-        );
-
-        let rewards_campain = contract.get_reward_campaign_by_id(campaign_id.clone());
-        assert_eq!(
-            rewards_campain.unwrap().reward_amount,
-            U128(expected_reward_amount),
-            "Rewards amount should be full campaign rewards"
-        );
-
-        let rewards_ex = contract.get_reward_campaigns_extended();
-        assert_eq!(
-            rewards_ex[0].campaign.reward_amount,
-            U128(expected_reward_amount),
-            "Rewards amount should be full campaign rewards"
-        );
-
-        let reward = contract.adjust_reward(campaign_id.clone());
-        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
-        assert_eq!(
-            amount_available_to_claim, reward.amount.0,
-            "Amount for claim doesn't match to expected"
-        );
-
-        let user_reward_amount =
-            contract.get_view_reward_state_for_user(alice(), campaign_id, reward);
-        assert_eq!(
-            user_reward_amount.amount,
-            U128(expected_reward_amount),
-            "User rewards amount must be same as campaing reward"
-        );
-    }
-
-    #[test]
-    fn test_rewards_for_user_after_some_campaign_was_finished() {
-        let mut contract = init_env();
-        let expected_alice_reward_amount = 2;
-        let expected_bob_reward_amount = 10;
-        let rewards_count = 1;
-        let campaign1 = get_campaign_rewards();
-
-        let context = get_custom_context_with_signer(false, (campaign1.start_time-100000) * 1000000000, 95459174, bob());
-        testing_env!(context.clone());
-        let campaign2 = get_closed_campaign(campaign1.start_time-99990);
-        let campaign_id2 = contract.add_reward_campaign(campaign2.clone());
-        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(100000));
-        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
-        contract.supply(WBalance::from(100));
-        assert_eq!(
-            context.signer_account_id.clone(),
-            bob(),
-            "Signer must be bob"
-        );
-
-        let context = get_custom_context(false, 1659339720 * 1000000000, 95459174);
-        testing_env!(context.clone());
-        let campaign_id = contract.add_reward_campaign(campaign1.clone());
-        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(100000));
-        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
-        contract.supply(WBalance::from(100));
-
-        let context = get_custom_context(false, 1659351422 * 1000000000, 95459174);
-        testing_env!(context.clone());
-        let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
-        println!("rewards_list_on_half_way for alice: {:?}",rewards_list_on_half_way);
-        assert_eq!(
-            rewards_list_on_half_way.len(),
-            rewards_count,
-            "Rewards list should be consist of 1 rewards"
-        );
-        ///!!!!!!!не верно здесь, должно быть 2, а не  1
-        assert_eq!(
-            rewards_list_on_half_way
-                .get(campaign_id.as_str())
-                .unwrap()
-                .amount
-                .0,
-           1,
-            "Rewards amount should be full campaign rewards"
-        );
-
-        ///!!!!!!!не верно здесь, должно быть 2, а не U128(1)
-        let reward_campaign1 = contract.adjust_reward(campaign_id.clone());
-        let user_reward_amount =
-            contract.get_view_reward_state_for_user(alice(), campaign_id.clone(), reward_campaign1.clone());
-        assert_eq!(
-            user_reward_amount.amount,
-            U128(1),
-            "User alice rewards amount must be same as campaing reward"
-        );
-
-
-        ///дальше отваливается потому что кампания закончилась
-        let rewards_list_on_half_way = contract.get_rewards_list(bob());
-        println!("rewards_list_on_half_way for bob: {:?}",rewards_list_on_half_way);
-        assert_eq!(
-            rewards_list_on_half_way.len(),
-            rewards_count,
-            "Rewards list should be consist of 1 rewards"
-        );
-
-        assert_eq!(
-            rewards_list_on_half_way
-                .get(campaign_id.as_str())
-                .unwrap()
-                .amount
-                .0,
-            campaign1.reward_amount.0,
-            "Rewards amount should be full campaign rewards"
-        );
-        let reward_campaign2 = contract.adjust_reward(campaign_id2.clone());
-        let user_reward_amount =
-            contract.get_view_reward_state_for_user(bob(), campaign_id2, reward_campaign2);
-        assert_eq!(
-            user_reward_amount.amount,
-            U128(expected_bob_reward_amount),
-            "User bob rewards amount must be same as campaing reward"
-        );
-    }
-
-    #[test]
-    fn test_rewards_for_user_after_some_campaign_was_finished_without_supply() {
-        let mut contract = init_env();
-        let expected_alice_reward_amount = 2;
-        let expected_bob_reward_amount = 10;
-        let rewards_count = 1;
-        let campaign1 = get_campaign_rewards();
-
-        let context = get_custom_context_with_signer(false, (campaign1.start_time-100000) * 1000000000, 95459174, alice());
-        testing_env!(context.clone());
-        let campaign2 = get_closed_campaign(campaign1.start_time-99990);
-        let campaign_id2 = contract.add_reward_campaign(campaign2.clone());
-        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(100000));
-        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
-
-
-        let context = get_custom_context(false, 1659339720 * 1000000000, 95459174);
-        testing_env!(context.clone());
-        let campaign_id = contract.add_reward_campaign(campaign1.clone());
-        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        contract.mint(contract.get_signer_address(), WBalance::from(100000));
-        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
-        contract.supply(WBalance::from(100));
-
-        let context = get_custom_context(false, 1659351422 * 1000000000, 95459174);
-        testing_env!(context.clone());
-        let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
-        println!("rewards_list_on_half_way for alice: {:?}",rewards_list_on_half_way);
-        ///!!!!!!!отваливается потому что думает что 2 награды
-       /* assert_eq!(
-            rewards_list_on_half_way.len(),
-            rewards_count,
-            "Rewards list should be consist of 1 rewards"
-        );*/
-        ///!!!!!!!не верно здесь, должно быть 2, а не  1
-        assert_eq!(
-            rewards_list_on_half_way
-                .get(campaign_id.as_str())
-                .unwrap()
-                .amount
-                .0,
-            2,
-            "Rewards amount should be full campaign rewards"
-        );
-
-        ///!!!!!!!не верно здесь, должно быть 2, а не U128(1)
-        let reward_campaign1 = contract.adjust_reward(campaign_id.clone());
-        let user_reward_amount =
-            contract.get_view_reward_state_for_user(alice(), campaign_id.clone(), reward_campaign1.clone());
-        assert_eq!(
-            user_reward_amount.amount,
-            U128(2),
-            "User alice rewards amount must be same as campaing reward"
-        );
     }
 
     #[test]
@@ -905,12 +698,13 @@ mod tests {
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(100000));
         contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+        contract
+            .update_campaigns_total_by_campaign_type(WBalance::from(100000), CampaignType::Supply);
 
         let context = get_custom_context(false, 1651357400000000000, 95459174);
         testing_env!(context.clone());
 
         let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
-
         assert_eq!(
             rewards_list_on_half_way.len(),
             2,
@@ -933,6 +727,8 @@ mod tests {
         contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
         contract.mint(contract.get_signer_address(), WBalance::from(300000));
         contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+        contract
+            .update_campaigns_total_by_campaign_type(WBalance::from(300000), CampaignType::Supply);
 
         let context1 = get_custom_context_with_signer(false, 1651362400000000000, 95459174, bob());
         testing_env!(context1.clone());
@@ -1021,8 +817,6 @@ mod tests {
 
         contract.increase_borrows(account_id, WBalance::from(1000));
         let reward = contract.adjust_reward(campaign_id);
-
-        println!("{}", reward);
         let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
         assert_eq!(
             amount_available_to_claim, 0,
@@ -1068,6 +862,7 @@ mod tests {
         let campaign_id = contract.add_reward_campaign(campaign);
 
         contract.increase_borrows(account_id.clone(), WBalance::from(1000));
+        contract.update_campaigns_total_by_campaign_type(U128(1000), CampaignType::Borrow);
         contract.adjust_reward(campaign_id.clone());
 
         let result1 = contract.get_rewards_list(account_id.clone());
@@ -1145,6 +940,7 @@ mod tests {
         contract.mint(contract.get_signer_address(), WBalance::from(total_supply));
 
         let campaign_id = contract.add_reward_campaign(campaign.clone());
+        contract.update_campaigns_total_by_campaign_type(U128(total_supply), CampaignType::Supply);
         let campaign_result = contract.get_accrued_rewards_per_token(campaign_id);
 
         assert_eq!(
@@ -1290,6 +1086,168 @@ mod tests {
         assert_eq!(
             campaign.last_update_time, received_campaign_unwrapped.last_update_time,
             "Campaigns are not similar"
+        );
+    }
+
+    #[test]
+    fn test_user_have_rewards_after_campaign_was_finished() {
+        let mut contract = init_env();
+        let reward_amount = 2;
+        let campaign = get_campaign_with(1659339622, reward_amount);
+        let context = get_custom_context(false, 1659339620 * 1000000000, 95459174);
+        testing_env!(context.clone());
+
+        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(100000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+        contract.update_campaigns_total_by_campaign_type(U128(100000), CampaignType::Supply);
+
+        let context = get_custom_context(false, 1659351422 * 1000000000, 95459174);
+        testing_env!(context.clone());
+
+        let reward = contract.adjust_reward(campaign_id);
+        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim, reward_amount,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let context1 = get_custom_context(false, 1659361422 * 1000000000, 1);
+        testing_env!(context1);
+
+        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim, reward.amount.0,
+            "Amount for claim doesn't match to expected"
+        );
+    }
+
+    #[test]
+    fn test_rewards_by_campaign_for_user_after_supply() {
+        let mut contract = init_env();
+        let reward_amount = 2;
+        let campaign = get_campaign_with(1659339622, reward_amount);
+        let rewards_count = 1;
+        let context = get_custom_context(false, 1659339620 * 1000000000, 95459174);
+        testing_env!(context.clone());
+
+        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(100000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+        contract.update_campaigns_total_by_campaign_type(U128(100000), CampaignType::Supply);
+
+        let context = get_custom_context(false, 1659351422 * 1000000000, 95459174);
+        testing_env!(context.clone());
+
+        let rewards_list_on_half_way = contract.get_rewards_list(context.signer_account_id.clone());
+        assert_eq!(
+            rewards_list_on_half_way.len(),
+            rewards_count,
+            "Rewards list should be consist of 1 rewards"
+        );
+        assert_eq!(
+            rewards_list_on_half_way
+                .get(campaign_id.as_str())
+                .unwrap()
+                .amount
+                .0,
+            campaign.reward_amount.0,
+            "Rewards amount should be full campaign rewards"
+        );
+
+        let rewards_campain = contract.get_reward_campaign_by_id(campaign_id.clone());
+        assert_eq!(
+            rewards_campain.unwrap().reward_amount,
+            U128(reward_amount),
+            "Rewards amount should be full campaign rewards"
+        );
+
+        let rewards_ex = contract.get_reward_campaigns_extended();
+        assert_eq!(
+            rewards_ex[0].campaign.reward_amount,
+            U128(reward_amount),
+            "Rewards amount should be full campaign rewards"
+        );
+
+        let reward = contract.adjust_reward(campaign_id.clone());
+        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim, reward.amount.0,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let user_reward_amount =
+            contract.get_view_reward_state_for_user(alice(), campaign_id, reward);
+        assert_eq!(
+            user_reward_amount.amount,
+            U128(reward_amount),
+            "User rewards amount must be same as campaing reward"
+        );
+    }
+
+    #[test]
+    fn test_rewards_for_user_after_some_campaign_was_finished() {
+        let mut contract = init_env();
+        let bob_reward_amount = 2;
+        let alice_reword_amount = 7;
+        let campaign = get_campaign_with(1659339622, bob_reward_amount);
+        let context =
+            get_custom_context_with_signer(false, 1659339620 * 1000000000, 95459174, bob());
+        testing_env!(context.clone());
+
+        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(100000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+        contract.update_campaigns_total_by_campaign_type(U128(100000), CampaignType::Supply);
+
+        let context =
+            get_custom_context_with_signer(false, 1659351522 * 1000000000, 95459174, bob());
+        testing_env!(context.clone());
+
+        let reward = contract.adjust_reward(campaign_id.clone());
+        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim, reward.amount.0,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let user_reward_amount =
+            contract.get_view_reward_state_for_user(bob(), campaign_id, reward);
+        assert_eq!(
+            user_reward_amount.amount,
+            U128(bob_reward_amount),
+            "User rewards amount must be same as campaign reward"
+        );
+
+        let context =
+            get_custom_context_with_signer(false, 1659351522 * 1000000000, 95459174, alice());
+        testing_env!(context.clone());
+        let campaign = get_campaign_with(1659351522, alice_reword_amount);
+        let campaign_id = contract.add_reward_campaign(campaign.clone());
+        contract.adjust_rewards_by_campaign_type(CampaignType::Supply);
+        contract.mint(contract.get_signer_address(), WBalance::from(100000));
+        contract.update_campaigns_market_total_by_type(CampaignType::Supply);
+        contract.update_campaigns_total_by_campaign_type(U128(100000), CampaignType::Supply);
+
+        let context = get_custom_context(false, 1659363324 * 1000000000, 95459174);
+        testing_env!(context.clone());
+
+        let reward = contract.adjust_reward(campaign_id.clone());
+        let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
+        assert_eq!(
+            amount_available_to_claim, reward.amount.0,
+            "Amount for claim doesn't match to expected"
+        );
+
+        let user_reward_amount =
+            contract.get_view_reward_state_for_user(alice(), campaign_id, reward);
+        assert_eq!(
+            user_reward_amount.amount,
+            U128(alice_reword_amount),
+            "User rewards amount must be same as campaign reward"
         );
     }
 }

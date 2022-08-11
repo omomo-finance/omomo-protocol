@@ -162,6 +162,7 @@ impl Contract {
         if is_promise_success() {
             self.increase_borrows(env::signer_account_id(), token_amount);
             self.update_campaigns_market_total_by_type(CampaignType::Borrow);
+            self.update_campaigns_total_by_campaign_type(token_amount, CampaignType::Borrow);
             self.mutex_account_unlock();
             log!(
                 "{}",
