@@ -181,7 +181,6 @@ impl Contract {
 
     pub fn get_accrued_rewards_per_token(&self, campaign_id: String) -> BigBalance {
         if let Some(campaign) = self.get_reward_campaign_by_id(campaign_id.clone()) {
-            //let total = self.get_market_total(campaign.clone());
             let total = campaign.last_campaign_total;
             let current_time = min(self.get_timestamp_in_seconds(), campaign.end_time);
             if total.0 == 0 {
