@@ -291,8 +291,8 @@ register_markets_on_controller $ROOT_ACCOUNT &
 setup_reserves $ROOT_ACCOUNT &
 wait
 
-# configure_acl $ROOT_ACCOUNT &
-# wait
+configure_acl $ROOT_ACCOUNT &
+wait
 
 # view status
 near view $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT view_markets '{}' --accountId $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT
