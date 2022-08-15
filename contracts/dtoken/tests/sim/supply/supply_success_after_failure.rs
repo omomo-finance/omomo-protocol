@@ -29,7 +29,7 @@ fn supply_success_after_failure_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth, dwnear) = initialize_two_dtokens(
+    let (_, weth_market, wnear_market) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -38,28 +38,28 @@ fn supply_success_after_failure_fixture() -> (
         InterestRateModel::default(),
     );
 
-    mint_tokens(&wnear, dwnear.account_id(), U128(100));
+    mint_tokens(&wnear, wnear_market.account_id(), U128(100));
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_BALANCE));
-    mint_tokens(&weth, dweth.account_id(), U128(100));
+    mint_tokens(&weth, weth_market.account_id(), U128(100));
     mint_tokens(&weth, user.account_id(), U128(WETH_BALANCE));
 
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "weth".to_string(),
     );
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -70,7 +70,7 @@ fn supply_success_after_failure_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -79,23 +79,33 @@ fn supply_success_after_failure_fixture() -> (
         },
     );
 
-    (dweth, dwnear, controller, weth, wnear, user)
+    (weth_market, wnear_market, controller, weth, wnear, user)
 }
 
 #[test]
 fn scenario_supply_success_after_failure() {
-    let (dweth, dwnear, controller, weth, wnear, user) = supply_success_after_failure_fixture();
+    let (weth_market, wnear_market, controller, weth, wnear, user) =
+        supply_success_after_failure_fixture();
 
-    let result = supply(&user, &wnear, dwnear.account_id(), SUPPLY_WNEAR_AMOUNT);
+    let result = supply(
+        &user,
+        &wnear,
+        wnear_market.account_id(),
+        SUPPLY_WNEAR_AMOUNT,
+    );
     assert_failure(result, "The amount should be a positive number");
 
-    supply(&user, &weth, dweth.account_id(), SUPPLY_WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), SUPPLY_WETH_AMOUNT).assert_success();
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance, U128(0), "User balance should be 0");
 
-    let user_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_balance, SUPPLY_WETH_AMOUNT,
         "Balance on controller should be {}",

@@ -31,26 +31,26 @@ fn withdraw_more_than_supply_fixture() -> (
         jump_multiplier_per_block: U128::from(Ratio::zero()),
         reserve_factor: U128::from(Ratio::zero()),
     };
-    let (droot, dwnear) = initialize_dtoken(
+    let (droot, wnear_market) = initialize_dtoken(
         &root,
         wnear.account_id(),
         controller.account_id(),
         interest_model,
     );
 
-    mint_and_reserve(&droot, &wnear, &dwnear, WNEAR_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &wnear_market, WNEAR_AMOUNT);
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_AMOUNT));
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -59,24 +59,28 @@ fn withdraw_more_than_supply_fixture() -> (
         },
     );
 
-    supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
+    supply(&user, &wnear, wnear_market.account_id(), WNEAR_AMOUNT).assert_success();
 
-    (dwnear, controller, wnear, user)
+    (wnear_market, controller, wnear, user)
 }
 
 #[test]
 fn scenario_withdraw_more_than_supply() {
-    let (dwnear, controller, wnear, user) = withdraw_more_than_supply_fixture();
+    let (wnear_market, controller, wnear, user) = withdraw_more_than_supply_fixture();
 
-    let result = withdraw(&user, &dwnear, WITHDRAW_AMOUNT);
+    let result = withdraw(&user, &wnear_market, WITHDRAW_AMOUNT);
 
     assert_failure(
         result,
         "The account doesn't have enough digital tokens to do withdraw",
     );
 
-    let user_supply_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), dwnear.account_id());
+    let user_supply_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(
         user_supply_balance, WNEAR_AMOUNT,
         "Balance should be {}",

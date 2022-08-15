@@ -4,7 +4,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use std::cmp::{max, min};
 use std::fmt;
 
-#[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, PartialEq, Clone, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Debug, Serialize, Eq, PartialEq, Clone, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum CampaignType {
     Supply,

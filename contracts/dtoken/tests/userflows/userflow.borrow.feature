@@ -2,11 +2,11 @@ Feature: User Borrow flow
 
 Background:
 	Given The user Bob
-	And Underlying token contract WETH with minted 100 tokens for digital token DWETH
-	And Underlying token contract WNEAR with minted 100 tokens for digital token DWNEAR
+	And Underlying token contract WETH with minted 100 tokens for digital token weth_market
+	And Underlying token contract WNEAR with minted 100 tokens for digital token wnear_market
 	And Underlying token contract WBTC with minted 100 tokens for digital token DWBTC
-	And Digital token DWNEAR contract with supplied 10 tokens by user Bob
-	And Digital token DWETH contract with supplied 10 tokens by user Bob
+	And Digital token wnear_market contract with supplied 10 tokens by user Bob
+	And Digital token weth_market contract with supplied 10 tokens by user Bob
 	And Underlying token contract WBTC with no tokens for user Bob
 	And Setted price for tickers WETH, WNEAR, WBTC has to be the same and equal 1$
 	And token = 10^24
@@ -42,6 +42,6 @@ Scenario: Sequential test after failure - positive flow <Success flow>
 
 Scenario: Concurrency test - simultaneous borrow on DWBTC contracts - negative flow  <Failure flow due to global action restriction>
 	Given User Bob and DWBTC contract
-	When User Bob simultaniosly make borrow to digital tokens DWETH and DWNEAR by 10 tokens
+	When User Bob simultaniosly make borrow to digital tokens weth_market and wnear_market by 10 tokens
 	Then Failure flow expected on call executed second
 	And Failure flow expected message  is "failed to acquire borrow action mutex for account {user}"
