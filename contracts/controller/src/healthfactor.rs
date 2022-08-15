@@ -270,21 +270,20 @@ mod tests {
             Ratio::from_str("0.8").unwrap(),
         );
 
-        let mut prices: Vec<Price> = Vec::new();
-
-        prices.push(Price {
-            ticker_id: ticker_id_near,
-            value: U128(near_price),
-            volatility: U128(near_volatility),
-            fraction_digits: 4,
-        });
-
-        prices.push(Price {
-            ticker_id: ticker_id_eth,
-            value: U128(eth_price),
-            volatility: U128(eth_volatility),
-            fraction_digits: 4,
-        });
+        let prices: Vec<Price> = vec![
+            Price {
+                ticker_id: ticker_id_near,
+                value: U128(near_price),
+                volatility: U128(near_volatility),
+                fraction_digits: 4,
+            },
+            Price {
+                ticker_id: ticker_id_eth,
+                value: U128(eth_price),
+                volatility: U128(eth_volatility),
+                fraction_digits: 4,
+            },
+        ];
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,
@@ -328,19 +327,20 @@ mod tests {
             Ratio::from_str("0.8").unwrap(),
         );
 
-        let mut prices: Vec<Price> = Vec::new();
-        prices.push(Price {
-            ticker_id: ticker_id_near,
-            value: U128(20000),
-            volatility: U128(80),
-            fraction_digits: 4,
-        });
-        prices.push(Price {
-            ticker_id: ticker_id_eth,
-            value: U128(20000),
-            volatility: U128(100),
-            fraction_digits: 4,
-        });
+        let prices: Vec<Price> = vec![
+            Price {
+                ticker_id: ticker_id_near,
+                value: U128(20000),
+                volatility: U128(80),
+                fraction_digits: 4,
+            },
+            Price {
+                ticker_id: ticker_id_eth,
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4,
+            },
+        ];
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,

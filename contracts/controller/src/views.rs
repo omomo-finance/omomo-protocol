@@ -174,19 +174,20 @@ mod tests {
             Ratio::from_str("0.8").unwrap(),
         );
 
-        let mut prices: Vec<Price> = Vec::new();
-        prices.push(Price {
-            ticker_id: ticker_id_2,
-            value: U128(20000),
-            volatility: U128(80),
-            fraction_digits: 24,
-        });
-        prices.push(Price {
-            ticker_id: ticker_id_1,
-            value: U128(20000),
-            volatility: U128(100),
-            fraction_digits: 24,
-        });
+        let prices: Vec<Price> = vec![
+            Price {
+                ticker_id: ticker_id_2,
+                value: U128(20000),
+                volatility: U128(80),
+                fraction_digits: 24,
+            },
+            Price {
+                ticker_id: ticker_id_1,
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 24,
+            },
+        ];
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83456999,
@@ -242,10 +243,7 @@ mod tests {
     #[test]
     fn test_view_accounts() {
         let (mut near_contract, token_address, _, _) = init_test_env();
-        let mut accounts = Vec::new();
-
-        accounts.push(alice());
-        accounts.push(bob());
+        let accounts = vec![alice(), bob()];
 
         near_contract.set_entity_by_token(
             Supply,

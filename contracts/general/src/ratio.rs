@@ -310,8 +310,9 @@ mod test {
 
     #[test]
     fn should_be_0_0000000628() {
-        let _628 = LowU128::from(62800000000000000u128);
-
-        assert_eq!(Ratio::from(_628), Ratio::from_str("0.0000000628").unwrap());
+        assert_eq!(
+            Ratio::from(LowU128::from(62800000000000000u128)),
+            Ratio::from_str("0.0000000628").unwrap()
+        );
     }
 }
