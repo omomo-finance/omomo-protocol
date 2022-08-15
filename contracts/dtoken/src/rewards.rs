@@ -23,9 +23,7 @@ pub struct Vesting {
 }
 
 impl Vesting {
-    pub fn new(start_time: u64,
-               end_time: u64,
-               penalty: Ratio) -> Vesting {
+    pub fn new(start_time: u64, end_time: u64, penalty: Ratio) -> Vesting {
         Vesting {
             start_time,
             end_time,
@@ -60,16 +58,18 @@ pub struct RewardCampaign {
 }
 
 impl RewardCampaign {
-    pub fn new(campaign_type: CampaignType,
-               start_time: u64,
-               end_time: u64,
-               token_id: AccountId,
-               ticker_id: String,
-               reward_amount: WBalance,
-               last_update_time: u64,
-               rewards_per_token: BigBalance,
-               last_market_total: WBalance,
-               vesting: Vesting) -> Self {
+    pub fn new(
+        campaign_type: CampaignType,
+        start_time: u64,
+        end_time: u64,
+        token_id: AccountId,
+        ticker_id: String,
+        reward_amount: WBalance,
+        last_update_time: u64,
+        rewards_per_token: BigBalance,
+        last_market_total: WBalance,
+        vesting: Vesting,
+    ) -> Self {
         RewardCampaign {
             campaign_type,
             start_time,
@@ -84,7 +84,6 @@ impl RewardCampaign {
         }
     }
 }
-
 
 impl fmt::Display for RewardCampaign {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -277,8 +276,8 @@ impl Contract {
         WBalance::from(
             reward.amount.0
                 + (BigBalance::from(total.0)
-                * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
-                / BigBalance::from(ONE_TOKEN))
+                    * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
+                    / BigBalance::from(ONE_TOKEN))
                 .round_u128(),
         )
     }
@@ -414,7 +413,7 @@ impl Contract {
                 _ => ((BigBalance::from(reward.amount.0 - reward.claimed.0)
                     * BigBalance::from(current_time - campaign.vesting.start_time))
                     / BigBalance::from(vesting_duration))
-                    .round_u128(),
+                .round_u128(),
             }
         }
         result
@@ -438,21 +437,24 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-            .then(ext_self::claim_reward_ft_transfer_callback(
-                reward,
-                account_id,
-                claimed_amount,
-                unlocked_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(5),
-            ));
+        .then(ext_self::claim_reward_ft_transfer_callback(
+            reward,
+            account_id,
+            claimed_amount,
+            unlocked_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        ));
     }
 }
 
 #[near_bindgen]
 impl Contract {
-    pub fn insert_funded_campaign(&mut self, reward_campaign: RewardCampaign) -> PromiseOrValue<WBalance> {
+    pub fn insert_funded_campaign(
+        &mut self,
+        reward_campaign: RewardCampaign,
+    ) -> PromiseOrValue<WBalance> {
         // campaign_id -> { token_id -> amount}
         // funded_reward_amount: HashMap<String, HashMap<AccountId, Balance>>,
 

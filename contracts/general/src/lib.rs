@@ -3,13 +3,13 @@ pub mod ratio;
 
 use crate::percent::WPercent;
 
+use crate::ratio::{BigBalance, Ratio};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 use near_sdk::{Balance, Gas};
 use std::fmt;
-use crate::ratio::{BigBalance, Ratio};
 
 pub const NO_DEPOSIT: Balance = 0;
 pub const ONE_YOCTO: Balance = 1;
