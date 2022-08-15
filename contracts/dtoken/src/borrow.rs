@@ -123,7 +123,7 @@ impl Contract {
             WRatio::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(15),
         )
         .then(ext_self::make_borrow_callback(
             token_amount,

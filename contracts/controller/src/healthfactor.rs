@@ -3,15 +3,109 @@ use crate::*;
 use general::ratio::Ratio;
 use near_sdk::env::block_height;
 use std::collections::HashMap;
+use std::ops::Add;
 
 impl Contract {
+    pub fn calculate_supplies_weighted_price_and_lth(&self, user_id: AccountId) -> Balance {
+        let supplies = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_supplies;
+
+        supplies
+            .iter()
+            .map(|(dtoken, balance)| {
+                let price = self.get_price(dtoken).unwrap();
+                let market = self.get_market_by_dtoken(dtoken.clone());
+
+                ((BigBalance::from(price.value)
+                    * BigBalance::from(balance.to_owned())
+                    * market.lth)
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                .0
+                .low_u128()
+            })
+            .sum()
+    }
+
+    pub fn get_collaterals_by_borrows(&self, user_id: AccountId) -> USD {
+        let borrows = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_borrows;
+
+        let collaterals: Balance = borrows
+            .iter()
+            .map(|(dtoken, balance)| {
+                let price = self.get_price(dtoken).unwrap();
+                let market = self.get_market_by_dtoken(dtoken.clone());
+
+                ((BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                    / market.ltv)
+                    .0
+                    .low_u128()
+            })
+            .sum();
+
+        USD::from(collaterals)
+    }
+
+    pub fn get_average_hf_by_markets_ltv(&self) -> Ratio {
+        let mut avg_hf: Ratio = Ratio::zero();
+        self.markets.iter().for_each(|(_, market)| {
+            avg_hf = avg_hf.add(market.ltv);
+        });
+        avg_hf / Ratio::from(self.markets.len())
+    }
+
+    pub fn get_market_by_dtoken(&self, dtoken: AccountId) -> MarketProfile {
+        let markets = self
+            .markets
+            .iter()
+            .filter(|(_, market)| market.dtoken == dtoken)
+            .map(|(_, market)| market)
+            .collect::<Vec<MarketProfile>>();
+
+        let market = markets.first().unwrap();
+
+        market.clone()
+    }
+
+    pub fn get_theoretical_borrows_max(&self, user_id: AccountId) -> USD {
+        let supplies = self
+            .user_profiles
+            .get(&user_id)
+            .unwrap_or_default()
+            .account_supplies;
+
+        let borrow_max: Balance = supplies
+            .iter()
+            .map(|(dtoken, balance)| {
+                let price = self.get_price(dtoken).unwrap();
+                let market = self.get_market_by_dtoken(dtoken.clone());
+
+                ((BigBalance::from(price.value)
+                    * BigBalance::from(balance.to_owned())
+                    * market.ltv)
+                    / Ratio::from(10u128.pow(price.fraction_digits)))
+                .0
+                .low_u128()
+            })
+            .sum();
+
+        USD::from(borrow_max)
+    }
+
     pub fn calculate_assets_weighted_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
                 let price = self.get_price(asset).unwrap();
 
                 Percentage::from(price.volatility.0).apply_to(
-                    (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                    ((BigBalance::from(balance.to_owned()) * BigBalance::from(price.value))
                         / Ratio::from(10u128.pow(price.fraction_digits)))
                     .0
                     .low_u128(),
@@ -65,20 +159,31 @@ impl Contract {
         }
         total_accrued_interest
     }
+
+    pub fn get_hf_with_supply_and_no_borrow(&self, user_account: AccountId) -> Ratio {
+        let supplies_weighted_lth =
+            self.calculate_supplies_weighted_price_and_lth(user_account.clone());
+        let max_borrows = self.get_theoretical_borrows_max(user_account);
+
+        Ratio::from(supplies_weighted_lth) / Ratio::from(max_borrows.0)
+    }
 }
 
 #[near_bindgen]
 impl Contract {
     pub fn get_health_factor(&self, user_account: AccountId) -> Ratio {
-        let collaterals = self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
+        let supplies_weighted_lth =
+            self.calculate_supplies_weighted_price_and_lth(user_account.clone());
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
 
-        borrows += self.calculate_accrued_borrow_interest(user_account);
+        borrows += self.calculate_accrued_borrow_interest(user_account.clone());
 
         if borrows != 0 {
-            Ratio::from(collaterals) / Ratio::from(borrows)
+            Ratio::from(supplies_weighted_lth) / Ratio::from(borrows)
+        } else if supplies_weighted_lth > 0 {
+            self.get_hf_with_supply_and_no_borrow(user_account)
         } else {
-            self.get_liquidation_threshold()
+            self.get_average_hf_by_markets_ltv()
         }
     }
 
@@ -89,8 +194,8 @@ impl Contract {
         amount: WBalance,
         action: ActionType,
     ) -> Ratio {
-        let mut collaterals =
-            self.get_account_sum_per_action(user_account.clone(), ActionType::Supply);
+        let mut collaterals = self.calculate_supplies_weighted_price_and_lth(user_account.clone());
+        let max_borrows = self.get_theoretical_borrows_max(user_account.clone());
         let mut borrows = self.get_account_sum_per_action(user_account.clone(), ActionType::Borrow);
         borrows += self.calculate_accrued_borrow_interest(user_account);
 
@@ -103,7 +208,9 @@ impl Contract {
         );
         match action {
             ActionType::Supply => {
-                collaterals -= usd_amount;
+                if borrows != 0 {
+                    collaterals -= usd_amount
+                }
             }
             ActionType::Borrow => {
                 borrows += usd_amount;
@@ -113,7 +220,7 @@ impl Contract {
         if borrows != 0 {
             Ratio::from(collaterals) / Ratio::from(borrows)
         } else {
-            self.get_liquidation_threshold()
+            Ratio::from(collaterals) / Ratio::from(max_borrows.0)
         }
     }
 }
@@ -140,40 +247,43 @@ mod tests {
         });
 
         let utoken_address_near = AccountId::new_unchecked("wnear.near".to_string());
-        let dtoken_address_near = AccountId::new_unchecked("dwnear.near".to_string());
+        let dtoken_address_near = AccountId::new_unchecked("wnear_market.near".to_string());
         let ticker_id_near = "wnear".to_string();
 
         controller_contract.add_market(
             utoken_address_near,
             dtoken_address_near,
             ticker_id_near.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
-        let dtoken_address_eth = AccountId::new_unchecked("dweth.near".to_string());
+        let dtoken_address_eth = AccountId::new_unchecked("weth_market.near".to_string());
         let ticker_id_eth = "weth".to_string();
 
         controller_contract.add_market(
             utoken_address_eth,
             dtoken_address_eth,
             ticker_id_eth.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
-        let mut prices: Vec<Price> = Vec::new();
-
-        prices.push(Price {
-            ticker_id: ticker_id_near,
-            value: U128(near_price),
-            volatility: U128(near_volatility),
-            fraction_digits: 4,
-        });
-
-        prices.push(Price {
-            ticker_id: ticker_id_eth,
-            value: U128(eth_price),
-            volatility: U128(eth_volatility),
-            fraction_digits: 4,
-        });
+        let prices: Vec<Price> = vec![
+            Price {
+                ticker_id: ticker_id_near,
+                value: U128(near_price),
+                volatility: U128(near_volatility),
+                fraction_digits: 4,
+            },
+            Price {
+                ticker_id: ticker_id_eth,
+                value: U128(eth_price),
+                volatility: U128(eth_volatility),
+                fraction_digits: 4,
+            },
+        ];
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,
@@ -194,38 +304,43 @@ mod tests {
         });
 
         let utoken_address_near = AccountId::new_unchecked("wnear.near".to_string());
-        let dtoken_address_near = AccountId::new_unchecked("dwnear.near".to_string());
+        let dtoken_address_near = AccountId::new_unchecked("wnear_market.near".to_string());
         let ticker_id_near = "wnear".to_string();
 
         controller_contract.add_market(
             utoken_address_near,
             dtoken_address_near,
             ticker_id_near.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
         let utoken_address_eth = AccountId::new_unchecked("weth.near".to_string());
-        let dtoken_address_eth = AccountId::new_unchecked("dweth.near".to_string());
+        let dtoken_address_eth = AccountId::new_unchecked("weth_market.near".to_string());
         let ticker_id_eth = "weth".to_string();
 
         controller_contract.add_market(
             utoken_address_eth,
             dtoken_address_eth,
             ticker_id_eth.clone(),
+            Ratio::from_str("0.6").unwrap(),
+            Ratio::from_str("0.8").unwrap(),
         );
 
-        let mut prices: Vec<Price> = Vec::new();
-        prices.push(Price {
-            ticker_id: ticker_id_near,
-            value: U128(20000),
-            volatility: U128(80),
-            fraction_digits: 4,
-        });
-        prices.push(Price {
-            ticker_id: ticker_id_eth,
-            value: U128(20000),
-            volatility: U128(100),
-            fraction_digits: 4,
-        });
+        let prices: Vec<Price> = vec![
+            Price {
+                ticker_id: ticker_id_near,
+                value: U128(20000),
+                volatility: U128(80),
+                fraction_digits: 4,
+            },
+            Price {
+                ticker_id: ticker_id_eth,
+                value: U128(20000),
+                volatility: U128(100),
+                fraction_digits: 4,
+            },
+        ];
 
         controller_contract.oracle_on_data(PriceJsonList {
             block_height: 83452949,
@@ -254,7 +369,10 @@ mod tests {
         let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
-        raw_map.insert(AccountId::new_unchecked("dwnear.near".to_string()), 100);
+        raw_map.insert(
+            AccountId::new_unchecked("wnear_market.near".to_string()),
+            100,
+        );
 
         assert_eq!(
             controller_contract.calculate_assets_weighted_price(&raw_map),
@@ -271,28 +389,27 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            controller_contract.get_liquidation_threshold(),
+            controller_contract.get_average_hf_by_markets_ltv(),
             "Test for account w/o collaterals and borrows has been failed"
         );
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(balance),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
             0,
             Ratio::zero(),
         );
 
         assert_eq!(
-            controller_contract.get_health_factor(user_account),
-            Ratio::from(100u128) * controller_contract.get_liquidation_threshold()
-                / Ratio::from(100u128),
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_hf_with_supply_and_no_borrow(user_account),
             "Health factor calculation has been failed"
         );
     }
@@ -304,13 +421,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
             0,
             Ratio::zero(),
@@ -318,7 +435,7 @@ mod tests {
 
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            controller_contract.get_liquidation_threshold(),
+            controller_contract.get_average_hf_by_markets_ltv(),
             "Test for account w/o collaterals and borrows has been failed"
         );
     }
@@ -330,22 +447,22 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(0),
             0,
             Ratio::zero(),
         );
 
-        // Ratio that represents 150%
+        // Ratio that represents standart_hf_with_supply_and_no_borrow
         assert_eq!(
-            controller_contract.get_health_factor(user_account),
-            Ratio::from_str("1.5").unwrap()
+            controller_contract.get_health_factor(user_account.clone()),
+            controller_contract.get_hf_with_supply_and_no_borrow(user_account)
         );
     }
 
@@ -356,22 +473,22 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(70),
             0,
             Ratio::zero(),
         );
 
-        // Ratio that represents 142.85714285%
+        // Ratio that represents (100 * 1 * LTH(0.8) / 70)  = 1.142857142857142857142857%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("1.428571428571428571428571").unwrap()
+            Ratio::from_str("1.142857142857142857142857").unwrap()
         );
     }
 
@@ -382,34 +499,34 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
         );
 
-        // Ratio that represents 100%
+        // Ratio that represents (100 * 1 * LTH(0.8) / 100) 80%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from_str("1").unwrap()
+            Ratio::from_str("0.8").unwrap()
         );
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(100),
         );
 
-        // Ratio that represents 200%
+        // Ratio that represents (200 * 1 * LTH(0.8) / 100) 80%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("2").unwrap()
+            Ratio::from_str("1.6").unwrap()
         );
     }
 
@@ -420,22 +537,22 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
         );
 
-        // Ratio that represents 200%
+        // Ratio that represents 160% = (200 * LTH(80%) / 100)
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from_str("2").unwrap()
+            Ratio::from_str("1.6").unwrap()
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -456,10 +573,10 @@ mod tests {
             ],
         });
 
-        // Ratio that represents 50%
+        // Ratio that represents 40% = (200 * 0.5 * LTH(80%) / 100 * 2)
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("0.5").unwrap()
+            Ratio::from_str("0.4").unwrap()
         );
     }
 
@@ -470,22 +587,22 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
         );
 
-        // Ratio that represents 200%
+        // Ratio that represents (200 * 1 * LTH(0.8) / 100) = 160%
         assert_eq!(
             controller_contract.get_health_factor(user_account.clone()),
-            Ratio::from_str("2").unwrap()
+            Ratio::from_str("1.6").unwrap()
         );
 
         controller_contract.oracle_on_data(PriceJsonList {
@@ -506,10 +623,10 @@ mod tests {
             ],
         });
 
-        // Ratio that represents 225%
+        // Ratio that represents (200 * 1 * LTH(0.8) / 100 * Volatility (0.8)) = 200%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("2.25").unwrap()
+            Ratio::from_str("2").unwrap()
         );
     }
 
@@ -520,13 +637,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(50),
             0,
             Ratio::zero(),
@@ -534,12 +651,12 @@ mod tests {
 
         let result = controller_contract.get_potential_health_factor(
             user_account,
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             U128(1000),
             ActionType::Borrow,
         );
 
-        assert_eq!(result, Ratio::from(2u128) / Ratio::from(14u128));
+        assert_eq!(result, Ratio::from(6u128) / Ratio::from(14u128));
     }
 
     #[test]
@@ -549,13 +666,13 @@ mod tests {
 
         controller_contract.increase_supplies(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(200),
         );
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dweth.near".to_string()),
+            AccountId::new_unchecked("weth_market.near".to_string()),
             WBalance::from(50),
             0,
             Ratio::zero(),
@@ -563,16 +680,17 @@ mod tests {
 
         controller_contract.increase_borrows(
             user_account.clone(),
-            AccountId::new_unchecked("dwnear.near".to_string()),
+            AccountId::new_unchecked("wnear_market.near".to_string()),
             WBalance::from(100),
             0,
             Ratio::zero(),
         );
 
-        // Ratio that represents 1.534883720930232558139534%
+        // Ratio that represents (200 * 1.1 * LTH(0.8) / 50 * 1.1 * 0.9 + 100 * 1 * 0.8)
+        // Ratio that represents 1.364341085271317829457364%
         assert_eq!(
             controller_contract.get_health_factor(user_account),
-            Ratio::from_str("1.534883720930232558139534").unwrap()
+            Ratio::from_str("1.364341085271317829457364").unwrap()
         );
     }
 }

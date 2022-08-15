@@ -23,26 +23,26 @@ fn supply_not_enough_tokens_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let wnear = initialize_utoken(&root);
     let controller = initialize_controller(&root);
-    let (_, dwnear) = initialize_dtoken(
+    let (_, wnear_market) = initialize_dtoken(
         &root,
         wnear.account_id(),
         controller.account_id(),
         InterestRateModel::default(),
     );
 
-    mint_tokens(&wnear, dwnear.account_id(), U128(100));
+    mint_tokens(&wnear, wnear_market.account_id(), U128(100));
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_BALANCE));
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -51,13 +51,13 @@ fn supply_not_enough_tokens_fixture() -> (
         },
     );
 
-    (dwnear, wnear, user)
+    (wnear_market, wnear, user)
 }
 
 #[test]
 fn scenario_supply_not_enough_balance() {
-    let (dwnear, wnear, user) = supply_not_enough_tokens_fixture();
+    let (wnear_market, wnear, user) = supply_not_enough_tokens_fixture();
 
-    let result = supply(&user, &wnear, dwnear.account_id(), SUPPLY_AMOUNT);
+    let result = supply(&user, &wnear, wnear_market.account_id(), SUPPLY_AMOUNT);
     assert_failure(result, "The account doesn't have enough balance");
 }

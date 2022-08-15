@@ -1,0 +1,34 @@
+WETH
+supply
+supply withdraw_max
+supply withdraw withdraw_max
+supply borrow_max withdraw_max
+
+
+near call weth.nearlend.testnet ft_transfer_call '{"receiver_id": "weth_market.nearlend.testnet", "amount": "100000000000000000000000000", "msg": "\"Supply\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+
+near view controller.nearlend.testnet get_entity_by_token '{"action": "Supply", "user_id": "nearlend.testnet", "token_address": "weth_market.nearlend.testnet"}'
+near view weth_market.nearlend.testnet view_total_supplies
+
+near view controller.nearlend.testnet get_entity_by_token '{"action": "Borrow", "user_id": "nearlend.testnet", "token_address": "weth_market.nearlend.testne
+t"}'
+near view weth_market.nearlend.testnet view_total_borrows
+
+
+near view weth.nearlend.testnet ft_balance_of '{"account_id": "weth_market.nearlend.testnet"}'
+near view weth_market.nearlend.testnet view_withdraw_info '{ "user_id": "nearlend.testnet", "ft_balance": "1100000196412178905446812000"}'
+near view weth_market.nearlend.testnet view_repay_info '{"user_id": "nearlend.testnet", "ft_balance": "1050000000000000000000000000"}'
+
+
+near view controller.nearlend.testnet view_borrow_max '{"user_id": "nearlend.testnet", "dtoken_id": "weth_market.nearlend.testnet"}'
+near view controller.nearlend.testnet view_withdraw_max '{"user_id": "nearlend.testnet", "dtoken_id": "weth_market.nearlend.testnet"}'
+
+
+
+near call weth.nearlend.testnet ft_transfer_call '{"receiver_id": "weth_market.nearlend.testnet", "amount": "51000000000000000000000000", "msg": "\"Repay\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+
+
+near view weth_market.nearlend.testnet ft_balance_of '{"account_id": "nearlend.testnet"}'
+
+
+near view weth_market.nearlend.testnet view_market_data '{"ft_balance": "1100000284540328315443305500"}'

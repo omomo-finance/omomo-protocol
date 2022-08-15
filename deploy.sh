@@ -2,177 +2,304 @@
 # near login
 
 # build & test
-./build.sh && ./test.sh
-
+build_and_test() {
+    ./build.sh && ./test.sh
+}
 
 # clean up previous deployment
-near delete weth_beta.nearlend.testnet nearlend.testnet 
-near delete dweth_beta.nearlend.testnet nearlend.testnet 
+clean_up_previous_deployment () {
+    echo 'y' | near delete weth.$1 $1 &
+    echo 'y' | near delete weth_market.$1 $1 & 
 
-near delete wnear_beta.nearlend.testnet nearlend.testnet 
-near delete dwnear_beta.nearlend.testnet nearlend.testnet 
+    echo 'y' | near delete wnear.$1 $1 &
+    echo 'y' | near delete wnear_market.$1 $1 & 
 
-near delete usdt_beta.nearlend.testnet nearlend.testnet 
-near delete dusdt_beta.nearlend.testnet nearlend.testnet 
+    echo 'y' | near delete usdt.$1 $1 &
+    echo 'y' | near delete usdt_market.$1 $1 & 
 
-near delete usdc_beta.nearlend.testnet nearlend.testnet 
-near delete dusdc_beta.nearlend.testnet nearlend.testnet 
+    echo 'y' | near delete usdc.$1 $1 &
+    echo 'y' | near delete usdc_market.$1 $1 &
 
-near delete controller_beta.nearlend.testnet nearlend.testnet 
-
+    # TODO unify naming
+    echo 'y' | near delete $CONTROLLER_ACCOUNT.$1 $1 &
+    wait
+}
 
 # create underlying tokens and markets
-near create-account weth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dweth_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
+create_underlying_tokens_and_markets() {
+    near create-account weth.$1 --masterAccount $1 --initialBalance 3 &
+    near create-account weth_market.$1 --masterAccount $1 --initialBalance 7 &
 
-near create-account wnear_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dwnear_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
+    near create-account wnear.$1 --masterAccount $1 --initialBalance 3 &
+    near create-account wnear_market.$1 --masterAccount $1 --initialBalance 7 &
 
-near create-account usdt_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dusdt_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
+    near create-account usdt.$1 --masterAccount $1 --initialBalance 3 &
+    near create-account usdt_market.$1 --masterAccount $1 --initialBalance 7 &
 
-near create-account usdc_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 3 
-near create-account dusdc_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 7 
-
+    near create-account usdc.$1 --masterAccount $1 --initialBalance 3 &
+    near create-account usdc_market.$1 --masterAccount $1 --initialBalance 7 &
+    wait
+}
 
 # create controller
-near create-account controller_beta.nearlend.testnet --masterAccount nearlend.testnet --initialBalance 10 
-
+create_controller() {
+    near create-account $CONTROLLER_ACCOUNT.$1 --masterAccount $1 --initialBalance 10 &
+    wait
+}
 
 # deploy underlyings
-near deploy weth_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
-    --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Ethereum", "symbol": "WETH", "total_supply": "1000000000000000000000000000"}'
-near deploy wnear_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
-    --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "Wrapped Near", "symbol": "WNEAR", "total_supply": "1000000000000000000000000000"}'
-near deploy usdt_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
-    --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "Tether", "symbol": "USDT", "total_supply": "1000000000000000000000000000"}'
-near deploy usdc_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
-    --initFunction 'new_default_meta' \
-    --initArgs '{"owner_id": "nearlend.testnet", "name": "USD Coin", "symbol": "USDC", "total_supply": "1000000000000000000000000000"}'
+deploy_underlyings() {
+    near deploy weth.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "Wrapped Ethereum",
+            "symbol": "WETH",
+            "total_supply": "1000000000000000000000000000"
+        }' &
+    near deploy wnear.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "Wrapped Near",
+            "symbol": "WNEAR",
+            "total_supply": "1000000000000000000000000000"
+        }' &
+    near deploy usdt.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "Tether",
+            "symbol": "USDT",
+            "total_supply": "1000000000000000000000000000"
+        }' &
+    near deploy usdc.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "USD Coin",
+            "symbol": "USDC",
+            "total_supply": "1000000000000000000000000000"
+        }' &
 
+    wait
+}
 
 # deploy markets
-near deploy dweth_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
-    --initFunction 'new_with_config' \
-    --initArgs '{
-        "owner_id":"nearlend.testnet",
-        "underlying_token_id":"weth_beta.nearlend.testnet",
-        "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"1000000000000000000000000",
-        "interest_rate_model":{
-            "kink":"650000000000000000000000",
-            "multiplier_per_block":"3044140030441400",
+deploy_markets(){
+    near deploy weth_market.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --initFunction 'new_with_config' \
+        --initArgs '{
+            "owner_id":"'$1'",
+            "underlying_token_id":"weth.'$1'",
+            "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
+            "initial_exchange_rate":"1000000000000000000000000",
+            "interest_rate_model":{
+                "kink":"650000000000000000000000",
+                "multiplier_per_block":"3044140030441400",
+                "base_rate_per_block":"0",
+                "jump_multiplier_per_block":"38051750380517500",
+                "reserve_factor":"10000000000000000000000"
+            }
+        }' &
+    near deploy wnear_market.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --initFunction 'new_with_config' \
+        --initArgs '{
+            "owner_id":"'$1'",
+            "underlying_token_id":"wnear.'$1'",
+            "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
+            "initial_exchange_rate":"1000000000000000000000000",
+            "interest_rate_model":{
+                "kink":"650000000000000000000000",
+                "multiplier_per_block":"3044140030441400",
+                "base_rate_per_block":"0",
+                "jump_multiplier_per_block":"38051750380517500",
+                "reserve_factor":"10000000000000000000000"
+            }
+        }' &
+    near deploy usdt_market.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --initFunction 'new_with_config' \
+        --initArgs '{
+        "owner_id":"'$1'",
+        "underlying_token_id":"usdt.'$1'",
+        "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
+            "initial_exchange_rate":"1000000000000000000000000",
+            "interest_rate_model":{
+            "kink":"800000000000000000000000",
+            "multiplier_per_block":"1522070015220700",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"38051750380517500",
+            "jump_multiplier_per_block":"28538812785388100",
             "reserve_factor":"10000000000000000000000"
-        }
-    }'
-near deploy dwnear_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
-    --initFunction 'new_with_config' \
-    --initArgs '{
-        "owner_id":"nearlend.testnet",
-        "underlying_token_id":"wnear_beta.nearlend.testnet",
-        "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"1000000000000000000000000",
-        "interest_rate_model":{
-            "kink":"650000000000000000000000",
-            "multiplier_per_block":"3044140030441400",
+            }
+        }' &
+    near deploy usdc_market.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --initFunction 'new_with_config' \
+        --initArgs '{
+        "owner_id":"'$1'",
+        "underlying_token_id":"usdc.'$1'",
+        "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
+            "initial_exchange_rate":"1000000000000000000000000",
+            "interest_rate_model":{
+            "kink":"800000000000000000000000",
+            "multiplier_per_block":"1522070015220700",
             "base_rate_per_block":"0",
-            "jump_multiplier_per_block":"38051750380517500",
+            "jump_multiplier_per_block":"28538812785388100",
             "reserve_factor":"10000000000000000000000"
-        }
-    }'
-near deploy dusdt_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
-    --initFunction 'new_with_config' \
-    --initArgs '{
-       "owner_id":"nearlend.testnet",
-       "underlying_token_id":"usdt_beta.nearlend.testnet",
-       "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"1000000000000000000000000",
-        "interest_rate_model":{
-           "kink":"800000000000000000000000",
-           "multiplier_per_block":"1522070015220700",
-           "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"28538812785388100",
-           "reserve_factor":"10000000000000000000000"
-        }
-    }'
-near deploy dusdc_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
-    --initFunction 'new_with_config' \
-    --initArgs '{
-       "owner_id":"nearlend.testnet",
-       "underlying_token_id":"usdc_beta.nearlend.testnet",
-       "controller_account_id":"controller_beta.nearlend.testnet",
-        "initial_exchange_rate":"1000000000000000000000000",
-        "interest_rate_model":{
-           "kink":"800000000000000000000000",
-           "multiplier_per_block":"1522070015220700",
-           "base_rate_per_block":"0",
-           "jump_multiplier_per_block":"28538812785388100",
-           "reserve_factor":"10000000000000000000000"
-        }
-    }'
+            }
+        }' &
+    
+    wait
+}
 
 # deploy controller
-near deploy controller_beta.nearlend.testnet \
-    --wasmFile ./contracts/target/wasm32-unknown-unknown/release/controller.wasm \
-    --initFunction 'new_with_config' \
-    --initArgs '{
-        "owner_id":"nearlend.testnet",
-        "oracle_account_id":"oracle_beta.nearlend.testnet"
-    }'
+deploy_controller(){
+    near deploy $CONTROLLER_ACCOUNT.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/controller.wasm \
+        --initFunction 'new_with_config' \
+        --initArgs '{
+            "owner_id":"'$1'",
+            "oracle_account_id":"oracle.'$1'"
+        }' &
 
+    wait
+}
 
-# fund dweth_beta.nearlend.testnet
-near call weth_beta.nearlend.testnet storage_deposit '{"account_id": "dweth_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
-near call wnear_beta.nearlend.testnet storage_deposit '{"account_id": "dwnear_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
-near call usdt_beta.nearlend.testnet storage_deposit '{"account_id": "dusdt_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
-near call usdc_beta.nearlend.testnet storage_deposit '{"account_id": "dusdc_beta.nearlend.testnet"}' --accountId nearlend.testnet --amount 0.25
+# create account on underlyings for dtokens
+create_account_on_underlyings_for_dtokens(){
+    near call weth.$1 storage_deposit '{"account_id": "weth_market.'$1'"}' --accountId $1 --amount 0.25 &
+    near call wnear.$1 storage_deposit '{"account_id": "wnear_market.'$1'"}' --accountId $1 --amount 0.25 &
+    near call usdt.$1 storage_deposit '{"account_id": "usdt_market.'$1'"}' --accountId $1 --amount 0.25 &
+    near call usdc.$1 storage_deposit '{"account_id": "usdc_market.'$1'"}' --accountId $1 --amount 0.25 &
 
-# near call weth_beta.nearlend.testnet mint '{"account_id": "dweth_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
-# near call wnear_beta.nearlend.testnet mint '{"account_id": "dwnear_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
-# near call usdt_beta.nearlend.testnet mint '{"account_id": "dusdt_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
-# near call usdc_beta.nearlend.testnet mint '{"account_id": "dusdc_beta.nearlend.testnet", "amount": "1"}' --accountId nearlend.testnet 
+    wait
+}
 
-# register market
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "weth_beta.nearlend.testnet", "dtoken": "dweth_beta.nearlend.testnet", "ticker_id": "weth"}' --accountId nearlend.testnet 
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "wnear_beta.nearlend.testnet", "dtoken": "dwnear_beta.nearlend.testnet", "ticker_id": "wnear"}' --accountId nearlend.testnet 
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "usdt_beta.nearlend.testnet", "dtoken": "dusdt_beta.nearlend.testnet", "ticker_id": "usdt"}' --accountId nearlend.testnet 
-near call controller_beta.nearlend.testnet add_market '{"asset_id": "usdc_beta.nearlend.testnet", "dtoken": "dusdc_beta.nearlend.testnet", "ticker_id": "usdc"}' --accountId nearlend.testnet 
+# register markets
+register_markets_on_controller(){
+    near call $CONTROLLER_ACCOUNT.$1 add_market '{
+            "asset_id": "weth.'$1'",
+            "dtoken": "weth_market.'$1'",
+            "ticker_id": "weth",
+            "ltv": "0.4",
+            "lth": "0.8"
+        }' --accountId $1 &
+    near call $CONTROLLER_ACCOUNT.$1 add_market '{
+            "asset_id": "wnear.'$1'",
+            "dtoken": "wnear_market.'$1'",
+            "ticker_id": "wnear",
+            "ltv": "0.5",
+            "lth": "0.8"
+        }' --accountId $1 &
+    near call $CONTROLLER_ACCOUNT.$1 add_market '{
+            "asset_id": "usdt.'$1'",
+            "dtoken": "usdt_market.'$1'",
+            "ticker_id": "usdt",
+            "ltv": "0.8",
+            "lth": "0.9"
+        }' --accountId $1 &
+    near call $CONTROLLER_ACCOUNT.$1 add_market '{
+            "asset_id": "usdc.'$1'",
+            "dtoken": "usdc_market.'$1'",
+            "ticker_id": "usdc",
+            "ltv": "0.8",
+            "lth": "0.9"
+        }' --accountId $1 &
 
-near view controller_beta.nearlend.testnet view_markets '{}' --accountId controller_beta.nearlend.testnet
+    wait
+}
 
-near view controller_beta.nearlend.testnet view_prices '{ "dtokens": ["dwnear_beta.nearlend.testnet", "dweth_beta.nearlend.testnet", "dusdt_beta.nearlend.testnet", "dusdc_beta.nearlend.testnet"] }' --accountId controller_beta.nearlend.testnet 
+setup_reserves(){
+    # mint reserves
+    near call weth.$1 mint '{
+        "account_id": "'$1'",
+        "amount": "1000000000000000000000000000"
+    }' --accountId $1 &
+    near call wnear.$1 mint '{
+        "account_id": "'$1'",
+        "amount": "1000000000000000000000000000"
+    }' --accountId $1 &
+    near call usdt.$1 mint '{
+        "account_id": "'$1'",
+        "amount": "1000000000000000000000000000"
+    }' --accountId $1 &
+    near call usdc.$1 mint '{
+        "account_id": "'$1'",
+        "amount": "1000000000000000000000000000"
+    }' --accountId $1 &
 
+    wait
 
-near call weth_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
-near call wnear_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
-near call usdt_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
-near call usdc_beta.nearlend.testnet mint '{"account_id": "nearlend.testnet", "amount": "1000000000000000000000000000"}' --accountId nearlend.testnet
+    # transfer reserves
+    near call weth.$1 ft_transfer_call '{
+        "receiver_id": "weth_market.'$1'",
+        "amount": "1000000000000000000000000000",
+        "msg": "\"Reserve\""
+    }' --depositYocto 1 --gas 300000000000000 --accountId $1 &
+    near call wnear.$1 ft_transfer_call '{
+        "receiver_id": "wnear_market.'$1'",
+        "amount": "1000000000000000000000000000",
+        "msg": "\"Reserve\""
+    }' --depositYocto 1 --gas 300000000000000 --accountId $1 &
+    near call usdt.$1 ft_transfer_call '{
+        "receiver_id": "usdt_market.'$1'",
+        "amount": "1000000000000000000000000000",
+        "msg": "\"Reserve\""
+    }' --depositYocto 1 --gas 300000000000000 --accountId $1 &
+    near call usdc.$1 ft_transfer_call '{
+        "receiver_id": "usdc_market.'$1'",
+        "amount": "1000000000000000000000000000",
+        "msg": "\"Reserve\""
+    }' --depositYocto 1 --gas 300000000000000 --accountId $1 &
 
-near call weth_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dweth_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
-near call wnear_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dwnear_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
-near call usdt_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dusdt_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
-near call usdc_beta.nearlend.testnet ft_transfer_call '{"receiver_id": "dusdc_beta.nearlend.testnet", "amount": "1000000000000000000000000000", "msg": "\"Reserve\""}' --depositYocto 1 --gas 300000000000000 --accountId nearlend.testnet
+    wait
+}
 
-near view weth_beta.nearlend.testnet ft_balance_of '{"account_id": "dweth_beta.nearlend.testnet"}'
-near view wnear_beta.nearlend.testnet ft_balance_of '{"account_id": "dwnear_beta.nearlend.testnet"}'
-near view usdt_beta.nearlend.testnet ft_balance_of '{"account_id": "dusdt_beta.nearlend.testnet"}'
-near view usdc_beta.nearlend.testnet ft_balance_of '{"account_id": "dusdc_beta.nearlend.testnet"}'
+configure_acl() {
+    # set shared admin as admin for dtokens
+    near call weth_market.$1 set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId $1 &
+    near call wnear_market.$1 set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId $1 &
+    near call usdt_market.$1 set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId $1 &
+    near call usdc_market.$1 set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId $1 &
 
-# set shared admin as admin for dtokens
-near call dweth_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet
-near call dwnear_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet
-near call dusdt_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet
-near call dusdc_beta.nearlend.testnet set_admin '{"account": "shared_admin.testnet"}' --gas 300000000000000 --accountId nearlend.testnet
+    wait
+}
+
+ROOT_ACCOUNT=nearlend.testnet
+CONTROLLER_ACCOUNT=controller_beta
+
+# build_and_test
+clean_up_previous_deployment $ROOT_ACCOUNT
+create_underlying_tokens_and_markets $ROOT_ACCOUNT &
+create_controller $ROOT_ACCOUNT &
+wait
+
+deploy_underlyings $ROOT_ACCOUNT &
+deploy_markets $ROOT_ACCOUNT &
+deploy_controller $ROOT_ACCOUNT &
+wait
+
+create_account_on_underlyings_for_dtokens $ROOT_ACCOUNT
+register_markets_on_controller $ROOT_ACCOUNT &
+setup_reserves $ROOT_ACCOUNT &
+wait
+
+# configure_acl $ROOT_ACCOUNT &
+# wait
+
+# view status
+near view $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT view_markets '{}' --accountId $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT
+near view $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT view_prices '{ "dtokens": ["wnear_market.'$ROOT_ACCOUNT'", "weth_market.'$ROOT_ACCOUNT'", "usdt_market.'$ROOT_ACCOUNT'", "usdc_market.'$ROOT_ACCOUNT'"] }' --accountId $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT
+
+# view balances
+near view weth.$ROOT_ACCOUNT ft_balance_of '{"account_id": "weth_market.'$ROOT_ACCOUNT'"}'
+near view wnear.$ROOT_ACCOUNT ft_balance_of '{"account_id": "wnear_market.'$ROOT_ACCOUNT'"}'
+near view usdt.$ROOT_ACCOUNT ft_balance_of '{"account_id": "usdt_market.'$ROOT_ACCOUNT'"}'
+near view usdc.$ROOT_ACCOUNT ft_balance_of '{"account_id": "usdc_market.'$ROOT_ACCOUNT'"}'

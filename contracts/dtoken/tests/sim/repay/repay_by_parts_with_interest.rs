@@ -36,7 +36,7 @@ fn repay_fixture() -> (
         jump_multiplier_per_block: WRatio::from(76100000000000000),
         reserve_factor: WRatio::from(10000000000000000000000),
     };
-    let (droot, dweth, dwnear, dwbtc) = initialize_three_dtokens(
+    let (droot, weth_market, wnear_market, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -47,8 +47,8 @@ fn repay_fixture() -> (
         interest_rate_model,
     );
 
-    mint_and_reserve(&droot, &weth, &dweth, WETH_AMOUNT);
-    mint_and_reserve(&droot, &wnear, &dwnear, WNEAR_AMOUNT);
+    mint_and_reserve(&droot, &weth, &weth_market, WETH_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &wnear_market, WNEAR_AMOUNT);
     mint_and_reserve(&droot, &wbtc, &dwbtc, WBTC_AMOUNT);
 
     let mint_amount = U128(START_BALANCE);
@@ -59,14 +59,14 @@ fn repay_fixture() -> (
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
@@ -79,7 +79,7 @@ fn repay_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -90,7 +90,7 @@ fn repay_fixture() -> (
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -110,37 +110,49 @@ fn repay_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
 
-    supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
+    supply(&user, &wnear, wnear_market.account_id(), WNEAR_AMOUNT).assert_success();
 
-    borrow(&user, &dweth, WETH_BORROW).assert_success();
+    borrow(&user, &weth_market, WETH_BORROW).assert_success();
 
-    borrow(&user, &dwnear, WNEAR_BORROW).assert_success();
+    borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
 
-    (dwnear, controller, wnear, user)
+    (wnear_market, controller, wnear, user)
 }
 
 #[test]
 fn repay_by_parts_with_interest() {
-    let (dwnear, controller, wnear, user) = repay_fixture();
+    let (wnear_market, controller, wnear, user) = repay_fixture();
 
-    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
-    let first_repay_info = repay_info(&user, &dwnear, dwnear_balance);
+    let first_repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
     println!("{:?}", first_repay_info);
 
-    let initial_total_reserve = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
-    let old_dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let initial_total_reserve = view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
+    let old_wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
-    repay(&user, dwnear.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
+    repay(
+        &user,
+        wnear_market.account_id(),
+        &wnear,
+        FIRST_PART_TO_REPAY,
+    )
+    .assert_success();
 
-    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
-    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
-    let total_reserve_after_first_repay = view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
+    let total_reserve_after_first_repay =
+        view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
     assert!(total_reserve_after_first_repay.0 > initial_total_reserve.0);
     assert!(
         exchange_rate > Ratio::one(),
@@ -155,24 +167,24 @@ fn repay_by_parts_with_interest() {
     );
 
     assert_eq!(
-        dwnear_balance.0,
-        old_dwnear_balance.0 + FIRST_PART_TO_REPAY,
+        wnear_market_balance.0,
+        old_wnear_market_balance.0 + FIRST_PART_TO_REPAY,
         "Repay was partially done, dtoken balance should be {}",
-        old_dwnear_balance.0 + FIRST_PART_TO_REPAY,
+        old_wnear_market_balance.0 + FIRST_PART_TO_REPAY,
     );
 
-    let second_repay_info = repay_info(&user, &dwnear, dwnear_balance);
+    let second_repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
 
     repay(
         &user,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &wnear,
         second_repay_info.total_amount.0,
     )
     .assert_success();
 
     let total_reserve_after_second_repay =
-        view!(dwnear.view_total_reserves()).unwrap_json::<U128>();
+        view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
     assert!(total_reserve_after_second_repay.0 > total_reserve_after_first_repay.0);
     dbg!(total_reserve_after_second_repay.0 - total_reserve_after_first_repay.0);
 
@@ -188,27 +200,35 @@ fn repay_by_parts_with_interest() {
         balance_after_first_repay - second_repay_info.total_amount.0
     );
 
-    let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_ne!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
     repay(
         &user,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &wnear,
         // paying out the rest have left so there is no borrow
         second_repay_info.total_amount.0,
     )
     .assert_success();
 
-    let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), dwnear.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Borrow,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 
-    let user_balance: Balance = view!(dwnear.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
-    let dwnear_balance: U128 = view!(wnear.ft_balance_of(dwnear.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(dwnear.view_exchange_rate(dwnear_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert!(
         exchange_rate > Ratio::one(),
         "xrate should greater than 1.0"

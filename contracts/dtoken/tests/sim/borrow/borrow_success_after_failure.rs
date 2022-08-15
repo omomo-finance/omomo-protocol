@@ -27,7 +27,7 @@ fn borrow_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let (weth, wnear, wbtc) = initialize_three_utokens(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth, dwnear, dwbtc) = initialize_three_dtokens(
+    let (_, weth_market, wnear_market, dwbtc) = initialize_three_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -39,8 +39,8 @@ fn borrow_fixture() -> (
     );
 
     let mint_amount = U128(START_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), mint_amount);
-    mint_tokens(&wnear, dwnear.account_id(), mint_amount);
+    mint_tokens(&weth, weth_market.account_id(), mint_amount);
+    mint_tokens(&wnear, wnear_market.account_id(), mint_amount);
     mint_tokens(&wbtc, dwbtc.account_id(), U128(WBTC_START_BALANCE));
     mint_tokens(&weth, user.account_id(), U128(WETH_AMOUNT));
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_AMOUNT));
@@ -49,14 +49,14 @@ fn borrow_fixture() -> (
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
@@ -69,7 +69,7 @@ fn borrow_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -80,7 +80,7 @@ fn borrow_fixture() -> (
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -100,9 +100,9 @@ fn borrow_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
 
-    supply(&user, &wnear, dwnear.account_id(), WNEAR_AMOUNT).assert_success();
+    supply(&user, &wnear, wnear_market.account_id(), WNEAR_AMOUNT).assert_success();
 
     (dwbtc, controller, wbtc, user)
 }

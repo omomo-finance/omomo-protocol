@@ -2,6 +2,7 @@ use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 use near_sdk::{AccountId, Balance, Gas};
 use near_sdk_sim::{call, deploy, to_yocto, view, ContractAccount, ExecutionResult, UserAccount};
+use std::str::FromStr;
 
 use controller::ContractContract as Controller;
 use controller::{ActionType, Config as cConfig};
@@ -329,9 +330,11 @@ pub fn add_market(
     dtoken_id: AccountId,
     ticker_id: String,
 ) {
+    let ltv = Ratio::from_str("0.6").unwrap();
+    let lth = Ratio::from_str("0.8").unwrap();
     call!(
         controller.user_account,
-        controller.add_market(utoken_id, dtoken_id, ticker_id),
+        controller.add_market(utoken_id, dtoken_id, ticker_id, ltv, lth),
         deposit = 0
     );
 }

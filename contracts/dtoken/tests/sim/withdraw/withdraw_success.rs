@@ -23,26 +23,26 @@ fn withdraw_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let weth = initialize_utoken(&root);
     let controller = initialize_controller(&root);
-    let (droot, dweth) = initialize_dtoken(
+    let (droot, weth_market) = initialize_dtoken(
         &root,
         weth.account_id(),
         controller.account_id(),
         InterestRateModel::default(),
     );
 
-    mint_and_reserve(&droot, &weth, &dweth, SUPPLY_AMOUNT);
+    mint_and_reserve(&droot, &weth, &weth_market, SUPPLY_AMOUNT);
     mint_tokens(&weth, user.account_id(), U128(SUPPLY_AMOUNT));
 
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -51,21 +51,26 @@ fn withdraw_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), SUPPLY_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), SUPPLY_AMOUNT).assert_success();
 
-    (dweth, controller, weth, user)
+    (weth_market, controller, weth, user)
 }
 
 #[test]
 fn scenario_partial_withdraw() {
-    let (dweth, controller, weth, user) = withdraw_fixture();
+    let (weth_market, controller, weth, user) = withdraw_fixture();
 
-    withdraw(&user, &dweth, WITHDRAW_AMOUNT).assert_success();
-    let user_dtoken_balance: U128 = view!(dweth.ft_balance_of(user.account_id())).unwrap_json();
+    withdraw(&user, &weth_market, WITHDRAW_AMOUNT).assert_success();
+    let user_dtoken_balance: U128 =
+        view!(weth_market.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_dtoken_balance.0, SUPPLY_AMOUNT - WITHDRAW_AMOUNT);
 
-    let user_supply_balance: u128 =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+    let user_supply_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_supply_balance,
         SUPPLY_AMOUNT - WITHDRAW_AMOUNT,
@@ -79,14 +84,19 @@ fn scenario_partial_withdraw() {
 
 #[test]
 fn scenario_full_withdraw() {
-    let (dweth, controller, weth, user) = withdraw_fixture();
+    let (weth_market, controller, weth, user) = withdraw_fixture();
 
-    withdraw(&user, &dweth, SUPPLY_AMOUNT).assert_success();
-    let user_dtoken_balance: U128 = view!(dweth.ft_balance_of(user.account_id())).unwrap_json();
+    withdraw(&user, &weth_market, SUPPLY_AMOUNT).assert_success();
+    let user_dtoken_balance: U128 =
+        view!(weth_market.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_dtoken_balance.0, 0);
 
-    let user_supply_balance: u128 =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+    let user_supply_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(user_supply_balance, 0, "Balance should be {}", 0);
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();

@@ -33,7 +33,7 @@ fn withdraw_fixture() -> (
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
     };
-    let (droot, dweth, dwbtc) = initialize_two_dtokens(
+    let (droot, weth_market, dwbtc) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wbtc.account_id(),
@@ -42,7 +42,7 @@ fn withdraw_fixture() -> (
         interest_model,
     );
 
-    mint_and_reserve(&droot, &weth, &dweth, START_BALANCE);
+    mint_and_reserve(&droot, &weth, &weth_market, START_BALANCE);
     mint_and_reserve(&droot, &wbtc, &dwbtc, START_BALANCE);
 
     mint_tokens(&weth, user.account_id(), U128(START_BALANCE));
@@ -51,7 +51,7 @@ fn withdraw_fixture() -> (
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
@@ -64,7 +64,7 @@ fn withdraw_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -84,21 +84,25 @@ fn withdraw_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), START_BALANCE).assert_success();
+    supply(&user, &weth, weth_market.account_id(), START_BALANCE).assert_success();
 
     borrow(&user, &dwbtc, BORROW_AMOUNT).assert_success();
 
-    (dweth, controller, weth, user)
+    (weth_market, controller, weth, user)
 }
 
 #[test]
 fn scenario_borrow() {
-    let (dweth, controller, weth, user) = withdraw_fixture();
+    let (weth_market, controller, weth, user) = withdraw_fixture();
 
-    withdraw(&user, &dweth, WITHDRAW).assert_success();
+    withdraw(&user, &weth_market, WITHDRAW).assert_success();
 
-    let user_supply_balance: u128 =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+    let user_supply_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_supply_balance,
         START_BALANCE - (EXCHANGE_RATE * WITHDRAW),

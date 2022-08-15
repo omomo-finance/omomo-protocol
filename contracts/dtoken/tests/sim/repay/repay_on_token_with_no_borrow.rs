@@ -31,7 +31,7 @@ fn repay_fixture() -> (
         jump_multiplier_per_block: WRatio::from(0),
         reserve_factor: WRatio::from(0),
     };
-    let (_, dweth, dwnear) = initialize_two_dtokens(
+    let (_, weth_market, wnear_market) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -41,28 +41,28 @@ fn repay_fixture() -> (
     );
 
     let mint_amount = U128(START_BALANCE);
-    mint_tokens(&weth, dweth.account_id(), U128(WETH_AMOUNT));
-    mint_tokens(&wnear, dwnear.account_id(), U128(WNEAR_AMOUNT));
+    mint_tokens(&weth, weth_market.account_id(), U128(WETH_AMOUNT));
+    mint_tokens(&wnear, wnear_market.account_id(), U128(WNEAR_AMOUNT));
     mint_tokens(&weth, user.account_id(), mint_amount);
     mint_tokens(&wnear, user.account_id(), mint_amount);
 
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     add_market(
         &controller,
         wnear.account_id(),
-        dwnear.account_id(),
+        wnear_market.account_id(),
         "wnear".to_string(),
     );
 
     set_price(
         &controller,
-        dwnear.account_id(),
+        wnear_market.account_id(),
         &Price {
             ticker_id: "wnear".to_string(),
             value: U128(START_PRICE),
@@ -73,7 +73,7 @@ fn repay_fixture() -> (
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -82,18 +82,18 @@ fn repay_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
 
-    borrow(&user, &dweth, WETH_BORROW).assert_success();
+    borrow(&user, &weth_market, WETH_BORROW).assert_success();
 
-    (dwnear, controller, wnear, user)
+    (wnear_market, controller, wnear, user)
 }
 
 #[test]
 fn scenario_repay() {
-    let (dwnear, _controller, wnear, user) = repay_fixture();
+    let (wnear_market, _controller, wnear, user) = repay_fixture();
 
-    repay(&user, dwnear.account_id(), &wnear, WETH_BORROW).assert_success();
+    repay(&user, wnear_market.account_id(), &wnear, WETH_BORROW).assert_success();
 
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance.0, START_BALANCE,);

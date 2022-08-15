@@ -255,7 +255,6 @@ impl Contract {
         controller_account_id: AccountId,
         initial_exchange_rate: U128,
         interest_rate_model: InterestRateModel,
-        disable_transfer_token: bool,
     ) -> Self {
         Self::new(Config {
             owner_id,
@@ -263,7 +262,7 @@ impl Contract {
             controller_account_id,
             initial_exchange_rate,
             interest_rate_model,
-            disable_transfer_token,
+            disable_transfer_token: true,
         })
     }
 
