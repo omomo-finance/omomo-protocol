@@ -15,11 +15,23 @@ pub enum CampaignType {
 #[serde(crate = "near_sdk::serde")]
 pub struct Vesting {
     /// Campaign vesting start time, seconds
-    start_time: u64,
+    pub start_time: u64,
     /// Campaign vesting end time, seconds
-    end_time: u64,
+    pub end_time: u64,
     /// Penalty amount which will be arrested in case of early withdraw
-    penalty: Ratio,
+    pub penalty: Ratio,
+}
+
+impl Vesting {
+    pub fn new(start_time: u64,
+               end_time: u64,
+               penalty: Ratio) -> Vesting {
+        Vesting {
+            start_time,
+            end_time,
+            penalty,
+        }
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Debug, Deserialize, Clone)]
@@ -32,7 +44,7 @@ pub struct RewardCampaign {
     /// Campaign end time seconds
     end_time: u64,
     /// Reward token address
-    token: AccountId,
+    token_id: AccountId,
     /// Token ticker id
     ticker_id: String,
     /// Reward tokens total amount
@@ -46,6 +58,33 @@ pub struct RewardCampaign {
     /// Vesting configuration
     vesting: Vesting,
 }
+
+impl RewardCampaign {
+    pub fn new(campaign_type: CampaignType,
+               start_time: u64,
+               end_time: u64,
+               token_id: AccountId,
+               ticker_id: String,
+               reward_amount: WBalance,
+               last_update_time: u64,
+               rewards_per_token: BigBalance,
+               last_market_total: WBalance,
+               vesting: Vesting) -> Self {
+        RewardCampaign {
+            campaign_type,
+            start_time,
+            end_time,
+            token_id,
+            ticker_id,
+            reward_amount,
+            last_update_time,
+            rewards_per_token,
+            last_market_total,
+            vesting,
+        }
+    }
+}
+
 
 impl fmt::Display for RewardCampaign {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -238,8 +277,8 @@ impl Contract {
         WBalance::from(
             reward.amount.0
                 + (BigBalance::from(total.0)
-                    * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
-                    / BigBalance::from(ONE_TOKEN))
+                * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
+                / BigBalance::from(ONE_TOKEN))
                 .round_u128(),
         )
     }
@@ -375,7 +414,7 @@ impl Contract {
                 _ => ((BigBalance::from(reward.amount.0 - reward.claimed.0)
                     * BigBalance::from(current_time - campaign.vesting.start_time))
                     / BigBalance::from(vesting_duration))
-                .round_u128(),
+                    .round_u128(),
             }
         }
         result
@@ -399,20 +438,34 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-        .then(ext_self::claim_reward_ft_transfer_callback(
-            reward,
-            account_id,
-            claimed_amount,
-            unlocked_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(5),
-        ));
+            .then(ext_self::claim_reward_ft_transfer_callback(
+                reward,
+                account_id,
+                claimed_amount,
+                unlocked_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(5),
+            ));
     }
 }
 
 #[near_bindgen]
 impl Contract {
+    pub fn insert_funded_campaign(&mut self, reward_campaign: RewardCampaign) -> PromiseOrValue<WBalance> {
+        // campaign_id -> { token_id -> amount}
+        // funded_reward_amount: HashMap<String, HashMap<AccountId, Balance>>,
+
+        let campaign_id = self.add_reward_campaign(reward_campaign.clone());
+
+        let mut hm = HashMap::new();
+        hm.insert(reward_campaign.token_id, reward_campaign.reward_amount.0);
+
+        self.funded_reward_amount.insert(campaign_id, hm);
+
+        PromiseOrValue::Value(U128(0))
+    }
+
     pub fn add_reward_campaign(&mut self, reward_campaign: RewardCampaign) -> String {
         require!(
             self.is_valid_admin_call(),
@@ -422,8 +475,10 @@ impl Contract {
             reward_campaign.end_time >= self.get_timestamp_in_seconds(),
             "Campaign end time can't be in the past"
         );
+
         let campaign_id = self.request_unique_id();
         self.reward_campaigns.insert(&campaign_id, &reward_campaign);
+
         campaign_id
     }
 
@@ -485,7 +540,7 @@ impl Contract {
             account_id,
             amount,
             message,
-            campaign.token,
+            campaign.token_id,
             amount,
             WBalance::from(0),
             reward,
@@ -518,7 +573,7 @@ impl Contract {
             account_id,
             amount_with_penalty,
             message,
-            campaign.token,
+            campaign.token_id,
             amount,
             amount_with_penalty,
             reward,
@@ -623,7 +678,7 @@ mod tests {
             campaign_type: CampaignType::Supply,
             start_time: 1651352400,
             end_time: 1651362400,
-            token: carol(),
+            token_id: carol(),
             ticker_id: "CAROL".to_string(),
             reward_amount: U128(REWARD_AMOUNT),
             last_update_time: 0,
@@ -1026,7 +1081,7 @@ mod tests {
             "Campaigns are not similar"
         );
         assert_eq!(
-            campaign.token, received_campaign_unwrapped.token,
+            campaign.token_id, received_campaign_unwrapped.token_id,
             "Campaigns are not similar"
         );
         assert_eq!(

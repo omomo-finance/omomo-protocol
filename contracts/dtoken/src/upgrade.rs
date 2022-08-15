@@ -53,6 +53,9 @@ impl Upgradable for Contract {
 
             /// User account_id -> { campaign_id -> reward }
             rewards: HashMap<AccountId, HashMap<String, Reward>>,
+
+            /// campaign_id -> { token_id -> amount}
+            funded_reward_amount: HashMap<String, HashMap<AccountId, Balance>>,
             /// Mock field
             new_mock_field: HashMap<AccountId, bool>,
         }
@@ -71,6 +74,7 @@ impl Upgradable for Contract {
             reward_campaigns: contract.reward_campaigns,
             uid: contract.uid,
             rewards: contract.rewards,
+            funded_reward_amount: contract.funded_reward_amount,
             disable_transfer: true,
         }
     }

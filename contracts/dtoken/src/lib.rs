@@ -37,7 +37,7 @@ mod interest_rate_model;
 mod liquidation;
 mod repay;
 mod reserve;
-mod rewards;
+pub mod rewards;
 mod supply;
 mod upgrade;
 mod user_profile;
@@ -85,6 +85,9 @@ pub struct Contract {
 
     /// User account_id -> { campaign_id -> reward }
     rewards: HashMap<AccountId, HashMap<String, Reward>>,
+
+    /// campaign_id -> { token_id -> amount}
+    funded_reward_amount: HashMap<String, HashMap<AccountId, Balance>>,
 
     /// Disable transfer opportunity
     disable_transfer: bool,
@@ -280,7 +283,8 @@ impl Contract {
             admin: config.owner_id,
             reward_campaigns: UnorderedMap::new(StorageKeys::RewardCampaigns),
             uid: 0,
-            rewards: HashMap::new(),
+            rewards: Default::default(),
+            funded_reward_amount: Default::default(),
             disable_transfer: config.disable_transfer_token,
         }
     }
