@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::supply_balance_of_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(50),
-            ))
-            .into()
+        .then(ext_self::supply_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(50),
+        ))
+        .into()
     }
 
     pub fn get_account_supplies(&self, account: AccountId) -> Balance {
@@ -62,14 +62,17 @@ impl Contract {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
             PromiseResult::Successful(result) => {
-                let actual_balance: WBalance = near_sdk::serde_json::from_slice::<WBalance>(&result)
-                    .unwrap();
+                let actual_balance: WBalance =
+                    near_sdk::serde_json::from_slice::<WBalance>(&result).unwrap();
                 let mut funded_by_underlying_token = WBalance::from(0);
 
                 for hm in self.funded_reward_amount.values() {
                     match hm.get(&self.get_underlying_contract_address()) {
                         None => {}
-                        Some(balance) => { funded_by_underlying_token = (funded_by_underlying_token.0 + balance).into() }
+                        Some(balance) => {
+                            funded_by_underlying_token =
+                                (funded_by_underlying_token.0 + balance).into()
+                        }
                     };
                 }
 
@@ -115,14 +118,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::controller_increase_supplies_callback(
-                token_amount,
-                dtoken_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(20),
-            ))
-            .into()
+        .then(ext_self::controller_increase_supplies_callback(
+            token_amount,
+            dtoken_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(20),
+        ))
+        .into()
     }
 
     #[allow(dead_code)]

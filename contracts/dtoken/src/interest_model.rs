@@ -62,7 +62,7 @@ impl Contract {
         for hm in self.funded_reward_amount.values() {
             match hm.get(&self.get_underlying_contract_address()) {
                 None => {}
-                Some(balance) => { pure_underlying_balance = (underlying_balance.0 - balance).into() }
+                Some(balance) => pure_underlying_balance = (underlying_balance.0 - balance).into(),
             };
         }
 

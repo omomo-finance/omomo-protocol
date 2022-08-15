@@ -152,9 +152,6 @@ impl Reward {
 }
 
 impl Contract {
-
-
-
     pub fn get_reward_campaign_by_id(&self, campaign_id: String) -> Option<RewardCampaign> {
         self.reward_campaigns.get(&campaign_id)
     }

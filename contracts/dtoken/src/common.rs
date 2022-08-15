@@ -71,7 +71,7 @@ impl Contract {
         for hm in self.funded_reward_amount.values() {
             match hm.get(&self.get_underlying_contract_address()) {
                 None => {}
-                Some(balance) => { pure_underlying_balance = (underlying_balance.0 - balance).into() }
+                Some(balance) => pure_underlying_balance = (underlying_balance.0 - balance).into(),
             };
         }
 
@@ -100,14 +100,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
