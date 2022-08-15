@@ -19,6 +19,7 @@ impl Contract {
             max_reserve_factor_value
         );
         let rest_of_supply_factor = Ratio::one() - reserve_factor;
+
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
         let rate_to_pool = borrow_rate * rest_of_supply_factor / Ratio::one();
         let util_rate = self.get_util_rate(underlying_balance, total_borrows, total_reserves);
@@ -56,11 +57,20 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let denominator = if Balance::from(underlying_balance) + Balance::from(total_borrows)
+        let mut pure_underlying_balance = underlying_balance;
+
+        for hm in self.funded_reward_amount.values() {
+            match hm.get(&self.get_underlying_contract_address()) {
+                None => {}
+                Some(balance) => { pure_underlying_balance = (underlying_balance.0 - balance).into() }
+            };
+        }
+
+        let denominator = if Balance::from(pure_underlying_balance) + Balance::from(total_borrows)
             > Balance::from(total_reserves)
         {
             BigBalance::from(
-                Balance::from(underlying_balance) + Balance::from(total_borrows)
+                Balance::from(pure_underlying_balance) + Balance::from(total_borrows)
                     - Balance::from(total_reserves),
             )
         } else {

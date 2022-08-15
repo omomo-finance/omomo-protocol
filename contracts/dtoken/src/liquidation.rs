@@ -22,17 +22,17 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(30),
         )
-        .then(ext_self::liquidate_callback(
-            borrower,
-            borrowing_dtoken,
-            collateral_dtoken,
-            liquidator,
-            liquidation_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(90),
-        ))
-        .into()
+            .then(ext_self::liquidate_callback(
+                borrower,
+                borrowing_dtoken,
+                collateral_dtoken,
+                liquidator,
+                liquidation_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(90),
+            ))
+            .into()
     }
 }
 
@@ -64,18 +64,18 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::liquidate_balance_of_callback(
-            borrower,
-            borrowing_dtoken,
-            collateral_dtoken,
-            liquidator,
-            liquidation_amount,
-            result,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(60),
-        ))
-        .into()
+            .then(ext_self::liquidate_balance_of_callback(
+                borrower,
+                borrowing_dtoken,
+                collateral_dtoken,
+                liquidator,
+                liquidation_amount,
+                result,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(60),
+            ))
+            .into()
     }
 
     #[private]
@@ -99,9 +99,21 @@ impl Contract {
         let balance_of: Balance = match env::promise_result(0) {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
-                .unwrap()
-                .into(),
+            PromiseResult::Successful(result) => {
+                let actual_balance: WBalance = near_sdk::serde_json::from_slice::<WBalance>(&result)
+                    .unwrap()
+                    .into();
+                let mut funded_by_underlying_token = WBalance::from(0);
+
+                for hm in self.funded_reward_amount.values() {
+                    match hm.get(&self.get_underlying_contract_address()) {
+                        None => {}
+                        Some(balance) => { funded_by_underlying_token = (funded_by_underlying_token.0 + balance).into() }
+                    };
+                }
+
+                (actual_balance.0 - funded_by_underlying_token.0).into()
+            }
         };
 
         let borrow_rate = self.get_borrow_rate(
@@ -127,7 +139,7 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(40),
         )
-        .into()
+            .into()
     }
 
     pub fn swap_supplies(
