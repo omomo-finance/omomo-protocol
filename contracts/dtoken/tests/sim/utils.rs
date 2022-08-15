@@ -401,7 +401,7 @@ pub fn mint_and_reserve(
     let underlying_balance: WBalance =
         view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
     assert_eq!(
-        dunderlying_balance,
+        underlying_balance,
         WBalance::from(amount),
         "Unexpected dtoken balance"
     );
