@@ -95,8 +95,12 @@ fn scenario_withdraw_more_after_borrow() {
 
     withdraw(&user, &weth_market, START_BALANCE).assert_success();
 
-    let user_supply_balance: u128 =
-        view_balance(&controller, Supply, user.account_id(), weth_market.account_id());
+    let user_supply_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_supply_balance, START_BALANCE,
         "Balance should be {}",

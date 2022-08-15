@@ -281,9 +281,7 @@ mod tests {
 
         assert_eq!(
             result[0].health_factor_ratio,
-            WRatio::from(
-                near_contract.get_hf_with_supply_and_no_borrow(accounts[0].clone())
-            ),
+            WRatio::from(near_contract.get_hf_with_supply_and_no_borrow(accounts[0].clone())),
             "View accounts health factor check has been failed"
         );
     }
@@ -293,10 +291,20 @@ mod tests {
         let (mut near_contract, wnear_market, weth_market, user) = init_test_env();
 
         let wnear_market_supply = 100000000000000000000000000u128; // in yocto == 100 Near
-        near_contract.set_entity_by_token(Supply, user.clone(), wnear_market.clone(), wnear_market_supply);
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            wnear_market.clone(),
+            wnear_market_supply,
+        );
 
         let weth_market_supply = 3141592653589793238462643u128; // Pi in yocto == 3141592653589793238462643
-        near_contract.set_entity_by_token(Supply, user.clone(), weth_market.clone(), weth_market_supply);
+        near_contract.set_entity_by_token(
+            Supply,
+            user.clone(),
+            weth_market.clone(),
+            weth_market_supply,
+        );
 
         assert_eq!(
             U128::from(wnear_market_supply),

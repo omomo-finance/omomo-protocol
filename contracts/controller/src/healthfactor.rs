@@ -369,7 +369,10 @@ mod tests {
         let (controller_contract, _token_address, _user_account) = init();
 
         let mut raw_map: HashMap<AccountId, Balance> = HashMap::new();
-        raw_map.insert(AccountId::new_unchecked("wnear_market.near".to_string()), 100);
+        raw_map.insert(
+            AccountId::new_unchecked("wnear_market.near".to_string()),
+            100,
+        );
 
         assert_eq!(
             controller_contract.calculate_assets_weighted_price(&raw_map),

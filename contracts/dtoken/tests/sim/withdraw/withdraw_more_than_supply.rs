@@ -75,8 +75,12 @@ fn scenario_withdraw_more_than_supply() {
         "The account doesn't have enough digital tokens to do withdraw",
     );
 
-    let user_supply_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), wnear_market.account_id());
+    let user_supply_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(
         user_supply_balance, WNEAR_AMOUNT,
         "Balance should be {}",

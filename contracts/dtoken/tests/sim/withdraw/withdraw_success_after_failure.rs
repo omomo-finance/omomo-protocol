@@ -88,15 +88,20 @@ fn withdraw_success_after_failure_fixture() -> (
 
 #[test]
 fn scenario_withdraw_success_after_failure() {
-    let (weth_market, wnear_market, controller, weth, _wnear, user) = withdraw_success_after_failure_fixture();
+    let (weth_market, wnear_market, controller, weth, _wnear, user) =
+        withdraw_success_after_failure_fixture();
 
     let result = withdraw(&user, &wnear_market, 0);
     assert_failure(result, "Amount should be a positive number");
 
     withdraw(&user, &weth_market, SUPPLY_WETH_AMOUNT).assert_success();
 
-    let user_supply_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), weth_market.account_id());
+    let user_supply_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(user_supply_balance, 0, "Balance should be {}", 0);
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();

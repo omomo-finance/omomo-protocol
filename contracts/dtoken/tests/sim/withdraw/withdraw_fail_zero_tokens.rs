@@ -62,8 +62,12 @@ fn scenario_withdraw_fail_zero_tokens() {
     let result = withdraw(&user, &weth_market, 0);
     assert_failure(result, "Amount should be a positive number");
 
-    let user_supply_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), weth_market.account_id());
+    let user_supply_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(user_supply_balance, WETH_AMOUNT, "Balance should be 0");
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();

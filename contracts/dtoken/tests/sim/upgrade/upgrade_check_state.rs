@@ -114,7 +114,8 @@ fn upgrade_fixture() -> (
     );
 
     supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
-    let underlying_balance: WBalance = view!(weth.ft_balance_of(weth_market.account_id())).unwrap_json();
+    let underlying_balance: WBalance =
+        view!(weth.ft_balance_of(weth_market.account_id())).unwrap_json();
     assert_eq!(
         underlying_balance,
         WBalance::from(RESERVE_AMOUNT + WETH_AMOUNT),
@@ -145,8 +146,10 @@ fn test_upgrade_check_state() {
         env!("CARGO_PKG_VERSION").to_string()
     );
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
 
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
@@ -158,8 +161,12 @@ fn test_upgrade_check_state() {
     let old_total_reserves = view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
     let old_user_borrows =
         view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json::<Balance>();
-    let old_user_supplies: Balance =
-        view_balance(&controller, Supply, user.account_id(), wnear_market.account_id());
+    let old_user_supplies: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
 
     upgrade_dtoken(&wnear_market, &DTOKEN_CURRENT_WASM_BYTES).assert_success();
 
@@ -177,25 +184,39 @@ fn test_upgrade_check_state() {
         "Repay wasn`t done"
     );
 
-    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
-    let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), wnear_market.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Borrow,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
     assert_eq!(
         old_total_supplies,
         view!(wnear_market.view_total_supplies()).unwrap_json::<U128>()
     );
-    assert!(old_total_borrows.0 > view!(wnear_market.view_total_borrows()).unwrap_json::<U128>().0);
+    assert!(
+        old_total_borrows.0
+            > view!(wnear_market.view_total_borrows())
+                .unwrap_json::<U128>()
+                .0
+    );
     assert_eq!(
         old_total_reserves.0,
-        view!(wnear_market.view_total_reserves()).unwrap_json::<U128>().0
+        view!(wnear_market.view_total_reserves())
+            .unwrap_json::<U128>()
+            .0
     );
     assert!(
         old_user_borrows
@@ -203,6 +224,11 @@ fn test_upgrade_check_state() {
     );
     assert_eq!(
         old_user_supplies,
-        view_balance(&controller, Supply, user.account_id(), wnear_market.account_id())
+        view_balance(
+            &controller,
+            Supply,
+            user.account_id(),
+            wnear_market.account_id()
+        )
     );
 }

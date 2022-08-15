@@ -85,7 +85,13 @@ fn liquidation_fixture() -> (
         },
     );
 
-    supply(&borrower, &wnear, wnear_market.account_id(), BORROWER_SUPPLY).assert_success();
+    supply(
+        &borrower,
+        &wnear,
+        wnear_market.account_id(),
+        BORROWER_SUPPLY,
+    )
+    .assert_success();
 
     borrow(&borrower, &weth_market, BORROWER_BORROW).assert_success();
 
@@ -120,15 +126,32 @@ fn liquidation_fixture() -> (
         },
     );
 
-    (weth_market, wnear_market, controller, weth, wnear, borrower, liquidator)
+    (
+        weth_market,
+        wnear_market,
+        controller,
+        weth,
+        wnear,
+        borrower,
+        liquidator,
+    )
 }
 
 #[test]
 fn scenario_liquidation_failed_on_too_much_for_liquidation() {
-    let (weth_market, wnear_market, controller, weth, _wnear, borrower, liquidator) = liquidation_fixture();
+    let (weth_market, wnear_market, controller, weth, _wnear, borrower, liquidator) =
+        liquidation_fixture();
 
     let amount = 70000;
-    liquidate(&borrower, &liquidator, &weth_market, &wnear_market, &weth, amount).assert_success();
+    liquidate(
+        &borrower,
+        &liquidator,
+        &weth_market,
+        &wnear_market,
+        &weth,
+        amount,
+    )
+    .assert_success();
 
     let user_borrows: Balance =
         view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();

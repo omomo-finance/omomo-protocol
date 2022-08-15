@@ -126,15 +126,20 @@ fn scenario_repay_zero_tokens() {
         "Repay wasn`t done"
     );
 
-    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance, WNEAR_BORROW,
         "Borrow balance on dtoken should be {}",
         WNEAR_BORROW
     );
 
-    let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), wnear_market.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Borrow,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(
         user_balance, WNEAR_BORROW,
         "Borrow balance on controller should be {}",

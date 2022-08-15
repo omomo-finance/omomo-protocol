@@ -126,7 +126,8 @@ fn scenario_repay_success_after_failure() {
     let result = repay(&user, wnear_market.account_id(), &wnear, 0);
     assert_failure(result, "The amount should be a positive number");
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
     let repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
     let repay_amount = Balance::from(repay_info.total_amount);
@@ -140,10 +141,15 @@ fn scenario_repay_success_after_failure() {
         "Repay wasn`t done"
     );
 
-    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
-    let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), wnear_market.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Borrow,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 }

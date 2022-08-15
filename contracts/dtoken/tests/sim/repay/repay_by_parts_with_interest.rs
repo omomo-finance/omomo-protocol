@@ -125,22 +125,34 @@ fn repay_fixture() -> (
 fn repay_by_parts_with_interest() {
     let (wnear_market, controller, wnear, user) = repay_fixture();
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
     let first_repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
     println!("{:?}", first_repay_info);
 
     let initial_total_reserve = view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
-    let old_wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let old_wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
-    repay(&user, wnear_market.account_id(), &wnear, FIRST_PART_TO_REPAY).assert_success();
+    repay(
+        &user,
+        wnear_market.account_id(),
+        &wnear,
+        FIRST_PART_TO_REPAY,
+    )
+    .assert_success();
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     let user_balance: U128 = view!(wnear.ft_balance_of(user.account_id())).unwrap_json();
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
 
-    let total_reserve_after_first_repay = view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
+    let total_reserve_after_first_repay =
+        view!(wnear_market.view_total_reserves()).unwrap_json::<U128>();
     assert!(total_reserve_after_first_repay.0 > initial_total_reserve.0);
     assert!(
         exchange_rate > Ratio::one(),
@@ -188,7 +200,8 @@ fn repay_by_parts_with_interest() {
         balance_after_first_repay - second_repay_info.total_amount.0
     );
 
-    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_ne!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
     repay(
@@ -200,15 +213,22 @@ fn repay_by_parts_with_interest() {
     )
     .assert_success();
 
-    let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), wnear_market.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Borrow,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 
-    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert!(
         exchange_rate > Ratio::one(),
         "xrate should greater than 1.0"

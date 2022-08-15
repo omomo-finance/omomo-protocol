@@ -84,9 +84,15 @@ fn supply_success_after_failure_fixture() -> (
 
 #[test]
 fn scenario_supply_success_after_failure() {
-    let (weth_market, wnear_market, controller, weth, wnear, user) = supply_success_after_failure_fixture();
+    let (weth_market, wnear_market, controller, weth, wnear, user) =
+        supply_success_after_failure_fixture();
 
-    let result = supply(&user, &wnear, wnear_market.account_id(), SUPPLY_WNEAR_AMOUNT);
+    let result = supply(
+        &user,
+        &wnear,
+        wnear_market.account_id(),
+        SUPPLY_WNEAR_AMOUNT,
+    );
     assert_failure(result, "The amount should be a positive number");
 
     supply(&user, &weth, weth_market.account_id(), SUPPLY_WETH_AMOUNT).assert_success();
@@ -94,8 +100,12 @@ fn scenario_supply_success_after_failure() {
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance, U128(0), "User balance should be 0");
 
-    let user_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), weth_market.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_balance, SUPPLY_WETH_AMOUNT,
         "Balance on controller should be {}",

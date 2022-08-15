@@ -109,7 +109,8 @@ fn repay_fixture() -> (
     );
 
     supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
-    let underlying_balance: WBalance = view!(weth.ft_balance_of(weth_market.account_id())).unwrap_json();
+    let underlying_balance: WBalance =
+        view!(weth.ft_balance_of(weth_market.account_id())).unwrap_json();
     assert_eq!(
         underlying_balance,
         WBalance::from(RESERVE_AMOUNT + WETH_AMOUNT),
@@ -135,8 +136,10 @@ fn repay_fixture() -> (
 fn scenario_repay() {
     let (wnear_market, controller, wnear, user) = repay_fixture();
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
     let repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
@@ -151,14 +154,21 @@ fn scenario_repay() {
         "Repay wasn`t done"
     );
 
-    let user_balance: Balance = view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
+    let user_balance: Balance =
+        view!(wnear_market.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(user_balance, 0, "Borrow balance on dtoken should be 0");
 
-    let user_balance: Balance =
-        view_balance(&controller, Borrow, user.account_id(), wnear_market.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Borrow,
+        user.account_id(),
+        wnear_market.account_id(),
+    );
     assert_eq!(user_balance, 0, "Borrow balance on controller should be 0");
 
-    let wnear_market_balance: U128 = view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
-    let exchange_rate: Ratio = view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
+    let wnear_market_balance: U128 =
+        view!(wnear.ft_balance_of(wnear_market.account_id())).unwrap_json();
+    let exchange_rate: Ratio =
+        view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 }

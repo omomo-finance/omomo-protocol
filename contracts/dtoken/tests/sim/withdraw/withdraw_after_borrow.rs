@@ -97,8 +97,12 @@ fn scenario_borrow() {
 
     withdraw(&user, &weth_market, WITHDRAW).assert_success();
 
-    let user_supply_balance: u128 =
-        view_balance(&controller, Supply, user.account_id(), weth_market.account_id());
+    let user_supply_balance: u128 = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_supply_balance,
         START_BALANCE - (EXCHANGE_RATE * WITHDRAW),
