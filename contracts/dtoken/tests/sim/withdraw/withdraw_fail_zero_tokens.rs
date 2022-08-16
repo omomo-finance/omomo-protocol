@@ -22,26 +22,26 @@ fn withdraw_fail_zero_tokens_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let weth = initialize_utoken(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth) = initialize_dtoken(
+    let (_, weth_market) = initialize_dtoken(
         &root,
         weth.account_id(),
         controller.account_id(),
         InterestRateModel::default(),
     );
 
-    mint_tokens(&weth, dweth.account_id(), U128(100));
+    mint_tokens(&weth, weth_market.account_id(), U128(100));
     mint_tokens(&weth, user.account_id(), U128(WETH_AMOUNT));
 
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -50,20 +50,24 @@ fn withdraw_fail_zero_tokens_fixture() -> (
         },
     );
 
-    supply(&user, &weth, dweth.account_id(), WETH_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
 
-    (dweth, controller, weth, user)
+    (weth_market, controller, weth, user)
 }
 
 #[test]
 fn scenario_withdraw_fail_zero_tokens() {
-    let (dweth, controller, weth, user) = withdraw_fail_zero_tokens_fixture();
+    let (weth_market, controller, weth, user) = withdraw_fail_zero_tokens_fixture();
 
-    let result = withdraw(&user, &dweth, 0);
+    let result = withdraw(&user, &weth_market, 0);
     assert_failure(result, "Amount should be a positive number");
 
-    let user_supply_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+    let user_supply_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(user_supply_balance, WETH_AMOUNT, "Balance should be 0");
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();

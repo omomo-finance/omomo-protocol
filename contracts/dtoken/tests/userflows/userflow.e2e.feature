@@ -13,12 +13,12 @@ Background:
 	And token = 10^24
 
 
-	Scenario: User Bob Supply 1000 tokens to DWETH, then borrow WNEAR 500 tokens from DWNEAR, repay WNEAR 500, withdraw 1000 WETH tokens - positive flow
-			Given The User Bob WETH, WNEAR, DWETH, DWNEAR
-			When User Bob supply 1000 tokens to DWETH,
-			Then Borrow 250 WNEAR tokens from DWNEAR,
+	Scenario: User Bob Supply 1000 tokens to weth_market, then borrow WNEAR 500 tokens from wnear_market, repay WNEAR 500, withdraw 1000 WETH tokens - positive flow
+			Given The User Bob WETH, WNEAR, weth_market, wnear_market
+			When User Bob supply 1000 tokens to weth_market,
+			Then Borrow 250 WNEAR tokens from wnear_market,
 			Then Borrow 250 WBTC tokens from DWBTC,
-			Then Repay 250 WNEAR tokens from DWNEAR,
+			Then Repay 250 WNEAR tokens from wnear_market,
 			Then Repay 250 WBTC tokens from DWBTC,
 			Then Withdraw 1000 WETH tokens
 

@@ -24,26 +24,26 @@ fn supply_fixture() -> (
     let user = new_user(&root, "user".parse().unwrap());
     let weth = initialize_utoken(&root);
     let controller = initialize_controller(&root);
-    let (_, dweth) = initialize_dtoken(
+    let (_, weth_market) = initialize_dtoken(
         &root,
         weth.account_id(),
         controller.account_id(),
         InterestRateModel::default(),
     );
 
-    mint_tokens(&weth, dweth.account_id(), U128(100));
+    mint_tokens(&weth, weth_market.account_id(), U128(100));
     mint_tokens(&weth, user.account_id(), U128(SUPPLY_AMOUNT));
 
     add_market(
         &controller,
         weth.account_id(),
-        dweth.account_id(),
+        weth_market.account_id(),
         "weth".to_string(),
     );
 
     set_price(
         &controller,
-        dweth.account_id(),
+        weth_market.account_id(),
         &Price {
             ticker_id: "weth".to_string(),
             value: U128(START_PRICE),
@@ -52,19 +52,20 @@ fn supply_fixture() -> (
         },
     );
 
-    (dweth, controller, weth, user)
+    (weth_market, controller, weth, user)
 }
 
 #[test]
 fn scenario_supply() {
-    let (dweth, controller, weth, user) = supply_fixture();
+    let (weth_market, controller, weth, user) = supply_fixture();
 
-    supply(&user, &weth, dweth.account_id(), SUPPLY_AMOUNT).assert_success();
+    supply(&user, &weth, weth_market.account_id(), SUPPLY_AMOUNT).assert_success();
 
     let user_balance: U128 = view!(weth.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(user_balance, U128(0), "User balance should be 0");
 
-    let user_dtoken_balance: U128 = view!(dweth.ft_balance_of(user.account_id())).unwrap_json();
+    let user_dtoken_balance: U128 =
+        view!(weth_market.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_dtoken_balance,
         U128(SUPPLY_AMOUNT),
@@ -72,8 +73,12 @@ fn scenario_supply() {
         SUPPLY_AMOUNT
     );
 
-    let user_balance: Balance =
-        view_balance(&controller, Supply, user.account_id(), dweth.account_id());
+    let user_balance: Balance = view_balance(
+        &controller,
+        Supply,
+        user.account_id(),
+        weth_market.account_id(),
+    );
     assert_eq!(
         user_balance, SUPPLY_AMOUNT,
         "Balance on controller should be {}",

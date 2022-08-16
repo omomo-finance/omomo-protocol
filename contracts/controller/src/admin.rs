@@ -80,13 +80,25 @@ impl Contract {
         result
     }
 
-    pub fn add_market(&mut self, asset_id: AccountId, dtoken: AccountId, ticker_id: String) {
+    pub fn add_market(
+        &mut self,
+        asset_id: AccountId,
+        dtoken: AccountId,
+        ticker_id: String,
+        ltv: Ratio,
+        lth: Ratio,
+    ) {
         require!(
             self.is_valid_admin_call(),
             "This functionality is allowed to be called by admin or contract only"
         );
 
-        let market = MarketProfile { dtoken, ticker_id };
+        let market = MarketProfile {
+            dtoken,
+            ticker_id,
+            ltv,
+            lth,
+        };
 
         self.markets.insert(&asset_id, &market);
     }
@@ -112,17 +124,7 @@ impl Contract {
     }
 
     pub fn get_liquidation_threshold(&self) -> Ratio {
-        self.liquidation_threshold
-    }
-
-    pub fn set_health_factor_threshold(mut self, value: Ratio) {
-        // TODO: Maybe change name of this function
-        require!(
-            self.is_valid_admin_call(),
-            "this functionality is allowed to be called by admin or contract only"
-        );
-
-        self.liquidation_threshold = value;
+        Ratio::one()
     }
 
     pub fn set_liquidation_incentive(mut self, value: Ratio) {
