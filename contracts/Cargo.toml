@@ -14,5 +14,6 @@ members = [
     "controller",
     "dtoken",
     "test-utoken",
-    "token"
+    "token",
+    "mtrading"
 ]
