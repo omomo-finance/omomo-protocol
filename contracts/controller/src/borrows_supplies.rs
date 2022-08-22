@@ -224,7 +224,7 @@ impl Contract {
 
                 (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
                     / BigBalance::from(U128(ONE_TOKEN)))
-                    .round_u128()
+                .round_u128()
             })
             .sum()
     }

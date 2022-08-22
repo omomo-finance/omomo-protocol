@@ -1,6 +1,7 @@
 use crate::utils::{
-    add_market, simple_borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
-    mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance, withdraw,
+    add_market, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
+    mint_and_reserve, mint_tokens, new_user, set_price, simple_borrow, supply, view_balance,
+    withdraw,
 };
 use controller::ActionType::Supply;
 use dtoken::InterestRateModel;

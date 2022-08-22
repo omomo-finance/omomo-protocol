@@ -1,11 +1,14 @@
-use std::str::FromStr;
-use crate::utils::{add_market, initialize_controller, initialize_three_dtokens, initialize_three_utokens, mint_tokens, new_user, set_price, supply, view_balance, undercollateralized_borrow};
+use crate::utils::{
+    add_market, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
+    mint_tokens, new_user, set_price, supply, undercollateralized_borrow, view_balance,
+};
 use controller::ActionType::Borrow;
 use dtoken::InterestRateModel;
+use general::ratio::Ratio;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
-use general::ratio::Ratio;
+use std::str::FromStr;
 
 const WETH_AMOUNT: Balance = 5;
 const WNEAR_AMOUNT: Balance = 5;
@@ -110,21 +113,27 @@ fn scenario_undercollaterilazied_borrow() {
 
     let leverage = Ratio::from_str("2").unwrap();
 
-    dbg!(undercollateralized_borrow(&user, &dwbtc, BORROW_AMOUNT, leverage));
+    dbg!(undercollateralized_borrow(
+        &user,
+        &dwbtc,
+        BORROW_AMOUNT,
+        leverage
+    ));
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwbtc.account_id());
 
-
     assert_eq!(
-        user_balance, U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0,
+        user_balance,
+        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0,
         "User borrow balance on controller should be {}",
         U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0
     );
 
     let user_balance: Balance = view!(dwbtc.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
-        user_balance, U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0,
+        user_balance,
+        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0,
         "User borrow balance on dtoken should be {}",
         U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0
     );
