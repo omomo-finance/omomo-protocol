@@ -24,8 +24,7 @@ impl Contract {
         if !is_promise_success() {
             return PromiseOrValue::Value(token_amount);
         }
-
-        if leverage.is_some() {
+        if let Some(leverage) = leverage {
             token_amount = (Ratio::from(token_amount) * leverage.unwrap()).round_u128().into()
         } else {
             self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
