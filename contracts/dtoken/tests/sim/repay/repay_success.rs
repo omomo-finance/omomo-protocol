@@ -1,5 +1,5 @@
 use crate::utils::{
-    add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
+    add_market, simple_borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
     mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
@@ -126,8 +126,8 @@ fn repay_fixture() -> (
         "Unexpected wnear_market balance"
     );
 
-    borrow(&user, &weth_market, WETH_BORROW).assert_success();
-    borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
+    simple_borrow(&user, &weth_market, WETH_BORROW).assert_success();
+    simple_borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
 
     (wnear_market, controller, wnear, user)
 }

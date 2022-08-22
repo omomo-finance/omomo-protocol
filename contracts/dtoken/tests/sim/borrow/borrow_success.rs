@@ -1,5 +1,5 @@
 use crate::utils::{
-    add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
+    add_market, simple_borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
     mint_tokens, new_user, set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
@@ -109,7 +109,7 @@ fn borrow_fixture() -> (
 fn scenario_borrow() {
     let (dwbtc, controller, wbtc, user) = borrow_fixture();
 
-    borrow(&user, &dwbtc, BORROW_AMOUNT).assert_success();
+    simple_borrow(&user, &dwbtc, BORROW_AMOUNT).assert_success();
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwbtc.account_id());

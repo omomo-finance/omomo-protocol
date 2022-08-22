@@ -1,5 +1,5 @@
 use crate::utils::{
-    add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
+    add_market, simple_borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
     mint_tokens, new_user, repay, set_price, supply,
 };
 use dtoken::{InterestRateModel, WRatio};
@@ -84,7 +84,7 @@ fn repay_fixture() -> (
 
     supply(&user, &weth, weth_market.account_id(), WETH_AMOUNT).assert_success();
 
-    borrow(&user, &weth_market, WETH_BORROW).assert_success();
+    simple_borrow(&user, &weth_market, WETH_BORROW).assert_success();
 
     (wnear_market, controller, wnear, user)
 }

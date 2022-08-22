@@ -19,16 +19,23 @@ impl Contract {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
+        leverage: Option<Ratio>,
         borrow_block: BlockHeight,
         borrow_rate: WRatio,
     ) {
-        assert!(
-            self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
-            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
-            account_id,
-            token_address,
-            Balance::from(token_amount)
-        );
+        if leverage.is_none() {
+            assert!(
+                self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount),
+                "Borrow operation is not allowed for account {} token_address {} token_amount {}",
+                account_id,
+                token_address,
+                Balance::from(token_amount)
+            );
+        } else {
+            let collaterals = self.calculate_supplies_weighted_price_and_lth(account_id.clone());
+            require!((Ratio::from(collaterals) * leverage.unwrap()).round_u128() >= token_amount.0)
+        }
+
         self.increase_borrows(
             account_id,
             token_address,
@@ -45,7 +52,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> Balance {
         assert!(
-            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount,),
+            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount),
             "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
             account_id,
             token_address,
@@ -205,6 +212,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.borrow, "borrowing is paused");
+
         self.get_potential_health_factor(account, token_address, token_amount, Borrow)
             >= self.get_liquidation_threshold()
     }
@@ -216,7 +224,7 @@ impl Contract {
 
                 (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
                     / BigBalance::from(U128(ONE_TOKEN)))
-                .round_u128()
+                    .round_u128()
             })
             .sum()
     }
@@ -322,7 +330,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Borrow,
                 user_account.clone(),
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             100
         );
@@ -350,7 +358,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Borrow,
                 user_account,
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             98
         );
@@ -375,7 +383,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Supply,
                 user_account.clone(),
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             20
         );
@@ -395,7 +403,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Supply,
                 user_account,
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             18
         );

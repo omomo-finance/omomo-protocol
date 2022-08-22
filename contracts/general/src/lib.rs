@@ -9,6 +9,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{near_bindgen, AccountId};
 use near_sdk::{Balance, Gas};
 use std::fmt;
+use crate::ratio::Ratio;
 
 pub const NO_DEPOSIT: Balance = 0;
 pub const ONE_YOCTO: Balance = 1;
@@ -47,7 +48,9 @@ pub struct Price {
 pub enum Actions {
     Supply,
     Withdraw,
-    Borrow,
+    Borrow {
+        leverage: Option<Ratio>
+    },
     Repay,
     Liquidate {
         borrower: AccountId,

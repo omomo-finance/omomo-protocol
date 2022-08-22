@@ -92,7 +92,7 @@ fn internal_utoken_initialize(
         ),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 }
 
 pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<test_utoken::ContractContract> {
@@ -173,7 +173,7 @@ pub fn initialize_controller(root: &UserAccount) -> ContractAccount<controller::
         }),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
     controller
 }
 
@@ -197,7 +197,7 @@ fn internal_dtoken_initialize(
         }),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 }
 
 pub fn initialize_dtoken(
@@ -350,7 +350,7 @@ pub fn mint_tokens(
         0,
         100000000000000
     )
-    .assert_success();
+        .assert_success();
 }
 
 pub fn set_price(
@@ -363,7 +363,7 @@ pub fn set_price(
         controller.upsert_price(dtoken_id, price),
         deposit = 0
     )
-    .assert_success();
+        .assert_success();
 }
 
 pub fn reserve_storage(
@@ -376,7 +376,7 @@ pub fn reserve_storage(
         utoken.storage_deposit(Some(dtoken.account_id()), None),
         deposit = to_yocto("0.25")
     )
-    .assert_success();
+        .assert_success();
 }
 
 pub fn mint_and_reserve(
@@ -399,7 +399,7 @@ pub fn mint_and_reserve(
         ),
         deposit = 1
     )
-    .assert_success();
+        .assert_success();
 
     let underlying_balance: WBalance =
         view!(utoken.ft_balance_of(dtoken.account_id())).unwrap_json();
@@ -439,12 +439,21 @@ pub fn withdraw(
     call!(user, dtoken.withdraw(U128(amount)), deposit = 0)
 }
 
-pub fn borrow(
+pub fn simple_borrow(
     user: &UserAccount,
     dtoken: &ContractAccount<dtoken::ContractContract>,
     amount: Balance,
 ) -> ExecutionResult {
-    call!(user, dtoken.borrow(U128(amount)), deposit = 0)
+    call!(user, dtoken.borrow(U128(amount), None), deposit = 0)
+}
+
+pub fn undercollateralized_borrow(
+    user: &UserAccount,
+    dtoken: &ContractAccount<dtoken::ContractContract>,
+    amount: Balance,
+    leverage: Ratio,
+) -> ExecutionResult {
+    call!(user, dtoken.borrow(U128(amount), Some(leverage)), deposit = 0)
 }
 
 pub fn repay(
@@ -477,7 +486,7 @@ pub fn liquidate(
             "collateral_dtoken": collateral_dtoken.account_id().as_str(),
         }
     })
-    .to_string();
+        .to_string();
 
     call!(
         liquidator,
@@ -501,7 +510,7 @@ pub fn repay_info(
         dtoken.view_repay_info(user.account_id(), dtoken_balance),
         deposit = 0
     )
-    .unwrap_json::<RepayInfo>()
+        .unwrap_json::<RepayInfo>()
 }
 
 pub fn upgrade_dtoken(
