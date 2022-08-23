@@ -19,11 +19,11 @@ impl Contract {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
-        leverage: Option<Ratio>,
+        is_collateralized: bool,
         borrow_block: BlockHeight,
         borrow_rate: WRatio,
     ) {
-        if leverage.is_none() {
+        if is_collateralized {
             assert!(
                 self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount),
                 "Borrow operation is not allowed for account {} token_address {} token_amount {}",
@@ -31,9 +31,6 @@ impl Contract {
                 token_address,
                 Balance::from(token_amount)
             );
-        } else {
-            let collaterals = self.calculate_supplies_weighted_price_and_lth(account_id.clone());
-            require!((Ratio::from(collaterals) * leverage.unwrap()).round_u128() >= token_amount.0)
         }
 
         self.increase_borrows(

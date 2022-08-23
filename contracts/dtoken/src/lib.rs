@@ -138,7 +138,7 @@ trait ControllerInterface {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
-        leverage: Option<Ratio>,
+        is_collateralized: bool,
         borrow_block: BlockHeight,
         borrow_rate: WRatio,
     );
@@ -185,7 +185,7 @@ trait InternalTokenInterface {
     fn borrow_balance_of_callback(
         &mut self,
         token_amount: WBalance,
-        leverage: Option<Ratio>,
+        is_collateralized: bool,
     ) -> PromiseOrValue<WBalance>;
     fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;

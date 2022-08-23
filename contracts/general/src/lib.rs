@@ -3,7 +3,6 @@ pub mod ratio;
 
 use crate::percent::WPercent;
 
-use crate::ratio::Ratio;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -49,7 +48,7 @@ pub enum Actions {
     Supply,
     Withdraw,
     Borrow {
-        leverage: Option<Ratio>,
+        is_collateralized: bool,
     },
     Repay,
     Liquidate {

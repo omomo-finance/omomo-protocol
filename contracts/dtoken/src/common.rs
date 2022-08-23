@@ -222,7 +222,7 @@ impl Contract {
             Actions::Repay => self.post_repay(amount),
             Actions::Withdraw => self.post_withdraw(amount),
             Actions::Supply => self.post_supply(amount),
-            Actions::Borrow { leverage } => self.post_borrow(amount, leverage),
+            Actions::Borrow { is_collateralized } => self.post_borrow(amount, is_collateralized),
             _ => {
                 panic!("Incorrect action at mutex lock callback")
             }

@@ -1,14 +1,12 @@
 use crate::utils::{
     add_market, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
-    mint_tokens, new_user, set_price, supply, undercollateralized_borrow, view_balance,
+    mint_tokens, new_user, set_price, supply, uncollateralized_borrow, view_balance,
 };
 use controller::ActionType::Borrow;
 use dtoken::InterestRateModel;
-use general::ratio::Ratio;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
-use std::str::FromStr;
 
 const WETH_AMOUNT: Balance = 5;
 const WNEAR_AMOUNT: Balance = 5;
@@ -111,13 +109,14 @@ fn borrow_fixture() -> (
 fn scenario_undercollaterilazied_borrow() {
     let (dwbtc, controller, wbtc, user) = borrow_fixture();
 
-    let leverage = Ratio::from_str("2").unwrap();
+    let leverage = 2u128;
 
-    dbg!(undercollateralized_borrow(
+    // borrowing 2 times more
+
+    dbg!(uncollateralized_borrow(
         &user,
         &dwbtc,
-        BORROW_AMOUNT,
-        leverage
+        BORROW_AMOUNT * leverage,
     ));
 
     let user_balance: Balance =
@@ -125,32 +124,32 @@ fn scenario_undercollaterilazied_borrow() {
 
     assert_eq!(
         user_balance,
-        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0,
+        BORROW_AMOUNT * leverage,
         "User borrow balance on controller should be {}",
-        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0
+        BORROW_AMOUNT * leverage
     );
 
     let user_balance: Balance = view!(dwbtc.get_account_borrows(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0,
+        BORROW_AMOUNT * leverage,
         "User borrow balance on dtoken should be {}",
-        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0
+        BORROW_AMOUNT * leverage
     );
 
     let user_balance: U128 = view!(wbtc.ft_balance_of(user.account_id())).unwrap_json();
     assert_eq!(
         user_balance,
-        U128::from(Ratio::from(BORROW_AMOUNT) * leverage),
+        U128(BORROW_AMOUNT * leverage),
         "User utoken balance should be {}",
-        U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0
+        BORROW_AMOUNT * leverage
     );
 
     let dtoken_balance: U128 = view!(wbtc.ft_balance_of(dwbtc.account_id())).unwrap_json();
     assert_eq!(
         dtoken_balance,
-        U128(START_BALANCE - U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0),
+        U128(START_BALANCE - BORROW_AMOUNT * leverage),
         "Dtoken balance on utoken should be {}",
-        START_BALANCE - U128::from(Ratio::from(BORROW_AMOUNT) * leverage).0
+        START_BALANCE - BORROW_AMOUNT * leverage
     );
 }
