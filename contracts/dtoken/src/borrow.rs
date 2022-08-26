@@ -20,10 +20,7 @@ impl Contract {
 
 #[near_bindgen]
 impl Contract {
-    pub fn post_borrow(
-        &mut self,
-        token_amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
+    pub fn post_borrow(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             return PromiseOrValue::Value(token_amount);
         }
@@ -38,22 +35,19 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::borrow_balance_of_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(150),
-            ))
-            .into()
+        .then(ext_self::borrow_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(150),
+        ))
+        .into()
     }
 }
 
 #[near_bindgen]
 impl Contract {
-    pub fn borrow(
-        &mut self,
-        amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
+    pub fn borrow(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
@@ -64,11 +58,7 @@ impl Contract {
             "Amount should be a positive number"
         );
 
-        self.mutex_account_lock(
-            Actions::Borrow,
-            amount,
-            self.terra_gas(180),
-        )
+        self.mutex_account_lock(Actions::Borrow, amount, self.terra_gas(180))
     }
 
     #[private]
@@ -125,13 +115,13 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(15),
         )
-            .then(ext_self::make_borrow_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(80),
-            ))
-            .into()
+        .then(ext_self::make_borrow_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(80),
+        ))
+        .into()
     }
 
     #[private]
@@ -159,13 +149,13 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-            .then(ext_self::borrow_ft_transfer_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(40),
-            ))
-            .into()
+        .then(ext_self::borrow_ft_transfer_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(40),
+        ))
+        .into()
     }
 
     #[private]
@@ -191,13 +181,13 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-                .then(ext_self::controller_decrease_borrows_fail_callback(
-                    token_amount,
-                    env::current_account_id(),
-                    NO_DEPOSIT,
-                    self.terra_gas(20),
-                ))
-                .into()
+            .then(ext_self::controller_decrease_borrows_fail_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(20),
+            ))
+            .into()
         }
     }
 
