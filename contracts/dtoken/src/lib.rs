@@ -77,6 +77,10 @@ pub struct Contract {
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
 
+    /// Contracts that are allowed to do uncollateralized borrow from market
+    /// contract itself by default, can be set to different account
+    eligible_to_borrow_uncollateralized: AccountId,
+
     /// Campaign id -> Reward campaign
     reward_campaigns: UnorderedMap<String, RewardCampaign>,
 
@@ -276,7 +280,8 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
-            admin: config.owner_id,
+            admin: config.owner_id.clone(),
+            eligible_to_borrow_uncollateralized: config.owner_id,
             reward_campaigns: UnorderedMap::new(StorageKeys::RewardCampaigns),
             uid: 0,
             rewards: HashMap::new(),

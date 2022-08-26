@@ -24,7 +24,11 @@ impl Contract {
         if !is_promise_success() {
             return PromiseOrValue::Value(token_amount);
         }
-        self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
+
+        if !self.is_allowed_to_borrow_uncollateralized() {
+            self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
+        }
+
         underlying_token::ft_balance_of(
             env::current_account_id(),
             self.get_underlying_contract_address(),
@@ -35,7 +39,7 @@ impl Contract {
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(140),
+            self.terra_gas(150),
         ))
         .into()
     }

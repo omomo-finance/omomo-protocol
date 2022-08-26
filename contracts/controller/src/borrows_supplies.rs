@@ -22,13 +22,16 @@ impl Contract {
         borrow_block: BlockHeight,
         borrow_rate: WRatio,
     ) {
-        assert!(
-            self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount,),
-            "Borrow operation is not allowed for account {} token_address {} token_amount {}",
-            account_id,
-            token_address,
-            Balance::from(token_amount)
-        );
+        if !self.is_allowed_to_borrow_uncollateralized(account_id.clone()) {
+            assert!(
+                self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount),
+                "Borrow operation is not allowed for account {} token_address {} token_amount {}",
+                account_id,
+                token_address,
+                Balance::from(token_amount)
+            );
+        }
+
         self.increase_borrows(
             account_id,
             token_address,
@@ -45,7 +48,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> Balance {
         assert!(
-            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount,),
+            self.is_withdraw_allowed(account_id.clone(), token_address.clone(), token_amount),
             "Withdrawal operation is not allowed for account {} token_address {} token_amount` {}",
             account_id,
             token_address,
@@ -205,6 +208,7 @@ impl Contract {
         token_amount: WBalance,
     ) -> bool {
         require!(!self.is_action_paused.borrow, "borrowing is paused");
+
         self.get_potential_health_factor(account, token_address, token_amount, Borrow)
             >= self.get_liquidation_threshold()
     }
@@ -322,7 +326,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Borrow,
                 user_account.clone(),
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             100
         );
@@ -350,7 +354,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Borrow,
                 user_account,
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             98
         );
@@ -375,7 +379,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Supply,
                 user_account.clone(),
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             20
         );
@@ -395,7 +399,7 @@ mod tests {
             near_contract.get_entity_by_token(
                 Supply,
                 user_account,
-                AccountId::new_unchecked("test.nearlend".to_string())
+                AccountId::new_unchecked("test.nearlend".to_string()),
             ),
             18
         );
