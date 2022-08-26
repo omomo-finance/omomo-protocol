@@ -1,6 +1,6 @@
 use crate::utils::{
     add_market, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
-    mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, simple_borrow, supply,
+    mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, borrow, supply,
     view_balance,
 };
 use controller::ActionType::Borrow;
@@ -118,9 +118,9 @@ fn repay_fixture() -> (
         view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
-    simple_borrow(&user, &weth_market, WETH_BORROW).assert_success();
+    borrow(&user, &weth_market, WETH_BORROW).assert_success();
 
-    simple_borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
+    borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
 
     (wnear_market, controller, wnear, user)
 }

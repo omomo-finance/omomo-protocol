@@ -47,9 +47,7 @@ pub struct Price {
 pub enum Actions {
     Supply,
     Withdraw,
-    Borrow {
-        is_collateralized: bool,
-    },
+    Borrow,
     Repay,
     Liquidate {
         borrower: AccountId,

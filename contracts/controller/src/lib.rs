@@ -76,6 +76,10 @@ pub struct Contract {
     /// Contract admin account (controller itself by default)
     pub admin: AccountId,
 
+    /// Contracts that are allowed to do uncollateralized borrow from market
+    /// contract itself by default, can be set to different account
+    eligible_to_borrow_uncollateralized: AccountId,
+
     /// Configuration for pausing/proceeding controller processes (false by default)
     pub is_action_paused: ActionStatus,
 
@@ -168,7 +172,8 @@ impl Contract {
             user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             prices: LookupMap::new(StorageKeys::Prices),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
-            admin: config.owner_id,
+            admin: config.owner_id.clone(),
+            eligible_to_borrow_uncollateralized: config.owner_id.clone(),
             is_action_paused: ActionStatus {
                 withdraw: false,
                 repay: false,

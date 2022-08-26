@@ -1,12 +1,9 @@
-use crate::utils::{
-    add_market, initialize_controller, initialize_three_dtokens, initialize_three_utokens,
-    mint_tokens, new_user, set_price, supply, uncollateralized_borrow, view_balance,
-};
+use crate::utils::{add_market, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens, mint_tokens, new_user, set_price, supply, view_balance};
 use controller::ActionType::Borrow;
 use dtoken::InterestRateModel;
 use general::Price;
 use near_sdk::{json_types::U128, Balance};
-use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
+use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount, call};
 
 const WETH_AMOUNT: Balance = 5;
 const WNEAR_AMOUNT: Balance = 5;
@@ -109,11 +106,16 @@ fn borrow_fixture() -> (
 fn scenario_undercollaterilazied_borrow() {
     let (dwbtc, controller, wbtc, user) = borrow_fixture();
 
+    call!(dwbtc.user_account, dwbtc.set_admin(user.account_id.clone()),deposit=0);
+    call!(controller.user_account, controller.set_admin(user.account_id.clone()), deposit=0);
+    call!(dwbtc.user_account, dwbtc.set_eligible_to_borrow_uncollateralized_account(user.account_id.clone()),deposit=0);
+    call!(controller.user_account, controller.set_eligible_to_borrow_uncollateralized_account(user.account_id.clone()), deposit=0);
+
     let leverage = 2u128;
 
     // borrowing 2 times more
 
-    dbg!(uncollateralized_borrow(
+    dbg!(borrow(
         &user,
         &dwbtc,
         BORROW_AMOUNT * leverage,

@@ -45,6 +45,8 @@ impl Upgradable for Contract {
             /// Contract admin account (dtoken itself by default)
             pub admin: AccountId,
 
+            pub eligible_to_borrow_uncollateralized: AccountId,
+
             /// Campaign id -> Reward campaign
             reward_campaigns: UnorderedMap<String, RewardCampaign>,
 
@@ -68,6 +70,7 @@ impl Upgradable for Contract {
             config: contract.config,
             model: contract.model,
             admin: contract.admin,
+            eligible_to_borrow_uncollateralized: contract.eligible_to_borrow_uncollateralized,
             reward_campaigns: contract.reward_campaigns,
             uid: contract.uid,
             rewards: contract.rewards,

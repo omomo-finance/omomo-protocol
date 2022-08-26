@@ -1,6 +1,6 @@
 use crate::utils::{
     add_market, assert_failure, initialize_controller, initialize_three_dtokens,
-    initialize_three_utokens, mint_tokens, new_user, repay, set_price, simple_borrow, supply,
+    initialize_three_utokens, mint_tokens, new_user, repay, set_price, borrow, supply,
     view_balance,
 };
 use controller::ActionType::Borrow;
@@ -105,9 +105,9 @@ fn repay_fixture() -> (
 
     supply(&user, &wnear, wnear_market.account_id(), WNEAR_AMOUNT).assert_success();
 
-    simple_borrow(&user, &weth_market, WETH_BORROW).assert_success();
+    borrow(&user, &weth_market, WETH_BORROW).assert_success();
 
-    simple_borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
+    borrow(&user, &wnear_market, WNEAR_BORROW).assert_success();
 
     (wnear_market, controller, wnear, user)
 }

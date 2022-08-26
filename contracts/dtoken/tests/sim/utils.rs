@@ -439,20 +439,12 @@ pub fn withdraw(
     call!(user, dtoken.withdraw(U128(amount)), deposit = 0)
 }
 
-pub fn simple_borrow(
+pub fn borrow(
     user: &UserAccount,
     dtoken: &ContractAccount<dtoken::ContractContract>,
     amount: Balance,
 ) -> ExecutionResult {
-    call!(user, dtoken.borrow(U128(amount), true), deposit = 0)
-}
-
-pub fn uncollateralized_borrow(
-    user: &UserAccount,
-    dtoken: &ContractAccount<dtoken::ContractContract>,
-    amount: Balance,
-) -> ExecutionResult {
-    call!(user, dtoken.borrow(U128(amount), false), deposit = 0)
+    call!(user, dtoken.borrow(U128(amount)), deposit = 0)
 }
 
 pub fn repay(

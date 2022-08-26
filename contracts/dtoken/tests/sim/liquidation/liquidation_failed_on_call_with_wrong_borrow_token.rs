@@ -1,6 +1,6 @@
 use crate::utils::{
     add_market, initialize_controller, initialize_two_dtokens, initialize_two_utokens, liquidate,
-    mint_tokens, new_user, set_price, simple_borrow, supply, view_balance,
+    mint_tokens, new_user, set_price, borrow, supply, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
@@ -93,7 +93,7 @@ fn liquidation_fixture() -> (
     )
     .assert_success();
 
-    simple_borrow(&borrower, &weth_market, BORROWER_BORROW).assert_success();
+    borrow(&borrower, &weth_market, BORROWER_BORROW).assert_success();
 
     let user_balance: Balance =
         view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();

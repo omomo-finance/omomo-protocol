@@ -77,6 +77,10 @@ pub struct Contract {
     /// Contract admin account (dtoken itself by default)
     pub admin: AccountId,
 
+    /// Contracts that are allowed to do uncollateralized borrow from market
+    /// contract itself by default, can be set to different account
+    eligible_to_borrow_uncollateralized: AccountId,
+
     /// Campaign id -> Reward campaign
     reward_campaigns: UnorderedMap<String, RewardCampaign>,
 
@@ -138,7 +142,6 @@ trait ControllerInterface {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
-        is_collateralized: bool,
         borrow_block: BlockHeight,
         borrow_rate: WRatio,
     );
@@ -185,7 +188,6 @@ trait InternalTokenInterface {
     fn borrow_balance_of_callback(
         &mut self,
         token_amount: WBalance,
-        is_collateralized: bool,
     ) -> PromiseOrValue<WBalance>;
     fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
     fn repay_balance_of_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance>;
@@ -281,11 +283,13 @@ impl Contract {
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,
-            admin: config.owner_id,
+            admin: config.owner_id.clone(),
+            eligible_to_borrow_uncollateralized: config.owner_id,
             reward_campaigns: UnorderedMap::new(StorageKeys::RewardCampaigns),
             uid: 0,
             rewards: HashMap::new(),
             disable_transfer: config.disable_transfer_token,
+
         }
     }
 }

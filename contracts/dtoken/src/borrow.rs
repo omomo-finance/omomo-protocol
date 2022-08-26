@@ -23,13 +23,12 @@ impl Contract {
     pub fn post_borrow(
         &mut self,
         token_amount: WBalance,
-        is_collateralized: bool,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             return PromiseOrValue::Value(token_amount);
         }
 
-        if is_collateralized {
+        if !self.is_allowed_to_borrow_uncollateralized() {
             self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
         }
 
@@ -39,14 +38,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::borrow_balance_of_callback(
-            token_amount,
-            is_collateralized,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(150),
-        ))
-        .into()
+            .then(ext_self::borrow_balance_of_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(150),
+            ))
+            .into()
     }
 }
 
@@ -55,7 +53,6 @@ impl Contract {
     pub fn borrow(
         &mut self,
         amount: WBalance,
-        is_collateralized: bool,
     ) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
@@ -68,7 +65,7 @@ impl Contract {
         );
 
         self.mutex_account_lock(
-            Actions::Borrow { is_collateralized },
+            Actions::Borrow,
             amount,
             self.terra_gas(180),
         )
@@ -78,7 +75,6 @@ impl Contract {
     pub fn borrow_balance_of_callback(
         &mut self,
         token_amount: WBalance,
-        is_collateralized: bool,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
@@ -123,20 +119,19 @@ impl Contract {
             env::signer_account_id(),
             self.get_contract_address(),
             token_amount,
-            is_collateralized,
             borrow_accrued_interest.last_recalculation_block,
             WRatio::from(borrow_rate),
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(15),
         )
-        .then(ext_self::make_borrow_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(80),
-        ))
-        .into()
+            .then(ext_self::make_borrow_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(80),
+            ))
+            .into()
     }
 
     #[private]
@@ -164,13 +159,13 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-        .then(ext_self::borrow_ft_transfer_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(40),
-        ))
-        .into()
+            .then(ext_self::borrow_ft_transfer_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(40),
+            ))
+            .into()
     }
 
     #[private]
@@ -196,13 +191,13 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-            .then(ext_self::controller_decrease_borrows_fail_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(20),
-            ))
-            .into()
+                .then(ext_self::controller_decrease_borrows_fail_callback(
+                    token_amount,
+                    env::current_account_id(),
+                    NO_DEPOSIT,
+                    self.terra_gas(20),
+                ))
+                .into()
         }
     }
 

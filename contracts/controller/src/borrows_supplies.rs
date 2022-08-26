@@ -19,11 +19,10 @@ impl Contract {
         account_id: AccountId,
         token_address: AccountId,
         token_amount: WBalance,
-        is_collateralized: bool,
         borrow_block: BlockHeight,
         borrow_rate: WRatio,
     ) {
-        if is_collateralized {
+        if !self.is_allowed_to_borrow_uncollateralized(account_id.clone())  {
             assert!(
                 self.is_borrow_allowed(account_id.clone(), token_address.clone(), token_amount),
                 "Borrow operation is not allowed for account {} token_address {} token_amount {}",
@@ -221,7 +220,7 @@ impl Contract {
 
                 (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
                     / BigBalance::from(U128(ONE_TOKEN)))
-                .round_u128()
+                    .round_u128()
             })
             .sum()
     }

@@ -39,6 +39,22 @@ impl Contract {
         self.admin = account;
     }
 
+    pub fn get_eligible_to_borrow_uncollateralized_account(&self) -> AccountId {
+        self.eligible_to_borrow_uncollateralized.clone()
+    }
+
+    pub fn set_eligible_to_borrow_uncollateralized_account(&mut self, account: AccountId) {
+        require!(
+            self.is_valid_admin_call(),
+            "This functionality is allowed to be called by admin or contract only"
+        );
+        self.eligible_to_borrow_uncollateralized = account;
+    }
+
+    pub fn is_allowed_to_borrow_uncollateralized(&self, account: AccountId) -> bool {
+        account == self.eligible_to_borrow_uncollateralized
+    }
+
     #[private]
     pub fn is_valid_admin_call(&self) -> bool {
         env::signer_account_id() == self.admin
