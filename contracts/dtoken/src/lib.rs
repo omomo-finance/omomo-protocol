@@ -43,6 +43,7 @@ mod upgrade;
 mod user_profile;
 mod views;
 mod withdraw;
+mod deposit;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKeys {
@@ -112,6 +113,13 @@ trait UnderlineTokenInterface {
         msg: String,
     );
     fn ft_resolve_transfer(&self, account_id: AccountId) -> U128;
+}
+
+
+#[ext_contract(mtrading)]
+trait MarginTradingInterface {
+    fn increase_user_deposit(&mut self, market_id: AccountId, user_id: AccountId, amount: WBalance);
+    fn decrease_user_deposit(&mut self, market_id: AccountId, user_id: AccountId, amount: WBalance);
 }
 
 #[ext_contract(controller)]
@@ -244,6 +252,14 @@ trait InternalTokenInterface {
         amount: WBalance,
         unlocked: WBalance,
     );
+
+    fn deposit_balance_of_callback(&mut self,
+                                   amount: WBalance,
+    );
+    fn mtrading_increase_user_deposit_callback(&mut self, market_id: AccountId, user_id: AccountId, amount: WBalance);
+    fn deposit_ft_transfer_callback(&mut self, amount: WBalance);
+    fn mtrading_decrease_user_deposit_fail_callback(&mut self, amount: WBalance);
+
 }
 
 #[near_bindgen]

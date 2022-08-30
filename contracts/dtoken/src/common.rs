@@ -17,6 +17,12 @@ pub enum Events {
     SupplyFailedToIncreaseSupplyOnController(AccountId, Balance),
     SupplySuccess(AccountId, Balance),
 
+    DepositFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
+    MarginTradingFailedToIncreaseUserDeposit(AccountId, Balance),
+    MarginTradingDepositSuccess(AccountId, Balance),
+    MarginTradingFailedToDecreaseUserDeposit(AccountId, Balance),
+    MarginTradingRevertDepositSuccess(AccountId, Balance),
+
     WithdrawFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
     WithdrawFailedToDecreaseSupplyOnController(AccountId, Balance, AccountId),
     WithdrawSuccess(AccountId, Balance),
@@ -25,6 +31,7 @@ pub enum Events {
 
     LiquidationSuccess(AccountId, AccountId, Balance),
     LiquidationFailed(AccountId, AccountId, Balance),
+
 }
 
 impl Contract {
@@ -91,14 +98,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            gas,
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                gas,
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -223,6 +230,7 @@ impl Contract {
             Actions::Withdraw => self.post_withdraw(amount),
             Actions::Supply => self.post_supply(amount),
             Actions::Borrow => self.post_borrow(amount),
+            Actions::Deposit => self.post_deposit(amount),
             _ => {
                 panic!("Incorrect action at mutex lock callback")
             }
@@ -344,6 +352,34 @@ impl fmt::Display for Events {
                 f,
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationFailed", "data": {{"liquidator_account_id": "{}", "borrower_account_id": {},"amount": "{}"}}}}"#,
                 liquidator, borrower, amount_liquidate
+            ),
+            Events::DepositFailedToGetUnderlyingBalance(
+                account,
+                balance,
+                contract_id,
+                underlying_token_id,
+            ) => write!(
+                f,
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "DepositFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
+                account, balance, contract_id, underlying_token_id
+            ),
+            Events::MarginTradingFailedToIncreaseUserDeposit(account, amount) => write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MtradingFailedToIncreaseUserDeposit", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} deposit balance of {} on margin trading contract"}}}}"#,
+                                                                                        account, amount, account, amount
+            ),
+            Events::MarginTradingDepositSuccess(account, amount) => write!(
+                f,
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingDepositSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
+                account, amount
+            ),
+            Events::MarginTradingFailedToDecreaseUserDeposit(account, amount) => write!(
+                f,
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingFailedToDecreaseUserDeposit", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#,
+                account, amount, account
+            ),
+            Events::MarginTradingRevertDepositSuccess(account, amount) => write!(
+                f,
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingRevertDepositSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
+                account, amount
             ),
         }
     }

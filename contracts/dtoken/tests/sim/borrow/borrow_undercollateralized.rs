@@ -134,7 +134,7 @@ fn scenario_undercollaterilazied_borrow() {
 
     // borrowing 2 times more
 
-    dbg!(borrow(&user, &dwbtc, BORROW_AMOUNT * leverage,));
+    borrow(&user, &dwbtc, BORROW_AMOUNT * leverage).assert_success();
 
     let user_balance: Balance =
         view_balance(&controller, Borrow, user.account_id(), dwbtc.account_id());
