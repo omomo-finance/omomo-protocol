@@ -133,6 +133,7 @@ pub struct ActionStatus {
     borrow: bool,
     repay: bool,
     liquidate: bool,
+    deposit: bool,
 }
 
 pub trait OraclePriceHandlerHook {
@@ -180,6 +181,7 @@ impl Contract {
                 supply: false,
                 liquidate: false,
                 borrow: false,
+                deposit: false
             },
             liquidation_incentive: get_default_liquidation_incentive(),
             liquidation_health_factor_threshold: get_default_liquidation_health_factor_threshold(),

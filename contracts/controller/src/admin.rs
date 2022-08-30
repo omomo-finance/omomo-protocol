@@ -14,6 +14,7 @@ pub enum MethodType {
     Supply,
     Liquidate,
     Borrow,
+    Deposit,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
@@ -164,6 +165,7 @@ impl Contract {
             MethodType::Supply => self.is_action_paused.supply = true,
             MethodType::Liquidate => self.is_action_paused.liquidate = true,
             MethodType::Borrow => self.is_action_paused.borrow = true,
+            MethodType::Deposit => self.is_action_paused.deposit = true,
         }
     }
 
@@ -179,6 +181,7 @@ impl Contract {
             MethodType::Supply => self.is_action_paused.supply = false,
             MethodType::Liquidate => self.is_action_paused.liquidate = false,
             MethodType::Borrow => self.is_action_paused.borrow = false,
+            MethodType::Deposit => self.is_action_paused.deposit = false,
         }
     }
 
