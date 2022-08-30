@@ -31,7 +31,6 @@ pub enum Events {
 
     LiquidationSuccess(AccountId, AccountId, Balance),
     LiquidationFailed(AccountId, AccountId, Balance),
-
 }
 
 impl Contract {
@@ -98,14 +97,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                gas,
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            gas,
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -363,8 +362,10 @@ impl fmt::Display for Events {
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "DepositFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
                 account, balance, contract_id, underlying_token_id
             ),
-            Events::MarginTradingFailedToIncreaseUserDeposit(account, amount) => write!(f, r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MtradingFailedToIncreaseUserDeposit", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} deposit balance of {} on margin trading contract"}}}}"#,
-                                                                                        account, amount, account, amount
+            Events::MarginTradingFailedToIncreaseUserDeposit(account, amount) => write!(
+                f,
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MtradingFailedToIncreaseUserDeposit", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} deposit balance of {} on margin trading contract"}}}}"#,
+                account, amount, account, amount
             ),
             Events::MarginTradingDepositSuccess(account, amount) => write!(
                 f,

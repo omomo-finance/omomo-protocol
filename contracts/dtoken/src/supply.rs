@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::supply_balance_of_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(50),
-            ))
-            .into()
+        .then(ext_self::supply_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(50),
+        ))
+        .into()
     }
 
     pub fn get_account_supplies(&self, account: AccountId) -> Balance {
@@ -106,14 +106,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::controller_increase_supplies_callback(
-                token_amount,
-                dtoken_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(20),
-            ))
-            .into()
+        .then(ext_self::controller_increase_supplies_callback(
+            token_amount,
+            dtoken_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(20),
+        ))
+        .into()
     }
 
     #[allow(dead_code)]
