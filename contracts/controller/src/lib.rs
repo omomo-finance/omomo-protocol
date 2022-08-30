@@ -181,7 +181,7 @@ impl Contract {
                 supply: false,
                 liquidate: false,
                 borrow: false,
-                deposit: false
+                deposit: false,
             },
             liquidation_incentive: get_default_liquidation_incentive(),
             liquidation_health_factor_threshold: get_default_liquidation_health_factor_threshold(),
