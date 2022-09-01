@@ -31,6 +31,7 @@ mod admin;
 mod borrow;
 mod common;
 mod config;
+mod deposit;
 mod ft;
 mod interest_model;
 mod interest_rate_model;
@@ -112,6 +113,12 @@ trait UnderlineTokenInterface {
         msg: String,
     );
     fn ft_resolve_transfer(&self, account_id: AccountId) -> U128;
+}
+
+#[ext_contract(mtrading)]
+trait MarginTradingInterface {
+    fn increase_user_deposit(&mut self, market_id: AccountId, user_id: AccountId, amount: WBalance);
+    fn decrease_user_deposit(&mut self, market_id: AccountId, user_id: AccountId, amount: WBalance);
 }
 
 #[ext_contract(controller)]
@@ -244,6 +251,18 @@ trait InternalTokenInterface {
         amount: WBalance,
         unlocked: WBalance,
     );
+
+    fn deposit_balance_of_callback(&mut self, amount: WBalance) -> PromiseOrValue<WBalance>;
+    fn mtrading_increase_user_deposit_callback(
+        &mut self,
+        market_id: AccountId,
+        user_id: AccountId,
+        amount: WBalance,
+    ) -> PromiseOrValue<WBalance>;
+    fn mtrading_decrease_user_deposit_fail_callback(
+        &mut self,
+        amount: WBalance,
+    ) -> PromiseOrValue<WBalance>;
 }
 
 #[near_bindgen]

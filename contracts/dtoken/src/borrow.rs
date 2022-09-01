@@ -171,7 +171,7 @@ impl Contract {
                 "{}",
                 Events::BorrowSuccess(env::signer_account_id(), Balance::from(token_amount))
             );
-            PromiseOrValue::Value(token_amount)
+            PromiseOrValue::Value(U128(0))
         } else {
             controller::decrease_borrows(
                 env::signer_account_id(),

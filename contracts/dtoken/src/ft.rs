@@ -41,6 +41,7 @@ impl FungibleTokenReceiver for Contract {
                 amount,
             ),
             Actions::Reserve => self.reserve(amount),
+            Actions::Deposit => self.deposit(amount),
             _ => {
                 panic!("Incorrect action in transfer")
             }
