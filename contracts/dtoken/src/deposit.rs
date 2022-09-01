@@ -1,8 +1,6 @@
 use crate::*;
-use std::convert::TryFrom;
 
 const GAS_FOR_DEPOSIT: Gas = Gas(120_000_000_000_000);
-const MARGIN_TRADING_CONTRACT: &str = "mtrading.omomo-finance.testnet";
 
 impl Contract {
     pub fn post_deposit(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
@@ -15,13 +13,14 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::deposit_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(50),
-        ))
-        .into()
+            .then(ext_self::deposit_balance_of_callback(
+                // TODO better gas amount and create corresponding task in margin trading scope
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(50),
+            ))
+            .into()
     }
 }
 
@@ -59,63 +58,27 @@ impl Contract {
             env::current_account_id(),
             env::signer_account_id(),
             token_amount,
-            AccountId::try_from(MARGIN_TRADING_CONTRACT.to_string()).unwrap(),
+            self.eligible_to_borrow_uncollateralized.clone(),
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mtrading_increase_user_deposit_callback(
-            env::current_account_id(),
-            env::signer_account_id(),
-            token_amount,
-            self.get_contract_address(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        ))
-        .into()
+            .then(ext_self::mtrading_increase_user_deposit_callback(
+                env::current_account_id(),
+                env::signer_account_id(),
+                token_amount,
+                self.get_contract_address(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ))
+            .into()
     }
 
     #[private]
     pub fn mtrading_increase_user_deposit_callback(
         &mut self,
         amount: WBalance,
-    ) -> PromiseOrValue<U128> {
-        if !is_promise_success() {
-            log!(
-                "{}",
-                Events::MarginTradingFailedToIncreaseUserDeposit(
-                    env::signer_account_id(),
-                    Balance::from(amount)
-                )
-            );
-            self.mutex_account_unlock();
-            return PromiseOrValue::Value(amount);
-        }
-
-        underlying_token::ft_transfer(
-            AccountId::try_from(MARGIN_TRADING_CONTRACT.to_string()).unwrap(),
-            amount,
-            Some(format!(
-                "Deposit form {} with token_amount {}",
-                env::signer_account_id(),
-                Balance::from(amount)
-            )),
-            self.get_underlying_contract_address(),
-            ONE_YOCTO,
-            self.terra_gas(10),
-        )
-        .then(ext_self::deposit_ft_transfer_callback(
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(40),
-        ))
-        .into()
-    }
-
-    #[private]
-    pub fn deposit_ft_transfer_callback(&mut self, amount: WBalance) -> PromiseOrValue<U128> {
+    ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
-            self.mutex_account_unlock();
             log!(
                 "{}",
                 Events::MarginTradingDepositSuccess(
@@ -123,28 +86,37 @@ impl Contract {
                     Balance::from(amount)
                 )
             );
+            self.mutex_account_unlock();
             PromiseOrValue::Value(U128(0))
         } else {
+            log!(
+                "{}",
+                Events::MarginTradingFailedToIncreaseUserDeposit(
+                    env::signer_account_id(),
+                    Balance::from(amount)
+                )
+            );
+
             mtrading::decrease_user_deposit(
                 env::current_account_id(),
                 env::signer_account_id(),
                 amount,
-                AccountId::try_from(MARGIN_TRADING_CONTRACT.to_string()).unwrap(),
+                self.eligible_to_borrow_uncollateralized.clone(),
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-            .then(ext_self::mtrading_decrease_user_deposit_fail_callback(
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(20),
-            ))
-            .into()
+                .then(ext_self::mtrading_decrease_user_deposit_fail_callback(
+                    amount,
+                    self.get_contract_address(),
+                    NO_DEPOSIT,
+                    self.terra_gas(20),
+                )).into()
         }
     }
 
+
     #[private]
-    pub fn mtrading_decrease_user_deposit_fail_callback(&mut self, token_amount: WBalance) {
+    pub fn mtrading_decrease_user_deposit_fail_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
                 "{}",
@@ -153,8 +125,9 @@ impl Contract {
                     Balance::from(token_amount)
                 )
             );
-        } else {
             self.mutex_account_unlock();
+            PromiseOrValue::Value(token_amount)
+        } else {
             log!(
                 "{}",
                 Events::MarginTradingRevertDepositSuccess(
@@ -162,6 +135,8 @@ impl Contract {
                     Balance::from(token_amount)
                 )
             );
+            self.mutex_account_unlock();
+            PromiseOrValue::Value(U128(0))
         }
     }
 }

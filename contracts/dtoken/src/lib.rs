@@ -252,15 +252,14 @@ trait InternalTokenInterface {
         unlocked: WBalance,
     );
 
-    fn deposit_balance_of_callback(&mut self, amount: WBalance);
+    fn deposit_balance_of_callback(&mut self, amount: WBalance)-> PromiseOrValue<WBalance>;
     fn mtrading_increase_user_deposit_callback(
         &mut self,
         market_id: AccountId,
         user_id: AccountId,
         amount: WBalance,
-    );
-    fn deposit_ft_transfer_callback(&mut self, amount: WBalance);
-    fn mtrading_decrease_user_deposit_fail_callback(&mut self, amount: WBalance);
+    )-> PromiseOrValue<WBalance>;
+    fn mtrading_decrease_user_deposit_fail_callback(&mut self, amount: WBalance)-> PromiseOrValue<WBalance>;
 }
 
 #[near_bindgen]
