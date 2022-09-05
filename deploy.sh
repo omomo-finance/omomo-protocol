@@ -50,7 +50,7 @@ create_controller() {
 # deploy underlyings
 deploy_underlyings() {
     near deploy weth.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./res/test_utoken.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -59,7 +59,7 @@ deploy_underlyings() {
             "total_supply": "1000000000000000000000000000"
         }' &
     near deploy wnear.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./res/test_utoken.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -68,7 +68,7 @@ deploy_underlyings() {
             "total_supply": "1000000000000000000000000000"
         }' &
     near deploy usdt.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./res/test_utoken.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -77,7 +77,7 @@ deploy_underlyings() {
             "total_supply": "1000000000000000000000000000"
         }' &
     near deploy usdc.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./res/test_utoken.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -92,7 +92,7 @@ deploy_underlyings() {
 # deploy markets
 deploy_markets(){
     near deploy weth_market.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --wasmFile ./res/dtoken.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
             "owner_id":"'$1'",
@@ -108,7 +108,7 @@ deploy_markets(){
             }
         }' &
     near deploy wnear_market.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --wasmFile ./res/dtoken.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
             "owner_id":"'$1'",
@@ -124,7 +124,7 @@ deploy_markets(){
             }
         }' &
     near deploy usdt_market.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --wasmFile ./res/dtoken.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
         "owner_id":"'$1'",
@@ -140,7 +140,7 @@ deploy_markets(){
             }
         }' &
     near deploy usdc_market.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/dtoken.wasm \
+        --wasmFile ./res/dtoken.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
         "owner_id":"'$1'",
@@ -162,7 +162,7 @@ deploy_markets(){
 # deploy controller
 deploy_controller(){
     near deploy $CONTROLLER_ACCOUNT.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/controller.wasm \
+        --wasmFile ./res/controller.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
             "owner_id":"'$1'",
@@ -275,7 +275,7 @@ configure_acl() {
 ROOT_ACCOUNT=nearlend.testnet
 CONTROLLER_ACCOUNT=controller_beta
 
-# build_and_test
+build_and_test
 clean_up_previous_deployment $ROOT_ACCOUNT
 create_underlying_tokens_and_markets $ROOT_ACCOUNT &
 create_controller $ROOT_ACCOUNT &

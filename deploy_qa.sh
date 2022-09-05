@@ -174,10 +174,10 @@ deploy_controller(){
 
 # create account on underlyings for dtokens
 create_account_on_underlyings_for_dtokens(){
-    near call weth.$1 storage_deposit '{"account_id": "weth_market.'$1'"}' --accountId $1 --amount 0.25 &
-    near call wnear.$1 storage_deposit '{"account_id": "wnear_market.'$1'"}' --accountId $1 --amount 0.25 &
-    near call usdt.$1 storage_deposit '{"account_id": "usdt_market.'$1'"}' --accountId $1 --amount 0.25 &
-    near call usdc.$1 storage_deposit '{"account_id": "usdc_market.'$1'"}' --accountId $1 --amount 0.25 &
+    near call weth.$1 storage_deposit '{"account_id": "weth_market.'$1'"}' --accountId $2 --amount 0.25 &
+    near call wnear.$1 storage_deposit '{"account_id": "wnear_market.'$1'"}' --accountId $2 --amount 0.25 &
+    near call usdt.$1 storage_deposit '{"account_id": "usdt_market.'$1'"}' --accountId $2 --amount 0.25 &
+    near call usdc.$1 storage_deposit '{"account_id": "usdc_market.'$1'"}' --accountId $2 --amount 0.25 &
 
     wait
 }
@@ -275,7 +275,7 @@ configure_acl() {
 ROOT_ACCOUNT=qa.nearlend.testnet
 CONTROLLER_ACCOUNT=controller
 
-# build_and_test
+build_and_test
 clean_up_previous_deployment $ROOT_ACCOUNT
 create_underlying_tokens_and_markets $ROOT_ACCOUNT &
 create_controller $ROOT_ACCOUNT &
@@ -286,7 +286,7 @@ deploy_markets $ROOT_ACCOUNT &
 deploy_controller $ROOT_ACCOUNT &
 wait
 
-create_account_on_underlyings_for_dtokens $ROOT_ACCOUNT
+create_account_on_underlyings_for_dtokens $ROOT_ACCOUNT $ROOT_ACCOUNT
 register_markets_on_controller $ROOT_ACCOUNT &
 setup_reserves $ROOT_ACCOUNT &
 wait

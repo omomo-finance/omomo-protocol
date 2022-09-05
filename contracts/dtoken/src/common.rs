@@ -102,7 +102,8 @@ impl Contract {
             amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            gas,
+            // TODO Better gas handling
+            gas - self.terra_gas(5),
         ))
         .into()
     }

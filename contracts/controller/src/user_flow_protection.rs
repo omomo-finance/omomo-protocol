@@ -5,7 +5,8 @@ use near_sdk::collections::LookupMap;
 use near_sdk::env::block_height;
 use near_sdk::{log, AccountId, BlockHeight};
 
-const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 100;
+// TODO Find out some good default
+const BLOCKS_TO_NEXT_OPERATION: BlockHeight = 10;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct ActionMutex {

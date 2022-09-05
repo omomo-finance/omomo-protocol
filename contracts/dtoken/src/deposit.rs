@@ -26,7 +26,7 @@ impl Contract {
             token_amount,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(50),
+            self.terra_gas(100),
         ))
         .into()
         // TODO better gas amount and create corresponding task in margin trading scope
@@ -50,6 +50,7 @@ impl Contract {
             self.mutex_account_unlock();
             return PromiseOrValue::Value(amount);
         }
+        log!("prepaid {:?}; burn{:?}", env::prepaid_gas(), env::used_gas());
 
         mtrading::increase_user_deposit(
             env::current_account_id(),
@@ -57,7 +58,7 @@ impl Contract {
             amount,
             self.eligible_to_borrow_uncollateralized.clone(),
             NO_DEPOSIT,
-            self.terra_gas(15),
+            self.terra_gas(16),
         )
         .then(ext_self::mtrading_increase_user_deposit_callback(
             env::current_account_id(),
@@ -65,7 +66,7 @@ impl Contract {
             amount,
             self.get_contract_address(),
             NO_DEPOSIT,
-            self.terra_gas(10),
+            self.terra_gas(26),
         ))
         .into()
     }
@@ -84,6 +85,7 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
+            
             PromiseOrValue::Value(U128(0))
         } else {
             log!(
@@ -93,6 +95,7 @@ impl Contract {
                     Balance::from(amount)
                 )
             );
+
 
             mtrading::decrease_user_deposit(
                 env::current_account_id(),
@@ -126,6 +129,7 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
+
             PromiseOrValue::Value(amount)
         } else {
             log!(
@@ -136,6 +140,7 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
+
             PromiseOrValue::Value(U128(0))
         }
     }
