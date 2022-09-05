@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::deposit_balance_of_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(50),
-            ))
-            .into()
+        .then(ext_self::deposit_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(50),
+        ))
+        .into()
         // TODO better gas amount and create corresponding task in margin trading scope
     }
 }
@@ -36,10 +36,7 @@ impl Contract {
 #[near_bindgen]
 impl Contract {
     #[private]
-    pub fn deposit_balance_of_callback(
-        &mut self,
-        amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
+    pub fn deposit_balance_of_callback(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
                 "{}",
@@ -62,15 +59,15 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(15),
         )
-            .then(ext_self::mtrading_increase_user_deposit_callback(
-                env::current_account_id(),
-                env::signer_account_id(),
-                amount,
-                self.get_contract_address(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            ))
-            .into()
+        .then(ext_self::mtrading_increase_user_deposit_callback(
+            env::current_account_id(),
+            env::signer_account_id(),
+            amount,
+            self.get_contract_address(),
+            NO_DEPOSIT,
+            self.terra_gas(10),
+        ))
+        .into()
     }
 
     #[private]
@@ -105,13 +102,13 @@ impl Contract {
                 NO_DEPOSIT,
                 self.terra_gas(15),
             )
-                .then(ext_self::mtrading_decrease_user_deposit_fail_callback(
-                    amount,
-                    self.get_contract_address(),
-                    NO_DEPOSIT,
-                    self.terra_gas(10),
-                ))
-                .into()
+            .then(ext_self::mtrading_decrease_user_deposit_fail_callback(
+                amount,
+                self.get_contract_address(),
+                NO_DEPOSIT,
+                self.terra_gas(10),
+            ))
+            .into()
         }
     }
 
