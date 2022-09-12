@@ -47,7 +47,9 @@ pub struct Price {
 pub enum Actions {
     Supply,
     Withdraw,
-    Borrow,
+    Borrow {
+        account_to_borrow: AccountId,
+    },
     Repay,
     Liquidate {
         borrower: AccountId,
