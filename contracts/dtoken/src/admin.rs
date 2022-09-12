@@ -38,7 +38,7 @@ impl Contract {
     }
 
     pub fn is_allowed_to_borrow_uncollateralized(&self) -> bool {
-        env::signer_account_id() == self.eligible_to_borrow_uncollateralized
+        env::predecessor_account_id() == self.eligible_to_borrow_uncollateralized
     }
 
     pub fn add_inconsistent_account(&mut self, account: AccountId) {

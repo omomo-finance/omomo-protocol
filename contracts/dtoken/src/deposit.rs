@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::deposit_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(100),
-        ))
-        .into()
+            .then(ext_self::deposit_balance_of_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(100),
+            ))
+            .into()
         // TODO better gas amount and create corresponding task in margin trading scope
     }
 }
@@ -53,22 +53,22 @@ impl Contract {
         log!("prepaid {:?}; burn{:?}", env::prepaid_gas(), env::used_gas());
 
         mtrading::increase_user_deposit(
-            env::current_account_id(),
+            self.get_underlying_contract_address(),
             env::signer_account_id(),
             amount,
             self.eligible_to_borrow_uncollateralized.clone(),
             NO_DEPOSIT,
             self.terra_gas(16),
         )
-        .then(ext_self::mtrading_increase_user_deposit_callback(
-            env::current_account_id(),
-            env::signer_account_id(),
-            amount,
-            self.get_contract_address(),
-            NO_DEPOSIT,
-            self.terra_gas(26),
-        ))
-        .into()
+            .then(ext_self::mtrading_increase_user_deposit_callback(
+                self.get_underlying_contract_address(),
+                env::signer_account_id(),
+                amount,
+                self.get_contract_address(),
+                NO_DEPOSIT,
+                self.terra_gas(26),
+            ))
+            .into()
     }
 
     #[private]
@@ -80,38 +80,38 @@ impl Contract {
             log!(
                 "{}",
                 Events::MarginTradingDepositSuccess(
-                    env::signer_account_id(),
+                    self.get_underlying_contract_address(),
                     Balance::from(amount)
                 )
             );
             self.mutex_account_unlock();
-            
+
             PromiseOrValue::Value(U128(0))
         } else {
             log!(
                 "{}",
                 Events::MarginTradingFailedToIncreaseUserDeposit(
-                    env::signer_account_id(),
+                    self.get_underlying_contract_address(),
                     Balance::from(amount)
                 )
             );
 
 
             mtrading::decrease_user_deposit(
-                env::current_account_id(),
+                self.get_underlying_contract_address(),
                 env::signer_account_id(),
                 amount,
                 self.eligible_to_borrow_uncollateralized.clone(),
                 NO_DEPOSIT,
                 self.terra_gas(15),
             )
-            .then(ext_self::mtrading_decrease_user_deposit_fail_callback(
-                amount,
-                self.get_contract_address(),
-                NO_DEPOSIT,
-                self.terra_gas(10),
-            ))
-            .into()
+                .then(ext_self::mtrading_decrease_user_deposit_fail_callback(
+                    amount,
+                    self.get_contract_address(),
+                    NO_DEPOSIT,
+                    self.terra_gas(10),
+                ))
+                .into()
         }
     }
 
@@ -124,7 +124,7 @@ impl Contract {
             log!(
                 "{}",
                 Events::MarginTradingFailedToDecreaseUserDeposit(
-                    env::signer_account_id(),
+                    self.get_underlying_contract_address(),
                     Balance::from(amount)
                 )
             );
@@ -135,7 +135,7 @@ impl Contract {
             log!(
                 "{}",
                 Events::MarginTradingRevertDepositSuccess(
-                    env::signer_account_id(),
+                   self.get_underlying_contract_address(),
                     Balance::from(amount)
                 )
             );
