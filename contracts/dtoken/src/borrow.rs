@@ -25,8 +25,10 @@ impl Contract {
             return PromiseOrValue::Value(token_amount);
         }
 
+        let mut account_to_borrow = env::predecessor_account_id();
         if !self.is_allowed_to_borrow_uncollateralized() {
             self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
+            account_to_borrow = env::signer_account_id();
         }
 
         underlying_token::ft_balance_of(
@@ -35,13 +37,14 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::borrow_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(150),
-        ))
-        .into()
+            .then(ext_self::borrow_balance_of_callback(
+                token_amount,
+                account_to_borrow,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(150),
+            ))
+            .into()
     }
 }
 
@@ -65,12 +68,13 @@ impl Contract {
     pub fn borrow_balance_of_callback(
         &mut self,
         token_amount: WBalance,
+        account_to_borrow: AccountId,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
                 "{}",
                 Events::BorrowFailedToGetUnderlyingBalance(
-                    env::signer_account_id(),
+                    account_to_borrow.clone(),
                     Balance::from(token_amount),
                     self.get_contract_address(),
                     self.get_underlying_contract_address()
@@ -100,13 +104,13 @@ impl Contract {
             .interest_rate_model
             .calculate_accrued_interest(
                 borrow_rate,
-                self.get_account_borrows(env::signer_account_id()),
-                self.get_accrued_borrow_interest(env::signer_account_id()),
+                self.get_account_borrows(account_to_borrow.clone()),
+                self.get_accrued_borrow_interest(account_to_borrow.clone()),
             );
-        self.set_accrued_borrow_interest(env::signer_account_id(), borrow_accrued_interest.clone());
+        self.set_accrued_borrow_interest(account_to_borrow.clone(), borrow_accrued_interest.clone());
 
         controller::make_borrow(
-            env::signer_account_id(),
+            account_to_borrow.clone(),
             self.get_contract_address(),
             token_amount,
             borrow_accrued_interest.last_recalculation_block,
@@ -115,22 +119,23 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(15),
         )
-        .then(ext_self::make_borrow_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(80),
-        ))
-        .into()
+            .then(ext_self::make_borrow_callback(
+                token_amount,
+                account_to_borrow,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(80),
+            ))
+            .into()
     }
 
     #[private]
-    pub fn make_borrow_callback(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
+    pub fn make_borrow_callback(&mut self, token_amount: WBalance, account_to_borrow: AccountId) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             log!(
                 "{}",
                 Events::BorrowFailedToIncreaseBorrowOnController(
-                    env::signer_account_id(),
+                   account_to_borrow.clone(),
                     Balance::from(token_amount)
                 )
             );
@@ -139,7 +144,7 @@ impl Contract {
         }
 
         underlying_token::ft_transfer(
-            env::signer_account_id(),
+            account_to_borrow.clone(),
             token_amount,
             Some(format!(
                 "Borrow with token_amount {}",
@@ -149,56 +154,59 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-        .then(ext_self::borrow_ft_transfer_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(40),
-        ))
-        .into()
+            .then(ext_self::borrow_ft_transfer_callback(
+                token_amount,
+                account_to_borrow,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(40),
+            ))
+            .into()
     }
 
     #[private]
     pub fn borrow_ft_transfer_callback(
         &mut self,
         token_amount: WBalance,
+        account_to_borrow: AccountId,
     ) -> PromiseOrValue<WBalance> {
         if is_promise_success() {
-            self.increase_borrows(env::signer_account_id(), token_amount);
+            self.increase_borrows(account_to_borrow.clone(), token_amount);
             self.update_campaigns_market_total_by_type(CampaignType::Borrow);
             self.mutex_account_unlock();
             log!(
                 "{}",
-                Events::BorrowSuccess(env::signer_account_id(), Balance::from(token_amount))
+                Events::BorrowSuccess(account_to_borrow, Balance::from(token_amount))
             );
             PromiseOrValue::Value(U128(0))
         } else {
             controller::decrease_borrows(
-                env::signer_account_id(),
+                account_to_borrow.clone(),
                 self.get_contract_address(),
                 token_amount,
                 self.get_controller_address(),
                 NO_DEPOSIT,
                 self.terra_gas(5),
             )
-            .then(ext_self::controller_decrease_borrows_fail_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(20),
-            ))
-            .into()
+                .then(ext_self::controller_decrease_borrows_fail_callback(
+                    token_amount,
+                    account_to_borrow,
+                    env::current_account_id(),
+                    NO_DEPOSIT,
+                    self.terra_gas(20),
+                ))
+                .into()
         }
     }
 
     #[private]
-    pub fn controller_decrease_borrows_fail_callback(&mut self, token_amount: WBalance) {
+    pub fn controller_decrease_borrows_fail_callback(&mut self, token_amount: WBalance, account_to_borrow: AccountId) {
         if !is_promise_success() {
             self.add_inconsistent_account(env::signer_account_id());
             log!(
                 "{}",
                 Events::BorrowFailedToFallback(
-                    env::signer_account_id(),
+                    account_to_borrow,
                     Balance::from(token_amount)
                 )
             );
@@ -207,7 +215,7 @@ impl Contract {
             log!(
                 "{}",
                 Events::BorrowFallbackSuccess(
-                    env::signer_account_id(),
+                    account_to_borrow,
                     Balance::from(token_amount)
                 )
             );
