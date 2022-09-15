@@ -216,7 +216,7 @@ impl Contract {
     pub fn calculate_assets_price(&self, map: &HashMap<AccountId, Balance>) -> Balance {
         map.iter()
             .map(|(asset, balance)| {
-                let price = self.get_price(asset).unwrap();
+                let price = self.get_price(asset).unwrap_or(Price::default());
 
                 (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
                     / BigBalance::from(U128(ONE_TOKEN)))

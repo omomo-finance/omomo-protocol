@@ -41,6 +41,18 @@ pub struct Price {
     pub fraction_digits: Digits,
 }
 
+impl Default for Price {
+    fn default() -> Self {
+        Price {
+            ticker_id: "NULL".to_string(),
+            value: U128(0),
+            volatility: U128(0),
+            fraction_digits: 0,
+        }
+    }
+}
+
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]
