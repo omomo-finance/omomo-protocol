@@ -52,7 +52,6 @@ impl Default for Price {
     }
 }
 
-
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]
