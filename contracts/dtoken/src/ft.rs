@@ -58,13 +58,8 @@ impl FungibleTokenReceiver for Contract {
                     CampaignTypeArgs::Supply => CampaignType::Supply,
                     CampaignTypeArgs::Borrow => CampaignType::Borrow,
                 };
-                let vesting = Vesting::new(
-                    vesting_args.start_time,
-                    vesting_args.end_time,
-                    vesting_args.penalty,
-                );
 
-                let campaign = RewardCampaign::new(
+                self.insert_funded_campaign(RewardCampaign::new(
                     campaign_type,
                     start_time,
                     end_time,
@@ -74,9 +69,12 @@ impl FungibleTokenReceiver for Contract {
                     last_update_time,
                     rewards_per_token,
                     last_market_total,
-                    vesting,
-                );
-                self.insert_funded_campaign(campaign)
+                    Vesting {
+                        start_time: vesting_args.start_time,
+                        end_time: vesting_args.end_time,
+                        penalty: vesting_args.penalty,
+                    },
+                ))
             }
             _ => {
                 panic!("Incorrect action in transfer")

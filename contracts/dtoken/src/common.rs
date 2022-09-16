@@ -72,23 +72,26 @@ impl Contract {
         total_reserves: Balance,
         total_supplies: Balance,
     ) -> Ratio {
-        let mut pure_underlying_balance = underlying_balance;
 
-        for hm in self.funded_reward_amount.values() {
-            match hm.get(&self.get_underlying_contract_address()) {
-                None => {}
-                Some(balance) => pure_underlying_balance = (underlying_balance.0 - balance).into(),
-            };
-        }
+        let funded_by_underlying_token = self.get_total_reward_amount(self.get_underlying_contract_address());
+
+        let pure_underlying_balance = underlying_balance.0 - funded_by_underlying_token;
 
         if total_supplies == 0 {
             return self.initial_exchange_rate;
         }
 
-        (Ratio::from(pure_underlying_balance.0) + Ratio::from(total_borrows)
+        (Ratio::from(pure_underlying_balance) + Ratio::from(total_borrows)
             - Ratio::from(total_reserves))
             / Ratio::from(total_supplies)
     }
+
+    pub fn get_total_reward_amount(&self, token_id: AccountId) -> u128 {
+        self.reward_campaigns.values()
+            .filter(|reward_campaign| reward_campaign.token_id == token_id)
+            .map(|reward_campaign| reward_campaign.reward_amount.0).sum()
+    }
+
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas

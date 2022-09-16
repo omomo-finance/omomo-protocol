@@ -91,9 +91,6 @@ pub struct Contract {
     /// User account_id -> { campaign_id -> reward }
     rewards: HashMap<AccountId, HashMap<String, Reward>>,
 
-    /// campaign_id -> { token_id -> amount}
-    funded_reward_amount: HashMap<String, HashMap<AccountId, Balance>>,
-
     /// Disable transfer opportunity
     disable_transfer: bool,
 }
@@ -320,7 +317,6 @@ impl Contract {
             reward_campaigns: UnorderedMap::new(StorageKeys::RewardCampaigns),
             uid: 0,
             rewards: Default::default(),
-            funded_reward_amount: Default::default(),
             disable_transfer: config.disable_transfer_token,
         }
     }

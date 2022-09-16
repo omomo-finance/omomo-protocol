@@ -57,14 +57,9 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let mut pure_underlying_balance = underlying_balance;
+        let funded_by_underlying_token = self.get_total_reward_amount(self.get_underlying_contract_address());
 
-        for hm in self.funded_reward_amount.values() {
-            match hm.get(&self.get_underlying_contract_address()) {
-                None => {}
-                Some(balance) => pure_underlying_balance = (underlying_balance.0 - balance).into(),
-            };
-        }
+        let pure_underlying_balance = underlying_balance.0 - funded_by_underlying_token;
 
         let denominator = if Balance::from(pure_underlying_balance) + Balance::from(total_borrows)
             > Balance::from(total_reserves)
