@@ -72,11 +72,20 @@ impl Contract {
         total_reserves: Balance,
         total_supplies: Balance,
     ) -> Ratio {
+        let mut pure_underlying_balance = underlying_balance;
+
+        for hm in self.funded_reward_amount.values() {
+            match hm.get(&self.get_underlying_contract_address()) {
+                None => {}
+                Some(balance) => pure_underlying_balance = (underlying_balance.0 - balance).into(),
+            };
+        }
+
         if total_supplies == 0 {
             return self.initial_exchange_rate;
         }
 
-        (Ratio::from(underlying_balance.0) + Ratio::from(total_borrows)
+        (Ratio::from(pure_underlying_balance.0) + Ratio::from(total_borrows)
             - Ratio::from(total_reserves))
             / Ratio::from(total_supplies)
     }

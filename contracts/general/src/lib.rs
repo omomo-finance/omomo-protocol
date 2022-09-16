@@ -3,6 +3,7 @@ pub mod ratio;
 
 use crate::percent::WPercent;
 
+use crate::ratio::{BigBalance, Ratio};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
@@ -55,6 +56,26 @@ impl Default for Price {
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]
+pub enum CampaignTypeArgs {
+    Supply,
+    Borrow,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(Debug)]
+pub struct VestingArgs {
+    /// Campaign vesting start time, seconds
+    pub start_time: u64,
+    /// Campaign vesting end time, seconds
+    pub end_time: u64,
+    /// Penalty amount which will be arrested in case of early withdraw
+    pub penalty: Ratio,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(Debug)]
 pub enum Actions {
     Supply,
     Withdraw,
@@ -69,6 +90,28 @@ pub enum Actions {
     },
     Reserve,
     Deposit,
+    CreateAndFundReward {
+        /// Reward campaign type
+        campaign_type_args: CampaignTypeArgs,
+        /// Campaign start time seconds
+        start_time: u64,
+        /// Campaign end time seconds
+        end_time: u64,
+        /// Reward token address
+        token_id: AccountId,
+        /// Token ticker id
+        ticker_id: String,
+        /// Reward tokens total amount
+        reward_amount: WBalance,
+        /// Last time when rewardPerToken was recomputed/updated
+        last_update_time: u64,
+        /// Represent the token rewards amount which contract should pay for 1 token putted into liquidity
+        rewards_per_token: BigBalance,
+        /// Last market total by campaign type value
+        last_market_total: WBalance,
+        /// Vesting configuration
+        vesting: VestingArgs,
+    },
 }
 
 impl fmt::Display for Actions {

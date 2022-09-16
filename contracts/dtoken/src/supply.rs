@@ -62,9 +62,21 @@ impl Contract {
             PromiseResult::NotReady => 0,
             PromiseResult::Failed => 0,
             PromiseResult::Successful(result) => {
-                near_sdk::serde_json::from_slice::<WBalance>(&result)
-                    .unwrap()
-                    .into()
+                let actual_balance: WBalance =
+                    near_sdk::serde_json::from_slice::<WBalance>(&result).unwrap();
+                let mut funded_by_underlying_token = WBalance::from(0);
+
+                for hm in self.funded_reward_amount.values() {
+                    match hm.get(&self.get_underlying_contract_address()) {
+                        None => {}
+                        Some(balance) => {
+                            funded_by_underlying_token =
+                                (funded_by_underlying_token.0 + balance).into()
+                        }
+                    };
+                }
+
+                actual_balance.0 - funded_by_underlying_token.0
             }
         };
 
