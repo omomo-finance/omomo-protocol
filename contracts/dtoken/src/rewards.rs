@@ -266,8 +266,8 @@ impl Contract {
         WBalance::from(
             reward.amount.0
                 + (BigBalance::from(total.0)
-                * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
-                / BigBalance::from(ONE_TOKEN))
+                    * (campaign.rewards_per_token - reward.rewards_per_token_paid + accrued)
+                    / BigBalance::from(ONE_TOKEN))
                 .round_u128(),
         )
     }
@@ -403,7 +403,7 @@ impl Contract {
                 _ => ((BigBalance::from(reward.amount.0 - reward.claimed.0)
                     * BigBalance::from(current_time - campaign.vesting.start_time))
                     / BigBalance::from(vesting_duration))
-                    .round_u128(),
+                .round_u128(),
             }
         }
         result
@@ -427,15 +427,15 @@ impl Contract {
             ONE_YOCTO,
             self.terra_gas(10),
         )
-            .then(ext_self::claim_reward_ft_transfer_callback(
-                reward,
-                account_id,
-                claimed_amount,
-                unlocked_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(5),
-            ));
+        .then(ext_self::claim_reward_ft_transfer_callback(
+            reward,
+            account_id,
+            claimed_amount,
+            unlocked_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(5),
+        ));
     }
 }
 

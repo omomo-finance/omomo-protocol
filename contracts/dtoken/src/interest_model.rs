@@ -57,15 +57,16 @@ impl Contract {
         total_borrows: WBalance,
         total_reserves: WBalance,
     ) -> Ratio {
-        let funded_by_underlying_token = self.get_total_reward_amount(self.get_underlying_contract_address());
+        let funded_by_underlying_token =
+            self.get_total_reward_amount(self.get_underlying_contract_address());
 
         let pure_underlying_balance = underlying_balance.0 - funded_by_underlying_token;
 
-        let denominator = if Balance::from(pure_underlying_balance) + Balance::from(total_borrows)
+        let denominator = if pure_underlying_balance + Balance::from(total_borrows)
             > Balance::from(total_reserves)
         {
             BigBalance::from(
-                Balance::from(pure_underlying_balance) + Balance::from(total_borrows)
+                pure_underlying_balance + Balance::from(total_borrows)
                     - Balance::from(total_reserves),
             )
         } else {

@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-            .then(ext_self::repay_balance_of_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(60),
-            ))
-            .into()
+        .then(ext_self::repay_balance_of_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(60),
+        ))
+        .into()
     }
 }
 
@@ -58,7 +58,8 @@ impl Contract {
                 let actual_balance: WBalance =
                     near_sdk::serde_json::from_slice::<WBalance>(&result).unwrap();
 
-                let funded_by_underlying_token: u128 = self.get_total_reward_amount(self.get_underlying_contract_address());
+                let funded_by_underlying_token: u128 =
+                    self.get_total_reward_amount(self.get_underlying_contract_address());
 
                 actual_balance.0 - funded_by_underlying_token
             }
@@ -110,13 +111,13 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::controller_repay_borrows_callback(
-                token_amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(20),
-            ))
-            .into()
+        .then(ext_self::controller_repay_borrows_callback(
+            token_amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(20),
+        ))
+        .into()
     }
 
     #[private]
@@ -140,7 +141,7 @@ impl Contract {
         // update total reserves only after successful repay
         let new_total_reserve = self.get_total_reserves()
             + (Ratio::from(borrow_interest.accumulated_interest) * self.model.get_reserve_factor())
-            .round_u128();
+                .round_u128();
         self.set_total_reserves(new_total_reserve);
 
         let dust_balance = token_amount

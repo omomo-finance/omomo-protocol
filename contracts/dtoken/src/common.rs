@@ -72,8 +72,8 @@ impl Contract {
         total_reserves: Balance,
         total_supplies: Balance,
     ) -> Ratio {
-
-        let funded_by_underlying_token = self.get_total_reward_amount(self.get_underlying_contract_address());
+        let funded_by_underlying_token =
+            self.get_total_reward_amount(self.get_underlying_contract_address());
 
         let pure_underlying_balance = underlying_balance.0 - funded_by_underlying_token;
 
@@ -87,11 +87,12 @@ impl Contract {
     }
 
     pub fn get_total_reward_amount(&self, token_id: AccountId) -> u128 {
-        self.reward_campaigns.values()
+        self.reward_campaigns
+            .values()
             .filter(|reward_campaign| reward_campaign.token_id == token_id)
-            .map(|reward_campaign| reward_campaign.reward_amount.0).sum()
+            .map(|reward_campaign| reward_campaign.reward_amount.0)
+            .sum()
     }
-
 
     pub fn terra_gas(&self, gas: u64) -> Gas {
         TGAS * gas
