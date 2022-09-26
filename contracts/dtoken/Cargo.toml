@@ -9,11 +9,13 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk = "4.0.0-pre.6"
+workspaces = "0.5.0"
 near-contract-standards = "4.0.0-pre.6"
 general = { path = "../general" }
 near-sys = "0.2.0"
+tokio = "1.21.1"
+anyhow = "1.0.65"
 
 [dev-dependencies]
-near-sdk-sim = "4.0.0-pre.6"
 test-utoken = { path = "../test-utoken" }
 controller = { path = "../controller" }

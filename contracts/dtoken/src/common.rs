@@ -97,15 +97,15 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::mutex_lock_callback(
-            action,
-            amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            // TODO Better gas handling
-            gas - self.terra_gas(5),
-        ))
-        .into()
+            .then(ext_self::mutex_lock_callback(
+                action,
+                amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                // TODO Better gas handling
+                gas - self.terra_gas(5),
+            ))
+            .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
@@ -198,6 +198,19 @@ impl Contract {
     pub fn request_unique_id(&mut self) -> String {
         self.uid += 1;
         self.get_unique_id()
+    }
+
+    fn set_contract_balance(&mut self, amount: Balance) -> Balance {
+        self.contract_balance = amount;
+        self.get_contract_balance()
+    }
+
+    pub fn get_contract_balance(&self) -> Balance {
+        self.contract_balance
+    }
+
+    pub fn increase_contract_balance(&mut self, amount: WBalance) -> Balance {
+        self.set_contract_balance(self.get_contract_balance() + Balance::from(amount))
     }
 }
 

@@ -25,6 +25,9 @@ impl Upgradable for Contract {
             ///  Exchange rate in case of zero supplies
             initial_exchange_rate: Ratio,
 
+            /// Underlying balance of contract itself
+            contract_balance: Balance,
+
             /// Total sum of supplied tokens
             total_reserves: Balance,
 
@@ -64,6 +67,7 @@ impl Upgradable for Contract {
         Self {
             initial_exchange_rate: contract.initial_exchange_rate,
             total_reserves: contract.total_reserves,
+            contract_balance: contract.contract_balance,
             user_profiles: contract.user_profiles,
             underlying_token: contract.underlying_token,
             token: contract.token,
