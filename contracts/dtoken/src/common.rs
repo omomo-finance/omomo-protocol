@@ -97,15 +97,15 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-            .then(ext_self::mutex_lock_callback(
-                action,
-                amount,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                // TODO Better gas handling
-                gas - self.terra_gas(5),
-            ))
-            .into()
+        .then(ext_self::mutex_lock_callback(
+            action,
+            amount,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            // TODO Better gas handling
+            gas - self.terra_gas(5),
+        ))
+        .into()
     }
 
     pub fn mutex_account_unlock(&mut self) {
