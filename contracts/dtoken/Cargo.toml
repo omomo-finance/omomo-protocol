@@ -15,5 +15,8 @@ near-sys = "0.2.0"
 
 [dev-dependencies]
 near-sdk-sim = "4.0.0-pre.6"
+workspaces = "0.5.0"
+tokio = "1.21.1"
+anyhow = "1.0.65"
 test-utoken = { path = "../test-utoken" }
 controller = { path = "../controller" }

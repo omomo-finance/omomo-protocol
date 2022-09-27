@@ -199,6 +199,22 @@ impl Contract {
         self.uid += 1;
         self.get_unique_id()
     }
+
+    fn set_contract_balance(&mut self, amount: Balance) -> Balance {
+        self.contract_balance = amount;
+        self.get_contract_balance()
+    }
+
+    pub fn get_contract_balance(&self) -> Balance {
+        self.contract_balance
+    }
+
+    pub fn increase_contract_balance(&mut self, amount: WBalance) -> Balance {
+        self.set_contract_balance(self.get_contract_balance() + Balance::from(amount))
+    }
+
+
+
 }
 
 #[near_bindgen]

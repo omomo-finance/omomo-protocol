@@ -16,6 +16,10 @@ pub struct MarketData {
 
 #[near_bindgen]
 impl Contract {
+    pub fn view_contract_balance(&self) -> WBalance {
+        WBalance::from(self.contract_balance)
+    }
+
     pub fn view_total_supplies(&self) -> WBalance {
         WBalance::from(self.get_total_supplies())
     }
