@@ -8,7 +8,6 @@ const MARKET_WASM: &str = "../../res/dtoken.wasm";
 const UNDERLYING_WASM: &str = "../../res/test_utoken.wasm";
 const CONTROLLER_WASM: &str = "../../res/controller.wasm";
 
-
 pub async fn deploy_underlying(
     owner: &Account,
     worker: &Worker<Sandbox>,
@@ -18,20 +17,17 @@ pub async fn deploy_underlying(
 
     let _ = underlying
         .call("new_default_meta")
-        .args_json(
-            json!({ "owner_id": owner.id(),
-    "name": "Wrapped Ethereum",
-    "symbol": "WETH",
-    "total_supply": "1000000000000000000000000000"
-            }),
-        )
+        .args_json(json!({ "owner_id": owner.id(),
+        "name": "Wrapped Ethereum",
+        "symbol": "WETH",
+        "total_supply": "1000000000000000000000000000"
+                }))
         .max_gas()
         .transact()
         .await?;
 
     Ok(underlying)
 }
-
 
 pub async fn deploy_market(
     owner: &Account,
@@ -75,7 +71,6 @@ pub async fn deploy_market(
     Ok(market)
 }
 
-
 pub async fn deploy_controller(
     owner: &Account,
     worker: &Worker<Sandbox>,
@@ -84,15 +79,12 @@ pub async fn deploy_controller(
     let controller = worker.dev_deploy(&wasm.unwrap()).await?;
     let oracle = worker.dev_create_account().await?;
 
-
     let _ = controller
         .call("new_with_config")
-        .args_json(
-            json!({
-"owner_id": owner.id(),
-"oracle_account_id":oracle.id()
-}),
-        )
+        .args_json(json!({
+        "owner_id": owner.id(),
+        "oracle_account_id":oracle.id()
+        }))
         .max_gas()
         .transact()
         .await?;

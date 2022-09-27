@@ -33,7 +33,7 @@ impl Upgradable for Contract {
 
             /// Underlying balance of contract itself
             contract_balance: Balance,
-            
+
             /// Address of underlying token
             underlying_token: AccountId,
 
