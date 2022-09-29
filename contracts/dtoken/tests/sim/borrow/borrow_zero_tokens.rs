@@ -1,4 +1,8 @@
-use crate::utils::{add_market, assert_failure, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens, mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance};
+use crate::utils::{
+    add_market, assert_failure, borrow, initialize_controller, initialize_three_dtokens,
+    initialize_three_utokens, mint_and_reserve, mint_tokens, new_user, set_price, supply,
+    view_balance,
+};
 use controller::ActionType::Borrow;
 use dtoken::InterestRateModel;
 use general::Price;
@@ -37,7 +41,6 @@ fn borrow_fixture() -> (
     mint_and_reserve(&droot, &weth, &weth_market, RESERVE_AMOUNT);
     mint_and_reserve(&droot, &wnear, &wnear_market, RESERVE_AMOUNT);
     mint_and_reserve(&droot, &wbtc, &dwbtc, RESERVE_AMOUNT);
-
 
     mint_tokens(&weth, user.account_id(), U128(WETH_AMOUNT));
     mint_tokens(&wnear, user.account_id(), U128(WNEAR_AMOUNT));

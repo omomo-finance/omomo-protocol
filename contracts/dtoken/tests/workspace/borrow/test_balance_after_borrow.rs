@@ -27,7 +27,7 @@ async fn borrow_fixture(
         underlying.as_account(),
         controller.as_account(),
     )
-        .await?;
+    .await?;
 
     let contract_ft_balance_of: U128 = worker
         .view(
@@ -36,8 +36,8 @@ async fn borrow_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -49,8 +49,8 @@ async fn borrow_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -121,8 +121,8 @@ async fn borrow_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -134,8 +134,8 @@ async fn borrow_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -192,8 +192,8 @@ async fn test_successful_borrow() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -205,8 +205,8 @@ async fn test_successful_borrow() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -220,7 +220,6 @@ async fn test_successful_borrow() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-
     let contract_ft_balance_of_after_borrow: U128 = worker
         .view(
             underlying.id(),
@@ -228,8 +227,8 @@ async fn test_successful_borrow() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -241,20 +240,14 @@ async fn test_successful_borrow() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
 
-    assert!(
-        contract_ft_balance_of_before_borrow.0 >
-        contract_ft_balance_of_after_borrow.0
-    );
-    assert!(
-        contract_balance_field_before_borrow.0 >
-        contract_balance_field_after_borrow.0
-    );
+    assert!(contract_ft_balance_of_before_borrow.0 > contract_ft_balance_of_after_borrow.0);
+    assert!(contract_balance_field_before_borrow.0 > contract_balance_field_after_borrow.0);
     assert_eq!(
         contract_balance_field_after_borrow,
         contract_ft_balance_of_after_borrow
