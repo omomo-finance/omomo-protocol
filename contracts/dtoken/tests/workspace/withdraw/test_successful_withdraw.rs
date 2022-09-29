@@ -27,7 +27,7 @@ async fn withdraw_fixture(
         underlying.as_account(),
         controller.as_account(),
     )
-        .await?;
+    .await?;
 
     let contract_ft_balance_of: U128 = worker
         .view(
@@ -36,8 +36,8 @@ async fn withdraw_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -49,8 +49,8 @@ async fn withdraw_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -121,8 +121,8 @@ async fn withdraw_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -134,8 +134,8 @@ async fn withdraw_fixture(
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -164,7 +164,6 @@ async fn withdraw_fixture(
         .transact()
         .await?;
 
-
     let _ = controller
         .call("upsert_price")
         .args_json(json!({
@@ -179,10 +178,8 @@ async fn withdraw_fixture(
         .transact()
         .await?;
 
-
     Ok((underlying, controller, market))
 }
-
 
 #[tokio::test]
 async fn test_successful_supply() -> anyhow::Result<()> {
@@ -202,7 +199,6 @@ async fn test_successful_supply() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-
     let contract_ft_balance_of_before_withdraw: U128 = worker
         .view(
             underlying.id(),
@@ -210,8 +206,8 @@ async fn test_successful_supply() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -223,12 +219,11 @@ async fn test_successful_supply() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
-
 
     let _ = owner
         .call(market.id(), "withdraw")
@@ -246,8 +241,8 @@ async fn test_successful_supply() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;
@@ -259,8 +254,8 @@ async fn test_successful_supply() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-                .to_string()
-                .into_bytes(),
+            .to_string()
+            .into_bytes(),
         )
         .await?
         .json()?;

@@ -216,7 +216,6 @@ impl Contract {
     pub fn decrease_contract_balance(&mut self, amount: WBalance) -> Balance {
         self.set_contract_balance(self.get_contract_balance() - Balance::from(amount))
     }
-
 }
 
 #[near_bindgen]
