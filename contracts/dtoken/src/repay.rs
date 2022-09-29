@@ -22,13 +22,13 @@ impl Contract {
             NO_DEPOSIT,
             TGAS,
         )
-        .then(ext_self::repay_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(60),
-        ))
-        .into()
+            .then(ext_self::repay_balance_of_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(60),
+            ))
+            .into()
     }
 }
 
@@ -105,13 +105,13 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(5),
         )
-        .then(ext_self::controller_repay_borrows_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(20),
-        ))
-        .into()
+            .then(ext_self::controller_repay_borrows_callback(
+                token_amount,
+                env::current_account_id(),
+                NO_DEPOSIT,
+                self.terra_gas(20),
+            ))
+            .into()
     }
 
     #[private]
@@ -135,7 +135,7 @@ impl Contract {
         // update total reserves only after successful repay
         let new_total_reserve = self.get_total_reserves()
             + (Ratio::from(borrow_interest.accumulated_interest) * self.model.get_reserve_factor())
-                .round_u128();
+            .round_u128();
         self.set_total_reserves(new_total_reserve);
 
         let dust_balance = token_amount
@@ -152,15 +152,18 @@ impl Contract {
         if token_amount.0 <= borrow_accrued_interest.accumulated_interest {
             borrow_interest.accumulated_interest -= token_amount.0;
             self.set_accrued_borrow_interest(env::signer_account_id(), borrow_interest);
+            self.increase_contract_balance(token_amount)
         } else if token_amount.0 <= borrow_amount + borrow_accrued_interest.accumulated_interest {
             self.decrease_borrows(
                 env::signer_account_id(),
                 WBalance::from(token_amount.0 - borrow_interest.accumulated_interest),
             );
             self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
+            self.increase_contract_balance(token_amount)
         } else {
             self.decrease_borrows(env::signer_account_id(), U128(borrow_amount));
             self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
+            self.increase_contract_balance(U128::from(borrow_amount + borrow_accrued_interest.accumulated_interest))
         };
 
         self.mutex_account_unlock();
@@ -169,6 +172,7 @@ impl Contract {
             "{}",
             Events::RepaySuccess(env::signer_account_id(), Balance::from(token_amount))
         );
+
 
         PromiseOrValue::Value(U128(dust_balance))
     }
