@@ -31,6 +31,9 @@ impl Upgradable for Contract {
             /// Account Id -> Token's amount
             user_profiles: UnorderedMap<AccountId, UserProfile>,
 
+            /// Underlying balance of contract itself
+            contract_balance: Balance,
+
             /// Address of underlying token
             underlying_token: AccountId,
 
@@ -64,6 +67,7 @@ impl Upgradable for Contract {
         Self {
             initial_exchange_rate: contract.initial_exchange_rate,
             total_reserves: contract.total_reserves,
+            contract_balance: contract.contract_balance,
             user_profiles: contract.user_profiles,
             underlying_token: contract.underlying_token,
             token: contract.token,

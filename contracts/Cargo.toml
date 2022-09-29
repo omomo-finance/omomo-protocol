@@ -16,3 +16,4 @@ members = [
     "test-utoken",
     "token"
 ]
+

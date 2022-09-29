@@ -15,6 +15,9 @@ impl Contract {
         );
 
         self.increase_reserve(token_amount);
+
+        self.increase_contract_balance(token_amount);
+
         PromiseOrValue::Value(U128(0))
     }
 

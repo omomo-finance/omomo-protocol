@@ -141,6 +141,8 @@ impl Contract {
             "{}",
             Events::SupplySuccess(env::signer_account_id(), Balance::from(amount))
         );
+        self.increase_contract_balance(amount);
+
         self.mutex_account_unlock();
         PromiseOrValue::Value(U128(0))
     }

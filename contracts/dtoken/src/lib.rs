@@ -61,6 +61,9 @@ pub struct Contract {
     /// Total sum of supplied tokens
     total_reserves: Balance,
 
+    /// Underlying balance of contract itself
+    contract_balance: Balance,
+
     /// Account Id -> Token's amount
     user_profiles: UnorderedMap<AccountId, UserProfile>,
 
@@ -307,6 +310,7 @@ impl Contract {
         Self {
             initial_exchange_rate: Ratio::from(config.initial_exchange_rate),
             total_reserves: 0,
+            contract_balance: 0,
             user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             underlying_token: config.underlying_token_id.clone(),
             token: FungibleToken::new(b"t".to_vec()),
