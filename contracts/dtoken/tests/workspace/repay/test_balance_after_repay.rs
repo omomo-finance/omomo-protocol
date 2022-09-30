@@ -6,7 +6,8 @@ use near_sdk::Balance;
 use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
-const BORROW_AMOUNT: Balance = 1000000000000000000000000000 / 2;
+// 10 Near
+const BORROW_AMOUNT: Balance = 50000000000000000000000000;
 
 async fn repay_fixture(
     owner: &Account,
@@ -82,7 +83,7 @@ async fn repay_fixture(
         .call("mint")
         .args_json(json!({
             "account_id": owner.id(),
-            "amount": U128::from(20000000000000000000000000000)
+            "amount": U128::from(200000000000000000000000000)
         }))
         .max_gas()
         .transact()
@@ -92,7 +93,7 @@ async fn repay_fixture(
         .call(underlying.id(), "ft_transfer_call")
         .args_json(json!({
             "receiver_id": market.id(),
-            "amount": U128::from(1000000000000000000000000000),
+            "amount": U128::from(100000000000000000000000000),
             "msg": "\"Reserve\""
         }))
         .max_gas()
@@ -115,7 +116,7 @@ async fn repay_fixture(
 
     assert_eq!(
         total_reserves_after_reserve,
-        U128::from(1000000000000000000000000000)
+        U128::from(100000000000000000000000000)
     );
 
     let contract_ft_balance_of_after_reserve: U128 = worker
@@ -172,7 +173,7 @@ async fn repay_fixture(
         .call(underlying.id(), "ft_transfer_call")
         .args_json(json!({
             "receiver_id": market.id(),
-            "amount": U128::from(1000000000000000000000000000),
+            "amount": U128::from(100000000000000000000000000),
             "msg": "\"Supply\""
         }))
         .max_gas()
@@ -199,7 +200,7 @@ async fn test_repay_part_of_accumulated_interest() -> anyhow::Result<()> {
     let (underlying, _, market) = repay_fixture(&owner, &worker).await?;
 
     // passing 100 blocks
-    let blocks_to_advance = 1000;
+    let blocks_to_advance = 100;
     worker.fast_forward(blocks_to_advance).await?;
 
     let contract_ft_balance_of_before_repay: U128 = worker
@@ -291,11 +292,129 @@ async fn test_repay_part_of_accumulated_interest() -> anyhow::Result<()> {
         contract_balance_field_after_repay.0
     );
 
+    assert_eq!(contract_balance_field_after_repay, contract_ft_balance_of_after_repay);
+
     Ok(())
 }
 
 #[tokio::test]
 async fn test_repay_full_amount() -> anyhow::Result<()> {
+    let worker = workspaces::sandbox().await?;
+    let owner = worker.root_account()?;
+    let (underlying, _, market) = repay_fixture(&owner, &worker).await?;
+
+    // passing 100 blocks
+    let blocks_to_advance = 100;
+    worker.fast_forward(blocks_to_advance).await?;
+
+
+    let contract_ft_balance_of_before_repay: U128 = worker
+        .view(
+            underlying.id(),
+            "ft_balance_of",
+            json!({
+                "account_id": market.id(),
+            })
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    let contract_balance_field_before_repay: U128 = worker
+        .view(
+            market.id(),
+            "view_contract_balance",
+            json!({
+                "account_id": market.id(),
+            })
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    let repay_info: RepayInfo = worker
+        .view(
+            market.id(),
+            "view_repay_info",
+            json!({
+                "user_id": owner.id(),
+                "ft_balance": contract_balance_field_before_repay})
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    assert_eq!(repay_info.borrow_amount.0, BORROW_AMOUNT);
+
+    // mocking slippage
+    let _ = owner
+        .call(underlying.id(), "ft_transfer_call")
+        .args_json(json!({
+            "receiver_id": market.id(),
+            "amount": U128::from(BORROW_AMOUNT + repay_info.accumulated_interest.0 * 2 )  ,
+            "msg": "\"Repay\""
+        }))
+        .max_gas()
+        .deposit(1)
+        .transact()
+        .await?;
+
+
+    let contract_ft_balance_of_after_repay: U128 = worker
+        .view(
+            underlying.id(),
+            "ft_balance_of",
+            json!({
+                "account_id": market.id(),
+            })
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    let repay_info_after_repay: RepayInfo = worker
+        .view(
+            market.id(),
+            "view_repay_info",
+            json!({
+                "user_id": owner.id(),
+                "ft_balance": contract_ft_balance_of_after_repay})
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    assert_eq!(repay_info_after_repay.borrow_amount.0, 0);
+
+    let contract_balance_field_after_repay: U128 = worker
+        .view(
+            market.id(),
+            "view_contract_balance",
+            json!({
+                "account_id": market.id(),
+            })
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    assert!(contract_balance_field_before_repay.0 < contract_balance_field_after_repay.0);
+    assert!(contract_ft_balance_of_before_repay.0 < contract_balance_field_after_repay.0);
+
+    assert_eq!(contract_balance_field_after_repay, contract_ft_balance_of_after_repay);
+
+    Ok(())
+}
+
+
+#[tokio::test]
+async fn test_repay_more() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
     let owner = worker.root_account()?;
     let (underlying, _, market) = repay_fixture(&owner, &worker).await?;
@@ -311,8 +430,8 @@ async fn test_repay_full_amount() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-            .to_string()
-            .into_bytes(),
+                .to_string()
+                .into_bytes(),
         )
         .await?
         .json()?;
@@ -324,30 +443,17 @@ async fn test_repay_full_amount() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-            .to_string()
-            .into_bytes(),
+                .to_string()
+                .into_bytes(),
         )
         .await?
         .json()?;
 
-    let repay_info: RepayInfo = worker
-        .view(
-            market.id(),
-            "view_repay_info",
-            json!({
-                "user_id": owner.id(),
-                "ft_balance": contract_balance_field_before_repay})
-            .to_string()
-            .into_bytes(),
-        )
-        .await?
-        .json()?;
-
-    let repay_result = owner
+    let _ = owner
         .call(underlying.id(), "ft_transfer_call")
         .args_json(json!({
             "receiver_id": market.id(),
-            "amount": U128::from(BORROW_AMOUNT + repay_info.accumulated_interest.0)  ,
+            "amount": U128::from(BORROW_AMOUNT * 2)  ,
             "msg": "\"Repay\""
         }))
         .max_gas()
@@ -355,7 +461,6 @@ async fn test_repay_full_amount() -> anyhow::Result<()> {
         .transact()
         .await?;
 
-    dbg!(repay_result);
 
     let contract_ft_balance_of_after_repay: U128 = worker
         .view(
@@ -364,11 +469,26 @@ async fn test_repay_full_amount() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-            .to_string()
-            .into_bytes(),
+                .to_string()
+                .into_bytes(),
         )
         .await?
         .json()?;
+
+    let repay_info_after_repay: RepayInfo = worker
+        .view(
+            market.id(),
+            "view_repay_info",
+            json!({
+                "user_id": owner.id(),
+                "ft_balance": contract_ft_balance_of_after_repay})
+                .to_string()
+                .into_bytes(),
+        )
+        .await?
+        .json()?;
+
+    assert_eq!(repay_info_after_repay.borrow_amount.0, 0);
 
     let contract_balance_field_after_repay: U128 = worker
         .view(
@@ -377,8 +497,8 @@ async fn test_repay_full_amount() -> anyhow::Result<()> {
             json!({
                 "account_id": market.id(),
             })
-            .to_string()
-            .into_bytes(),
+                .to_string()
+                .into_bytes(),
         )
         .await?
         .json()?;
@@ -386,14 +506,7 @@ async fn test_repay_full_amount() -> anyhow::Result<()> {
     assert!(contract_balance_field_before_repay.0 < contract_balance_field_after_repay.0);
     assert!(contract_ft_balance_of_before_repay.0 < contract_balance_field_after_repay.0);
 
-    assert_eq!(
-        contract_ft_balance_of_before_repay.0 + BORROW_AMOUNT + repay_info.accumulated_interest.0,
-        contract_ft_balance_of_after_repay.0
-    );
-    assert_eq!(
-        contract_balance_field_before_repay.0 + BORROW_AMOUNT + repay_info.accumulated_interest.0,
-        contract_balance_field_after_repay.0
-    );
+    assert_eq!(contract_balance_field_after_repay, contract_ft_balance_of_after_repay);
 
     Ok(())
 }
