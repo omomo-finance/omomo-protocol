@@ -1,4 +1,7 @@
-use crate::utils::{add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens, liquidate, mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance};
+use crate::utils::{
+    add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
+    liquidate, mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance,
+};
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
 use general::Price;
@@ -41,7 +44,6 @@ fn liquidation_fixture() -> (
     let mint_amount = U128(MINT_BALANCE);
     mint_and_reserve(&droot, &weth, &weth_market, RESERVE_AMOUNT);
     mint_and_reserve(&droot, &wnear, &wnear_market, RESERVE_AMOUNT);
-
 
     mint_tokens(&weth, borrower.account_id(), mint_amount);
     mint_tokens(&wnear, liquidator.account_id(), mint_amount);

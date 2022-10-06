@@ -19,7 +19,6 @@ const MINT_BALANCE: Balance = 100000000000;
 const START_PRICE: Balance = 2000;
 const CHANGED_PRICE: Balance = 1200;
 
-
 fn liquidation_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
     ContractAccount<dtoken::ContractContract>,
@@ -91,7 +90,13 @@ fn liquidation_fixture() -> (
         },
     );
 
-    supply(&borrower, &wnear, wnear_market.account_id(), BORROWER_SUPPLY).assert_success();
+    supply(
+        &borrower,
+        &wnear,
+        wnear_market.account_id(),
+        BORROWER_SUPPLY,
+    )
+    .assert_success();
 
     borrow(&borrower, &weth_market, BORROWER_BORROW).assert_success();
 
@@ -130,16 +135,33 @@ fn liquidation_fixture() -> (
         view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
     assert_eq!(health_factor, Ratio::from_str("0.9").unwrap());
 
-    (weth_market, wnear_market, controller, weth, wnear, borrower, liquidator)
+    (
+        weth_market,
+        wnear_market,
+        controller,
+        weth,
+        wnear,
+        borrower,
+        liquidator,
+    )
 }
 
 #[test]
 fn scenario_liquidation_fail_due_to_low_health_factor() {
-    let (weth_market, wnear_market, controller, weth, _wnear, borrower, liquidator) = liquidation_fixture();
+    let (weth_market, wnear_market, controller, weth, _wnear, borrower, liquidator) =
+        liquidation_fixture();
 
     let amount = 4500;
 
-    liquidate(&borrower, &liquidator, &weth_market, &wnear_market, &weth, amount).assert_success();
+    liquidate(
+        &borrower,
+        &liquidator,
+        &weth_market,
+        &wnear_market,
+        &weth,
+        amount,
+    )
+    .assert_success();
 
     let user_borrows: Balance =
         view!(weth_market.get_account_borrows(borrower.account_id())).unwrap_json();

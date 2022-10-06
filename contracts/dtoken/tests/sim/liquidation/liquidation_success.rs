@@ -90,7 +90,13 @@ fn liquidation_success_fixture() -> (
         },
     );
 
-    supply(&borrower, &wnear, wnear_market.account_id(), BORROWER_SUPPLY).assert_success();
+    supply(
+        &borrower,
+        &wnear,
+        wnear_market.account_id(),
+        BORROWER_SUPPLY,
+    )
+    .assert_success();
     let health_factor: Ratio =
         view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
     assert_eq!(
@@ -142,7 +148,15 @@ fn liquidation_success_fixture() -> (
         view!(controller.get_health_factor(borrower.account_id())).unwrap_json();
     assert_eq!(health_factor, Ratio::from_str("0.9").unwrap());
 
-    (weth_market, wnear_market, controller, weth, wnear, borrower, liquidator)
+    (
+        weth_market,
+        wnear_market,
+        controller,
+        weth,
+        wnear,
+        borrower,
+        liquidator,
+    )
 }
 
 #[test]
