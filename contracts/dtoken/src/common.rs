@@ -214,6 +214,7 @@ impl Contract {
     }
 
     pub fn decrease_contract_balance(&mut self, amount: WBalance) -> Balance {
+        assert!(self.get_contract_balance() > Balance::from(amount));
         self.set_contract_balance(self.get_contract_balance() - Balance::from(amount))
     }
 }
