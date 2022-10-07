@@ -66,15 +66,14 @@ impl Contract {
             NO_DEPOSIT,
             self.terra_gas(15),
         )
-            .then(ext_self::make_borrow_callback(
-                token_amount,
-                account_to_borrow,
-                env::current_account_id(),
-                NO_DEPOSIT,
-                self.terra_gas(80),
-            ))
-            .into()
-
+        .then(ext_self::make_borrow_callback(
+            token_amount,
+            account_to_borrow,
+            env::current_account_id(),
+            NO_DEPOSIT,
+            self.terra_gas(80),
+        ))
+        .into()
     }
 }
 
@@ -103,7 +102,6 @@ impl Contract {
             self.terra_gas(180),
         )
     }
-
 
     #[private]
     pub fn make_borrow_callback(

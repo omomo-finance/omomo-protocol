@@ -66,7 +66,6 @@ impl Contract {
         }
     }
 
-
     pub fn view_market_data(&self) -> MarketData {
         let total_supplies = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
@@ -103,7 +102,6 @@ impl Contract {
             borrow_rate_ratio: WRatio::from(borrow_rate),
         }
     }
-
 
     pub fn view_repay_info(&self, user_id: AccountId, ft_balance: WBalance) -> RepayInfo {
         self.get_repay_info(user_id, ft_balance)
@@ -245,14 +243,13 @@ mod tests {
         );
     }
 
-
     #[test]
     fn test_view_market_data_from_different_source() {
         let contract = init_test_env(true);
 
         let old_gotten_md = contract.old_view_market_data(WBalance::from(1000));
         let gotten_md = contract.view_market_data();
-        
+
         assert_eq!(
             &gotten_md.total_supplies, &old_gotten_md.total_supplies,
             "Market total supplies values check has been failed"
@@ -278,7 +275,6 @@ mod tests {
             "Borrow rate values check has been failed"
         );
     }
-
 
     #[test]
     fn test_view_withdraw_info() {
