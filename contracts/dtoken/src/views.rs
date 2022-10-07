@@ -32,7 +32,7 @@ impl Contract {
         WBalance::from(self.get_total_reserves())
     }
 
-    pub fn view_market_data(&self, ft_balance: WBalance) -> MarketData {
+    pub fn old_view_market_data(&self, ft_balance: WBalance) -> MarketData {
         let total_supplies = self.get_total_supplies();
         let total_borrows = self.get_total_borrows();
         let total_reserves = self.get_total_reserves();
@@ -65,6 +65,45 @@ impl Contract {
             borrow_rate_ratio: WRatio::from(borrow_rate),
         }
     }
+
+
+    pub fn view_market_data(&self) -> MarketData {
+        let total_supplies = self.get_total_supplies();
+        let total_borrows = self.get_total_borrows();
+        let total_reserves = self.get_total_reserves();
+
+        let contract_ft_balance = self.view_contract_balance();
+
+        let exchange_rate = self.get_exchange_rate(contract_ft_balance);
+        let reserve_factor = self
+            .config
+            .get()
+            .unwrap()
+            .interest_rate_model
+            .get_reserve_factor();
+
+        let interest_rate = self.get_supply_rate(
+            contract_ft_balance,
+            WBalance::from(total_borrows),
+            WBalance::from(total_reserves),
+            reserve_factor,
+        );
+        let borrow_rate = self.get_borrow_rate(
+            contract_ft_balance,
+            WBalance::from(total_borrows),
+            WBalance::from(total_reserves),
+        );
+
+        MarketData {
+            total_supplies: WBalance::from(total_supplies),
+            total_borrows: WBalance::from(total_borrows),
+            total_reserves: WBalance::from(total_reserves),
+            exchange_rate_ratio: WRatio::from(exchange_rate),
+            interest_rate_ratio: WRatio::from(interest_rate),
+            borrow_rate_ratio: WRatio::from(borrow_rate),
+        }
+    }
+
 
     pub fn view_repay_info(&self, user_id: AccountId, ft_balance: WBalance) -> RepayInfo {
         self.get_repay_info(user_id, ft_balance)
@@ -169,7 +208,7 @@ mod tests {
     fn test_view_market_data() {
         let contract = init_test_env(true);
 
-        let gotten_md = contract.view_market_data(WBalance::from(1000));
+        let gotten_md = contract.old_view_market_data(WBalance::from(1000));
 
         let _expected_md = MarketData {
             total_supplies: U128(0),
@@ -205,6 +244,41 @@ mod tests {
             "Borrow rate values check has been failed"
         );
     }
+
+
+    #[test]
+    fn test_view_market_data_from_different_source() {
+        let contract = init_test_env(true);
+
+        let old_gotten_md = contract.old_view_market_data(WBalance::from(1000));
+        let gotten_md = contract.view_market_data();
+        
+        assert_eq!(
+            &gotten_md.total_supplies, &old_gotten_md.total_supplies,
+            "Market total supplies values check has been failed"
+        );
+        assert_eq!(
+            &gotten_md.total_borrows, &old_gotten_md.total_borrows,
+            "Market total borrows values check has been failed"
+        );
+        assert_eq!(
+            &gotten_md.total_reserves, &old_gotten_md.total_reserves,
+            "Market total reserves values check has been failed"
+        );
+        assert_eq!(
+            &gotten_md.exchange_rate_ratio, &old_gotten_md.exchange_rate_ratio,
+            "Exchange rate values check has been failed"
+        );
+        assert_eq!(
+            &gotten_md.interest_rate_ratio, &old_gotten_md.interest_rate_ratio,
+            "Interest rate values check has been failed"
+        );
+        assert_eq!(
+            &gotten_md.borrow_rate_ratio, &old_gotten_md.borrow_rate_ratio,
+            "Borrow rate values check has been failed"
+        );
+    }
+
 
     #[test]
     fn test_view_withdraw_info() {
