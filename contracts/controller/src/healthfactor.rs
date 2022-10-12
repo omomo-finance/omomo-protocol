@@ -108,7 +108,7 @@ impl Contract {
                     ((BigBalance::from(balance.to_owned()) * BigBalance::from(price.value))
                         / Ratio::from(10u128.pow(price.fraction_digits)))
                     .0
-                    .low_u128(),
+                    .as_u128(),
                 )
             })
             .sum()

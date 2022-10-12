@@ -171,6 +171,9 @@ impl Contract {
                 Events::WithdrawSuccess(env::signer_account_id(), Balance::from(dtoken_amount))
             );
             self.set_accrued_supply_interest(env::signer_account_id(), AccruedInterest::default());
+
+            self.decrease_contract_balance(dtoken_amount);
+
             PromiseOrValue::Value(dtoken_amount)
         } else {
             controller::increase_supplies(

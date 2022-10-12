@@ -1,1 +1,1 @@
-mod test_successful_supply;
+mod test_balance_after_supply;

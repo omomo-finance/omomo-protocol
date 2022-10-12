@@ -34,76 +34,7 @@ impl Contract {
             self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
         }
 
-        underlying_token::ft_balance_of(
-            env::current_account_id(),
-            self.get_underlying_contract_address(),
-            NO_DEPOSIT,
-            TGAS,
-        )
-        .then(ext_self::borrow_balance_of_callback(
-            token_amount,
-            account_to_borrow,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(150),
-        ))
-        .into()
-    }
-}
-
-#[near_bindgen]
-impl Contract {
-    pub fn borrow(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
-        require!(
-            env::prepaid_gas() >= GAS_FOR_BORROW,
-            "Prepaid gas is not enough for borrow flow"
-        );
-
-        assert!(
-            Balance::from(amount) > 0,
-            "Amount should be a positive number"
-        );
-
-        let mut account_to_borrow = env::predecessor_account_id();
-
-        if !self.is_allowed_to_borrow_uncollateralized() {
-            account_to_borrow = signer_account_id();
-        }
-
-        self.mutex_account_lock(
-            Actions::Borrow { account_to_borrow },
-            amount,
-            self.terra_gas(180),
-        )
-    }
-
-    #[private]
-    pub fn borrow_balance_of_callback(
-        &mut self,
-        token_amount: WBalance,
-        account_to_borrow: AccountId,
-    ) -> PromiseOrValue<WBalance> {
-        if !is_promise_success() {
-            log!(
-                "{}",
-                Events::BorrowFailedToGetUnderlyingBalance(
-                    account_to_borrow,
-                    Balance::from(token_amount),
-                    self.get_contract_address(),
-                    self.get_underlying_contract_address()
-                )
-            );
-            self.mutex_account_unlock();
-            return PromiseOrValue::Value(token_amount);
-        }
-
-        let balance_of: Balance = match env::promise_result(0) {
-            PromiseResult::NotReady => 0,
-            PromiseResult::Failed => 0,
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
-                .unwrap()
-                .into(),
-        };
+        let balance_of = self.view_contract_balance().into();
 
         let borrow_rate = self.get_borrow_rate(
             U128(balance_of),
@@ -143,6 +74,33 @@ impl Contract {
             self.terra_gas(80),
         ))
         .into()
+    }
+}
+
+#[near_bindgen]
+impl Contract {
+    pub fn borrow(&mut self, amount: WBalance) -> PromiseOrValue<WBalance> {
+        require!(
+            env::prepaid_gas() >= GAS_FOR_BORROW,
+            "Prepaid gas is not enough for borrow flow"
+        );
+
+        assert!(
+            Balance::from(amount) > 0,
+            "Amount should be a positive number"
+        );
+
+        let mut account_to_borrow = env::predecessor_account_id();
+
+        if !self.is_allowed_to_borrow_uncollateralized() {
+            account_to_borrow = signer_account_id();
+        }
+
+        self.mutex_account_lock(
+            Actions::Borrow { account_to_borrow },
+            amount,
+            self.terra_gas(180),
+        )
     }
 
     #[private]
@@ -198,6 +156,7 @@ impl Contract {
                 "{}",
                 Events::BorrowSuccess(account_to_borrow, Balance::from(token_amount))
             );
+            self.decrease_contract_balance(token_amount);
             PromiseOrValue::Value(U128(0))
         } else {
             controller::decrease_borrows(

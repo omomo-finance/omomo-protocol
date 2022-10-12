@@ -1,6 +1,6 @@
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
-    liquidate, mint_tokens, new_user, set_price, supply, view_balance,
+    liquidate, mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
 use dtoken::InterestRateModel;
@@ -14,6 +14,7 @@ const BORROWER_BORROW: Balance = 40000;
 const MINT_BALANCE: Balance = 100000000000;
 const START_PRICE: Balance = 2000;
 const CHANGED_PRICE: Balance = 1200;
+const RESERVE_AMOUNT: Balance = 100000000000;
 
 fn liquidation_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -31,7 +32,7 @@ fn liquidation_fixture() -> (
     let liquidator = new_user(&root, "liquidator".parse().unwrap());
     let (weth, wnear) = initialize_two_utokens(&root);
     let controller = initialize_controller(&root);
-    let (_, weth_market, wnear_market) = initialize_two_dtokens(
+    let (droot, weth_market, wnear_market) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wnear.account_id(),
@@ -41,8 +42,9 @@ fn liquidation_fixture() -> (
     );
 
     let mint_amount = U128(MINT_BALANCE);
-    mint_tokens(&weth, weth_market.account_id(), mint_amount);
-    mint_tokens(&wnear, wnear_market.account_id(), mint_amount);
+    mint_and_reserve(&droot, &weth, &weth_market, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wnear, &wnear_market, RESERVE_AMOUNT);
+
     mint_tokens(&weth, borrower.account_id(), mint_amount);
     mint_tokens(&wnear, liquidator.account_id(), mint_amount);
     mint_tokens(&weth, liquidator.account_id(), mint_amount);

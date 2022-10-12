@@ -1,6 +1,6 @@
 use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
-    mint_tokens, new_user, set_price, supply, view_balance, withdraw,
+    mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance, withdraw,
 };
 use controller::ActionType::Supply;
 use dtoken::InterestRateModel;
@@ -12,6 +12,7 @@ const WBTC_AMOUNT: Balance = 0;
 const BORROW_AMOUNT: Balance = 50;
 const START_BALANCE: Balance = 100;
 const START_PRICE: Balance = 50000;
+const RESERVE_AMOUNT: Balance = 100;
 
 fn withdraw_fixture() -> (
     ContractAccount<dtoken::ContractContract>,
@@ -31,7 +32,7 @@ fn withdraw_fixture() -> (
         jump_multiplier_per_block: U128(0),
         reserve_factor: U128(0),
     };
-    let (_, weth_market, dwbtc) = initialize_two_dtokens(
+    let (droot, weth_market, dwbtc) = initialize_two_dtokens(
         &root,
         weth.account_id(),
         wbtc.account_id(),
@@ -41,8 +42,8 @@ fn withdraw_fixture() -> (
     );
 
     let mint_amount = U128(START_BALANCE);
-    mint_tokens(&weth, weth_market.account_id(), mint_amount);
-    mint_tokens(&wbtc, dwbtc.account_id(), mint_amount);
+    mint_and_reserve(&droot, &weth, &weth_market, RESERVE_AMOUNT);
+    mint_and_reserve(&droot, &wbtc, &dwbtc, RESERVE_AMOUNT);
     mint_tokens(&weth, user.account_id(), mint_amount);
     mint_tokens(&wbtc, user.account_id(), U128(WBTC_AMOUNT));
 

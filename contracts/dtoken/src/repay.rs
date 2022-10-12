@@ -152,15 +152,20 @@ impl Contract {
         if token_amount.0 <= borrow_accrued_interest.accumulated_interest {
             borrow_interest.accumulated_interest -= token_amount.0;
             self.set_accrued_borrow_interest(env::signer_account_id(), borrow_interest);
+            self.increase_contract_balance(token_amount)
         } else if token_amount.0 <= borrow_amount + borrow_accrued_interest.accumulated_interest {
             self.decrease_borrows(
                 env::signer_account_id(),
                 WBalance::from(token_amount.0 - borrow_interest.accumulated_interest),
             );
             self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
+            self.increase_contract_balance(token_amount)
         } else {
             self.decrease_borrows(env::signer_account_id(), U128(borrow_amount));
             self.set_accrued_borrow_interest(env::signer_account_id(), AccruedInterest::default());
+            self.increase_contract_balance(U128::from(
+                borrow_amount + borrow_accrued_interest.accumulated_interest,
+            ))
         };
 
         self.mutex_account_unlock();
