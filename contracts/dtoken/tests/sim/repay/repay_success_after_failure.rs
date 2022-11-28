@@ -1,4 +1,8 @@
-use crate::utils::{add_market, assert_failure, borrow, initialize_controller, initialize_three_dtokens, initialize_three_utokens, mint_and_reserve, mint_tokens, new_user, repay, repay_info, set_price, supply, view_balance};
+use crate::utils::{
+    add_market, assert_failure, borrow, initialize_controller, initialize_three_dtokens,
+    initialize_three_utokens, mint_and_reserve, mint_tokens, new_user, repay, repay_info,
+    set_price, supply, view_balance,
+};
 use controller::ActionType::Borrow;
 use dtoken::{InterestRateModel, WRatio};
 use general::{ratio::Ratio, Price, WBalance};
@@ -139,10 +143,8 @@ fn scenario_repay_after_failure() {
         view!(wnear_market.view_exchange_rate(wnear_market_balance)).unwrap_json();
     assert_eq!(exchange_rate, Ratio::one(), "xrate should be 1.0");
 
-
     let result = repay(&user, wnear_market.account_id(), &wnear, 0);
     assert_failure(result, "The amount should be a positive number");
-
 
     let repay_info = repay_info(&user, &wnear_market, wnear_market_balance);
     let repay_amount = Balance::from(repay_info.total_amount);
