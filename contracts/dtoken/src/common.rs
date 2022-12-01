@@ -9,7 +9,6 @@ pub enum Events {
     BorrowFailedToFallback(AccountId, Balance),
     BorrowFallbackSuccess(AccountId, Balance),
 
-    RepayFailedToGetUnderlyingBalance(AccountId, Balance, AccountId, AccountId),
     RepayFailedToUpdateUserBalance(AccountId, Balance),
     RepaySuccess(AccountId, Balance),
 
@@ -288,16 +287,6 @@ impl fmt::Display for Events {
                 f,
                 r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
                 account, balance
-            ),
-            Events::RepayFailedToGetUnderlyingBalance(
-                account,
-                balance,
-                contract_id,
-                underlying_token_id,
-            ) => write!(
-                f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepayFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
-                account, balance, contract_id, underlying_token_id
             ),
             Events::RepayFailedToUpdateUserBalance(account, balance) => write!(
                 f,
