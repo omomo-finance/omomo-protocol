@@ -1,7 +1,7 @@
 use crate::*;
 use near_sdk::env::signer_account_id;
 
-const GAS_FOR_BORROW: Gas = Gas(180_000_000_000_000);
+const GAS_FOR_BORROW: Gas = Gas(65_000_000_000_000);
 
 impl Contract {
     pub fn decrease_borrows(&mut self, account: AccountId, token_amount: WBalance) -> Balance {
@@ -71,7 +71,7 @@ impl Contract {
             account_to_borrow,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(80),
+            self.terra_gas(40),
         ))
         .into()
     }
@@ -99,7 +99,7 @@ impl Contract {
         self.mutex_account_lock(
             Actions::Borrow { account_to_borrow },
             amount,
-            self.terra_gas(180),
+            self.terra_gas(80),
         )
     }
 
@@ -130,14 +130,14 @@ impl Contract {
             )),
             self.get_underlying_contract_address(),
             ONE_YOCTO,
-            self.terra_gas(10),
+            self.terra_gas(4),
         )
         .then(ext_self::borrow_ft_transfer_callback(
             token_amount,
             account_to_borrow,
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(40),
+            self.terra_gas(14),
         ))
         .into()
     }
@@ -165,14 +165,14 @@ impl Contract {
                 token_amount,
                 self.get_controller_address(),
                 NO_DEPOSIT,
-                self.terra_gas(5),
+                self.terra_gas(4),
             )
             .then(ext_self::controller_decrease_borrows_fail_callback(
                 token_amount,
                 account_to_borrow,
                 env::current_account_id(),
                 NO_DEPOSIT,
-                self.terra_gas(20),
+                self.terra_gas(2),
             ))
             .into()
         }
