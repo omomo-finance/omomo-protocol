@@ -187,28 +187,28 @@ register_markets_on_controller(){
     near call $CONTROLLER_ACCOUNT.$1 add_market '{
             "asset_id": "weth.'$1'",
             "dtoken": "weth_market.'$1'",
-            "ticker_id": "weth",
+            "ticker_id": "nWETH",
             "ltv": "0.4",
             "lth": "0.8"
         }' --accountId $1 &
     near call $CONTROLLER_ACCOUNT.$1 add_market '{
             "asset_id": "wnear.'$1'",
             "dtoken": "wnear_market.'$1'",
-            "ticker_id": "wnear",
+            "ticker_id": "near",
             "ltv": "0.5",
             "lth": "0.8"
         }' --accountId $1 &
     near call $CONTROLLER_ACCOUNT.$1 add_market '{
             "asset_id": "usdt.'$1'",
             "dtoken": "usdt_market.'$1'",
-            "ticker_id": "usdt",
+            "ticker_id": "USDt",
             "ltv": "0.8",
             "lth": "0.9"
         }' --accountId $1 &
     near call $CONTROLLER_ACCOUNT.$1 add_market '{
             "asset_id": "usdc.'$1'",
             "dtoken": "usdc_market.'$1'",
-            "ticker_id": "usdc",
+            "ticker_id": "nUSDC",
             "ltv": "0.8",
             "lth": "0.9"
         }' --accountId $1 &
