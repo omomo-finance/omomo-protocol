@@ -11,71 +11,27 @@ impl Contract {
         );
         self.mutex_account_lock(Actions::Supply, token_amount, self.terra_gas(120))
     }
+}
+
+#[near_bindgen]
+impl Contract {
     pub fn post_supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             return PromiseOrValue::Value(token_amount);
         }
         self.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        underlying_token::ft_balance_of(
-            env::current_account_id(),
-            self.get_underlying_contract_address(),
-            NO_DEPOSIT,
-            TGAS,
-        )
-        .then(ext_self::supply_balance_of_callback(
-            token_amount,
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(50),
-        ))
-        .into()
-    }
 
-    pub fn get_account_supplies(&self, account: AccountId) -> Balance {
-        self.token.accounts.get(&account).unwrap_or_default()
-    }
-}
-
-#[near_bindgen]
-impl Contract {
-    #[allow(dead_code)]
-    #[private]
-    pub fn supply_balance_of_callback(
-        &mut self,
-        token_amount: WBalance,
-    ) -> PromiseOrValue<WBalance> {
-        if !is_promise_success() {
-            log!(
-                "{}",
-                Events::SupplyFailedToGetUnderlyingBalance(
-                    env::signer_account_id(),
-                    Balance::from(token_amount),
-                    self.get_contract_address(),
-                    self.get_underlying_contract_address()
-                )
-            );
-            self.mutex_account_unlock();
-            return PromiseOrValue::Value(token_amount);
-        }
-
-        let balance_of: Balance = match env::promise_result(0) {
-            PromiseResult::NotReady => 0,
-            PromiseResult::Failed => 0,
-            PromiseResult::Successful(result) => {
-                near_sdk::serde_json::from_slice::<WBalance>(&result)
-                    .unwrap()
-                    .into()
-            }
-        };
+        let balance_of = self.view_contract_balance();
 
         let exchange_rate =
-            self.get_exchange_rate((balance_of - Balance::from(token_amount)).into());
-        let dtoken_amount =
-            WBalance::from((BigBalance::from(token_amount.0) / exchange_rate).round_u128());
+            self.get_exchange_rate((balance_of.0 - Balance::from(token_amount)).into());
+        let dtoken_amount = WBalance::from(
+            (BigBalance::from(Balance::from(token_amount)) / exchange_rate).round_u128(),
+        );
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
-            U128(balance_of - Balance::from(token_amount)),
+            U128(Balance::from(balance_of) - Balance::from(token_amount)),
             U128(self.get_total_borrows()),
             U128(self.get_total_reserves()),
             interest_rate_model.get_reserve_factor(),
@@ -116,7 +72,10 @@ impl Contract {
         .into()
     }
 
-    #[allow(dead_code)]
+    pub fn get_account_supplies(&self, account: AccountId) -> Balance {
+        self.token.accounts.get(&account).unwrap_or_default()
+    }
+
     #[private]
     pub fn controller_increase_supplies_callback(
         &mut self,
