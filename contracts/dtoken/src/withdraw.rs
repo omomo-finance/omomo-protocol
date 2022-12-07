@@ -39,7 +39,7 @@ impl Contract {
         controller::withdraw_supplies(
             env::signer_account_id(),
             self.get_contract_address(),
-            dtoken_amount.into(),
+            dtoken_amount,
             self.get_controller_address(),
             NO_DEPOSIT,
             self.terra_gas(10),
@@ -47,7 +47,7 @@ impl Contract {
         .then(ext_self::withdraw_supplies_callback(
             env::signer_account_id(),
             token_amount.into(),
-            dtoken_amount.into(),
+            dtoken_amount,
             whole_amount.into(),
             env::current_account_id(),
             NO_DEPOSIT,
