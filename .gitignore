@@ -5,6 +5,7 @@ contracts/dtoken/target
 contracts/controller/target
 contracts/test-utoken/target
 contracts/general/target
+contracts/leverage_trading/target
 /.idea
 /node_modules/
 /res/
