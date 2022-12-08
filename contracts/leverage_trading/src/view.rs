@@ -212,6 +212,10 @@ impl Contract {
 
         liquidation_price.into()
     }
+
+    pub fn view_max_position_amount(&self) -> U128 {
+        U128(self.max_order_amount)
+    }
 }
 
 #[cfg(test)]
