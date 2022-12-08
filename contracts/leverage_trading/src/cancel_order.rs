@@ -120,27 +120,23 @@ impl Contract {
             "Some problem with pool, please contact with ref finance to support."
         );
 
-        if order.status == OrderStatus::Pending {
-            ext_ref_finance::ext(self.ref_finance_account.clone())
-                .with_unused_gas_weight(2)
-                .with_attached_deposit(NO_DEPOSIT)
-                .get_liquidity(order.lpt_id.clone())
-                .then(
-                    ext_self::ext(current_account_id())
-                        .with_unused_gas_weight(98)
-                        .with_attached_deposit(NO_DEPOSIT)
-                        .get_liquidity_callback(
-                            order_id,
-                            order,
-                            swap_fee,
-                            price_impact,
-                            order_action,
-                            pool_info,
-                        ),
-                );
-        } else {
-            self.swap(order_id, order, swap_fee, price_impact, order_action);
-        }
+        ext_ref_finance::ext(self.ref_finance_account.clone())
+            .with_unused_gas_weight(2)
+            .with_attached_deposit(NO_DEPOSIT)
+            .get_liquidity(order.lpt_id.clone())
+            .then(
+                ext_self::ext(current_account_id())
+                    .with_unused_gas_weight(98)
+                    .with_attached_deposit(NO_DEPOSIT)
+                    .get_liquidity_callback(
+                        order_id,
+                        order,
+                        swap_fee,
+                        price_impact,
+                        order_action,
+                        pool_info,
+                    ),
+            );
     }
 
     #[private]
