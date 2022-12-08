@@ -1,3 +1,4 @@
+use near_sdk::Gas;
 use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
 
@@ -71,8 +72,8 @@ impl Contract {
             let lenpnl = (expect_amount
                 - BigDecimal::from(order.amount)
                 - (BigDecimal::from(order.amount)
-                    * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
-            .round_u128();
+                * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
+                .round_u128();
 
             PnLView {
                 is_profit: true,
@@ -211,6 +212,11 @@ impl Contract {
             / buy_amount;
 
         liquidation_price.into()
+    }
+
+    /// returns const gas amount required for executing orders: 50 TGas
+    pub fn view_gas_for_execution(&self) -> Balance {
+        Gas::ONE_TERA.0 as Balance  * 50u128
     }
 }
 
