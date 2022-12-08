@@ -73,10 +73,9 @@ impl Contract {
     }
 
     #[private]
-    pub fn final_liquidate(&mut self, order_id: U128, mut order: Order, market_data: MarketData) {
-        let borrow_fee = BigDecimal::from(
-            market_data.borrow_rate_ratio.0 * (block_height() - order.block) as u128,
-        );
+    pub fn final_liquidate(&mut self, order_id: U128, mut order: Order, borrow_rate_ratio: U128) {
+        let borrow_fee =
+            BigDecimal::from(borrow_rate_ratio.0 * (block_height() - order.block) as u128);
 
         let buy_token_amount =
             BigDecimal::from(order.amount) * order.sell_token_price.value * order.leverage

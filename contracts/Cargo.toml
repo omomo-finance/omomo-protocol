@@ -16,4 +16,7 @@ members = [
     "test-utoken",
     "token"
 ]
+exclude = [
+    "leverage_trading"
+]
 
