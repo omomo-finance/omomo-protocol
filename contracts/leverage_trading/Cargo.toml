@@ -1,0 +1,14 @@
+[package]
+name = "limit-orders"
+version = "0.0.2"
+authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "dmytro.sh@blaize.tech"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+near-sdk = "4.0.0"
+near-contract-standards = "4.0.0"
+uint = { version = "=0.9.0", default-features = false }
+borsh = "0.9.3"
