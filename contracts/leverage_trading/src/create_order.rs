@@ -22,6 +22,9 @@ impl Contract {
     ///
     /// As far as we surpassed gas limit for contract call,
     /// borrow call was separated & made within batch of transaction alongside with Deposit & Add_Liquidity function
+    ///
+    /// Accepts deposit only two times greater than gas for execution in order to cover the execution gas fees and reward an executor
+    #[payable]
     pub fn create_order(
         &mut self,
         order_type: OrderType,
@@ -30,6 +33,9 @@ impl Contract {
         buy_token: AccountId,
         leverage: U128,
     ) -> PromiseOrValue<WBalance> {
+        require!(env::attached_deposit() >= self.view_gas_for_execution() * 2,
+            "Create order should accept deposits two times greater than gas for execution");
+
         let user = env::signer_account_id();
         require!(
             amount.0 <= self.max_order_amount,
