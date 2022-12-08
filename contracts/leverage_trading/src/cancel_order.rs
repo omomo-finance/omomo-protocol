@@ -4,8 +4,10 @@ use crate::ref_finance::{Action, Swap};
 use crate::utils::NO_DEPOSIT;
 use crate::utils::{ext_market, ext_token};
 use crate::*;
-use near_sdk::env::{block_height, current_account_id, signer_account_id};
+use near_sdk::env::{block_height, current_account_id, prepaid_gas, signer_account_id};
 use near_sdk::{ext_contract, is_promise_success, log, Gas, PromiseResult, ONE_YOCTO};
+
+const CANCEL_ORDER_GAS: Gas = Gas(160_000_000_000_000);
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -56,6 +58,10 @@ trait ContractCallbackInterface {
 #[near_bindgen]
 impl Contract {
     pub fn cancel_order(&mut self, order_id: U128, swap_fee: U128, price_impact: U128) {
+        require!(
+            prepaid_gas() > CANCEL_ORDER_GAS,
+            "Not enough gas for method: 'Cancel order'"
+        );
         let orders = self.orders.get(&signer_account_id()).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", signer_account_id());
         });
@@ -114,27 +120,23 @@ impl Contract {
             "Some problem with pool, please contact with ref finance to support."
         );
 
-        if order.status == OrderStatus::Pending {
-            ext_ref_finance::ext(self.ref_finance_account.clone())
-                .with_unused_gas_weight(2)
-                .with_attached_deposit(NO_DEPOSIT)
-                .get_liquidity(order.lpt_id.clone())
-                .then(
-                    ext_self::ext(current_account_id())
-                        .with_unused_gas_weight(98)
-                        .with_attached_deposit(NO_DEPOSIT)
-                        .get_liquidity_callback(
-                            order_id,
-                            order,
-                            swap_fee,
-                            price_impact,
-                            order_action,
-                            pool_info,
-                        ),
-                );
-        } else {
-            self.swap(order_id, order, swap_fee, price_impact, order_action);
-        }
+        ext_ref_finance::ext(self.ref_finance_account.clone())
+            .with_unused_gas_weight(2)
+            .with_attached_deposit(NO_DEPOSIT)
+            .get_liquidity(order.lpt_id.clone())
+            .then(
+                ext_self::ext(current_account_id())
+                    .with_unused_gas_weight(98)
+                    .with_attached_deposit(NO_DEPOSIT)
+                    .get_liquidity_callback(
+                        order_id,
+                        order,
+                        swap_fee,
+                        price_impact,
+                        order_action,
+                        pool_info,
+                    ),
+            );
     }
 
     #[private]
@@ -173,7 +175,7 @@ impl Contract {
         );
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_unused_gas_weight(50)
+            .with_static_gas(Gas::ONE_TERA * 70)
             .with_attached_deposit(NO_DEPOSIT)
             .remove_liquidity(
                 order.lpt_id.to_string(),
@@ -183,7 +185,6 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(50)
                     .with_attached_deposit(NO_DEPOSIT)
                     .remove_liquidity_callback(
                         order_id,
@@ -236,7 +237,6 @@ impl Contract {
         );
 
         ext_token::ext(order.buy_token.clone())
-            .with_static_gas(Gas(3))
             .with_attached_deposit(1)
             .ft_transfer_call(
                 self.ref_finance_account.clone(),
@@ -246,7 +246,6 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_static_gas(Gas(20))
                     .with_attached_deposit(NO_DEPOSIT)
                     .order_cancel_swap_callback(
                         order_id,
@@ -274,12 +273,10 @@ impl Contract {
         let market_id = self.tokens_markets.get(&order.sell_token).unwrap();
 
         ext_market::ext(market_id)
-            .with_static_gas(Gas(20))
             .with_attached_deposit(NO_DEPOSIT)
             .view_market_data()
             .then(
                 ext_self::ext(current_account_id())
-                    .with_static_gas(Gas(70))
                     .with_attached_deposit(NO_DEPOSIT)
                     .market_data_callback(order_id, order, swap_fee, price_impact, order_action),
             );
