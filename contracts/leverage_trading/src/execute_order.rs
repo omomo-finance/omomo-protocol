@@ -32,7 +32,7 @@ impl Contract {
             .get_liquidity(order.lpt_id.clone())
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(100)
+                    .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
                     .execute_order_callback(order, order_id),
             )
@@ -46,7 +46,7 @@ impl Contract {
         let position = match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(val) => {
-                near_sdk::serde_json::from_slice::<crate::ref_finance::LiquidityInfo>(&val).unwrap()
+                near_sdk::serde_json::from_slice::<ref_finance::LiquidityInfo>(&val).unwrap()
             }
             PromiseResult::Failed => panic!("Ref finance not found pool"),
         };
@@ -59,7 +59,7 @@ impl Contract {
                 / order.buy_token_price.value;
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_static_gas(Gas::ONE_TERA * 100u64)
+            .with_static_gas(Gas::ONE_TERA * 45u64)
             .remove_liquidity(
                 order.lpt_id.clone(),
                 remove_liquidity_amount,
@@ -68,7 +68,7 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(100)
+                    .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
                     .remove_liquidity_for_execute_order_callback(order, order_id),
             )
