@@ -1,38 +1,48 @@
 # Roadmap
 
+## Product achievements
+OMOMO test-net functionality:
+
+- Lending/Borrowing MVP [testnet](https://dev.omomo.finance/) 
+- (in progress) Leverage trading with limit orders on top of concentrated liquidity Ref V2 [testnet](https://dev.omomo.finance/pairs)
+
+Development is an ongoing process, MVP on NEAR main-net is planned for **Q1 2023**. The working MVP will include all basic operations for the limited number of markets, leverage trading with limit orders functionality and provide the liquidation mechanism with partly automated internal processes.
+
 ## Timeline and plans
 
-OMOMO MVP development is an ongoing process, which is planned for Q1-Q2 2022. The working MVP will include all basic operations for the limited number of markets and provide the liquidation mechanism with partly automated internal processes.
+### Q4 2021 Concept
 
-## Closest roadmap
+- Idea & the team
+- Winning NEAR Kyiv Hackathon
 
-### Phase 1. MVP development (Q1 – Q2 2022)
+### Q1-Q2 2022 MVP
 
-* Develop basic supply/withdraw and borrow/repay functionality
-* Develop the initial version of the liquidation mechanism
-* Implement dApp V1
-* Add initial markets for NEAR and popular stablecoins
-* Implement price feeds by directly connecting the app to a DEX
-* Implement the initial interest rate model
-* Develop OMOMO native token and integrate basic tokenomics
-* Develop reserves system
+- Angel pre-seed investments
+- Lending/Borrowing functionality testnet release
+- Internal smart contracts audit 
 
-### **MVP launch (Q2 2022)**
+### Q3-Q4 2022 Beta release
 
-### **Phase 2 (end of Q2 – Q3 2022)**
+- Open Beta release
+- Leveraged trading development
+- NEARCON hackathon winner
+- Limit orders on top of concentrated liquidity Ref V2
+- METABUILD Hackathon
+- Close strategic round
+- Smart contracts security audits  
 
-* Implement market registration mechanism
-* Connect a secure Oracle for price feeds
-* Integrate native token incentivization
-* Expand collateralization to include several markets
-* Expand the number of the markets
-* Develop OMOMO DAO
-* Expand the existing tokenomics and token utility
+### Q1-Q2 2023 Public Release
 
-### **Phase 3 (end of Q3 – Q4 2022)**
+- Money Market and Leveraged trading release
+- Token launch
+- Liquidity incentivization
+- Third-party services partnerships
+- Users onboarding
 
-* Add fixed-rate loan system over existing markets
-* Provide active liquidity management
-* Add third-party protocol integrations to get DeFi strategies for the liquidity
-* Implement automated operations
-* Become a full-fledged DeFi 2.0 protocol in all aspects
+### Q3-Q4 2023 Money market future
+
+- Perpetual futures trading / Derivatives
+- DeFi vaults and strategies
+- White label margin trading solution
+- EVM expansion
+- DAO launch
