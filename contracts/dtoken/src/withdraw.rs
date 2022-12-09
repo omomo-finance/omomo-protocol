@@ -10,7 +10,7 @@ impl Contract {
         }
         self.adjust_rewards_by_campaign_type(CampaignType::Supply);
 
-        let balance_of = self.view_contract_balance().into();
+        let balance_of = self.view_contract_balance();
 
         let exchange_rate: Ratio = self.get_exchange_rate(balance_of);
 
