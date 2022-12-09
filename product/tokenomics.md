@@ -1,7 +1,3 @@
----
-description: ...
----
-
 # Tokenomics
 
 We are building a DeFi ecosystem with a useful token economy. Stakers will get decreased fees, additional rewards for borrowing pools and more.

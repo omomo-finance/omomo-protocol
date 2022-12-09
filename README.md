@@ -37,5 +37,4 @@ OMOMO aims to bring several DeFi2.0 usecases into the existing NEAR ecosystem:
 The protocol has gone through several development iterations in order to correspond to the Near requirements for smart-contracts development. Thus, the architecture of the protocol now relies on the minimal number of independant contracts:
 * Controller as an entry point for the user and the central entity of the protocol
 * Market contracs which represent markets and provide the token ready to be included into DeFi strategies
-* Oracles connector 
-  Check further documentation to get more info !\[Overal look]\(.gitbook/assets/general.png)
+* Oracles connector
