@@ -10,6 +10,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - uses: deepakputhraya/action-branch-name@master
+        with:
+          regex: '^CU-[a-zA-Z0-9]{7,7}_[\-\_a-zA-Z0-9]*' # Branch name should match CU-${task_id}_${branch_name} 
+                                                         # ${task_id} is ticket id from clickup, 
+                                                         # ${branch_name} any meaningful name for the branch 
+          allowed_prefixes: '' # No prefixes allowed
+          ignore: master,develop # Ignore exactly matching branch names from convention
+          min_length: 0 # Min length of the branch name
+          max_length: 255 # Max length of the branch name
+
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
