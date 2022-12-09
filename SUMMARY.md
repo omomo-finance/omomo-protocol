@@ -4,10 +4,10 @@
 
 * [Overview](README.md)
 * [Roadmap](general/roadmap.md)
+* [Tokenomics](product/tokenomics.md)
 
 ## Product
 
-* [Tokenomics](product/tokenomics.md)
 * [Leverage trading](product/leverage\_trading.md)
 * [Deposit & Earning](product/supply\_withdraw.md)
 * [Borrow](product/borrow.md)
