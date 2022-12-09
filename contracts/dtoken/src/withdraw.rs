@@ -12,12 +12,12 @@ impl Contract {
 
         let balance_of = self.view_contract_balance().into();
 
-        let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
+        let exchange_rate: Ratio = self.get_exchange_rate(balance_of);
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
 
         let supply_rate: Ratio = self.get_supply_rate(
-            U128(balance_of),
+            balance_of,
             U128(self.get_total_borrows()),
             U128(self.get_total_reserves()),
             interest_rate_model.get_reserve_factor(),

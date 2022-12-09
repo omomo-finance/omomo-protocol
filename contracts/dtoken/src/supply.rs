@@ -23,15 +23,14 @@ impl Contract {
 
         let balance_of = self.view_contract_balance();
 
-        let exchange_rate =
-            self.get_exchange_rate((balance_of.0 - Balance::from(token_amount)).into());
+        let exchange_rate = self.get_exchange_rate(balance_of);
         let dtoken_amount = WBalance::from(
             (BigBalance::from(Balance::from(token_amount)) / exchange_rate).round_u128(),
         );
 
         let interest_rate_model = self.config.get().unwrap().interest_rate_model;
         let supply_rate: Ratio = self.get_supply_rate(
-            U128(Balance::from(balance_of) - Balance::from(token_amount)),
+            balance_of,
             U128(self.get_total_borrows()),
             U128(self.get_total_reserves()),
             interest_rate_model.get_reserve_factor(),
