@@ -330,7 +330,7 @@ impl Contract {
             * BigDecimal::from(U128::from(order.amount))
             * order.leverage;
 
-        let pnl = self.calculate_pnl(signer_account_id(), order_id, market_data);
+        let pnl = self.calculate_pnl(signer_account_id(), order_id, Some(market_data));
 
         let expect_amount = self.get_price(order.buy_token.clone())
             * sell_amount

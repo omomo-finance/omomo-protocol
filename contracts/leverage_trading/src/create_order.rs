@@ -37,7 +37,10 @@ impl Contract {
             "Create order should accept deposits two times greater than gas for execution");
 
         let user = env::signer_account_id();
-
+        require!(
+            amount.0 <= self.max_order_amount,
+            "amount more than allowed value."
+        );
         require!(
             self.balance_of(user.clone(), sell_token.clone()) >= amount.0,
             "User doesn't have enough deposit to proceed this action"
