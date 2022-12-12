@@ -65,6 +65,9 @@ pub struct Contract {
 
     /// Volatility rate
     volatility_rate: BigDecimal,
+
+    /// Max value for order amount
+    max_order_amount: u128,
 }
 
 impl Default for Contract {
@@ -103,6 +106,7 @@ impl Contract {
             ref_finance_account: "dcl.ref-dev.testnet".parse().unwrap(),
             liquidation_threshold: 10_u128.pow(23),
             volatility_rate: BigDecimal::from(U128(95 * 10_u128.pow(22))),
+            max_order_amount: 10_u128.pow(30),
         }
     }
 
@@ -129,5 +133,10 @@ impl Contract {
     #[private]
     pub fn set_volatility_rate(&mut self, rate: U128) {
         self.volatility_rate = BigDecimal::from(rate)
+    }
+
+    #[private]
+    pub fn set_max_order_amount(&mut self, value: U128) {
+        self.max_order_amount = value.0
     }
 }

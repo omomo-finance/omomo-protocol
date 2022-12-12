@@ -73,7 +73,7 @@ impl Contract {
                 - BigDecimal::from(order.amount)
                 - (BigDecimal::from(order.amount)
                 * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
-                .round_u128();
+            .round_u128();
 
             PnLView {
                 is_profit: true,
@@ -217,6 +217,10 @@ impl Contract {
     /// returns const gas amount required for executing orders: 50 TGas
     pub fn view_gas_for_execution(&self) -> Balance {
         Gas::ONE_TERA.0 as Balance  * 50u128
+    }
+	
+    pub fn view_max_position_amount(&self) -> U128 {
+        U128(self.max_order_amount)
     }
 }
 
