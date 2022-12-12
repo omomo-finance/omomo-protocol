@@ -14,7 +14,7 @@ members = [
     "controller",
     "dtoken",
     "test-utoken",
-    "token"
+    "token",
 ]
 exclude = [
     "leverage_trading"
