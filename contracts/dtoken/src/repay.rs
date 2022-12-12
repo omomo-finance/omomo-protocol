@@ -20,7 +20,7 @@ impl Contract {
         let balance_of = self.view_contract_balance();
 
         let borrow_rate = self.get_borrow_rate(
-            U128(Balance::from(balance_of) - Balance::from(token_amount)),
+            U128(Balance::from(balance_of)),
             U128(self.get_total_borrows()),
             U128(self.get_total_reserves()),
         );
