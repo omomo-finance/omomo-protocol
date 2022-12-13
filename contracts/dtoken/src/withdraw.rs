@@ -9,17 +9,49 @@ impl Contract {
             return PromiseOrValue::Value(dtoken_amount);
         }
         self.adjust_rewards_by_campaign_type(CampaignType::Supply);
-        underlying_token::ft_balance_of(
+
+        let balance_of = self.view_contract_balance();
+
+        let exchange_rate: Ratio = self.get_exchange_rate(balance_of);
+
+        let interest_rate_model = self.config.get().unwrap().interest_rate_model;
+
+        let supply_rate: Ratio = self.get_supply_rate(
+            balance_of,
+            U128(self.get_total_borrows()),
+            U128(self.get_total_reserves()),
+            interest_rate_model.get_reserve_factor(),
+        );
+
+        let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
+            supply_rate,
+            self.get_account_supplies(env::signer_account_id()),
+            self.get_accrued_supply_interest(env::signer_account_id()),
+        );
+
+        let token_amount: Balance =
+            (Ratio::from(Balance::from(dtoken_amount)) * exchange_rate).round_u128();
+
+        let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
+
+        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
+
+        controller::withdraw_supplies(
+            env::signer_account_id(),
             self.get_contract_address(),
-            self.get_underlying_contract_address(),
+            dtoken_amount,
+            self.get_controller_address(),
             NO_DEPOSIT,
-            TGAS,
+            self.terra_gas(10),
         )
-        .then(ext_self::withdraw_balance_of_callback(
-            Balance::from(dtoken_amount),
+        .then(ext_self::withdraw_supplies_callback(
+            env::signer_account_id(),
+            token_amount.into(),
+            dtoken_amount,
+            whole_amount.into(),
             env::current_account_id(),
             NO_DEPOSIT,
-            self.terra_gas(140),
+            self.terra_gas(80),
         ))
         .into()
     }
@@ -46,72 +78,6 @@ impl Contract {
             "The account doesn't have enough digital tokens to do withdraw"
         );
         self.mutex_account_lock(Actions::Withdraw, amount, GAS_FOR_WITHDRAW)
-    }
-
-    #[private]
-    pub fn withdraw_balance_of_callback(
-        &mut self,
-        dtoken_amount: Balance,
-    ) -> PromiseOrValue<WBalance> {
-        if !is_promise_success() {
-            log!(
-                "{}",
-                Events::WithdrawFailedToGetUnderlyingBalance(
-                    env::signer_account_id(),
-                    dtoken_amount,
-                    self.get_contract_address(),
-                    self.get_underlying_contract_address()
-                )
-            );
-            self.mutex_account_unlock();
-            return PromiseOrValue::Value(WBalance::from(dtoken_amount));
-        }
-
-        let balance_of: Balance = match env::promise_result(0) {
-            PromiseResult::NotReady => 0,
-            PromiseResult::Failed => 0,
-            PromiseResult::Successful(result) => near_sdk::serde_json::from_slice::<U128>(&result)
-                .unwrap()
-                .into(),
-        };
-
-        let exchange_rate: Ratio = self.get_exchange_rate(WBalance::from(balance_of));
-        let interest_rate_model = self.config.get().unwrap().interest_rate_model;
-        let supply_rate: Ratio = self.get_supply_rate(
-            U128(balance_of),
-            U128(self.get_total_borrows()),
-            U128(self.get_total_reserves()),
-            interest_rate_model.get_reserve_factor(),
-        );
-        let accrued_supply_interest = interest_rate_model.calculate_accrued_interest(
-            supply_rate,
-            self.get_account_supplies(env::signer_account_id()),
-            self.get_accrued_supply_interest(env::signer_account_id()),
-        );
-
-        let token_amount: Balance = (Ratio::from(dtoken_amount) * exchange_rate).round_u128();
-        let whole_amount: Balance = token_amount + accrued_supply_interest.accumulated_interest;
-
-        self.set_accrued_supply_interest(env::signer_account_id(), accrued_supply_interest);
-
-        controller::withdraw_supplies(
-            env::signer_account_id(),
-            self.get_contract_address(),
-            dtoken_amount.into(),
-            self.get_controller_address(),
-            NO_DEPOSIT,
-            self.terra_gas(10),
-        )
-        .then(ext_self::withdraw_supplies_callback(
-            env::signer_account_id(),
-            token_amount.into(),
-            dtoken_amount.into(),
-            whole_amount.into(),
-            env::current_account_id(),
-            NO_DEPOSIT,
-            self.terra_gas(80),
-        ))
-        .into()
     }
 
     #[private]

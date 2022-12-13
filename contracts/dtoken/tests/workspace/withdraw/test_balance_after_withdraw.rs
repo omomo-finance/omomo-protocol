@@ -182,7 +182,7 @@ async fn withdraw_fixture(
 }
 
 #[tokio::test]
-async fn test_successful_supply() -> anyhow::Result<()> {
+async fn test_successful_withdraw() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
     let owner = worker.root_account()?;
     let (underlying, _, market) = withdraw_fixture(&owner, &worker).await?;
