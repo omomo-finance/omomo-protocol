@@ -92,10 +92,12 @@ pub struct OrderView {
     pub order_type: OrderType,
     pub amount: U128,
     pub sell_token: AccountId,
+    pub sell_token_price: WBalance,
     pub buy_token: AccountId,
-    pub leverage: WBigDecimal,
     pub buy_token_price: WBalance,
-    pub fee: WBalance,
+    pub leverage: WBigDecimal,
+    pub borrow_fee: WBalance,
+    pub liquidation_price: WBalance,
     pub lpt_id: String,
 }
 

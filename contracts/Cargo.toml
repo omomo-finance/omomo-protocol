@@ -19,6 +19,3 @@ members = [
 exclude = [
     "leverage_trading"
 ]
-exclude = [
-    "leverage_trading"
-]
