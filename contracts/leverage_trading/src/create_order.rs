@@ -33,8 +33,10 @@ impl Contract {
         buy_token: AccountId,
         leverage: U128,
     ) -> PromiseOrValue<WBalance> {
-        require!(env::attached_deposit() >= self.view_gas_for_execution() * 2,
-            "Create order should accept deposits two times greater than gas for execution");
+        require!(
+            env::attached_deposit() >= self.view_gas_for_execution() * 2,
+            "Create order should accept deposits two times greater than gas for execution"
+        );
 
         let user = env::signer_account_id();
         require!(
@@ -42,7 +44,7 @@ impl Contract {
             "amount more than allowed value."
         );
         require!(
-            self.balance_of(user.clone(), sell_token.clone()) >= amount.0,
+            self.balance_of(user.clone(), sell_token.clone()) >= amount,
             "User doesn't have enough deposit to proceed this action"
         );
 
@@ -199,7 +201,7 @@ impl Contract {
         );
 
         require!(
-            self.balance_of(env::signer_account_id(), token.clone()) >= amount.0,
+            self.balance_of(env::signer_account_id(), token.clone()) >= amount,
             "User doesn't have enough deposit to proceed this action"
         );
 

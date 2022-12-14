@@ -1,6 +1,6 @@
-use near_sdk::Gas;
 use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
+use near_sdk::Gas;
 
 #[near_bindgen]
 impl Contract {
@@ -74,7 +74,7 @@ impl Contract {
             let lenpnl = (expect_amount
                 - BigDecimal::from(order.amount)
                 - (BigDecimal::from(order.amount)
-                * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
+                    * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
             .round_u128();
 
             PnLView {
@@ -140,10 +140,12 @@ impl Contract {
     }
 
     /// Returns the balance of the given account on certain token. If the account doesn't exist will return `"0"`.
-    pub fn balance_of(&self, account_id: AccountId, token: AccountId) -> Balance {
+    pub fn balance_of(&self, account_id: AccountId, token: AccountId) -> WBalance {
         match self.balances.get(&account_id) {
-            None => 0,
-            Some(user_balance_per_token) => *user_balance_per_token.get(&token).unwrap_or(&0u128),
+            None => WBalance::from(0_u128),
+            Some(user_balance_per_token) => {
+                WBalance::from(*user_balance_per_token.get(&token).unwrap_or(&0_u128))
+            }
         }
     }
 
@@ -218,9 +220,9 @@ impl Contract {
 
     /// returns const gas amount required for executing orders: 50 TGas
     pub fn view_gas_for_execution(&self) -> Balance {
-        Gas::ONE_TERA.0 as Balance  * 50u128
+        Gas::ONE_TERA.0 as Balance * 50u128
     }
-	
+
     pub fn view_max_position_amount(&self) -> U128 {
         U128(self.max_order_amount)
     }
