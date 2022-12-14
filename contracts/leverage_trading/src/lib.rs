@@ -140,4 +140,9 @@ impl Contract {
     pub fn set_max_order_amount(&mut self, value: U128) {
         self.max_order_amount = value.0
     }
+
+    //Method with mock data. Returns leverage 2.5 with precision 10^24
+    pub fn get_max_leverage(&mut self, sell_token: &AccountId, buy_token: &AccountId) -> U128 {
+        U128(25 * 10_u128.pow(23))
+    }
 }
