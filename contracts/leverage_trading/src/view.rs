@@ -57,7 +57,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
-        data: MarketData,
+        data: Option<MarketData>,
     ) -> PnLView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", account_id);
@@ -77,9 +77,11 @@ impl Contract {
             * (order.leverage - BigDecimal::one())
             * BigDecimal::from(10_u128.pow(24));
 
-        let borrow_fee = borrow_amount * BigDecimal::from(data.borrow_rate_ratio);
-        // fee by blocks count
-        //* BigDecimal::from(block_height() - order.block);
+        let mut borrow_fee = BigDecimal::zero();
+        if data.is_some() && (BigDecimal::from(order.leverage) > BigDecimal::from(1)) {
+            borrow_fee = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio);
+        } // fee by blocks count
+          //* BigDecimal::from(block_height() - order.block);
 
         //swap_fee 0.0003
         let expect_amount = buy_amount * order.sell_token_price.value
@@ -125,7 +127,9 @@ impl Contract {
                     true => {
                         let borrow_fee = WBigDecimal::from(
                             BigDecimal::from(market_data.borrow_rate_ratio)
-                                * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
+                                * BigDecimal::from(U128(
+                                    env::block_height() as u128 - order.block as u128,
+                                )),
                         );
 
                         Some(OrderView {
@@ -212,7 +216,7 @@ impl Contract {
 
         let close_price = self.get_price(order.buy_token.clone());
 
-        let calc_pnl = self.calculate_pnl(account_id, order_id, market_data);
+        let calc_pnl = self.calculate_pnl(account_id, order_id, Some(market_data));
 
         CancelOrderView {
             buy_token_amount: WRatio::from(buy_token),
@@ -253,6 +257,10 @@ impl Contract {
     /// returns const gas amount required for executing orders: 50 TGas
     pub fn view_gas_for_execution(&self) -> Balance {
         Gas::ONE_TERA.0 as Balance * 50u128
+    }
+
+    pub fn view_max_position_amount(&self) -> U128 {
+        U128(self.max_order_amount)
     }
 }
 
@@ -342,7 +350,7 @@ mod tests {
             interest_rate_ratio: U128(10_u128.pow(24)),
             borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
         };
-        let pnl = contract.calculate_pnl(alice(), U128(1), market_data);
+        let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(918587254901960784313725490));
     }
