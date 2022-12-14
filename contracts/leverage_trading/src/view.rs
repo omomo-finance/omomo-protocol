@@ -1,6 +1,6 @@
-use near_sdk::Gas;
 use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
+use near_sdk::Gas;
 
 #[near_bindgen]
 impl Contract {
@@ -38,7 +38,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
-        data: Option<MarketData>,
+        borrow_rate_ratio: Option<U128>,
     ) -> PnLView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", account_id);
@@ -59,8 +59,8 @@ impl Contract {
             * BigDecimal::from(10_u128.pow(24));
 
         let mut borrow_fee = BigDecimal::zero();
-        if data.is_some() && (BigDecimal::from(order.leverage) > BigDecimal::from(1)) {
-            borrow_fee = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio);
+        if borrow_rate_ratio.is_some() && (BigDecimal::from(order.leverage) > BigDecimal::from(1)) {
+            borrow_fee = borrow_amount * BigDecimal::from(borrow_rate_ratio.unwrap());
         } // fee by blocks count
           //* BigDecimal::from(block_height() - order.block);
 
@@ -74,7 +74,7 @@ impl Contract {
             let lenpnl = (expect_amount
                 - BigDecimal::from(order.amount)
                 - (BigDecimal::from(order.amount)
-                * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
+                    * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
             .round_u128();
 
             PnLView {
@@ -178,7 +178,8 @@ impl Contract {
 
         let close_price = self.get_price(order.buy_token.clone());
 
-        let calc_pnl = self.calculate_pnl(account_id, order_id, Some(market_data));
+        let calc_pnl =
+            self.calculate_pnl(account_id, order_id, Some(market_data.borrow_rate_ratio));
 
         CancelOrderView {
             buy_token_amount: WRatio::from(buy_token),
@@ -218,9 +219,9 @@ impl Contract {
 
     /// returns const gas amount required for executing orders: 50 TGas
     pub fn view_gas_for_execution(&self) -> Balance {
-        Gas::ONE_TERA.0 as Balance  * 50u128
+        Gas::ONE_TERA.0 as Balance * 50u128
     }
-	
+
     pub fn view_max_position_amount(&self) -> U128 {
         U128(self.max_order_amount)
     }
@@ -312,7 +313,7 @@ mod tests {
             interest_rate_ratio: U128(10_u128.pow(24)),
             borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
         };
-        let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
+        let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data.borrow_rate_ratio));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(918587254901960784313725490));
     }
