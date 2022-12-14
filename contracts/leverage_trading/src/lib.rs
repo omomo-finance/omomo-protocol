@@ -15,6 +15,7 @@ mod price;
 mod ref_finance;
 mod utils;
 mod view;
+mod withdraw;
 
 use crate::big_decimal::*;
 use crate::config::Config;

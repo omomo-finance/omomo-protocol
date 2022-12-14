@@ -178,10 +178,12 @@ impl Contract {
     }
 
     /// Returns the balance of the given account on certain token. If the account doesn't exist will return `"0"`.
-    pub fn balance_of(&self, account_id: AccountId, token: AccountId) -> Balance {
+    pub fn balance_of(&self, account_id: AccountId, token: AccountId) -> WBalance {
         match self.balances.get(&account_id) {
-            None => 0,
-            Some(user_balance_per_token) => *user_balance_per_token.get(&token).unwrap_or(&0u128),
+            None => WBalance::from(0_u128),
+            Some(user_balance_per_token) => {
+                WBalance::from(*user_balance_per_token.get(&token).unwrap_or(&0_u128))
+            }
         }
     }
 
