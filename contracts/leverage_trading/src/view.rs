@@ -432,7 +432,7 @@ mod tests {
             U128(10_u128.pow(24)),
             borrow_fee,
             U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
-        ); 
+        );
 
         let result_view_order = OrderView {
             order_id: U128(1),
@@ -502,7 +502,7 @@ mod tests {
             U128(10_u128.pow(24)),
             borrow_fee_order1,
             U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
-        ); 
+        );
 
         let liquidation_price_order2 = contract.calculate_liquidation_price(
             U128(10_u128.pow(27)),
@@ -511,7 +511,7 @@ mod tests {
             U128(10_u128.pow(24)),
             borrow_fee_order2,
             U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
-        ); 
+        );
 
         let result_view_orders = vec![
             OrderView {

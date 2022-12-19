@@ -93,7 +93,7 @@ mod tests {
 
         assert_eq!(
             contract.balance_of(user.clone(), token.clone()),
-            INITIAL_BALANCE
+            WBalance::from(INITIAL_BALANCE)
         );
 
         (contract, user, token)
@@ -107,14 +107,14 @@ mod tests {
 
         assert_eq!(
             contract.balance_of(user.clone(), token.clone()),
-            AMOUNT_TO_INCREASE + INITIAL_BALANCE
+            WBalance::from(AMOUNT_TO_INCREASE + INITIAL_BALANCE)
         );
 
         contract.decrease_balance(&user.clone(), &token.clone(), AMOUNT_TO_DECREASE);
 
         assert_eq!(
             contract.balance_of(user.clone(), token.clone()),
-            AMOUNT_TO_INCREASE + INITIAL_BALANCE - AMOUNT_TO_DECREASE
+            WBalance::from(AMOUNT_TO_INCREASE + INITIAL_BALANCE - AMOUNT_TO_DECREASE)
         );
     }
 
@@ -125,7 +125,7 @@ mod tests {
 
         assert_eq!(
             contract.balance_of(user.clone(), token.clone()),
-            INITIAL_BALANCE
+            WBalance::from(INITIAL_BALANCE)
         );
 
         contract.decrease_balance(&user.clone(), &token.clone(), 10000 * AMOUNT_TO_DECREASE);
