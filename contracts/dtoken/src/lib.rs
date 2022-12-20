@@ -191,7 +191,6 @@ trait ControllerInterface {
 
 #[ext_contract(ext_self)]
 trait InternalTokenInterface {
-    fn supply_balance_of_callback(&mut self, token_amount: WBalance);
     fn supply_ft_transfer_call_callback(&mut self, amount: WBalance);
     fn controller_increase_supplies_callback(&mut self, amount: WBalance, dtoken_amount: WBalance);
 
@@ -216,7 +215,6 @@ trait InternalTokenInterface {
         account_to_borrow: AccountId,
     ) -> PromiseOrValue<WBalance>;
 
-    fn withdraw_balance_of_callback(&mut self, dtoken_amount: Balance) -> PromiseOrValue<WBalance>;
     fn withdraw_supplies_callback(
         &mut self,
         user_account: AccountId,

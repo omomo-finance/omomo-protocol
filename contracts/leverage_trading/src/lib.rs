@@ -15,6 +15,7 @@ mod price;
 mod ref_finance;
 mod utils;
 mod view;
+mod withdraw;
 
 use crate::big_decimal::*;
 use crate::config::Config;
@@ -138,5 +139,10 @@ impl Contract {
     #[private]
     pub fn set_max_order_amount(&mut self, value: U128) {
         self.max_order_amount = value.0
+    }
+
+    //Method with mock data. Returns leverage 2.5 with precision 10^24
+    pub fn get_max_leverage(&mut self, sell_token: &AccountId, buy_token: &AccountId) -> U128 {
+        U128(25 * 10_u128.pow(23))
     }
 }

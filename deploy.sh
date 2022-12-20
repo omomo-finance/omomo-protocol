@@ -272,8 +272,8 @@ configure_acl() {
     wait
 }
 
-ROOT_ACCOUNT=nearlend.testnet
-CONTROLLER_ACCOUNT=controller_beta
+ROOT_ACCOUNT=v1.omomo-finance.testnet
+CONTROLLER_ACCOUNT=oracle.omomo-finance.testnet
 
 build_and_test
 clean_up_previous_deployment $ROOT_ACCOUNT
