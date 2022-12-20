@@ -3,6 +3,8 @@ use std::fmt;
 
 use near_sdk::serde::{Deserialize, Serialize};
 
+pub type PairId = (AccountId, AccountId);
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]

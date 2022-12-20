@@ -300,6 +300,7 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
         };
         contract.add_pair(pair_data.clone());
 
@@ -310,6 +311,7 @@ mod tests {
             buy_ticker_id: "usdt".to_string(),
             buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
         };
 
         contract.add_pair(pair_data2.clone());
