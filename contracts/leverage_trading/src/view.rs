@@ -82,6 +82,7 @@ impl Contract {
             borrow_fee = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio);
         } // fee by blocks count
           //* BigDecimal::from(block_height() - order.block);
+        log!("Some log");
 
         //swap_fee 0.0003
         let expect_amount = buy_amount * order.sell_token_price.value
