@@ -17,9 +17,10 @@ mod utils;
 mod view;
 mod withdraw;
 
+pub use crate::metadata::*;
+
 use crate::big_decimal::*;
 use crate::config::Config;
-use crate::metadata::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;

@@ -53,6 +53,7 @@ trait ContractCallbackInterface {
         pool_info: PoolInfo,
     );
     fn repay_callback(&self) -> PromiseOrValue<U128>;
+    fn withdraw_callback(&mut self, account_id: AccountId, token: AccountId, amount: U128);
 }
 
 #[near_bindgen]

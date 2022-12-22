@@ -12,3 +12,8 @@ near-sdk = "4.0.0"
 near-contract-standards = "4.0.0"
 uint = { version = "=0.9.0", default-features = false }
 borsh = "0.9.3"
+
+[dev-dependencies]
+workspaces = "0.6.0"
+tokio = "1.21.1"
+anyhow = "1.0.65"
