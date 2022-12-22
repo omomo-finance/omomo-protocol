@@ -1,6 +1,6 @@
 use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
-use near_sdk::Gas;
+use near_sdk::{Gas, log};
 
 #[near_bindgen]
 impl Contract {
