@@ -12,7 +12,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
-        market_data: MarketData,
+        borrow_rate_ratio: WRatio,
     ) -> OrderView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", account_id);
@@ -26,7 +26,7 @@ impl Contract {
             .clone();
 
         let borrow_fee = WBigDecimal::from(
-            BigDecimal::from(market_data.borrow_rate_ratio)
+            BigDecimal::from(borrow_rate_ratio)
                 * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
         );
 
@@ -117,7 +117,7 @@ impl Contract {
         account_id: AccountId,
         sell_token: AccountId,
         buy_token: AccountId,
-        market_data: MarketData,
+        borrow_rate_ratio: WRatio,
     ) -> Vec<OrderView> {
         let orders = self.orders.get(&account_id).unwrap_or_default();
         let result = orders
@@ -126,7 +126,7 @@ impl Contract {
                 match order.sell_token == sell_token && order.buy_token == buy_token {
                     true => {
                         let borrow_fee = WBigDecimal::from(
-                            BigDecimal::from(market_data.borrow_rate_ratio)
+                            BigDecimal::from(borrow_rate_ratio)
                                 * BigDecimal::from(U128(
                                     env::block_height() as u128 - order.block as u128,
                                 )),
@@ -270,7 +270,7 @@ impl Contract {
 mod tests {
     use super::*;
 
-    use near_sdk::test_utils::test_env::alice;
+    use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{serde_json, testing_env, FunctionError, VMContext};
 
@@ -404,24 +404,21 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let market_data = MarketData {
-            total_supplies: U128(60000000000000000000000000000),
-            total_borrows: U128(25010000000000000000000000000),
-            total_reserves: U128(1000176731435219096024128768),
-            exchange_rate_ratio: U128(1000277139994639276176632),
-            interest_rate_ratio: U128(261670051778601),
-            borrow_rate_ratio: U128(634273735391536),
-        };
+        let borrow_rate_ratio = U128(634273735391536);
 
-        let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
-        contract.add_order(alice(), order);
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        contract.add_order(alice(), order1);
 
-        let order_id = U128(1);
+        let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#541\"}".to_string();
+        contract.add_order(alice(), order2);
+
+
+        let order_id = U128(1); //order_id for order1
 
         let block_order = 103930910_u64;
 
         let borrow_fee = WBigDecimal::from(
-            BigDecimal::from(market_data.borrow_rate_ratio)
+            BigDecimal::from(borrow_rate_ratio)
                 * BigDecimal::from(U128(env::block_height() as u128 - block_order as u128)),
         );
 
@@ -434,7 +431,7 @@ mod tests {
             U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
-        let result_view_order = OrderView {
+        let result_view_order1 = OrderView {
             order_id: U128(1),
             status: OrderStatus::Pending,
             order_type: OrderType::Buy,
@@ -450,8 +447,8 @@ mod tests {
         };
 
         assert_eq!(
-            contract.view_order(alice(), order_id, market_data),
-            result_view_order
+            contract.view_order(alice(), order_id, borrow_rate_ratio),
+            result_view_order1
         );
     }
 
@@ -467,14 +464,7 @@ mod tests {
         let sell_token: AccountId = "usdt.qa.v1.nearlend.testnet".parse().unwrap();
         let buy_token: AccountId = "wnear.qa.v1.nearlend.testnet".parse().unwrap();
 
-        let market_data = MarketData {
-            total_supplies: U128(60000000000000000000000000000),
-            total_borrows: U128(25010000000000000000000000000),
-            total_reserves: U128(1000176731435219096024128768),
-            exchange_rate_ratio: U128(1000277139994639276176632),
-            interest_rate_ratio: U128(261670051778601),
-            borrow_rate_ratio: U128(634273735391536),
-        };
+        let borrow_rate_ratio = U128(634273735391536);
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order(alice(), order1.clone());
@@ -482,17 +472,26 @@ mod tests {
         let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930911,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#541\"}".to_string();
         contract.add_order(alice(), order2.clone());
 
+        let order3 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930912,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#542\"}".to_string();
+        contract.add_order(bob(), order3.clone());
+
         let block_order1 = 103930910_u64;
         let block_order2 = 103930911_u64;
+        let block_order3 = 103930912_u64;
 
         let borrow_fee_order1 = WBigDecimal::from(
-            BigDecimal::from(market_data.borrow_rate_ratio)
+            BigDecimal::from(borrow_rate_ratio)
                 * BigDecimal::from(U128(env::block_height() as u128 - block_order1 as u128)),
         );
 
         let borrow_fee_order2 = WBigDecimal::from(
-            BigDecimal::from(market_data.borrow_rate_ratio)
+            BigDecimal::from(borrow_rate_ratio)
                 * BigDecimal::from(U128(env::block_height() as u128 - block_order2 as u128)),
+        );
+
+        let borrow_fee_order3 = WBigDecimal::from(
+            BigDecimal::from(borrow_rate_ratio)
+                * BigDecimal::from(U128(env::block_height() as u128 - block_order3 as u128)),
         );
 
         let liquidation_price_order1 = contract.calculate_liquidation_price(
@@ -513,7 +512,16 @@ mod tests {
             U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
-        let result_view_orders = vec![
+        let liquidation_price_order3 = contract.calculate_liquidation_price(
+            U128(10_u128.pow(27)),
+            U128(101 * 10_u128.pow(22)),
+            U128(305 * 10_u128.pow(22)),
+            U128(10_u128.pow(24)),
+            borrow_fee_order3,
+            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+        );
+
+        let result_view_orders_alice = vec![
             OrderView {
                 order_id: U128(1),
                 status: OrderStatus::Pending,
@@ -546,9 +554,32 @@ mod tests {
             },
         ];
 
-        assert_eq!(
-            contract.view_orders(alice(), sell_token, buy_token, market_data),
-            result_view_orders
+        let result_view_orders_bob = vec![OrderView {
+            order_id: U128(3),
+            status: OrderStatus::Pending,
+            order_type: OrderType::Buy,
+            amount: U128(2 * 10_u128.pow(27)),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_price: U128(101 * 10_u128.pow(22)), // 1.01 with 10^24 precision
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_price: U128(305 * 10_u128.pow(22)), // 3.05 with 10^24 precision
+            leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
+            borrow_fee: borrow_fee_order3,
+            liquidation_price: liquidation_price_order3,
+            lpt_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#542".to_string(),
+        }];
+
+        let mut view_orders_alice = contract.view_orders(
+            alice(),
+            sell_token.clone(),
+            buy_token.clone(),
+            borrow_rate_ratio,
         );
+        view_orders_alice.sort_by(|a, b| a.order_id.cmp(&b.order_id));
+
+        let view_orders_bob = contract.view_orders(bob(), sell_token, buy_token, borrow_rate_ratio);
+
+        assert_eq!(view_orders_alice, result_view_orders_alice);
+        assert_eq!(view_orders_bob, result_view_orders_bob);
     }
 }
