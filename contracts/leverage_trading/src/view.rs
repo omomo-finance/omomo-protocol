@@ -83,6 +83,7 @@ impl Contract {
         } // fee by blocks count
           //* BigDecimal::from(block_height() - order.block);
         log!("Some log");
+        log!("Some log2");
 
         //swap_fee 0.0003
         let expect_amount = buy_amount * order.sell_token_price.value
