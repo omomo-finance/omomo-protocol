@@ -3,6 +3,7 @@ use std::fmt;
 
 use near_sdk::serde::{Deserialize, Serialize};
 
+/// (sell token, buy token)
 pub type PairId = (AccountId, AccountId);
 
 #[derive(Clone, Serialize, Deserialize)]
