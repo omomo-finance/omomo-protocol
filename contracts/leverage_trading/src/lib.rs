@@ -146,13 +146,13 @@ impl Contract {
 
     #[private]
     pub fn set_max_leverage(&mut self, pair: &PairId, leverage: U128) {
-        let mut new_leverage = self
+        let mut traid_pair = self
             .supported_markets
             .get(pair)
             .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1));
 
-        new_leverage.max_leverage = leverage;
-        self.supported_markets.insert(pair, &new_leverage);
+            traid_pair.max_leverage = leverage;
+        self.supported_markets.insert(pair, &traid_pair);
     }
 
     pub fn get_max_leverage(&self, pair: &PairId) -> U128 {
