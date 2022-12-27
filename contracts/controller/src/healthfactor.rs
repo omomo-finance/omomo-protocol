@@ -136,11 +136,7 @@ impl Contract {
     pub fn calculate_accrued_borrow_interest(&self, account_id: AccountId) -> Balance {
         let mut total_accrued_interest = 0;
         let user_profile = self.user_profiles.get(&account_id).unwrap_or_default();
-        let total_borrows: Balance = user_profile
-            .account_borrows
-            .iter()
-            .map(|(_, balance)| balance)
-            .sum();
+        let total_borrows: Balance = user_profile.account_borrows.values().sum();
 
         for (token_address, borrow_data) in user_profile.borrow_data.iter() {
             let accrued_interest = Ratio::from(total_borrows)

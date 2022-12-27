@@ -2,6 +2,7 @@ extern crate core;
 
 mod big_decimal;
 mod cancel_order;
+mod common;
 mod config;
 mod create_order;
 mod deposit;
@@ -17,9 +18,11 @@ mod utils;
 mod view;
 mod withdraw;
 
+pub use crate::metadata::*;
+
 use crate::big_decimal::*;
+use crate::common::PairId;
 use crate::config::Config;
-use crate::metadata::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
@@ -44,8 +47,8 @@ pub struct Contract {
     /// user ➝ order_id ➝ Order
     orders: UnorderedMap<AccountId, HashMap<u64, Order>>,
 
-    /// (AccountId, AccountId) ➝ TradePair
-    supported_markets: UnorderedMap<(AccountId, AccountId), TradePair>,
+    /// (sell token, buy token) ➝ TradePair
+    supported_markets: UnorderedMap<PairId, TradePair>,
 
     /// User ➝ Token ➝ Balance
     balances: UnorderedMap<AccountId, HashMap<AccountId, Balance>>,
@@ -141,8 +144,81 @@ impl Contract {
         self.max_order_amount = value.0
     }
 
-    //Method with mock data. Returns leverage 2.5 with precision 10^24
-    pub fn get_max_leverage(&mut self, sell_token: &AccountId, buy_token: &AccountId) -> U128 {
-        U128(25 * 10_u128.pow(23))
+    #[private]
+    pub fn set_max_leverage(&mut self, pair: &PairId, leverage: U128) {
+        let mut traid_pair = self
+            .supported_markets
+            .get(pair)
+            .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1));
+
+            traid_pair.max_leverage = leverage;
+        self.supported_markets.insert(pair, &traid_pair);
+    }
+
+    pub fn get_max_leverage(&self, pair: &PairId) -> U128 {
+        self.supported_markets
+            .get(pair)
+            .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1))
+            .max_leverage
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn test_get_max_leverage() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+        let pair = (
+            AccountId::from_str("usdt.qa.v1.nearlend.testnet").unwrap(),
+            AccountId::from_str("wnear.qa.v1.nearlend.testnet").unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let result = pair_data.max_leverage;
+        let max_leverage = contract.get_max_leverage(&pair);
+        assert_eq!(max_leverage, result);
+    }
+
+    #[test]
+    fn test_set_max_leverage() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+        let pair = (
+            AccountId::from_str("usdt.qa.v1.nearlend.testnet").unwrap(),
+            AccountId::from_str("wnear.qa.v1.nearlend.testnet").unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        contract.set_max_leverage(&pair, U128(10 * 10_u128.pow(24)));
+        let max_leverage = contract.get_max_leverage(&pair);
+        assert_eq!(max_leverage, U128(10 * 10_u128.pow(24)));
     }
 }
