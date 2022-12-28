@@ -151,7 +151,7 @@ impl Contract {
             .get(pair)
             .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1));
 
-            traid_pair.max_leverage = leverage;
+        traid_pair.max_leverage = leverage;
         self.supported_markets.insert(pair, &traid_pair);
     }
 

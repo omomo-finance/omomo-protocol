@@ -68,7 +68,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .with_static_gas((Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64).into())
+                    .with_static_gas(Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64)
                     .get_pool_info_callback(order),
             )
             .into()
