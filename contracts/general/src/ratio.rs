@@ -257,7 +257,7 @@ impl Ord for BigDecimal {
         min_by(self, other, Ord::cmp)
     }
 
-    #[allow(clippy::manual_clamp)]
+    #[allow(clippy::manual_map)]
     fn clamp(self, min: Self, max: Self) -> Self
     where
         Self: Sized,
