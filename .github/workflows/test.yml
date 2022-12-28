@@ -59,7 +59,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --manifest-path ./contracts/leverage_trading/Cargo.toml -- -A clippy::too-many-arguments -A clippy::ptr-offset-with-cast -A clippy::assign-op-pattern -A clippy::manual-range-contains -D warnings
+          args: --manifest-path ./contracts/leverage_trading/Cargo.toml -- -A clippy::too-many-arguments -A clippy::too-many-arguments -A clippy::ptr-offset-with-cast -A clippy::assign-op-pattern -A clippy::manual-range-contains -A clippy::manual-clamp -D warnings
 
       - run: ./contracts/leverage_trading/build.sh
       - run: ./contracts/leverage_trading/test.sh

@@ -26,6 +26,7 @@ impl FungibleTokenReceiver for Contract {
 
         match action {
             Actions::Deposit { token } => self.deposit(amount, token),
+            #[allow(unreachable_patterns)]
             _ => {
                 panic!("Incorrect action in transfer")
             }

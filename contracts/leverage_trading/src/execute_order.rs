@@ -24,7 +24,7 @@ impl Contract {
             "Error. Order has to be Pending to be executed"
         );
 
-        let order = order.unwrap().clone();
+        let order = order.unwrap();
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 5u64)
@@ -84,7 +84,7 @@ impl Contract {
         if !is_promise_success() {
             panic!("Some problem with remove liquidity");
         } else {
-            self.mark_order_as_executed(order.clone(), order_id);
+            self.mark_order_as_executed(order, order_id);
 
             let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
             Promise::new(env::signer_account_id())
@@ -96,8 +96,6 @@ impl Contract {
 
 impl Contract {
     pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
-        let order = order.clone();
-
         let new_order = Order {
             status: OrderStatus::Executed,
             order_type: order.order_type,
@@ -113,8 +111,8 @@ impl Contract {
 
         self.insert_order_for_user(
             &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
-            new_order.clone(),
-            order_id.clone().0 as u64,
+            new_order,
+            order_id.0 as u64,
         );
     }
 
