@@ -268,7 +268,7 @@ impl Ord for BigDecimal {
         } else if self > max {
             max
         } else {
-            self
+            self.clamp(min, max)
         }
     }
 }
