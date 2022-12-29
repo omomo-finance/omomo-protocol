@@ -36,7 +36,7 @@ near call ${CONTRACT_ADDRESS} add_pair '{
             "buy_ticker_id": "near",
             "buy_token": "wnear.dev.v1.omomo-finance.testnet",
             "pool_id": "usdt.dev.v1.omomo-finance.testnet|wnear.dev.v1.omomo-finance.testnet|2000",
-            "max_leverage": "25"
+            "max_leverage": "25000000000000000000000000"
         }
     }' --accountId ${CONTRACT_ADDRESS} &
 
@@ -48,7 +48,7 @@ near call ${CONTRACT_ADDRESS} add_pair '{
             "buy_ticker_id": "USDt",
             "buy_token": "usdt.dev.v1.omomo-finance.testnet",
             "pool_id": "usdt.dev.v1.omomo-finance.testnet|wnear.dev.v1.omomo-finance.testnet|2000",
-            "max_leverage": "25"
+            "max_leverage": "25000000000000000000000000"
         }
     }' --accountId ${CONTRACT_ADDRESS} &
 
