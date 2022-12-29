@@ -60,7 +60,7 @@ trait ContractCallbackInterface {
 impl Contract {
     pub fn cancel_order(&mut self, order_id: U128, swap_fee: U128, price_impact: U128) {
         require!(
-            prepaid_gas() > CANCEL_ORDER_GAS,
+            prepaid_gas() >= CANCEL_ORDER_GAS,
             "Not enough gas for method: 'Cancel order'"
         );
         let orders = self.orders.get(&signer_account_id()).unwrap_or_else(|| {
@@ -271,16 +271,30 @@ impl Contract {
             "Order cancel swap callback attached gas: {}",
             env::prepaid_gas().0
         );
-        let market_id = self.tokens_markets.get(&order.sell_token).unwrap();
 
-        ext_market::ext(market_id)
-            .with_attached_deposit(NO_DEPOSIT)
-            .view_market_data()
-            .then(
-                ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .market_data_callback(order_id, order, swap_fee, price_impact, order_action),
-            );
+        if order.leverage > BigDecimal::one() {
+            let market_id = self.tokens_markets.get(&order.sell_token).unwrap();
+            ext_market::ext(market_id)
+                .with_attached_deposit(NO_DEPOSIT)
+                .view_market_data()
+                .then(
+                    ext_self::ext(current_account_id())
+                        .with_attached_deposit(NO_DEPOSIT)
+                        .market_data_callback(
+                            order_id,
+                            order,
+                            swap_fee,
+                            price_impact,
+                            order_action,
+                        ),
+                );
+        } else {
+            if order_action == OrderAction::Cancel {
+                self.final_order_cancel(order_id, order, swap_fee, price_impact, None);
+            } else {
+                self.final_liquidate(order_id, order, None);
+            }
+        }
     }
 
     #[private]
@@ -310,9 +324,9 @@ impl Contract {
         };
 
         if order_action == OrderAction::Cancel {
-            self.final_order_cancel(order_id, order, market_data, swap_fee, price_impact)
+            self.final_order_cancel(order_id, order, swap_fee, price_impact, Some(market_data));
         } else {
-            self.final_liquidate(order_id, order, market_data);
+            self.final_liquidate(order_id, order, Some(market_data));
         }
     }
 
@@ -320,9 +334,9 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        market_data: MarketData,
         swap_fee: U128,
         price_impact: U128,
+        market_data: Option<MarketData>,
     ) {
         log!("Final order cancel attached gas: {}", env::prepaid_gas().0);
 
@@ -331,7 +345,7 @@ impl Contract {
             * BigDecimal::from(U128::from(order.amount))
             * order.leverage;
 
-        let pnl = self.calculate_pnl(signer_account_id(), order_id, Some(market_data));
+        let pnl = self.calculate_pnl(signer_account_id(), order_id, market_data);
 
         let expect_amount = self.get_price(order.buy_token.clone())
             * sell_amount
@@ -479,7 +493,7 @@ mod tests {
 
         let swap_fee = U128(1);
         let price_impact = U128(1);
-        contract.final_order_cancel(order_id, order, market_data, swap_fee, price_impact);
+        contract.final_order_cancel(order_id, order, swap_fee, price_impact, Some(market_data));
 
         let orders = contract.orders.get(&alice()).unwrap();
         let order = orders.get(&1).unwrap();
