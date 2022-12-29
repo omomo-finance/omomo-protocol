@@ -48,12 +48,6 @@ impl Contract {
             "User doesn't have enough deposit to proceed this action"
         );
 
-        match order_type {
-            OrderType::Buy => {}
-            // for sell orders leverage should be at least 1.1
-            OrderType::Sell => { require!(BigDecimal::from(leverage) >= BigDecimal::from(U128(1100000000000000000000000))) }
-        }
-
         let order = Order {
             status: OrderStatus::Pending,
             order_type,
