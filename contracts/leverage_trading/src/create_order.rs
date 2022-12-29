@@ -44,7 +44,7 @@ impl Contract {
             "amount more than allowed value."
         );
         require!(
-            self.balance_of(user.clone(), sell_token.clone()) >= amount,
+            self.balance_of(user, sell_token.clone()) >= amount,
             "User doesn't have enough deposit to proceed this action"
         );
 
@@ -61,8 +61,8 @@ impl Contract {
             sell_token: sell_token.clone(),
             buy_token: buy_token.clone(),
             leverage: BigDecimal::from(leverage),
-            sell_token_price: self.view_price(sell_token.clone()),
-            buy_token_price: self.view_price(buy_token.clone()),
+            sell_token_price: self.view_price(sell_token),
+            buy_token_price: self.view_price(buy_token),
             block: env::block_height(),
             lpt_id: "".to_string(),
         };
@@ -74,7 +74,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .with_static_gas((Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64).into())
+                    .with_static_gas(Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64)
                     .get_pool_info_callback(order),
             )
             .into()
@@ -187,7 +187,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn add_liquidity_callback(&mut self, mut order: Order) -> PromiseOrValue<WBalance> {
+    pub fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
         require!(
             env::promise_results_count() == 2,
             "Contract expected 2 results on the callback"
@@ -199,19 +199,14 @@ impl Contract {
             _ => (),
         };
 
-        self.decrease_balance(
-            &env::signer_account_id().clone(),
-            &order.sell_token.clone(),
-            order.amount,
-        );
+        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
 
         let lpt_id: String = match env::promise_result(1) {
-            PromiseResult::Successful(result) => {
-                serde_json::from_slice::<String>(&result).unwrap().into()
-            }
+            PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
             _ => panic!("failed to add liquidity"),
         };
 
+        let mut order = order;
         order.lpt_id = lpt_id;
 
         self.order_nonce += 1;
@@ -243,7 +238,7 @@ impl Contract {
             return PromiseOrValue::Value(U128(0));
         }
 
-        let token_market = self.get_market_by(&token.clone());
+        let token_market = self.get_market_by(&token);
         let borrow_amount =
             U128::from(BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one()));
 
@@ -273,8 +268,8 @@ impl Contract {
     }
 
     pub fn insert_order_for_user(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
-        let mut user_orders_by_id = self.orders.get(&account_id).unwrap_or_default();
+        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
         user_orders_by_id.insert(order_id, order);
-        self.orders.insert(&account_id, &user_orders_by_id);
+        self.orders.insert(account_id, &user_orders_by_id);
     }
 }

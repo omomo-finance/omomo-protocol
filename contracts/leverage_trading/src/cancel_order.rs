@@ -329,7 +329,7 @@ impl Contract {
     ) {
         log!("Final order cancel attached gas: {}", env::prepaid_gas().0);
 
-        let mut order = order.clone();
+        let mut order = order;
         let sell_amount = order.sell_token_price.value
             * BigDecimal::from(U128::from(order.amount))
             * order.leverage;
@@ -355,10 +355,8 @@ impl Contract {
                 .protocol_profit
                 .get(&order.sell_token)
                 .unwrap_or_default();
-            self.protocol_profit.insert(
-                &order.sell_token,
-                &(BigDecimal::from(token_profit) + protocol_profit),
-            );
+            self.protocol_profit
+                .insert(&order.sell_token, &(token_profit + protocol_profit));
         }
 
         let mut orders = self.orders.get(&signer_account_id()).unwrap();
@@ -382,7 +380,7 @@ impl Contract {
         let borrow_fee = BigDecimal::from(market_data.borrow_rate_ratio.0)
             * BigDecimal::from((block_height() - order.block) as u128);
 
-        ext_token::ext(order.sell_token.clone())
+        ext_token::ext(order.sell_token)
             .with_static_gas(Gas::ONE_TERA * 35u64)
             .with_attached_deposit(ONE_YOCTO)
             .ft_transfer_call(
@@ -413,7 +411,7 @@ mod tests {
 
     use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{serde_json, testing_env, FunctionError, VMContext};
+    use near_sdk::{testing_env, VMContext};
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
@@ -451,7 +449,7 @@ mod tests {
         );
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order1.clone());
+        contract.add_order(alice(), order1);
 
         let order_id = U128(1);
         let order = Order {
