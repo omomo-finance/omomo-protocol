@@ -289,6 +289,7 @@ impl Contract {
                         ),
                 );
         } else {
+            #[allow(clippy::collapsible_else_if)]
             if order_action == OrderAction::Cancel {
                 self.final_order_cancel(order_id, order, swap_fee, price_impact, None);
             } else {

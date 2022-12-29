@@ -77,6 +77,7 @@ impl Contract {
         order: Order,
         market_data: Option<MarketData>,
     ) {
+        #[allow(clippy::unnecessary_unwrap)]
         let borrow_fee = if market_data.is_some() {
             BigDecimal::from(
                 market_data.unwrap().borrow_rate_ratio.0 * (block_height() - order.block) as u128,
