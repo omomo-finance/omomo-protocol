@@ -1,12 +1,10 @@
-use crate::big_decimal::{BigDecimal, WRatio};
+use crate::big_decimal::BigDecimal;
 use crate::cancel_order::ext_self;
 use crate::ref_finance::ext_ref_finance;
-use crate::ref_finance::{Action, Swap};
 use crate::utils::NO_DEPOSIT;
-use crate::utils::{ext_market, ext_token};
 use crate::*;
 use near_sdk::env::{block_height, current_account_id, signer_account_id};
-use near_sdk::{ext_contract, is_promise_success, Gas, PromiseResult};
+use near_sdk::Gas;
 
 #[near_bindgen]
 impl Contract {
@@ -18,7 +16,7 @@ impl Contract {
         );
         let account = account_op.unwrap();
 
-        let orders = self.orders.get(&account.clone()).unwrap_or_else(|| {
+        let orders = self.orders.get(&account).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", account.clone());
         });
 
@@ -73,7 +71,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn final_liquidate(&mut self, order_id: U128, mut order: Order, market_data: MarketData) {
+    pub fn final_liquidate(&mut self, order_id: U128, order: Order, market_data: MarketData) {
         let borrow_fee = BigDecimal::from(
             market_data.borrow_rate_ratio.0 * (block_height() - order.block) as u128,
         );
@@ -94,11 +92,12 @@ impl Contract {
         let liquidation_incentive = order.amount * self.liquidation_threshold;
         self.increase_balance(
             &env::signer_account_id(),
-            &order.buy_token.clone(),
+            &order.buy_token,
             liquidation_incentive,
         );
         let account = self.get_account_by(order_id.0).unwrap();
         let mut orders = self.orders.get(&account).unwrap();
+        let mut order = order;
         order.status = OrderStatus::Liquidated;
         orders.insert(order_id.0 as u64, order);
         self.orders.insert(&signer_account_id(), &orders);

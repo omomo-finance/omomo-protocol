@@ -65,9 +65,9 @@ impl Contract {
         token: &AccountId,
         token_amount: Balance,
     ) {
-        let mut user_balance_by_token = self.balances.get(&account_id).unwrap_or_default();
+        let mut user_balance_by_token = self.balances.get(account_id).unwrap_or_default();
         user_balance_by_token.insert(token.clone(), token_amount);
-        self.balances.insert(&account_id, &user_balance_by_token);
+        self.balances.insert(account_id, &user_balance_by_token);
     }
 }
 
@@ -89,7 +89,7 @@ mod tests {
         let user: AccountId = AccountId::from_str("some_example_user.testnet").unwrap();
         let token: AccountId = AccountId::from_str("some_example_token.testnet").unwrap();
 
-        contract.set_balance(&user.clone(), &token.clone(), INITIAL_BALANCE);
+        contract.set_balance(&user, &token, INITIAL_BALANCE);
 
         assert_eq!(
             contract.balance_of(user.clone(), token.clone()),
@@ -110,7 +110,7 @@ mod tests {
             WBalance::from(AMOUNT_TO_INCREASE + INITIAL_BALANCE)
         );
 
-        contract.decrease_balance(&user.clone(), &token.clone(), AMOUNT_TO_DECREASE);
+        contract.decrease_balance(&user, &token, AMOUNT_TO_DECREASE);
 
         assert_eq!(
             contract.balance_of(user.clone(), token.clone()),
@@ -128,6 +128,6 @@ mod tests {
             WBalance::from(INITIAL_BALANCE)
         );
 
-        contract.decrease_balance(&user.clone(), &token.clone(), 10000 * AMOUNT_TO_DECREASE);
+        contract.decrease_balance(&user, &token, 10000 * AMOUNT_TO_DECREASE);
     }
 }

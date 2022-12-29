@@ -34,7 +34,7 @@ impl Contract {
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .withdraw_callback(user.clone(), token.clone(), amount),
+                    .withdraw_callback(user, token, amount),
             )
             .into()
     }

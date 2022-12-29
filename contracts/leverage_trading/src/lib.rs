@@ -151,7 +151,7 @@ impl Contract {
             .get(pair)
             .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1));
 
-            traid_pair.max_leverage = leverage;
+        traid_pair.max_leverage = leverage;
         self.supported_markets.insert(pair, &traid_pair);
     }
 
@@ -215,7 +215,7 @@ mod tests {
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.set_max_leverage(&pair, U128(10 * 10_u128.pow(24)));
         let max_leverage = contract.get_max_leverage(&pair);

@@ -48,6 +48,7 @@ pub struct Swap {
 #[serde(crate = "near_sdk::serde")]
 #[serde(untagged)]
 pub enum Action {
+    #[allow(non_snake_case)]
     SwapAction { Swap: Swap },
 }
 
