@@ -7,7 +7,7 @@ WNEAR_MARKET=wnear_market.dev.v1.omomo-finance.testnet
 ORACLE_ID=limit_orders_oracle.v1.nearlend.testnet
 
 # User account for work with leverage trading
-USER_ACCOUNT=tymofiis.testnet
+USER_ACCOUNT=...
 
 near call dcl.ref-dev.testnet storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
 
