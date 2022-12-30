@@ -169,8 +169,8 @@ impl Contract {
         let remove_liquidity_amount = liquidity.amount.0;
 
         let (min_amount_x, min_amount_y) = match order.order_type {
-            OrderType::Buy => { (liquidity.amount.0 - 1000, 0) }
-            OrderType::Sell => { (0, liquidity.amount.0 - 1000) }
+            OrderType::Buy => (liquidity.amount.0 - 1000, 0),
+            OrderType::Sell => (0, liquidity.amount.0 - 1000),
         };
 
         require!(

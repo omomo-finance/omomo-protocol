@@ -106,44 +106,61 @@ impl Contract {
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
 
-        let (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity) = match order.order_type {
-            OrderType::Buy => {
-                let mut left_point = pool_info.current_point as i32;
+        let (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity) =
+            match order.order_type {
+                OrderType::Buy => {
+                    let mut left_point = pool_info.current_point as i32;
 
-                while left_point % pool_info.point_delta as i32 != 0 {
-                    left_point += 1;
+                    while left_point % pool_info.point_delta as i32 != 0 {
+                        left_point += 1;
+                    }
+
+                    let right_point = left_point + pool_info.point_delta as i32;
+
+                    let amount =
+                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+
+                    let amount_x = amount;
+                    let amount_y = U128::from(0);
+
+                    let token_to_add_liquidity = order.sell_token.clone();
+
+                    (
+                        left_point,
+                        right_point,
+                        amount,
+                        amount_x,
+                        amount_y,
+                        token_to_add_liquidity,
+                    )
                 }
+                OrderType::Sell => {
+                    let mut right_point = pool_info.current_point as i32;
 
-                let right_point = left_point + pool_info.point_delta as i32;
+                    while right_point % pool_info.point_delta as i32 != 0 {
+                        right_point -= 1;
+                    }
 
-                let amount = U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                    let left_point = right_point - pool_info.point_delta as i32;
 
-                let amount_x = amount;
-                let amount_y = U128::from(0);
+                    let amount =
+                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
 
-                let token_to_add_liquidity = order.sell_token.clone();
+                    let amount_x = U128::from(0);
+                    let amount_y = amount;
 
-                (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity)
-            }
-            OrderType::Sell => {
-                let mut right_point = pool_info.current_point as i32;
+                    let token_to_add_liquidity = order.buy_token.clone();
 
-                while right_point % pool_info.point_delta as i32 != 0 {
-                    right_point -= 1;
+                    (
+                        left_point,
+                        right_point,
+                        amount,
+                        amount_x,
+                        amount_y,
+                        token_to_add_liquidity,
+                    )
                 }
-
-                let left_point = right_point - pool_info.point_delta as i32;
-
-                let amount = U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
-
-                let amount_x = U128::from(0);
-                let amount_y = amount;
-
-                let token_to_add_liquidity = order.buy_token.clone();
-
-                (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity)
-            }
-        };
+            };
 
         let min_amount_x = U128::from(0);
         let min_amount_y = U128::from(0);
