@@ -275,7 +275,7 @@ impl Ord for BigDecimal {
 
 impl BorshSerialize for BigDecimal {
     fn serialize<W: Write>(&self, writer: &mut W) -> std::io::Result<()> {
-        BorshSerialize::serialize(&self.0.0, writer)
+        BorshSerialize::serialize(&self.0 .0, writer)
     }
 }
 
