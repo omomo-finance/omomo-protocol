@@ -71,10 +71,20 @@ impl Contract {
     }
 
     #[private]
-    pub fn final_liquidate(&mut self, order_id: U128, order: Order, market_data: MarketData) {
-        let borrow_fee = BigDecimal::from(
-            market_data.borrow_rate_ratio.0 * (block_height() - order.block) as u128,
-        );
+    pub fn final_liquidate(
+        &mut self,
+        order_id: U128,
+        order: Order,
+        market_data: Option<MarketData>,
+    ) {
+        #[allow(clippy::unnecessary_unwrap)]
+        let borrow_fee = if market_data.is_some() {
+            BigDecimal::from(
+                market_data.unwrap().borrow_rate_ratio.0 * (block_height() - order.block) as u128,
+            )
+        } else {
+            BigDecimal::one()
+        };
 
         let buy_token_amount =
             BigDecimal::from(order.amount) * order.sell_token_price.value * order.leverage
