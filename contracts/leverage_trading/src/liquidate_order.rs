@@ -6,9 +6,16 @@ use crate::*;
 use near_sdk::env::{block_height, current_account_id, signer_account_id};
 use near_sdk::Gas;
 
+const LIQUIDATE_ORDER_GAS: Gas = Gas(160_000_000_000_000);
+
 #[near_bindgen]
 impl Contract {
     pub fn liquidate_order(&mut self, order_id: U128, swap_fee: U128, price_impact: U128) {
+        require!(
+            prepaid_gas() >= LIQUIDATE_ORDER_GAS,
+            "Not enough gas for method: 'Liquidate order'"
+        );
+
         let account_op = self.get_account_by(order_id.0);
         require!(
             account_op.is_some(),
