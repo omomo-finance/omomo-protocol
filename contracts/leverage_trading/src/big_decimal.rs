@@ -67,7 +67,7 @@ impl FromStr for BigDecimal {
         } else {
             (s, 0u128)
         };
-        let int = U384::from_str(int).map_err(|_| PARSE_INT_ERROR)?;
+        let int = U384::from(int.parse::<u128>().unwrap());
         if dec >= BIG_DIVISOR {
             return Err(String::from("The decimal part is too large"));
         }
