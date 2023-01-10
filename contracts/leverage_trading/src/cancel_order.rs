@@ -357,11 +357,7 @@ impl Contract {
             * (BigDecimal::one() - BigDecimal::from(price_impact))
             / order.buy_token_price.value;
 
-        self.increase_balance(
-            &signer_account_id(),
-            &order.sell_token,
-            expect_amount.round_u128(),
-        );
+        self.increase_balance(&signer_account_id(), &order.sell_token, order.amount);
 
         if pnl.is_profit && expect_amount > sell_amount + BigDecimal::from(pnl.amount) {
             let protocol_profit = expect_amount - sell_amount - BigDecimal::from(pnl.amount);
@@ -463,7 +459,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
         contract.add_order(alice(), order1);
 
         let order_id = U128(1);

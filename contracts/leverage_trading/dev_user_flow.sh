@@ -13,12 +13,12 @@ near call dcl.ref-dev.testnet storage_deposit '{"account_id": "'$CONTRACT_ID'"}'
 
 near call $USDT_TOKEN mint '{
     "account_id": "'$USER_ACCOUNT'",
-    "amount": "400000000000000000000000000000000"
+    "amount": "4000000000000000000000000000000000"
 }' --accountId $USER_ACCOUNT
 
 near call $WNEAR_TOKEN mint '{
     "account_id": "'$USER_ACCOUNT'",
-    "amount": "400000000000000000000000000000000"
+    "amount": "4000000000000000000000000000000000"
 }' --accountId $USER_ACCOUNT
 
 # Deposit
@@ -33,7 +33,7 @@ near call $CONTRACT_ID create_order '{
     "amount": "1000000000000000000000000000",
     "sell_token": "'$USDT_TOKEN'",
     "buy_token": "'$WNEAR_TOKEN'",
-    "leverage": "1000000000000000000000000"
+    "leverage": "10000000000000000000000000"
 }' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
 
 # View new order
@@ -46,6 +46,8 @@ near view $CONTRACT_ID view_orders '{
 
 # Cancel order
 near call $CONTRACT_ID cancel_order '{"order_id": "4", "swap_fee": "1", "price_impact": "1"}' --accountId $USER_ACCOUNT --gas 160000000000000
+# Deposit balance should be returned after cancel order
+near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'$USDT_TOKEN'" }'
 
 
 

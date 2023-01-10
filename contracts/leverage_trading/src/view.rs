@@ -70,16 +70,16 @@ impl Contract {
             })
             .clone();
 
-        let buy_amount =
-            order.leverage * BigDecimal::from(order.amount) / order.buy_token_price.value;
+        let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
+            * BigDecimal::from(order.amount)
+            / order.buy_token_price.value;
 
         let borrow_amount = BigDecimal::from(U128(order.amount))
-            * (order.leverage - BigDecimal::one())
-            * BigDecimal::from(10_u128.pow(24));
+            * (order.leverage - BigDecimal::from(10u128.pow(24)));
 
         let mut borrow_fee = BigDecimal::zero();
         #[allow(clippy::unnecessary_unwrap)]
-        if data.is_some() && (order.leverage > BigDecimal::from(1)) {
+        if data.is_some() && (order.leverage > BigDecimal::one()) {
             borrow_fee = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio);
         } // fee by blocks count
           //* BigDecimal::from(block_height() - order.block);
@@ -345,7 +345,7 @@ mod tests {
                 value: BigDecimal::from(4.22),
             },
         );
-        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#132\"}".to_string();
+        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#132\"}".to_string();
         contract.add_order(alice(), order1);
         let market_data = MarketData {
             total_supplies: U128(10_u128.pow(24)),
@@ -358,6 +358,44 @@ mod tests {
         let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(918587254901960784313725490));
+    }
+
+    #[test]
+    fn calculate_pnl_leverage_3_test() {
+        let context = get_context(false);
+        testing_env!(context);
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        contract.update_or_insert_price(
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDT".to_string(),
+                value: BigDecimal::from(2.0),
+            },
+        );
+        contract.update_or_insert_price(
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "WNEAR".to_string(),
+                value: BigDecimal::from(4.22),
+            },
+        );
+        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#132\"}".to_string();
+        contract.add_order(alice(), order1);
+        let market_data = MarketData {
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        };
+        let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
+        assert!(!pnl.is_profit);
+        assert_eq!(pnl.amount, U128(1415605882352941176470588235));
     }
 
     #[test]
