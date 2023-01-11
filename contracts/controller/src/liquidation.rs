@@ -64,7 +64,7 @@ impl Contract {
             liquidation_revenue_amount,
         );
 
-        dtoken::swap_supplies(
+        market::swap_supplies(
             borrower,
             liquidator,
             liquidation_revenue_amount,

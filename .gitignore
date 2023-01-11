@@ -2,7 +2,7 @@
 contracts/Cargo.lock
 contracts/leverage_trading/Cargo.lock
 contracts/target
-contracts/dtoken/target
+contracts/market/target
 contracts/controller/target
 contracts/test-utoken/target
 contracts/general/target
