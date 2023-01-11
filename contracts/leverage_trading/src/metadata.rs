@@ -186,3 +186,11 @@ impl fmt::Display for Actions {
         write!(f, "{:?}", self)
     }
 }
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PendingOrders {
+    pub data: Vec<(u64, Order)>,
+    pub page: U128,
+    pub total: U128,
+}
