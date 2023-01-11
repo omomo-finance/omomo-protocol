@@ -4,9 +4,9 @@ use near_sdk::serde_json::json;
 use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
-const MARKET_WASM: &str = "../../res/market.wasm";
-const UNDERLYING_WASM: &str = "../../res/test_utoken.wasm";
-const CONTROLLER_WASM: &str = "../../res/controller.wasm";
+const MARKET_WASM: &str = "../target/wasm32-unknown-unknown/release/market.wasm";
+const UNDERLYING_WASM: &str = "../target/wasm32-unknown-unknown/release/test_utoken.wasm";
+const CONTROLLER_WASM: &str = "../target/wasm32-unknown-unknown/release/controller.wasm";
 
 pub async fn deploy_underlying(
     owner: &Account,

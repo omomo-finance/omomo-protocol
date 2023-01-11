@@ -13,9 +13,9 @@ use general::{ratio::Ratio, Price, WBalance};
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    DTOKEN_WASM_BYTES => "../../res/market.wasm",
-    UTOKEN_WASM_BYTES => "../../res/test_utoken.wasm",
-    CONTROLLER_WASM_BYTES => "../../res/controller.wasm",
+    DTOKEN_WASM_BYTES => "../target/wasm32-unknown-unknown/release/market.wasm",
+    UTOKEN_WASM_BYTES => "../target/wasm32-unknown-unknown/release/test_utoken.wasm",
+    CONTROLLER_WASM_BYTES => "../target/wasm32-unknown-unknown/release/controller.wasm",
 }
 
 pub fn new_user(root: &UserAccount, account_id: AccountId) -> UserAccount {

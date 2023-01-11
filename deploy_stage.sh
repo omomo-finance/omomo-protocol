@@ -36,7 +36,7 @@ create_controller() {
 # deploy markets
 deploy_markets(){
     near deploy weth_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
             "owner_id":"'$1'",
@@ -52,7 +52,7 @@ deploy_markets(){
             }
         }' &
     near deploy wnear_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
             "owner_id":"'$1'",
@@ -68,7 +68,7 @@ deploy_markets(){
             }
         }' &
     near deploy usdt_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
         "owner_id":"'$1'",
@@ -84,7 +84,7 @@ deploy_markets(){
             }
         }' &
     near deploy usdc_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'new_with_config' \
         --initArgs '{
         "owner_id":"'$1'",
@@ -105,19 +105,19 @@ deploy_markets(){
 
 redeploy_markets(){
     echo 'y' | near deploy weth_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'migrate' \
         --initArgs '{}' &
     echo 'y' | near deploy wnear_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'migrate' \
         --initArgs '{}' &
     echo 'y' | near deploy usdt_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'migrate' \
         --initArgs '{}' &
     echo 'y' | near deploy usdc_market.$1 \
-        --wasmFile ./res/market.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/market.wasm \
         --initFunction 'migrate' \
         --initArgs '{}' &
     
@@ -139,7 +139,7 @@ deploy_controller(){
 
 redeploy_controller(){
     echo 'y' | near deploy $CONTROLLER_ACCOUNT.$1 \
-        --wasmFile ./res/controller.wasm \
+        --wasmFile  ./contracts/target/wasm32-unknown-unknown/release/controller.wasm \
         --initFunction 'migrate' \
         --initArgs '{}' &
 

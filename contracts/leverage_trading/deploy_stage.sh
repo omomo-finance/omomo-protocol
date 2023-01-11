@@ -2,7 +2,7 @@
 #near login
 
 # build & test
-mkdir -p res && ./build.sh && ./test.sh
+./build.sh && ./test.sh
 
 ROOT_ACCOUNT=v1.omomo-finance.testnet
 CONTROLLER_ACCOUNT=controller
@@ -20,13 +20,13 @@ echo 'y' | near delete ${CONTRACT_ADDRESS} $ROOT_ACCOUNT
 near create-account ${CONTRACT_ADDRESS} --masterAccount $ROOT_ACCOUNT --initialBalance 10
 
 # redeploy contracts
-# --wasmFile ./res/limit_orders.wasm
+# --wasmFile  ./target/wasm32-unknown-unknown/release/leverage_trading.wasm
 near deploy ${CONTRACT_ADDRESS} \
-  --wasmFile ./res/limit_orders.wasm \
+  --wasmFile  ./target/wasm32-unknown-unknown/release/leverage_trading.wasm \
   --initFunction 'new_with_config' \
   --initArgs '{
         "owner_id":"'${CONTRACT_ADDRESS}'",
-        "oracle_account_id":"limit_orders_oracle.'$ROOT_ACCOUNT'"
+        "oracle_account_id":"oracle.omomo-finance.testnet.'$ROOT_ACCOUNT'"
     }'
 
 # register limit orders on tokens

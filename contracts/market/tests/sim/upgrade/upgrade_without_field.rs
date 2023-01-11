@@ -1,6 +1,6 @@
 // IMPORTANT! Update previous version after migration
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    DTOKEN_CURRENT_WASM_BYTES => "../../res/market.wasm",
+    DTOKEN_CURRENT_WASM_BYTES => "../target/wasm32-unknown-unknown/release/market.wasm",
     DTOKEN_PREVIOUS_WASM_BYTES => "tests/sim/contracts/dtoken_v1.wasm",
 }
 

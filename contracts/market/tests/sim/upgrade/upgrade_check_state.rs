@@ -18,7 +18,7 @@ const START_BALANCE: Balance = 100;
 const START_PRICE: Balance = 10000;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
-    DTOKEN_CURRENT_WASM_BYTES => "../../res/market.wasm",
+    DTOKEN_CURRENT_WASM_BYTES => "../target/wasm32-unknown-unknown/release/market.wasm",
 }
 
 fn upgrade_fixture() -> (

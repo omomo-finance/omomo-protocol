@@ -1,5 +1,5 @@
 [package]
-name = "limit-orders"
+name = "leverage-trading"
 version = "0.0.2"
 authors = ["mark.ts@blaize.tech", "tymofii.s@blaize.tech", "dmytro.sh@blaize.tech"]
 edition = "2021"
