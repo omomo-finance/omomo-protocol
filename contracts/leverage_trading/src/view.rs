@@ -267,16 +267,18 @@ impl Contract {
     }
 
     /// this method uses the mock data
-    pub fn get_total_pending_orders_per_pair(&self, _pair_id: PairId) -> U128 {
+    #[allow(unused_variables)]
+    pub fn get_total_pending_orders_per_pair(&self, pair_id: PairId) -> U128 {
         U128(3)
     }
 
     /// his method uses the mock data
+    #[allow(unused_variables)]
     pub fn get_pending_orders(
         &self,
-        _pair_id: PairId,
-        _user_per_page: U128,
-        _page: U128,
+        pair_id: PairId,
+        user_per_page: U128,
+        page: U128,
     ) -> PendingOrders {
         let sell_token: AccountId = "usdt.qa.v1.nearlend.testnet".parse().unwrap();
         let buy_token: AccountId = "wnear.qa.v1.nearlend.testnet".parse().unwrap();
