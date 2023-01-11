@@ -267,16 +267,16 @@ impl Contract {
     }
 
     /// this method uses the mock data
-    pub fn get_total_pending_orders_per_pair(&self, pair_id: PairId) -> U128 {
+    pub fn get_total_pending_orders_per_pair(&self, _pair_id: PairId) -> U128 {
         U128(3)
     }
 
     /// his method uses the mock data
     pub fn get_pending_orders(
         &self,
-        pair_id: PairId,
-        user_per_page: U128,
-        page: U128,
+        _pair_id: PairId,
+        _user_per_page: U128,
+        _page: U128,
     ) -> PendingOrders {
         let sell_token: AccountId = "usdt.qa.v1.nearlend.testnet".parse().unwrap();
         let buy_token: AccountId = "wnear.qa.v1.nearlend.testnet".parse().unwrap();
@@ -332,8 +332,8 @@ impl Contract {
                     status: OrderStatus::Pending,
                     order_type: OrderType::Buy,
                     amount: 2000000000000000000000000000,
-                    sell_token: sell_token,
-                    buy_token: buy_token,
+                    sell_token,
+                    buy_token,
                     leverage: BigDecimal::from(U128(2 * 10_u128.pow(24))),
                     sell_token_price: Price {
                         ticker_id: "USDT".to_string(),
