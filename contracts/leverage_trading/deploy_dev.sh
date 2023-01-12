@@ -4,8 +4,7 @@
 # build & test
 ./build.sh && ./test.sh
 
-near dev-deploy -f  ./target/wasm32-unknown-unknown/release/leverage_trading.wasm
-CONTRACT_ID="$(cat neardev/dev-account)"
+CONTRACT_ID=leverage.dev.v1.omomo-finance.testnet
 # latest address version
 USDT_TOKEN=usdt.dev.v1.omomo-finance.testnet
 USDT_MARKET=usdt_market.dev.v1.omomo-finance.testnet
@@ -59,7 +58,7 @@ near call $CONTRACT_ID update_or_insert_price '{
         "ticker_id":"USDT",
         "value":"1.01"
     }
-}' --accountId $CONTRACT_ID
+}' --accountId $CONTRACT_ID &
 
 near call $CONTRACT_ID update_or_insert_price '{
     "token_id":"'$WNEAR_TOKEN'",
@@ -101,13 +100,13 @@ near view $CONTRACT_ID view_orders '{
 
 near view dcl.ref-dev.testnet get_pool '{"pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000"}'
 
-# mint 10000
+# mint 30000
 near call $WNEAR_TOKEN mint '{
         "account_id": "'$CONTRACT_ID'",
         "amount": "30000000000000000000000000000"
     }' --accountId $CONTRACT_ID &
 
-# mint 10000
+# mint 30000
 near call $USDT_TOKEN mint '{
         "account_id": "'$CONTRACT_ID'",
         "amount": "30000000000000000000000000000"

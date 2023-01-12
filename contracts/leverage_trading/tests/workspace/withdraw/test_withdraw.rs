@@ -1,5 +1,5 @@
 use crate::utils::*;
-use limit_orders::Actions;
+use leverage_trading::Actions;
 use near_sdk::json_types::U128;
 use near_sdk::require;
 use near_sdk::serde_json::json;

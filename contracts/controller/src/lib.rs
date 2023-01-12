@@ -140,8 +140,8 @@ pub trait OraclePriceHandlerHook {
     fn oracle_on_data(&mut self, price_data: PriceJsonList);
 }
 
-#[ext_contract(dtoken)]
-trait DtokenInterface {
+#[ext_contract(market)]
+trait MarketInterface {
     fn swap_supplies(
         &mut self,
         borrower: AccountId,

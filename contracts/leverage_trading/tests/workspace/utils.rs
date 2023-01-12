@@ -2,7 +2,7 @@ use near_sdk::serde_json::json;
 use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
-const LEVERAGE_TRADING_WASM: &str = "./res/limit_orders.wasm";
+const LEVERAGE_TRADING_WASM: &str = "./res/leverage_trading.wasm";
 const TEST_UTULEN_WASM: &str = "./res/test_utoken.wasm";
 
 pub async fn deploy_leverage_trading(
