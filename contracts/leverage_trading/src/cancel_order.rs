@@ -1,4 +1,3 @@
-use crate::big_decimal::{BigDecimal, WRatio};
 use crate::ref_finance::ext_ref_finance;
 use crate::ref_finance::{Action, Swap};
 use crate::utils::NO_DEPOSIT;
@@ -231,7 +230,7 @@ impl Contract {
             Swap: Swap {
                 pool_ids: vec![self.view_pair(&order.sell_token, &order.buy_token).pool_id],
                 output_token: order.sell_token.clone(),
-                min_output_amount: WBalance::from(0),
+                min_output_amount: U128::from(0),
             },
         };
 
@@ -244,7 +243,7 @@ impl Contract {
             .with_attached_deposit(1)
             .ft_transfer_call(
                 self.ref_finance_account.clone(),
-                WRatio::from(buy_amount),
+                U128::from(buy_amount),
                 Some("Swap".to_string()),
                 near_sdk::serde_json::to_string(&action).unwrap(),
             )

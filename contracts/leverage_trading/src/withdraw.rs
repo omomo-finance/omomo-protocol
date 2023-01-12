@@ -1,4 +1,3 @@
-use crate::big_decimal::WBalance;
 use crate::cancel_order::ext_self;
 use crate::utils::{ext_token, NO_DEPOSIT};
 use crate::{Contract, ContractExt};
@@ -8,7 +7,7 @@ use near_sdk::{env, log, near_bindgen, require, AccountId, Balance, PromiseOrVal
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, token: AccountId, amount: U128) -> PromiseOrValue<WBalance> {
+    pub fn withdraw(&mut self, token: AccountId, amount: U128) -> PromiseOrValue<U128> {
         let user = env::signer_account_id();
         let user_balance = self.balance_of(user.clone(), token.clone());
 
@@ -44,7 +43,7 @@ impl Contract {
         account_id: AccountId,
         token: AccountId,
         amount: U128,
-    ) -> PromiseOrValue<WBalance> {
+    ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             return PromiseOrValue::Value(amount);
         };

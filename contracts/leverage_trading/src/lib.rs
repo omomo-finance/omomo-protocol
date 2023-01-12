@@ -1,6 +1,5 @@
 extern crate core;
 
-mod big_decimal;
 mod cancel_order;
 mod common;
 mod config;
@@ -20,9 +19,9 @@ mod withdraw;
 
 pub use crate::metadata::*;
 
-use crate::big_decimal::*;
 use crate::common::PairId;
 use crate::config::Config;
+use big_decimal::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;

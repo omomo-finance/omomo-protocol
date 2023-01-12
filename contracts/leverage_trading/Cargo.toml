@@ -12,6 +12,7 @@ near-sdk = "4.0.0"
 near-contract-standards = "4.0.0"
 uint = { version = "=0.9.0", default-features = false }
 borsh = "0.9.3"
+big-decimal = { git = "https://github.com/omomo-finance/big-decimal" }
 
 [dev-dependencies]
 workspaces = "0.6.0"

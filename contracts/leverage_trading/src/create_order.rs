@@ -1,4 +1,3 @@
-use crate::big_decimal::{BigDecimal, WBalance};
 use crate::ref_finance::ext_ref_finance;
 use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
 use crate::*;
@@ -9,8 +8,8 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance>;
-    fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
+    fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<U128>;
+    fn borrow_callback(&mut self) -> PromiseOrValue<U128>;
     fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<Balance>;
 }
 
@@ -28,11 +27,11 @@ impl Contract {
     pub fn create_order(
         &mut self,
         order_type: OrderType,
-        amount: WBalance,
+        amount: U128,
         sell_token: AccountId,
         buy_token: AccountId,
         leverage: U128,
-    ) -> PromiseOrValue<WBalance> {
+    ) -> PromiseOrValue<U128> {
         require!(
             env::attached_deposit() >= self.view_gas_for_execution() * 2,
             "Create order should accept deposits two times greater than gas for execution"
@@ -75,7 +74,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
+    pub fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<U128> {
         require!(
             is_promise_success(),
             "Problem with pool on ref finance has occurred"
@@ -102,7 +101,7 @@ impl Contract {
     }
 
     /// Makes batch of transaction consist of Deposit & Add_Liquidity
-    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order) -> PromiseOrValue<WBalance> {
+    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order) -> PromiseOrValue<U128> {
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
 
@@ -198,7 +197,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
+    pub fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<U128> {
         require!(
             env::promise_results_count() == 2,
             "Contract expected 2 results on the callback"
@@ -234,7 +233,7 @@ impl Contract {
         token: AccountId,
         amount: U128,
         leverage: U128,
-    ) -> PromiseOrValue<WBalance> {
+    ) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
@@ -265,7 +264,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn borrow_callback(&mut self) -> PromiseOrValue<WBalance> {
+    pub fn borrow_callback(&mut self) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Contract failed to borrow assets");
         PromiseOrValue::Value(U128(0))
     }

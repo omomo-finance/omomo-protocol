@@ -1,4 +1,3 @@
-use crate::big_decimal::{BigDecimal, WBalance, WRatio};
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{AccountId, Balance, BlockHeight, BorshStorageKey};
@@ -18,12 +17,12 @@ pub enum StorageKeys {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MarketData {
-    pub total_supplies: WBalance,
-    pub total_borrows: WBalance,
-    pub total_reserves: WBalance,
-    pub exchange_rate_ratio: WRatio,
-    pub interest_rate_ratio: WRatio,
-    pub borrow_rate_ratio: WRatio,
+    pub total_supplies: U128,
+    pub total_borrows: U128,
+    pub total_reserves: U128,
+    pub exchange_rate_ratio: U128,
+    pub interest_rate_ratio: U128,
+    pub borrow_rate_ratio: U128,
 }
 
 impl Default for MarketData {
@@ -92,12 +91,12 @@ pub struct OrderView {
     pub order_type: OrderType,
     pub amount: U128,
     pub sell_token: AccountId,
-    pub sell_token_price: WBalance,
+    pub sell_token_price: U128,
     pub buy_token: AccountId,
-    pub buy_token_price: WBalance,
-    pub leverage: WBigDecimal,
-    pub borrow_fee: WBalance,
-    pub liquidation_price: WBalance,
+    pub buy_token_price: U128,
+    pub leverage: U128,
+    pub borrow_fee: U128,
+    pub liquidation_price: U128,
     pub lpt_id: String,
 }
 
@@ -116,10 +115,10 @@ pub struct TradePair {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct CancelOrderView {
-    pub buy_token_amount: WRatio,
-    pub sell_token_amount: WRatio,
-    pub open_price: WRatio,
-    pub close_price: WRatio,
+    pub buy_token_amount: U128,
+    pub sell_token_amount: U128,
+    pub open_price: U128,
+    pub close_price: U128,
     pub pnl: PnLView,
 }
 

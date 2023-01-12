@@ -1,4 +1,3 @@
-use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
 use near_sdk::Gas;
 
@@ -12,7 +11,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
-        borrow_rate_ratio: WRatio,
+        borrow_rate_ratio: U128,
     ) -> OrderView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", account_id);
@@ -25,7 +24,7 @@ impl Contract {
             })
             .clone();
 
-        let borrow_fee = WBigDecimal::from(
+        let borrow_fee = U128::from(
             BigDecimal::from(borrow_rate_ratio)
                 * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
         );
@@ -36,16 +35,16 @@ impl Contract {
             order_type: order.order_type,
             amount: U128(order.amount),
             sell_token: order.sell_token,
-            sell_token_price: WBalance::from(order.sell_token_price.value),
+            sell_token_price: U128::from(order.sell_token_price.value),
             buy_token: order.buy_token,
-            buy_token_price: WBalance::from(order.buy_token_price.value),
-            leverage: WBigDecimal::from(order.leverage),
+            buy_token_price: U128::from(order.buy_token_price.value),
+            leverage: U128::from(order.leverage),
             borrow_fee,
             liquidation_price: self.calculate_liquidation_price(
                 U128(order.amount),
-                WBigDecimal::from(order.sell_token_price.value),
-                WBigDecimal::from(order.buy_token_price.value),
-                WBigDecimal::from(order.leverage),
+                U128::from(order.sell_token_price.value),
+                U128::from(order.buy_token_price.value),
+                U128::from(order.leverage),
                 borrow_fee,
                 U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
             ),
@@ -84,11 +83,12 @@ impl Contract {
         } // fee by blocks count
           //* BigDecimal::from(block_height() - order.block);
 
-        //swap_fee 0.0003
+        let swap_fee = BigDecimal::from(3).div_u128(ACCURACY); // 0.0003
+
         let expect_amount = buy_amount * order.sell_token_price.value
             - borrow_amount
             - borrow_fee
-            - borrow_amount * BigDecimal::from(0.0003);
+            - borrow_amount * swap_fee;
 
         let pnlv: PnLView = if expect_amount.round_u128() > order.amount {
             let lenpnl = (expect_amount
@@ -118,7 +118,7 @@ impl Contract {
         account_id: AccountId,
         sell_token: AccountId,
         buy_token: AccountId,
-        borrow_rate_ratio: WRatio,
+        borrow_rate_ratio: U128,
     ) -> Vec<OrderView> {
         let orders = self.orders.get(&account_id).unwrap_or_default();
         let result = orders
@@ -126,7 +126,7 @@ impl Contract {
             .filter_map(|(id, order)| {
                 match order.sell_token == sell_token && order.buy_token == buy_token {
                     true => {
-                        let borrow_fee = WBigDecimal::from(
+                        let borrow_fee = U128::from(
                             BigDecimal::from(borrow_rate_ratio)
                                 * BigDecimal::from(U128(
                                     env::block_height() as u128 - order.block as u128,
@@ -139,16 +139,16 @@ impl Contract {
                             order_type: order.order_type.clone(),
                             amount: U128(order.amount),
                             sell_token: order.sell_token.clone(),
-                            sell_token_price: WBigDecimal::from(order.sell_token_price.value),
+                            sell_token_price: U128::from(order.sell_token_price.value),
                             buy_token: order.buy_token.clone(),
-                            buy_token_price: WBigDecimal::from(order.buy_token_price.value),
-                            leverage: WBigDecimal::from(order.leverage),
+                            buy_token_price: U128::from(order.buy_token_price.value),
+                            leverage: U128::from(order.leverage),
                             borrow_fee,
                             liquidation_price: self.calculate_liquidation_price(
                                 U128(order.amount),
-                                WBigDecimal::from(order.sell_token_price.value),
-                                WBigDecimal::from(order.buy_token_price.value),
-                                WBigDecimal::from(order.leverage),
+                                U128::from(order.sell_token_price.value),
+                                U128::from(order.buy_token_price.value),
+                                U128::from(order.leverage),
                                 borrow_fee,
                                 U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
                             ),
@@ -179,11 +179,11 @@ impl Contract {
     }
 
     /// Returns the balance of the given account on certain token. If the account doesn't exist will return `"0"`.
-    pub fn balance_of(&self, account_id: AccountId, token: AccountId) -> WBalance {
+    pub fn balance_of(&self, account_id: AccountId, token: AccountId) -> U128 {
         match self.balances.get(&account_id) {
-            None => WBalance::from(0_u128),
+            None => U128::from(0_u128),
             Some(user_balance_per_token) => {
-                WBalance::from(*user_balance_per_token.get(&token).unwrap_or(&0_u128))
+                U128::from(*user_balance_per_token.get(&token).unwrap_or(&0_u128))
             }
         }
     }
@@ -222,10 +222,10 @@ impl Contract {
         let calc_pnl = self.calculate_pnl(account_id, order_id, Some(market_data));
 
         CancelOrderView {
-            buy_token_amount: WRatio::from(buy_token),
-            sell_token_amount: WRatio::from(sell_token),
-            open_price: WRatio::from(open_price.value),
-            close_price: WRatio::from(close_price),
+            buy_token_amount: U128::from(buy_token),
+            sell_token_amount: U128::from(sell_token),
+            open_price: U128::from(open_price.value),
+            close_price: U128::from(close_price),
             pnl: calc_pnl,
         }
     }
@@ -242,7 +242,7 @@ impl Contract {
         leverage: U128,
         borrow_fee: U128,
         swap_fee: U128,
-    ) -> WBigDecimal {
+    ) -> U128 {
         let collateral_usd =
             BigDecimal::from(sell_token_amount) * BigDecimal::from(sell_token_price);
         let position_amount_usd = collateral_usd * BigDecimal::from(leverage);

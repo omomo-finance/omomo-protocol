@@ -1,4 +1,3 @@
-use crate::big_decimal::WBalance;
 use crate::*;
 use near_sdk::{Gas, PromiseOrValue};
 
@@ -7,11 +6,7 @@ const GAS_FOR_DEPOSIT: Gas = Gas(2_000_000_000_000);
 impl Contract {
     /// Accepts tokens.
     /// Updates user balance
-    pub fn deposit(
-        &mut self,
-        token_amount: WBalance,
-        token: AccountId,
-    ) -> PromiseOrValue<WBalance> {
+    pub fn deposit(&mut self, token_amount: U128, token: AccountId) -> PromiseOrValue<U128> {
         require!(
             env::prepaid_gas() >= GAS_FOR_DEPOSIT,
             "Prepaid gas is not enough for deposit flow"
