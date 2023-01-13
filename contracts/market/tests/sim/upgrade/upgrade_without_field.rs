@@ -47,6 +47,7 @@ fn upgrade_fixture() -> (
         dtoken.new(dConfig {
             initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken.account_id(),
+            underlying_token_decimals: 24,
             owner_id: droot.account_id,
             controller_account_id: controller.account_id(),
             interest_rate_model: InterestRateModel::default(),

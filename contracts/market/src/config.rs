@@ -9,6 +9,7 @@ pub struct Config {
 
     /// The account ID of underlying_token
     pub underlying_token_id: AccountId,
+    pub underlying_token_decimals: u8,
 
     /// The account ID of the contract owner that allows to modify config
     pub owner_id: AccountId,

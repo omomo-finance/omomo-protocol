@@ -21,64 +21,21 @@ impl Upgradable for Contract {
     #[private]
     fn migrate() -> Self {
         #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-        struct OldContract {
-            ///  Exchange rate in case of zero supplies
-            initial_exchange_rate: Ratio,
-
-            /// Total sum of supplied tokens
-            total_reserves: Balance,
-
-            /// Account Id -> Token's amount
-            user_profiles: UnorderedMap<AccountId, UserProfile>,
-
-            /// Underlying balance of contract itself
-            contract_balance: Balance,
-
-            /// Address of underlying token
-            underlying_token: AccountId,
-
-            /// Pointer for contract token
-            token: FungibleToken,
-
-            /// Contract configuration object
-            config: LazyOption<Config>,
-
-            model: InterestRateModel,
-
+        /// Copy of the scheme before upgrade
+        struct PreviousStorageSchema {
+            // Define previous scheme here
             /// Contract admin account (dtoken itself by default)
             pub admin: AccountId,
-
-            pub eligible_to_borrow_uncollateralized: AccountId,
-
-            /// Campaign id -> Reward campaign
-            reward_campaigns: UnorderedMap<String, RewardCampaign>,
-
-            /// Unique incremental identifier
-            uid: u64,
-
-            /// User account_id -> { campaign_id -> reward }
-            rewards: HashMap<AccountId, HashMap<String, Reward>>,
-            /// Mock field
-            new_mock_field: HashMap<AccountId, bool>,
+            // .. etc
         }
 
-        let contract: OldContract = env::state_read().expect("Contract is not initialized");
+        // read and parse previos storage
+        let contract: PreviousStorageSchema = env::state_read().expect("Contract is not initialized");
 
-        Self {
-            initial_exchange_rate: contract.initial_exchange_rate,
-            total_reserves: contract.total_reserves,
-            contract_balance: contract.contract_balance,
-            user_profiles: contract.user_profiles,
-            underlying_token: contract.underlying_token,
-            token: contract.token,
-            config: contract.config,
-            model: contract.model,
+        // initialize new storage from an old schema 
+        Contract {
             admin: contract.admin,
-            eligible_to_borrow_uncollateralized: contract.eligible_to_borrow_uncollateralized,
-            reward_campaigns: contract.reward_campaigns,
-            uid: contract.uid,
-            rewards: contract.rewards,
-            disable_transfer: true,
+            ..Contract::default()   
         }
     }
 

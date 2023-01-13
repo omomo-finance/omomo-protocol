@@ -190,6 +190,7 @@ fn internal_dtoken_initialize(
         dtoken.new(dConfig {
             initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken_account,
+            underlying_token_decimals: 24,
             owner_id: owner,
             controller_account_id: controller_account,
             interest_rate_model: model,

@@ -126,6 +126,7 @@ mod tests {
         let mut contract = Contract::new(Config {
             initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: underlying_token_account,
+            underlying_token_decimals: 24,
             owner_id: dtoken_account,
             controller_account_id: controller_account,
             interest_rate_model: InterestRateModel::default(),

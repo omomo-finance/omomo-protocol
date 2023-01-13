@@ -41,7 +41,10 @@ pub async fn deploy_market(
     let _ = market
         .call("new_with_config")
         .args_json(
-            json!({ "owner_id":  owner.id(), "underlying_token_id": underlying_token.id(),
+            json!({ 
+                "owner_id":  owner.id(), 
+                "underlying_token_id": underlying_token.id(),
+                "underlying_token_decimals": 24,
                 "controller_account_id": controller.id(),
                 "initial_exchange_rate":"1000000000000000000000000",
                 "interest_rate_model":{
