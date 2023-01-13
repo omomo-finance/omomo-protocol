@@ -15,7 +15,6 @@ trait ContractCallbackInterface {
         &self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     );
@@ -23,7 +22,6 @@ trait ContractCallbackInterface {
         &self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     );
@@ -31,7 +29,6 @@ trait ContractCallbackInterface {
         &self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     );
@@ -39,7 +36,6 @@ trait ContractCallbackInterface {
         &self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     );
@@ -47,7 +43,6 @@ trait ContractCallbackInterface {
         &self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
         pool_info: PoolInfo,
@@ -58,7 +53,7 @@ trait ContractCallbackInterface {
 
 #[near_bindgen]
 impl Contract {
-    pub fn cancel_order(&mut self, order_id: U128, swap_fee: U128, price_impact: U128) {
+    pub fn cancel_order(&mut self, order_id: U128, price_impact: U128) {
         require!(
             prepaid_gas() >= CANCEL_ORDER_GAS,
             "Not enough gas for method: 'Cancel order'"
@@ -73,6 +68,7 @@ impl Contract {
                 panic!("Order with id: {} not found", order_id.0);
             })
             .clone();
+
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(1)
             .with_attached_deposit(NO_DEPOSIT)
@@ -81,13 +77,7 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(29)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .get_pool_callback(
-                        order_id,
-                        order,
-                        swap_fee,
-                        price_impact,
-                        OrderAction::Cancel,
-                    ),
+                    .get_pool_callback(order_id, order, price_impact, OrderAction::Cancel),
             );
     }
 
@@ -96,7 +86,6 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     ) {
@@ -129,14 +118,7 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(98)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .get_liquidity_callback(
-                        order_id,
-                        order,
-                        swap_fee,
-                        price_impact,
-                        order_action,
-                        pool_info,
-                    ),
+                    .get_liquidity_callback(order_id, order, price_impact, order_action, pool_info),
             );
     }
 
@@ -145,7 +127,6 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
         pool_info: PoolInfo,
@@ -190,13 +171,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .remove_liquidity_callback(
-                        order_id,
-                        order,
-                        swap_fee,
-                        price_impact,
-                        order_action,
-                    ),
+                    .remove_liquidity_callback(order_id, order, price_impact, order_action),
             );
     }
 
@@ -205,19 +180,17 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     ) {
         require!(is_promise_success(), "Some problem with remove liquidity");
-        self.order_cancel_swap_callback(order_id, order, swap_fee, price_impact, order_action);
+        self.order_cancel_swap_callback(order_id, order, price_impact, order_action);
     }
 
     pub fn swap(
         &self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     ) {
@@ -251,13 +224,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .order_cancel_swap_callback(
-                        order_id,
-                        order,
-                        swap_fee,
-                        price_impact,
-                        order_action,
-                    ),
+                    .order_cancel_swap_callback(order_id, order, price_impact, order_action),
             );
     }
 
@@ -266,7 +233,6 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     ) {
@@ -283,18 +249,12 @@ impl Contract {
                 .then(
                     ext_self::ext(current_account_id())
                         .with_attached_deposit(NO_DEPOSIT)
-                        .market_data_callback(
-                            order_id,
-                            order,
-                            swap_fee,
-                            price_impact,
-                            order_action,
-                        ),
+                        .market_data_callback(order_id, order, price_impact, order_action),
                 );
         } else {
             #[allow(clippy::collapsible_else_if)]
             if order_action == OrderAction::Cancel {
-                self.final_order_cancel(order_id, order, swap_fee, price_impact, None);
+                self.final_order_cancel(order_id, order, price_impact, None);
             } else {
                 self.final_liquidate(order_id, order, None);
             }
@@ -306,7 +266,6 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         order_action: OrderAction,
     ) {
@@ -328,7 +287,7 @@ impl Contract {
         };
 
         if order_action == OrderAction::Cancel {
-            self.final_order_cancel(order_id, order, swap_fee, price_impact, Some(market_data));
+            self.final_order_cancel(order_id, order, price_impact, Some(market_data));
         } else {
             self.final_liquidate(order_id, order, Some(market_data));
         }
@@ -338,7 +297,6 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        swap_fee: U128,
         price_impact: U128,
         market_data: Option<MarketData>,
     ) {
@@ -350,6 +308,8 @@ impl Contract {
             * order.leverage;
 
         let pnl = self.calculate_pnl(signer_account_id(), order_id, market_data);
+
+        let swap_fee = self.get_swap_fee(&order);
 
         let expect_amount = self.get_price(order.buy_token.clone())
             * sell_amount
@@ -444,6 +404,18 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(10u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
@@ -491,9 +463,8 @@ mod tests {
             borrow_rate_ratio: U128(634273735391536),
         };
 
-        let swap_fee = U128(1);
         let price_impact = U128(1);
-        contract.final_order_cancel(order_id, order, swap_fee, price_impact, Some(market_data));
+        contract.final_order_cancel(order_id, order, price_impact, Some(market_data));
 
         let orders = contract.orders.get(&alice()).unwrap();
         let order = orders.get(&1).unwrap();
