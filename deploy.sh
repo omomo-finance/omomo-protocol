@@ -15,7 +15,26 @@ clean_up_previous_deployment () {
     wait
 }
 
-# create underlying tokens and markets
+# delete mock tokens
+clean_up_tokens () {
+    echo 'y' | near delete $ETH_TOKEN  --masterAccount $1 $1 & 
+    echo 'y' | near delete $NEAR_TOKEN --masterAccount $1 $1 &
+    echo 'y' | near delete $USDT_TOKEN --masterAccount $1 $1 & 
+    echo 'y' | near delete $USDC_TOKEN --masterAccount $1 $1 &
+
+    wait
+}
+
+# create underlying tokens
+create_underlying_tokens() {
+    near create-account $ETH_TOKEN  --masterAccount $1 --initialBalance 3 &
+    near create-account $NEAR_TOKEN --masterAccount $1 --initialBalance 3 &
+    near create-account $USDT_TOKEN --masterAccount $1 --initialBalance 3 &
+    near create-account $USDC_TOKEN --masterAccount $1 --initialBalance 3 &
+    wait
+}
+
+# create markets
 create_markets() {
     near create-account weth_market.$1 --masterAccount $1 --initialBalance 7 &
     near create-account wnear_market.$1 --masterAccount $1 --initialBalance 7 &

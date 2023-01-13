@@ -11,8 +11,12 @@ USDC_TOKEN=usdc.dev.v1.omomo-finance.testnet
 
 # build_and_test
 
-clean_up_previous_deployment $ROOT_ACCOUNT
-create_underlying_tokens_and_markets $ROOT_ACCOUNT &
+clean_up_previous_deployment $ROOT_ACCOUNT &
+clean_up_tokens $ROOT_ACCOUNT &
+wait
+
+create_underlying_tokens $ROOT_ACCOUNT &
+create_markets $ROOT_ACCOUNT &
 create_controller $ROOT_ACCOUNT &
 wait
 
@@ -34,7 +38,7 @@ near view $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT view_markets '{}' --accountId $CONTR
 near view $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT view_prices '{ "dtokens": ["wnear_market.'$ROOT_ACCOUNT'", "weth_market.'$ROOT_ACCOUNT'", "usdt_market.'$ROOT_ACCOUNT'", "usdc_market.'$ROOT_ACCOUNT'"] }' --accountId $CONTROLLER_ACCOUNT.$ROOT_ACCOUNT
 
 # view balances
-near view weth.$ROOT_ACCOUNT ft_balance_of '{"account_id": "weth_market.'$ROOT_ACCOUNT'"}'
-near view wnear.$ROOT_ACCOUNT ft_balance_of '{"account_id": "wnear_market.'$ROOT_ACCOUNT'"}'
-near view usdt.$ROOT_ACCOUNT ft_balance_of '{"account_id": "usdt_market.'$ROOT_ACCOUNT'"}'
-near view usdc.$ROOT_ACCOUNT ft_balance_of '{"account_id": "usdc_market.'$ROOT_ACCOUNT'"}'
+near view $ETH_TOKEN  ft_balance_of '{"account_id": "weth_market.'$ROOT_ACCOUNT'"}'
+near view $NEAR_TOKEN ft_balance_of '{"account_id": "wnear_market.'$ROOT_ACCOUNT'"}'
+near view $USDT_TOKEN ft_balance_of '{"account_id": "usdt_market.'$ROOT_ACCOUNT'"}'
+near view $USDC_TOKEN ft_balance_of '{"account_id": "usdc_market.'$ROOT_ACCOUNT'"}'
