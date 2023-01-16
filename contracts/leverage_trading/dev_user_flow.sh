@@ -45,6 +45,6 @@ near view $CONTRACT_ID view_orders '{
 }'
 
 # Cancel order
-near call $CONTRACT_ID cancel_order '{"order_id": "4", "swap_fee": "1", "price_impact": "1"}' --accountId $USER_ACCOUNT --gas 160000000000000
+near call $CONTRACT_ID cancel_order '{"order_id": "4", "price_impact": "1"}' --accountId $USER_ACCOUNT --gas 160000000000000
 # Deposit balance should be returned after cancel order
 near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'$USDT_TOKEN'" }'

@@ -400,7 +400,7 @@ mod tests {
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(10u128.pow(20)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
         };
         contract.add_pair(pair_data.clone());
 
@@ -412,7 +412,7 @@ mod tests {
             buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(10u128.pow(20)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
         };
 
         contract.add_pair(pair_data2.clone());
@@ -439,7 +439,7 @@ mod tests {
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(10u128.pow(20)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
         };
         contract.add_pair(pair_data.clone());
 
@@ -469,7 +469,7 @@ mod tests {
         };
         let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
         assert!(!pnl.is_profit);
-        assert_eq!(pnl.amount, U128(918287254901960784313725490));
+        assert_eq!(pnl.amount, U128(918587254901960784313725490));
     }
 
     #[test]
@@ -489,7 +489,7 @@ mod tests {
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(10u128.pow(20)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
         };
         contract.add_pair(pair_data.clone());
 
@@ -519,7 +519,7 @@ mod tests {
         };
         let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
         assert!(!pnl.is_profit);
-        assert_eq!(pnl.amount, U128(1415005882352941176470588235));
+        assert_eq!(pnl.amount, U128(1415605882352941176470588235));
     }
 
     #[test]
@@ -569,8 +569,6 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let borrow_rate_ratio = U128(634273735391536);
-
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -581,7 +579,9 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(23)),
         };
-        contract.add_pair(pair_data);
+        contract.add_pair(pair_data.clone());
+
+        let borrow_rate_ratio = U128(634273735391536);
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order(alice(), order1);
@@ -604,7 +604,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let result_view_order1 = OrderView {
@@ -637,8 +637,6 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let borrow_rate_ratio = U128(634273735391536);
-
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -650,6 +648,8 @@ mod tests {
             swap_fee: U128(10u128.pow(23)),
         };
         contract.add_pair(pair_data.clone());
+
+        let borrow_rate_ratio = U128(634273735391536);
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order(alice(), order1);
@@ -685,7 +685,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee_order1,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let liquidation_price_order2 = contract.calculate_liquidation_price(
@@ -694,7 +694,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee_order2,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let liquidation_price_order3 = contract.calculate_liquidation_price(
@@ -703,7 +703,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee_order3,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let result_view_orders_alice = vec![

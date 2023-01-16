@@ -34,7 +34,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_token": "'$WNEAR_TOKEN'",
             "pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
-            "swap_fee": "100000000000000000000"
+            "swap_fee": "300000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 
@@ -47,7 +47,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_token": "'$USDT_TOKEN'",
             "pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
-            "swap_fee": "100000000000000000000"
+            "swap_fee": "300000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 
