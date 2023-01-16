@@ -4,19 +4,30 @@
 # build & test
 ./build.sh && ./test.sh
 
-CONTRACT_ID=leverage.dev.v1.omomo-finance.testnet
+ROOT_ACCOUNT=develop.v1.omomo-finance.testnet
+CONTRACT_ID=leverage.develop.v1.omomo-finance.testnet
 # latest address version
-USDT_TOKEN=usdt.dev.v1.omomo-finance.testnet
-USDT_MARKET=usdt_market.dev.v1.omomo-finance.testnet
-WNEAR_TOKEN=wnear.dev.v1.omomo-finance.testnet
-WNEAR_MARKET=wnear_market.dev.v1.omomo-finance.testnet
+USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
+USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
+WNEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+WNEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
 ORACLE_ID=oracle.omomo-finance.testnet
 
+# clean up previuos deployment
+echo 'y' | near delete ${CONTRACT_ID} $ROOT_ACCOUNT
+
+# create corresponding accoutns
+near create-account ${CONTRACT_ID} --masterAccount $ROOT_ACCOUNT --initialBalance 10
+
+
 # init contract
-near call $CONTRACT_ID --accountId=$CONTRACT_ID new_with_config '{
-       "owner_id":"'$CONTRACT_ID'",
-       "oracle_account_id":"'$ORACLE_ID'"
-   }'
+near deploy ${CONTRACT_ID} \
+  --wasmFile  ./target/wasm32-unknown-unknown/release/leverage_trading.wasm \
+  --initFunction 'new_with_config' \
+  --initArgs '{
+        "owner_id":"'${CONTRACT_ID}'",
+        "oracle_account_id":"'$ORACLE_ID'"
+    }'
 
 # register limit orders on tokens
 near call $WNEAR_TOKEN storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 0.25 &

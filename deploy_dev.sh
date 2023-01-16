@@ -1,15 +1,25 @@
+# setup
 source ./deploy.sh
 
-ROOT_ACCOUNT=dev.v1.omomo-finance.testnet
+ROOT_ACCOUNT=develop.v1.omomo-finance.testnet
 CONTROLLER_ACCOUNT=controller
 ORACLE_ACCOUNT=oracle.omomo-finance.testnet
-ETH_TOKEN=weth.dev.v1.omomo-finance.testnet
-NEAR_TOKEN=wnear.dev.v1.omomo-finance.testnet
-USDT_TOKEN=usdt.dev.v1.omomo-finance.testnet
-USDC_TOKEN=usdc.dev.v1.omomo-finance.testnet
+
+ETH_TOKEN=weth.develop.v1.omomo-finance.testnet
+ETH_TOKEN_DECIMALS=18
+
+NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+NEAR_TOKEN_DECIMALS=24
+
+USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
+USDT_TOKEN_DECIMALS=24
+
+USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
+USDC_TOKEN_DECIMALS=6
 
 
-# build_and_test
+# deployment steps
+build_and_test
 
 clean_up_previous_deployment $ROOT_ACCOUNT &
 clean_up_tokens $ROOT_ACCOUNT &

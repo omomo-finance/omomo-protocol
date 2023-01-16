@@ -49,6 +49,48 @@ create_controller() {
     wait
 }
 
+# deploy underlyings
+deploy_underlyings() {
+    near deploy weth.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "Wrapped Ethereum",
+            "symbol": "WETH",
+            "total_supply": "0"
+        }' &
+    near deploy wnear.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "Wrapped Near",
+            "symbol": "WNEAR",
+            "total_supply": "0"
+        }' &
+    near deploy usdt.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "Tether",
+            "symbol": "USDT",
+            "total_supply": "0"
+        }' &
+    near deploy usdc.$1 \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --initFunction 'new_default_meta' \
+        --initArgs '{
+            "owner_id": "'$1'",
+            "name": "USD Coin",
+            "symbol": "USDC",
+            "total_supply": "0"
+        }' &
+
+    wait
+}
+
 # deploy markets
 deploy_markets(){
     near deploy weth_market.$1 \
@@ -57,7 +99,7 @@ deploy_markets(){
         --initArgs '{
             "owner_id":"'$1'",
             "underlying_token_id":"'$ETH_TOKEN'",
-            "underlying_token_decimals": 18,
+            "underlying_token_decimals": '$ETH_TOKEN_DECIMALS',
             "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
             "initial_exchange_rate":"1000000000000000000000000",
             "interest_rate_model":{
@@ -74,7 +116,7 @@ deploy_markets(){
         --initArgs '{
             "owner_id":"'$1'",
             "underlying_token_id":"'$NEAR_TOKEN'",
-            "underlying_token_decimals": 24,
+            "underlying_token_decimals": '$NEAR_TOKEN_DECIMALS',
             "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
             "initial_exchange_rate":"1000000000000000000000000",
             "interest_rate_model":{
@@ -91,7 +133,7 @@ deploy_markets(){
         --initArgs '{
         "owner_id":"'$1'",
         "underlying_token_id":"'$USDT_TOKEN'",
-        "underlying_token_decimals": 6,
+        "underlying_token_decimals": '$USDT_TOKEN_DECIMALS',
         "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
             "initial_exchange_rate":"1000000000000000000000000",
             "interest_rate_model":{
@@ -108,7 +150,7 @@ deploy_markets(){
         --initArgs '{
         "owner_id":"'$1'",
         "underlying_token_id":"'$USDC_TOKEN'",
-        "underlying_token_decimals": 6,
+        "underlying_token_decimals": '$USDC_TOKEN_DECIMALS',
         "controller_account_id":"'$CONTROLLER_ACCOUNT'.'$1'",
             "initial_exchange_rate":"1000000000000000000000000",
             "interest_rate_model":{

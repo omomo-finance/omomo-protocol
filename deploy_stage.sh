@@ -1,13 +1,22 @@
+# setup
 source ./deploy.sh
 
 ROOT_ACCOUNT=v1.omomo-finance.testnet
 CONTROLLER_ACCOUNT=controller
 ORACLE_ACCOUNT=oracle.omomo-finance.testnet
 ETH_TOKEN=eth.fakes.testnet
-NEAR_TOKEN=wrap.testnet
-USDT_TOKEN=usdt.fakes.testnet
-USDC_TOKEN=usdc.fakes.testnet
+ETH_TOKEN_DECIMALS=18
 
+NEAR_TOKEN=wrap.testnet
+NEAR_TOKEN_DECIMALS=24
+
+USDT_TOKEN=usdt.fakes.testnet
+USDT_TOKEN_DECIMALS=24
+
+USDC_TOKEN=usdc.fakes.testnet
+USDC_TOKEN_DECIMALS=6
+
+# deployment steps
 build_and_test
 clean_up_previous_deployment $ROOT_ACCOUNT
 create_markets $ROOT_ACCOUNT &
