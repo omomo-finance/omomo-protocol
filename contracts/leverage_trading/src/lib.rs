@@ -249,7 +249,7 @@ mod tests {
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(10u128.pow(20)),
+            swap_fee: U128(3 * 10u128.pow(20)),
         };
         contract.add_pair(pair_data.clone());
 
