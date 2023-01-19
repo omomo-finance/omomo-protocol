@@ -106,9 +106,11 @@ pub struct OrderView {
 pub struct TradePair {
     pub sell_ticker_id: String,
     pub sell_token: AccountId,
+    pub sell_token_decimals: u8,
     pub sell_token_market: AccountId,
     pub buy_ticker_id: String,
     pub buy_token: AccountId,
+    pub buy_token_decimals: u8,
     pub pool_id: String,
     pub max_leverage: U128,
     pub swap_fee: U128,

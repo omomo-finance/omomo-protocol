@@ -39,9 +39,11 @@ near call ${CONTRACT_ADDRESS} add_pair '{
         "pair_data": {
             "sell_ticker_id": "USDt",
             "sell_token": "'$USDT_TOKEN'",
+            "sell_token_decimals": 24,
             "sell_token_market": "usdt_market.'$ROOT_ACCOUNT'",
             "buy_ticker_id": "near",
             "buy_token": "'$NEAR_TOKEN'",
+            "buy_token_decimals": 24,
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "300000000000000000000"
@@ -52,9 +54,11 @@ near call ${CONTRACT_ADDRESS} add_pair '{
         "pair_data": {
             "sell_ticker_id": "near",
             "sell_token": "'$NEAR_TOKEN'",
+            "sell_token_decimals": 24,
             "sell_token_market": "wnear_market.'$ROOT_ACCOUNT'",
             "buy_ticker_id": "USDt",
             "buy_token": "'$USDT_TOKEN'",
+            "buy_token_decimals": 24,
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "300000000000000000000"
@@ -68,6 +72,18 @@ near call ${CONTRACT_ADDRESS} set_max_order_amount '{
 
 wait
 # near view ${CONTRACT_ADDRESS} view_supported_pairs '{}'
+
+wait
+near view $CONTRACT_ID view_pair_tokens_decimals '{
+    "sell_token": "'$USDT_TOKEN'",
+    "buy_token": "'$NEAR_TOKEN'"
+}'
+
+wait
+near view $CONTRACT_ID view_pair_tokens_decimals '{
+    "sell_token": "'$NEAR_TOKEN'",
+    "buy_token": "'$USDT_TOKEN'"
+}'
 
 # add mock prices
 near call ${CONTRACT_ADDRESS} update_or_insert_price '{

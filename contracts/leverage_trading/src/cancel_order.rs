@@ -407,9 +407,11 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),

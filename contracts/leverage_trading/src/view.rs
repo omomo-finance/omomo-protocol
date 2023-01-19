@@ -363,6 +363,21 @@ impl Contract {
             total: U128(3),
         }
     }
+
+    pub fn view_pair_tokens_decimals(
+        &self,
+        sell_token: &AccountId,
+        buy_token: &AccountId,
+    ) -> (u8, u8) {
+        let pair_id = &(sell_token.clone(), buy_token.clone());
+        let pair = self.supported_markets.get(pair_id).unwrap_or_else(|| {
+            panic!(
+                "Sell and Buy token decimals for pair {} | {} not found",
+                pair_id.0, pair_id.1
+            )
+        });
+        (pair.sell_token_decimals, pair.buy_token_decimals)
+    }
 }
 
 #[cfg(test)]
@@ -395,9 +410,11 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -407,9 +424,11 @@ mod tests {
         let pair_data2 = TradePair {
             sell_ticker_id: "wnear".to_string(),
             sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "wnear_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "usdt".to_string(),
             buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -434,9 +453,11 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -484,9 +505,11 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -572,9 +595,11 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(23)),
@@ -640,9 +665,11 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(23)),
@@ -771,5 +798,37 @@ mod tests {
 
         assert_eq!(view_orders_alice, result_view_orders_alice);
         assert_eq!(view_orders_bob, result_view_orders_bob);
+    }
+
+    #[test]
+    fn test_view_pair_tokens_decimals() {
+        let context = get_context(false);
+        testing_env!(context);
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let sell_and_buy_tokens_decimals =
+            contract.view_pair_tokens_decimals(&pair_data.sell_token, &pair_data.buy_token);
+
+        assert_eq!(
+            sell_and_buy_tokens_decimals,
+            (pair_data.sell_token_decimals, pair_data.buy_token_decimals)
+        );
     }
 }
