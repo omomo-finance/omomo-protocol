@@ -34,21 +34,6 @@ pub struct MarketData {
     pub borrow_rate_ratio: WRatio,
 }
 
-// impl Default for MarketData {
-//     fn default() -> Self {
-//         Self {
-//             underlying_token:  AccountId::new_unchecked("".to_string()),
-//             underlying_token_decimals: 0,
-//             total_supplies: U128(0),
-//             total_borrows: U128(0),
-//             total_reserves: U128(0),
-//             exchange_rate_ratio: U128(0),
-//             interest_rate_ratio: U128(0),
-//             borrow_rate_ratio: U128(0),
-//         }
-//     }
-// }
-
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct PnLView {
