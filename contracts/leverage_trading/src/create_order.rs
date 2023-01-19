@@ -220,9 +220,13 @@ impl Contract {
         let mut order = order;
         order.lpt_id = lpt_id;
 
+        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
         self.order_nonce += 1;
+
         let order_id = self.order_nonce;
-        self.insert_order_for_user(&env::signer_account_id(), order, order_id);
+
+        self.insert_order_for_user(&env::signer_account_id(), order.clone(), order_id);
+        self.insert_order_for_pair(&pair_id, order, order_id);
 
         PromiseOrValue::Value(U128(0))
     }
@@ -274,13 +278,114 @@ impl Contract {
     pub fn add_order(&mut self, account_id: AccountId, order: String) {
         self.order_nonce += 1;
         let order_id = self.order_nonce;
-        let order = serde_json::from_str(order.as_str()).unwrap();
-        self.insert_order_for_user(&account_id, order, order_id);
+        let order: Order = serde_json::from_str(order.as_str()).unwrap();
+        self.insert_order_for_user(&account_id, order.clone(), order_id);
+        self.insert_order_for_pair(
+            &(order.sell_token.clone(), order.buy_token.clone()),
+            order,
+            order_id,
+        );
     }
 
+    #[private]
     pub fn insert_order_for_user(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
         let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
         user_orders_by_id.insert(order_id, order);
         self.orders.insert(account_id, &user_orders_by_id);
+    }
+
+    #[private]
+    pub fn insert_order_for_pair(&mut self, pair_id: &PairId, order: Order, order_id: u64) {
+        let mut user_orders_by_id = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
+        user_orders_by_id.insert(order_id, order);
+        self.orders_per_pair_view
+            .insert(pair_id, &user_orders_by_id);
+    }
+}
+
+impl Contract {
+    /// used for testing
+    pub fn imitation_add_liquidity_callback(&mut self, order: Order) {
+        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
+
+        let mut lpt_id = order.sell_token.to_string();
+        lpt_id.push('|');
+        lpt_id.push_str(order.buy_token.as_str());
+        lpt_id.push_str("|0000#0000");
+
+        let mut order = order;
+        order.lpt_id = lpt_id;
+
+        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
+        self.order_nonce += 1;
+
+        let order_id = self.order_nonce;
+
+        self.insert_order_for_user(&env::signer_account_id(), order.clone(), order_id);
+        self.insert_order_for_pair(&pair_id, order, order_id);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use near_sdk::test_utils::test_env::alice;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, VMContext};
+
+    fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .signer_account_id(alice())
+            .is_view(is_view)
+            .build()
+    }
+
+    #[test]
+    fn test_add_orders_from_create_order() {
+        let context = get_context(false);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_id: PairId = (
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        );
+
+        contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
+
+        assert_eq!(
+            contract.orders.get(&alice()).unwrap_or_default().len(),
+            0 as usize
+        );
+        assert_eq!(
+            contract
+                .orders_per_pair_view
+                .get(&pair_id)
+                .unwrap_or_default()
+                .len(),
+            0 as usize
+        );
+
+        for _ in 0..5 {
+            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+            contract.imitation_add_liquidity_callback(
+                near_sdk::serde_json::from_str(order.as_str()).unwrap(),
+            );
+        }
+
+        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 5 as usize);
+        assert_eq!(
+            contract
+                .orders_per_pair_view
+                .get(&pair_id)
+                .unwrap_or_default()
+                .len(),
+            5 as usize
+        );
     }
 }

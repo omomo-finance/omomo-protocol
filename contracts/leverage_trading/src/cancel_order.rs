@@ -370,10 +370,14 @@ impl Contract {
                 .insert(&order.sell_token, &(token_profit + protocol_profit));
         }
 
+        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
+
         let mut orders = self.orders.get(&signer_account_id()).unwrap();
         order.status = OrderStatus::Canceled;
-        orders.insert(order_id.0 as u64, order);
+        orders.insert(order_id.0 as u64, order.clone());
         self.orders.insert(&signer_account_id(), &orders);
+
+        self.insert_order_for_pair(&pair_id, order, order_id.0 as u64);
     }
 
     pub fn repay(&self, order_id: U128, market_data: MarketData) {
@@ -444,6 +448,11 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        let pair_id: PairId = (
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        );
+
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
@@ -497,6 +506,11 @@ mod tests {
 
         let orders = contract.orders.get(&alice()).unwrap();
         let order = orders.get(&1).unwrap();
+
+        let orders_from_pair = contract.orders_per_pair_view.get(&pair_id).unwrap();
+        let order_from_pair = orders_from_pair.get(&1).unwrap();
+
         assert_eq!(order.status, OrderStatus::Canceled);
+        assert_eq!(order_from_pair.status, order.status);
     }
 }
