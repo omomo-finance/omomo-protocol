@@ -68,7 +68,7 @@ impl Contract {
 
         MarketData {
             underlying_token: self.underlying_token.clone(),
-            underlying_token_decimals: self.underlying_token_decimals.clone(),
+            underlying_token_decimals: self.underlying_token_decimals,
             total_supplies: WBalance::from(total_supplies),
             total_borrows: WBalance::from(total_borrows),
             total_reserves: WBalance::from(total_reserves),
