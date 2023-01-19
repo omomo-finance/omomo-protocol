@@ -12,7 +12,6 @@ overflow-checks = true
 members = [
     "general",
     "controller",
-    "market",
     "test-utoken",
     "token",
 ]
