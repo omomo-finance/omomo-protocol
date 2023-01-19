@@ -40,19 +40,20 @@ pub async fn deploy_market(
 
     let _ = market
         .call("new_with_config")
-        .args_json(
-            json!({ "owner_id":  owner.id(), "underlying_token_id": underlying_token.id(),
-                "controller_account_id": controller.id(),
-                "initial_exchange_rate":"1000000000000000000000000",
-                "interest_rate_model":{
-                    "kink":"650000000000000000000000",
-                    "multiplier_per_block":"3044140030441400",
-                    "base_rate_per_block":"0",
-                    "jump_multiplier_per_block":"38051750380517500",
-                    "reserve_factor":"10000000000000000000000"
-                }
-            }),
-        )
+        .args_json(json!({
+            "owner_id":  owner.id(),
+            "underlying_token_id": underlying_token.id(),
+            "underlying_token_decimals": 24,
+            "controller_account_id": controller.id(),
+            "initial_exchange_rate":"1000000000000000000000000",
+            "interest_rate_model":{
+                "kink":"650000000000000000000000",
+                "multiplier_per_block":"3044140030441400",
+                "base_rate_per_block":"0",
+                "jump_multiplier_per_block":"38051750380517500",
+                "reserve_factor":"10000000000000000000000"
+            }
+        }))
         .max_gas()
         .transact()
         .await?;

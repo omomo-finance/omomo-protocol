@@ -69,6 +69,7 @@ pub struct Contract {
 
     /// Address of underlying token
     underlying_token: AccountId,
+    underlying_token_decimals: u8,
 
     /// Pointer for contract token
     token: FungibleToken,
@@ -281,6 +282,7 @@ impl Contract {
     pub fn new_with_config(
         owner_id: AccountId,
         underlying_token_id: AccountId,
+        underlying_token_decimals: u8,
         controller_account_id: AccountId,
         initial_exchange_rate: U128,
         interest_rate_model: InterestRateModel,
@@ -288,6 +290,7 @@ impl Contract {
         Self::new(Config {
             owner_id,
             underlying_token_id,
+            underlying_token_decimals,
             controller_account_id,
             initial_exchange_rate,
             interest_rate_model,
@@ -306,6 +309,7 @@ impl Contract {
             contract_balance: 0,
             user_profiles: UnorderedMap::new(StorageKeys::UserProfiles),
             underlying_token: config.underlying_token_id.clone(),
+            underlying_token_decimals: config.underlying_token_decimals,
             token: FungibleToken::new(b"t".to_vec()),
             config: LazyOption::new(StorageKeys::Config, Some(&config)),
             model: config.interest_rate_model,

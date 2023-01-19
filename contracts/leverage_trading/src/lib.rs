@@ -32,9 +32,6 @@ use std::collections::HashMap;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Contract {
-    /// market ➝ MarketData
-    market_infos: LookupMap<AccountId, MarketData>,
-
     /// Protocol fee
     protocol_fee: u128,
 
@@ -97,7 +94,6 @@ impl Contract {
         require!(!env::state_exists(), "Already initialized");
 
         Self {
-            market_infos: LookupMap::new(StorageKeys::Markets),
             protocol_fee: 10u128.pow(23),
             prices: UnorderedMap::new(StorageKeys::Prices),
             order_nonce: 0,
@@ -112,11 +108,6 @@ impl Contract {
             volatility_rate: BigDecimal::from(U128(95 * 10_u128.pow(22))),
             max_order_amount: 10_u128.pow(30),
         }
-    }
-
-    #[private]
-    pub fn add_market_data(&mut self, market: AccountId, data: MarketData) {
-        self.market_infos.insert(&market, &data);
     }
 
     #[private]
@@ -185,17 +176,19 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
         let pair = (
-            AccountId::from_str("usdt.qa.v1.nearlend.testnet").unwrap(),
-            AccountId::from_str("wnear.qa.v1.nearlend.testnet").unwrap(),
+            AccountId::from_str("usdt.fakes.testnet").unwrap(),
+            AccountId::from_str("wrap.testnet").unwrap(),
         );
 
         let pair_data = TradePair {
-            sell_ticker_id: "usdt".to_string(),
-            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_ticker_id: "wnear".to_string(),
-            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),
         };
@@ -213,17 +206,19 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
         let pair = (
-            AccountId::from_str("usdt.qa.v1.nearlend.testnet").unwrap(),
-            AccountId::from_str("wnear.qa.v1.nearlend.testnet").unwrap(),
+            AccountId::from_str("usdt.fakes.testnet").unwrap(),
+            AccountId::from_str("wrap.testnet").unwrap(),
         );
 
         let pair_data = TradePair {
-            sell_ticker_id: "usdt".to_string(),
-            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_ticker_id: "wnear".to_string(),
-            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),
         };
