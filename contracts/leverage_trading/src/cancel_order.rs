@@ -426,9 +426,9 @@ mod tests {
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
-            .current_account_id("margin.nearland.testnet".parse().unwrap())
+            .current_account_id("leverage.develop.v1.omomo-finance.testnet".parse().unwrap())
             .signer_account_id(alice())
-            .predecessor_account_id("usdt_market.qa.nearland.testnet".parse().unwrap())
+            .predecessor_account_id("alice.testnet".parse().unwrap())
             .block_index(103930920)
             .block_timestamp(1)
             .is_view(is_view)
@@ -445,21 +445,21 @@ mod tests {
         );
 
         contract.update_or_insert_price(
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            "usdt.fakes.testnet".parse().unwrap(),
             Price {
-                ticker_id: "USDT".to_string(),
+                ticker_id: "USDt".to_string(),
                 value: BigDecimal::from(2.0),
             },
         );
         contract.update_or_insert_price(
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            "wrap.testnet".parse().unwrap(),
             Price {
-                ticker_id: "WNEAR".to_string(),
+                ticker_id: "near".to_string(),
                 value: BigDecimal::from(4.22),
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
         contract.add_order(alice(), order1);
 
         let order_id = U128(1);
@@ -467,11 +467,11 @@ mod tests {
             status: OrderStatus::Pending,
             order_type: OrderType::Buy,
             amount: 1000000000000000000000000000,
-            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            buy_token: "wrap.testnet".parse().unwrap(),
             leverage: BigDecimal::from(1.0),
             sell_token_price: Price {
-                ticker_id: "USDT".to_string(),
+                ticker_id: "USDt".to_string(),
                 value: BigDecimal::from(1.01),
             },
             buy_token_price: Price {
@@ -479,10 +479,12 @@ mod tests {
                 value: BigDecimal::from(3.07),
             },
             block: 105210654,
-            lpt_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#238".to_string(),
+            lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
         };
 
         let market_data = MarketData {
+            underlying_token:  AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
+            underlying_token_decimals: 6,
             total_supplies: U128(60000000000000000000000000000),
             total_borrows: U128(25010000000000000000000000000),
             total_reserves: U128(1000176731435219096024128768),

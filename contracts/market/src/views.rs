@@ -4,11 +4,18 @@ use general::ratio::Ratio;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-#[derive(Debug)]
 pub struct MarketData {
+    pub underlying_token: AccountId,
+    /// WARN: should be the same as `underlying_token.ft_metadata.decimals`
+    pub underlying_token_decimals: u8,
+
+    /// Total supplies with precision 10^24
     pub total_supplies: WBalance,
+    /// Total borrows with precision 10^24
     pub total_borrows: WBalance,
+    /// Total reserves with precision 10^24
     pub total_reserves: WBalance,
+
     pub exchange_rate_ratio: WRatio,
     pub interest_rate_ratio: WRatio,
     pub borrow_rate_ratio: WRatio,
@@ -60,6 +67,8 @@ impl Contract {
         );
 
         MarketData {
+            underlying_token: self.underlying_token.clone(),
+            underlying_token_decimals: self.underlying_token_decimals.clone(),
             total_supplies: WBalance::from(total_supplies),
             total_borrows: WBalance::from(total_borrows),
             total_reserves: WBalance::from(total_reserves),
@@ -176,6 +185,8 @@ mod tests {
         let gotten_md = contract.view_market_data();
 
         let _expected_md = MarketData {
+            underlying_token: contract.underlying_token,
+            underlying_token_decimals: contract.underlying_token_decimals,
             total_supplies: U128(0),
             total_borrows: U128(0),
             total_reserves: U128(200),

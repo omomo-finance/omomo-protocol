@@ -18,26 +18,36 @@ pub enum StorageKeys {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MarketData {
+    pub underlying_token: AccountId,
+    /// WARN: should be the same as `underlying_token.ft_metadata.decimals`
+    pub underlying_token_decimals: u8,
+
+    /// Total supplies with precision 10^24
     pub total_supplies: WBalance,
+    /// Total borrows with precision 10^24
     pub total_borrows: WBalance,
+    /// Total reserves with precision 10^24
     pub total_reserves: WBalance,
+
     pub exchange_rate_ratio: WRatio,
     pub interest_rate_ratio: WRatio,
     pub borrow_rate_ratio: WRatio,
 }
 
-impl Default for MarketData {
-    fn default() -> Self {
-        Self {
-            total_supplies: U128(0),
-            total_borrows: U128(0),
-            total_reserves: U128(0),
-            exchange_rate_ratio: U128(0),
-            interest_rate_ratio: U128(0),
-            borrow_rate_ratio: U128(0),
-        }
-    }
-}
+// impl Default for MarketData {
+//     fn default() -> Self {
+//         Self {
+//             underlying_token:  AccountId::new_unchecked("".to_string()),
+//             underlying_token_decimals: 0,
+//             total_supplies: U128(0),
+//             total_borrows: U128(0),
+//             total_reserves: U128(0),
+//             exchange_rate_ratio: U128(0),
+//             interest_rate_ratio: U128(0),
+//             borrow_rate_ratio: U128(0),
+//         }
+//     }
+// }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
