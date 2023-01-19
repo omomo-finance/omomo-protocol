@@ -11,11 +11,11 @@ use crate::utils::{
     view_balance,
 };
 use controller::ActionType::Supply;
+use general::ratio::Ratio;
+use general::Price;
 use market::Config as dConfig;
 use market::ContractContract as Dtoken;
 use market::InterestRateModel;
-use general::ratio::Ratio;
-use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance};
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, view, ContractAccount, UserAccount};

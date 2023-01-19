@@ -30,12 +30,13 @@ impl Upgradable for Contract {
         }
 
         // read and parse previos storage
-        let contract: PreviousStorageSchema = env::state_read().expect("Contract is not initialized");
+        let contract: PreviousStorageSchema =
+            env::state_read().expect("Contract is not initialized");
 
-        // initialize new storage from an old schema 
+        // initialize new storage from an old schema
         Contract {
             admin: contract.admin,
-            ..Contract::default()   
+            ..Contract::default()
         }
     }
 

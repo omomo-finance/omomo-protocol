@@ -5,18 +5,17 @@ ROOT_ACCOUNT=develop.v1.omomo-finance.testnet
 CONTROLLER_ACCOUNT=controller
 ORACLE_ACCOUNT=oracle.omomo-finance.testnet
 
-ETH_TOKEN=weth.develop.v1.omomo-finance.testnet
+ETH_TOKEN=eth.fakes.testnet
 ETH_TOKEN_DECIMALS=18
 
-NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+NEAR_TOKEN=wrap.testnet
 NEAR_TOKEN_DECIMALS=24
 
-USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
+USDT_TOKEN=usdt.fakes.testnet
 USDT_TOKEN_DECIMALS=24
 
-USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
+USDC_TOKEN=usdc.fakes.testnet
 USDC_TOKEN_DECIMALS=6
-
 
 # deployment steps
 build_and_test
