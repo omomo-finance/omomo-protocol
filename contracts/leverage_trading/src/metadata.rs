@@ -53,7 +53,7 @@ pub struct Price {
     pub value: BigDecimal,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum OrderStatus {
     Pending,
@@ -62,7 +62,7 @@ pub enum OrderStatus {
     Liquidated,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum OrderType {
     Buy,
@@ -84,7 +84,7 @@ pub struct Order {
     pub lpt_id: String,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct OrderView {
     pub order_id: U128,
@@ -101,7 +101,7 @@ pub struct OrderView {
     pub lpt_id: String,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TradePair {
     pub sell_ticker_id: String,
@@ -123,7 +123,7 @@ pub struct CancelOrderView {
     pub pnl: PnLView,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde")]
 pub enum OrderAction {
     Create,
@@ -131,7 +131,7 @@ pub enum OrderAction {
     Liquidate,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct PoolInfo {
     pub pool_id: String,
@@ -155,13 +155,13 @@ pub struct PoolInfo {
     pub state: PoolState,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PoolState {
     Running,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Liquidity {
     pub lpt_id: String,
