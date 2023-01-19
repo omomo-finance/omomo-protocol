@@ -298,8 +298,7 @@ impl Contract {
                         value: BigDecimal::from(U128(305 * 10_u128.pow(22))),
                     },
                     block: 103930910,
-                    lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#540"
-                        .to_string(),
+                    lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#540".to_string(),
                 },
             ),
             (
@@ -320,8 +319,7 @@ impl Contract {
                         value: BigDecimal::from(U128(305 * 10_u128.pow(22))),
                     },
                     block: 103930910,
-                    lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#541"
-                        .to_string(),
+                    lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#541".to_string(),
                 },
             ),
             (
@@ -342,8 +340,7 @@ impl Contract {
                         value: BigDecimal::from(U128(305 * 10_u128.pow(22))),
                     },
                     block: 103930910,
-                    lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#542"
-                        .to_string(),
+                    lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#542".to_string(),
                 },
             ),
         ];
@@ -386,7 +383,9 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
-            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
@@ -397,7 +396,9 @@ mod tests {
         let pair_data2 = TradePair {
             sell_ticker_id: "near".to_string(),
             sell_token: "wrap.testnet".parse().unwrap(),
-            sell_token_market: "wnear_market.develop.v1.omomo-finance.testnet".parse().unwrap(),
+            sell_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             buy_ticker_id: "USDt".to_string(),
             buy_token: "usdt.fakes.testnet".parse().unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
@@ -477,7 +478,7 @@ mod tests {
         let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order(alice(), order1);
         let market_data = MarketData {
-            underlying_token:  AccountId::new_unchecked("alice.testnet".to_string()),
+            underlying_token: AccountId::new_unchecked("alice.testnet".to_string()),
             underlying_token_decimals: 24,
             total_supplies: U128(10_u128.pow(24)),
             total_borrows: U128(10_u128.pow(24)),
@@ -667,8 +668,7 @@ mod tests {
                 leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
                 borrow_fee: borrow_fee_order1,
                 liquidation_price: liquidation_price_order1,
-                lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#540"
-                    .to_string(),
+                lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#540".to_string(),
             },
             OrderView {
                 order_id: U128(2),
@@ -682,8 +682,7 @@ mod tests {
                 leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
                 borrow_fee: borrow_fee_order2,
                 liquidation_price: liquidation_price_order2,
-                lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#541"
-                    .to_string(),
+                lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#541".to_string(),
             },
         ];
 

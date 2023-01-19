@@ -483,7 +483,7 @@ mod tests {
         };
 
         let market_data = MarketData {
-            underlying_token:  AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
+            underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
             underlying_token_decimals: 6,
             total_supplies: U128(60000000000000000000000000000),
             total_borrows: U128(25010000000000000000000000000),
