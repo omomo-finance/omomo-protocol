@@ -2,8 +2,8 @@ use near_sdk::serde_json::json;
 use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
-const LEVERAGE_TRADING_WASM: &str = "./res/leverage_trading.wasm";
-const TEST_UTULEN_WASM: &str = "./res/test_utoken.wasm";
+const LEVERAGE_TRADING_WASM: &str = "./target/wasm32-unknown-unknown/release/leverage_trading.wasm";
+const MOCK_TOKEN_WASM: &str = "./../target/wasm32-unknown-unknown/release/test_utoken.wasm";
 
 pub async fn deploy_leverage_trading(
     owner: &Account,
@@ -26,7 +26,7 @@ pub async fn deploy_test_utoken(
     owner: &Account,
     worker: &Worker<Sandbox>,
 ) -> Result<workspaces::Contract, workspaces::error::Error> {
-    let wasm = std::fs::read(TEST_UTULEN_WASM);
+    let wasm = std::fs::read(MOCK_TOKEN_WASM);
     let underlying = worker.dev_deploy(&wasm.unwrap()).await?;
 
     let _ = underlying

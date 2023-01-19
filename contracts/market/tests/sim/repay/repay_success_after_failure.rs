@@ -4,8 +4,8 @@ use crate::utils::{
     set_price, supply, view_balance,
 };
 use controller::ActionType::Borrow;
-use market::{InterestRateModel, WRatio};
 use general::{ratio::Ratio, Price, WBalance};
+use market::{InterestRateModel, WRatio};
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
