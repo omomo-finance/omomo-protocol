@@ -12,6 +12,7 @@ USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
 WNEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
 WNEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
 ORACLE_ID=oracle.omomo-finance.testnet
+DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # clean up previuos deployment
 echo 'y' | near delete ${CONTRACT_ID} $ROOT_ACCOUNT
@@ -32,6 +33,10 @@ near deploy ${CONTRACT_ID} \
 # register limit orders on tokens
 near call $WNEAR_TOKEN storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 0.25 &
 near call $USDT_TOKEN storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 0.25 &
+wait
+
+near call $WNEAR_TOKEN storage_deposit '{"account_id": "'$DEX_ACCOUNT'"}' --accountId $CONTRACT_ID --amount 0.25 &
+near call $USDT_TOKEN storage_deposit '{"account_id": "'$DEX_ACCOUNT'"}' --accountId $CONTRACT_ID --amount 0.25 &
 wait
 
 # add supported pairs
@@ -111,7 +116,7 @@ near view $CONTRACT_ID view_orders '{
     "borrow_rate_ratio": "1000"
 }'
 
-near view dcl.ref-dev.testnet get_pool '{"pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000"}'
+near view dclv2-dev.ref-dev.testnet get_pool '{"pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000"}'
 
 # mint 30000
 near call $WNEAR_TOKEN mint '{
@@ -128,3 +133,9 @@ near call $USDT_TOKEN mint '{
 
 near call $CONTRACT_ID add_token_market '{"token_id": "'$USDT_TOKEN'", "market_id": "'$USDT_MARKET'"}' --accountId $CONTRACT_ID
 near call $CONTRACT_ID add_token_market '{"token_id": "'$WNEAR_TOKEN'", "market_id": "'$WNEAR_MARKET'"}' --accountId $CONTRACT_ID
+
+near call $USDT_MARKET set_eligible_to_borrow_uncollateralized_account '{ "account": "'${CONTRACT_ID}'" }' --accountId shared_admin.testnet
+near view $USDT_MARKET get_eligible_to_borrow_uncollateralized_account '{ "account": "'${CONTRACT_ID}'" }'
+
+near call controller.$ROOT_ACCOUNT set_eligible_to_borrow_uncollateralized_account '{ "account": "'${CONTRACT_ID}'" }' --accountId controller.$ROOT_ACCOUNT
+near view controller.$ROOT_ACCOUNT get_eligible_to_borrow_uncollateralized_account '{ "account": "'${CONTRACT_ID}'" }'

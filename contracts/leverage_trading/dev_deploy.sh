@@ -101,7 +101,7 @@ near view $CONTRACT_ID view_orders '{
     "borrow_rate_ratio": "1000"
 }'
 
-near view dcl.ref-dev.testnet get_pool '{"pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000"}'
+near view $DEX_ACCOUNT get_pool '{"pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000"}'
 
 # mint 10000
 near call $WNEAR_TOKEN mint '{
