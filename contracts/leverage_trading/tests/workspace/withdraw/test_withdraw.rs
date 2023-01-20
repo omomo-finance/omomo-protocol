@@ -31,7 +31,8 @@ async fn withdraw_fixture(
             "buy_ticker_id": test_utoken.id().to_string(),
             "buy_token": test_utoken.id(),
             "pool_id": test_utoken.id().to_string(),
-            "max_leverage": "2500000000000000000000000"
+            "max_leverage": "2500000000000000000000000",
+            "swap_fee": "300000000000000000000"
         }}))
         .max_gas()
         .transact()

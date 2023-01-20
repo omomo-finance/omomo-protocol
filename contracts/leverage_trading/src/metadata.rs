@@ -106,6 +106,7 @@ pub struct TradePair {
     pub buy_token: AccountId,
     pub pool_id: String,
     pub max_leverage: U128,
+    pub swap_fee: U128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]

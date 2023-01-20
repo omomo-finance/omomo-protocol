@@ -7,10 +7,10 @@
 near dev-deploy -f  ./target/wasm32-unknown-unknown/release/leverage_trading.wasm
 CONTRACT_ID="$(cat neardev/dev-account)"
 # latest address version
-USDT_TOKEN=usdt.dev.v1.omomo-finance.testnet
-USDT_MARKET=usdt_market.dev.v1.omomo-finance.testnet
-WNEAR_TOKEN=wnear.dev.v1.omomo-finance.testnet
-WNEAR_MARKET=wnear_market.dev.v1.omomo-finance.testnet
+USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
+USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
+WNEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+WNEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
 ORACLE_ID=oracle.omomo-finance.testnet
 
 # init contract
@@ -33,7 +33,8 @@ near call $CONTRACT_ID add_pair '{
             "buy_ticker_id": "near",
             "buy_token": "'$WNEAR_TOKEN'",
             "pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000",
-            "max_leverage": "25000000000000000000000000"
+            "max_leverage": "25000000000000000000000000",
+            "swap_fee": "300000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 
@@ -45,7 +46,8 @@ near call $CONTRACT_ID add_pair '{
             "buy_ticker_id": "USDT",
             "buy_token": "'$USDT_TOKEN'",
             "pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000",
-            "max_leverage": "25000000000000000000000000"
+            "max_leverage": "25000000000000000000000000",
+            "swap_fee": "300000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 

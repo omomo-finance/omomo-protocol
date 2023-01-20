@@ -21,6 +21,8 @@ impl Contract {
             })
             .clone();
 
+        let swap_fee = self.get_swap_fee(&order);
+
         let borrow_fee = WBigDecimal::from(
             BigDecimal::from(borrow_rate_ratio)
                 * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
@@ -43,7 +45,7 @@ impl Contract {
                 WBigDecimal::from(order.buy_token_price.value),
                 WBigDecimal::from(order.leverage),
                 borrow_fee,
-                U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+                swap_fee,
             ),
             lpt_id: order.lpt_id,
         }
@@ -66,6 +68,8 @@ impl Contract {
             })
             .clone();
 
+        let swap_fee = self.get_swap_fee(&order);
+
         let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
             * BigDecimal::from(order.amount)
             / order.buy_token_price.value;
@@ -80,11 +84,10 @@ impl Contract {
         } // fee by blocks count
           //* BigDecimal::from(block_height() - order.block);
 
-        //swap_fee 0.0003
         let expect_amount = buy_amount * order.sell_token_price.value
             - borrow_amount
             - borrow_fee
-            - borrow_amount * BigDecimal::from(0.0003);
+            - borrow_amount * BigDecimal::from(swap_fee);
 
         let pnlv: PnLView = if expect_amount.round_u128() > order.amount {
             let lenpnl = (expect_amount
@@ -122,6 +125,8 @@ impl Contract {
             .filter_map(|(id, order)| {
                 match order.sell_token == sell_token && order.buy_token == buy_token {
                     true => {
+                        let swap_fee = self.get_swap_fee(order);
+
                         let borrow_fee = WBigDecimal::from(
                             BigDecimal::from(borrow_rate_ratio)
                                 * BigDecimal::from(U128(
@@ -146,7 +151,7 @@ impl Contract {
                                 WBigDecimal::from(order.buy_token_price.value),
                                 WBigDecimal::from(order.leverage),
                                 borrow_fee,
-                                U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+                                swap_fee,
                             ),
                             lpt_id: order.lpt_id.clone(),
                         })
@@ -390,6 +395,7 @@ mod tests {
             buy_token: "wrap.testnet".parse().unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
         };
         contract.add_pair(pair_data.clone());
 
@@ -403,6 +409,7 @@ mod tests {
             buy_token: "usdt.fakes.testnet".parse().unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
         };
 
         contract.add_pair(pair_data2.clone());
@@ -420,6 +427,20 @@ mod tests {
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
 
         contract.update_or_insert_price(
             "usdt.fakes.testnet".parse().unwrap(),
@@ -460,6 +481,20 @@ mod tests {
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
 
         contract.update_or_insert_price(
             "usdt.fakes.testnet".parse().unwrap(),
@@ -539,6 +574,20 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(10u128.pow(23)),
+        };
+        contract.add_pair(pair_data.clone());
+
         let borrow_rate_ratio = U128(634273735391536);
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#540\"}".to_string();
@@ -562,7 +611,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let result_view_order1 = OrderView {
@@ -595,8 +644,19 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let sell_token: AccountId = "usdt.fakes.testnet".parse().unwrap();
-        let buy_token: AccountId = "wrap.testnet".parse().unwrap();
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(10u128.pow(23)),
+        };
+        contract.add_pair(pair_data.clone());
 
         let borrow_rate_ratio = U128(634273735391536);
 
@@ -634,7 +694,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee_order1,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let liquidation_price_order2 = contract.calculate_liquidation_price(
@@ -643,7 +703,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee_order2,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let liquidation_price_order3 = contract.calculate_liquidation_price(
@@ -652,7 +712,7 @@ mod tests {
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
             borrow_fee_order3,
-            U128(10u128.pow(23)), // hardcore of swap_fee 0.1 % with 10^24 precision
+            pair_data.swap_fee, // hardcore of swap_fee 0.1 % with 10^24 precision
         );
 
         let result_view_orders_alice = vec![
@@ -703,13 +763,18 @@ mod tests {
 
         let mut view_orders_alice = contract.view_orders(
             alice(),
-            sell_token.clone(),
-            buy_token.clone(),
+            pair_data.sell_token.clone(),
+            pair_data.buy_token.clone(),
             borrow_rate_ratio,
         );
         view_orders_alice.sort_by(|a, b| a.order_id.cmp(&b.order_id));
 
-        let view_orders_bob = contract.view_orders(bob(), sell_token, buy_token, borrow_rate_ratio);
+        let view_orders_bob = contract.view_orders(
+            bob(),
+            pair_data.sell_token,
+            pair_data.buy_token,
+            borrow_rate_ratio,
+        );
 
         assert_eq!(view_orders_alice, result_view_orders_alice);
         assert_eq!(view_orders_bob, result_view_orders_bob);
