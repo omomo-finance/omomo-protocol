@@ -3,8 +3,8 @@ use crate::utils::{
     mint_tokens, new_user, set_price, supply, view_balance, withdraw,
 };
 use controller::ActionType::Supply;
-use market::InterestRateModel;
 use general::Price;
+use market::InterestRateModel;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 

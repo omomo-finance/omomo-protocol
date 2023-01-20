@@ -7,10 +7,10 @@
 near dev-deploy -f  ./target/wasm32-unknown-unknown/release/leverage_trading.wasm
 CONTRACT_ID="$(cat neardev/dev-account)"
 # latest address version
-USDT_TOKEN=usdt.dev.v1.omomo-finance.testnet
-USDT_MARKET=usdt_market.dev.v1.omomo-finance.testnet
-WNEAR_TOKEN=wnear.dev.v1.omomo-finance.testnet
-WNEAR_MARKET=wnear_market.dev.v1.omomo-finance.testnet
+USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
+USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
+WNEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+WNEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
 ORACLE_ID=oracle.omomo-finance.testnet
 
 # init contract

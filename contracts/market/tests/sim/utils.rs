@@ -6,10 +6,10 @@ use std::str::FromStr;
 
 use controller::ContractContract as Controller;
 use controller::{ActionType, Config as cConfig};
+use general::{ratio::Ratio, Price, WBalance};
 use market::ContractContract as Dtoken;
 use market::InterestRateModel;
 use market::{Config as dConfig, RepayInfo};
-use general::{ratio::Ratio, Price, WBalance};
 use test_utoken::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
@@ -190,6 +190,7 @@ fn internal_dtoken_initialize(
         dtoken.new(dConfig {
             initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken_account,
+            underlying_token_decimals: 24,
             owner_id: owner,
             controller_account_id: controller_account,
             interest_rate_model: model,
