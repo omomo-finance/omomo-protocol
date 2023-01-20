@@ -12,6 +12,7 @@ USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
 WNEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
 WNEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
 ORACLE_ID=oracle.omomo-finance.testnet
+DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # init contract
 near call $CONTRACT_ID --accountId=$CONTRACT_ID new_with_config '{
