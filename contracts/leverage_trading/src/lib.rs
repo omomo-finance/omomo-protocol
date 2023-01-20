@@ -58,7 +58,7 @@ pub struct Contract {
     /// Protocol profit token_id -> amount
     protocol_profit: LookupMap<AccountId, BigDecimal>,
 
-    /// Ref finance accountId [ as default "dcl.ref-dev.testnet" ]
+    /// Ref finance accountId [ as default "dclv2-dev.ref-dev.testnet" ]
     ref_finance_account: AccountId,
 
     /// Liquidation threshold
@@ -103,7 +103,7 @@ impl Contract {
             balances: UnorderedMap::new(StorageKeys::Balances),
             tokens_markets: LookupMap::new(StorageKeys::TokenMarkets),
             protocol_profit: LookupMap::new(StorageKeys::ProtocolProfit),
-            ref_finance_account: "dcl.ref-dev.testnet".parse().unwrap(),
+            ref_finance_account: "dclv2-dev.ref-dev.testnet".parse().unwrap(),
             liquidation_threshold: 10_u128.pow(23),
             volatility_rate: BigDecimal::from(U128(95 * 10_u128.pow(22))),
             max_order_amount: 10_u128.pow(30),

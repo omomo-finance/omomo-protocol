@@ -5,11 +5,12 @@ USDT_MARKET=usdt_market.dev.v1.omomo-finance.testnet
 WNEAR_TOKEN=wnear.dev.v1.omomo-finance.testnet
 WNEAR_MARKET=wnear_market.dev.v1.omomo-finance.testnet
 ORACLE_ID=oracle.omomo-finance.testnet
+DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # User account for work with leverage trading
 USER_ACCOUNT=...
 
-near call dcl.ref-dev.testnet storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
+near call $DEX_ACCOUNT storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
 
 near call $USDT_TOKEN mint '{
     "account_id": "'$USER_ACCOUNT'",
