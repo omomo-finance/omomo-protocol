@@ -154,6 +154,16 @@ impl Contract {
     }
 }
 
+impl Contract {
+    pub fn get_swap_fee(&self, order: &Order) -> U128 {
+        let pair = (order.sell_token.clone(), order.buy_token.clone());
+        self.supported_markets
+            .get(&pair)
+            .unwrap_or_else(|| panic!("Swap fee for pair {} | {} not found", pair.0, pair.1))
+            .swap_fee
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -180,6 +190,7 @@ mod tests {
             buy_token: "wrap.testnet".parse().unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(10u128.pow(20)),
         };
         contract.add_pair(pair_data.clone());
 
@@ -209,11 +220,57 @@ mod tests {
             buy_token: "wrap.testnet".parse().unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(10u128.pow(20)),
         };
         contract.add_pair(pair_data);
 
         contract.set_max_leverage(&pair, U128(10 * 10_u128.pow(24)));
         let max_leverage = contract.get_max_leverage(&pair);
         assert_eq!(max_leverage, U128(10 * 10_u128.pow(24)));
+    }
+
+    #[test]
+    fn test_get_swap_fee() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let order = Order {
+            status: OrderStatus::Pending,
+            order_type: OrderType::Buy,
+            amount: 1000000000000000000000000000,
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            leverage: BigDecimal::from(1.0),
+            sell_token_price: Price {
+                ticker_id: "USDT".to_string(),
+                value: BigDecimal::from(1.01),
+            },
+            buy_token_price: Price {
+                ticker_id: "near".to_string(),
+                value: BigDecimal::from(3.07),
+            },
+            block: 105210654,
+            lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
+        };
+
+        let swap_fee = contract.get_swap_fee(&order);
+
+        assert_eq!(swap_fee, pair_data.swap_fee);
     }
 }
