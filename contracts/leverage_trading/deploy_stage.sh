@@ -20,6 +20,8 @@ USDC_TOKEN=usdc.fakes.testnet
 USDC_TOKEN_DECIMALS=6
 
 CONTRACT_ADDRESS=leverage.$ROOT_ACCOUNT
+DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
+
 
 # clean up previuos deployment
 echo 'y' | near delete ${CONTRACT_ADDRESS} $ROOT_ACCOUNT
@@ -118,7 +120,7 @@ near view ${CONTRACT_ADDRESS} view_price '{"token_id":"'$NEAR_TOKEN'"}'
 wait
 
 # setup pool
-near call dcl.ref-dev.testnet storage_deposit '{"account_id": "'${CONTRACT_ADDRESS}'"}' --accountId nearlend.testnet --amount 1 &
+near call $DEX_ACCOUNT storage_deposit '{"account_id": "'${CONTRACT_ADDRESS}'"}' --accountId nearlend.testnet --amount 1 &
 
 near call ${CONTRACT_ADDRESS} add_token_market '{"token_id": "'$NEAR_TOKEN'", "market_id": "wnear_market.'$ROOT_ACCOUNT'"}' --account_id ${CONTRACT_ADDRESS} &
 near call ${CONTRACT_ADDRESS} add_token_market '{"token_id": "'$USDT_TOKEN'", "market_id": "usdt_market.'$ROOT_ACCOUNT'"}' --account_id ${CONTRACT_ADDRESS} &
