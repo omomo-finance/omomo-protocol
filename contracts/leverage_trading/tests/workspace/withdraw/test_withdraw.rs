@@ -27,9 +27,11 @@ async fn withdraw_fixture(
         .args_json(json!({"pair_data": {
             "sell_ticker_id": test_utoken.id().to_string(),
             "sell_token": test_utoken.id(),
+            "sell_token_decimals": 24,
             "sell_token_market": test_utoken.id(),
             "buy_ticker_id": test_utoken.id().to_string(),
             "buy_token": test_utoken.id(),
+            "buy_token_decimals": 24,
             "pool_id": test_utoken.id().to_string(),
             "max_leverage": "2500000000000000000000000",
             "swap_fee": "300000000000000000000"
