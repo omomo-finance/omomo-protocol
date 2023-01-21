@@ -183,11 +183,13 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
                 .parse()
                 .unwrap(),
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),
@@ -213,11 +215,13 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
                 .parse()
                 .unwrap(),
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),
@@ -239,11 +243,13 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
             sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
                 .parse()
                 .unwrap(),
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10u128.pow(20)),
