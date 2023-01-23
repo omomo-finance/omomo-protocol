@@ -26,6 +26,7 @@ impl Contract {
         name: String,
         symbol: String,
         total_supply: U128,
+        decimals: u8,
     ) -> Self {
         Self::new(
             owner_id,
@@ -37,7 +38,7 @@ impl Contract {
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
                 reference: None,
                 reference_hash: None,
-                decimals: 24,
+                decimals,
             },
         )
     }

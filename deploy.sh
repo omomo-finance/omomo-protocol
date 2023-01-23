@@ -58,7 +58,8 @@ deploy_underlyings() {
             "owner_id": "'$1'",
             "name": "Wrapped Ethereum",
             "symbol": "WETH",
-            "total_supply": "0"
+            "total_supply": "0",
+            "decimals": '$ETH_TOKEN_DECIMALS'
         }' &
     near deploy wnear.$1 \
         --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
@@ -67,7 +68,8 @@ deploy_underlyings() {
             "owner_id": "'$1'",
             "name": "Wrapped Near",
             "symbol": "WNEAR",
-            "total_supply": "0"
+            "total_supply": "0",
+            "decimals": '$NEAR_TOKEN_DECIMALS'
         }' &
     near deploy usdt.$1 \
         --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
@@ -76,7 +78,8 @@ deploy_underlyings() {
             "owner_id": "'$1'",
             "name": "Tether",
             "symbol": "USDT",
-            "total_supply": "0"
+            "total_supply": "0",
+            "decimals": '$USDT_TOKEN_DECIMALS'
         }' &
     near deploy usdc.$1 \
         --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
@@ -85,7 +88,8 @@ deploy_underlyings() {
             "owner_id": "'$1'",
             "name": "USD Coin",
             "symbol": "USDC",
-            "total_supply": "0"
+            "total_supply": "0",
+            "decimals": '$USDC_TOKEN_DECIMALS'
         }' &
 
     wait
