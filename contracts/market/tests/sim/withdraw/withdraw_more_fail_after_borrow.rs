@@ -17,7 +17,7 @@ const RESERVE_AMOUNT: Balance = 100;
 fn withdraw_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);

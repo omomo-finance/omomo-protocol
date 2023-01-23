@@ -26,6 +26,7 @@ impl Contract {
         name: String,
         symbol: String,
         total_supply: U128,
+        decimals: u8,
     ) -> Self {
         Self::new(
             owner_id,
@@ -37,7 +38,7 @@ impl Contract {
                 icon: Some(DATA_IMAGE_SVG_NEAR_ICON.to_string()),
                 reference: None,
                 reference_hash: None,
-                decimals: 24,
+                decimals,
             },
         )
     }
@@ -103,6 +104,7 @@ mod tests {
             String::from("Mock Token"),
             String::from("MOCK"),
             TOTAL_SUPPLY.into(),
+            24,
         );
 
         (context, _contract_account, contract)
@@ -167,6 +169,7 @@ mod tests {
             String::from("Mock Token"),
             String::from("MOCK"),
             TOTAL_SUPPLY.into(),
+            24,
         );
 
         testing_env!(context
