@@ -23,7 +23,7 @@ use near_sdk_sim::{call, deploy, init_simulator, to_yocto, view, ContractAccount
 fn upgrade_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);

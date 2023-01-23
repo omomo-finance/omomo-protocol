@@ -15,7 +15,7 @@ const START_PRICE: Balance = 10000;
 
 fn supply_amount_should_be_positive_fixture() -> (
     ContractAccount<market::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);

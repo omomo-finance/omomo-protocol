@@ -24,8 +24,8 @@
 //     ContractAccount<market::ContractContract>,
 //     ContractAccount<market::ContractContract>,
 //     ContractAccount<controller::ContractContract>,
-//     ContractAccount<test_utoken::ContractContract>,
-//     ContractAccount<test_utoken::ContractContract>,
+//     ContractAccount<mock_token::ContractContract>,
+//     ContractAccount<mock_token::ContractContract>,
 //     UserAccount,
 //     UserAccount,
 // ) {
