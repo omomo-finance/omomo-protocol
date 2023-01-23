@@ -28,6 +28,10 @@ impl Contract {
                 * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
         );
 
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+
         OrderView {
             order_id,
             status: order.status,
@@ -40,7 +44,7 @@ impl Contract {
             leverage: WBigDecimal::from(order.leverage),
             borrow_fee,
             liquidation_price: self.calculate_liquidation_price(
-                U128(order.amount),
+                order_amount,
                 WBigDecimal::from(order.sell_token_price.value),
                 WBigDecimal::from(order.buy_token_price.value),
                 WBigDecimal::from(order.leverage),
@@ -70,12 +74,16 @@ impl Contract {
 
         let swap_fee = self.get_swap_fee(&order);
 
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount(order.amount, buy_token_decimals); // Order amount of Buy or Sell tokens?
+
         let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
-            * BigDecimal::from(order.amount)
+            * BigDecimal::from(order_amount.0)
             / order.buy_token_price.value;
 
-        let borrow_amount = BigDecimal::from(U128(order.amount))
-            * (order.leverage - BigDecimal::from(10u128.pow(24)));
+        let borrow_amount =
+            BigDecimal::from(order_amount) * (order.leverage - BigDecimal::from(10u128.pow(24)));
 
         let mut borrow_fee = BigDecimal::zero();
         #[allow(clippy::unnecessary_unwrap)]
@@ -89,10 +97,10 @@ impl Contract {
             - borrow_fee
             - borrow_amount * BigDecimal::from(swap_fee);
 
-        let pnlv: PnLView = if expect_amount.round_u128() > order.amount {
+        let pnlv: PnLView = if expect_amount.round_u128() > order_amount.0 {
             let lenpnl = (expect_amount
-                - BigDecimal::from(order.amount)
-                - (BigDecimal::from(order.amount)
+                - BigDecimal::from(order_amount.0)
+                - (BigDecimal::from(order_amount.0)
                     * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
             .round_u128();
 
@@ -101,7 +109,7 @@ impl Contract {
                 amount: U128(lenpnl),
             }
         } else {
-            let lenpnl = (BigDecimal::from(order.amount) - expect_amount).round_u128();
+            let lenpnl = (BigDecimal::from(order_amount.0) - expect_amount).round_u128();
 
             PnLView {
                 is_profit: false,
@@ -134,6 +142,11 @@ impl Contract {
                                 )),
                         );
 
+                        let (sell_token_decimals, _) =
+                            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                        let order_amount =
+                            self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+
                         Some(OrderView {
                             order_id: U128(*id as u128),
                             status: order.status.clone(),
@@ -146,7 +159,7 @@ impl Contract {
                             leverage: WBigDecimal::from(order.leverage),
                             borrow_fee,
                             liquidation_price: self.calculate_liquidation_price(
-                                U128(order.amount),
+                                order_amount,
                                 WBigDecimal::from(order.sell_token_price.value),
                                 WBigDecimal::from(order.buy_token_price.value),
                                 WBigDecimal::from(order.leverage),
@@ -210,11 +223,15 @@ impl Contract {
             panic!("Order with id: {} not found", order_id.0);
         });
 
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+
         let buy_token =
-            BigDecimal::from(U128(order.amount)) * order.leverage * order.sell_token_price.value
+            BigDecimal::from(order_amount) * order.leverage * order.sell_token_price.value
                 / order.buy_token_price.value;
 
-        let sell_token = BigDecimal::from(U128(order.amount)) * order.leverage;
+        let sell_token = BigDecimal::from(order_amount) * order.leverage;
 
         let open_price = order.buy_token_price.clone();
 
@@ -370,6 +387,24 @@ impl Contract {
             )
         });
         (pair.sell_token_decimals, pair.buy_token_decimals)
+    }
+
+    pub fn view_token_decimals(&self, token: &AccountId) -> u8 {
+        let pair_id = self
+            .supported_markets
+            .keys()
+            .find(|pair| pair.0 == token.clone() || pair.1 == token.clone());
+        if let Some((sell_token, buy_token)) = pair_id {
+            let (sell_token_decimals, buy_token_decimals) =
+                self.view_pair_tokens_decimals(&sell_token, &buy_token);
+            if token == &sell_token {
+                sell_token_decimals
+            } else {
+                buy_token_decimals
+            }
+        } else {
+            panic!("Token is not supported");
+        }
     }
 }
 
@@ -837,5 +872,35 @@ mod tests {
             sell_and_buy_tokens_decimals,
             (pair_data.sell_token_decimals, pair_data.buy_token_decimals)
         );
+    }
+
+    #[test]
+    fn view_token_decimals_test() {
+        let context = get_context(false);
+        testing_env!(context);
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 18,
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let sell_token_decimals = contract.view_token_decimals(&pair_data.sell_token);
+        let buy_token_decimals = contract.view_token_decimals(&pair_data.buy_token);
+
+        assert_eq!(sell_token_decimals, 24);
+        assert_eq!(buy_token_decimals, 18)
     }
 }

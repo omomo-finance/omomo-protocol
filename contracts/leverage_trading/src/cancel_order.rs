@@ -194,7 +194,11 @@ impl Contract {
         price_impact: U128,
         order_action: OrderAction,
     ) {
-        let buy_amount = BigDecimal::from(U128::from(order.amount))
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+
+        let buy_amount = BigDecimal::from(order_amount)
             * order.leverage
             * order.sell_token_price.value
             * self.get_price(order.buy_token.clone())
@@ -303,9 +307,13 @@ impl Contract {
         log!("Final order cancel attached gas: {}", env::prepaid_gas().0);
 
         let mut order = order;
-        let sell_amount = order.sell_token_price.value
-            * BigDecimal::from(U128::from(order.amount))
-            * order.leverage;
+
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+
+        let sell_amount =
+            order.sell_token_price.value * BigDecimal::from(order_amount) * order.leverage;
 
         let pnl = self.calculate_pnl(signer_account_id(), order_id, market_data);
 
@@ -317,7 +325,7 @@ impl Contract {
             * (BigDecimal::one() - BigDecimal::from(price_impact))
             / order.buy_token_price.value;
 
-        self.increase_balance(&signer_account_id(), &order.sell_token, order.amount);
+        self.increase_balance(&signer_account_id(), &order.sell_token, order_amount.0);
 
         if pnl.is_profit && expect_amount > sell_amount + BigDecimal::from(pnl.amount) {
             let protocol_profit = expect_amount - sell_amount - BigDecimal::from(pnl.amount);

@@ -27,6 +27,9 @@ impl Contract {
             "Deposit was done by token, that are not currently supported"
         );
 
+        let token_decimals = self.view_token_decimals(&token);
+        let token_amount = self.convert_token_amount(token_amount.0, token_decimals);
+
         self.increase_balance(&env::signer_account_id(), &token, token_amount.0);
 
         PromiseOrValue::Value(U128(0))

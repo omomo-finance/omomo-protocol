@@ -53,9 +53,13 @@ impl Contract {
 
         let remove_liquidity_amount = position.amount;
 
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+
         let min_amount_x = 0;
         let min_amount_y =
-            BigDecimal::from(order.amount) * order.leverage * order.sell_token_price.value
+            BigDecimal::from(order_amount.0) * order.leverage * order.sell_token_price.value
                 / order.buy_token_price.value;
 
         ext_ref_finance::ext(self.ref_finance_account.clone())

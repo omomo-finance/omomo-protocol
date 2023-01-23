@@ -162,6 +162,17 @@ impl Contract {
             .unwrap_or_else(|| panic!("Swap fee for pair {} | {} not found", pair.0, pair.1))
             .swap_fee
     }
+
+    pub fn convert_token_amount(&self, amount: u128, token_decimals: u8) -> U128 {
+        if token_decimals != 24 {
+            U128::from(
+                BigDecimal::from(U128::from(amount))
+                    / BigDecimal::from(U128::from(10u128.pow(token_decimals as u32))),
+            )
+        } else {
+            U128::from(amount)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -278,5 +289,40 @@ mod tests {
         let swap_fee = contract.get_swap_fee(&order);
 
         assert_eq!(swap_fee, pair_data.swap_fee);
+    }
+
+    #[test]
+    fn convert_token_amount_test() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let token: AccountId = "usdt.fakes.testnet".parse().unwrap();
+        let token_amount = U128::from(1000000000);
+        let token_decimals = contract.view_token_decimals(&token);
+
+        // Order keeps containing amount 1000000000 (10^6)
+        // while all calculations in the protocol using converted order amount 1000000000500000000000000000 (10^24)
+        assert_eq!(
+            contract.convert_token_amount(token_amount.0, token_decimals),
+            U128::from(1000000000500000000000000000)
+        );
     }
 }
