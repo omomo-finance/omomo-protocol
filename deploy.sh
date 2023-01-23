@@ -52,7 +52,7 @@ create_controller() {
 # deploy underlyings
 deploy_underlyings() {
     near deploy weth.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/mock_token.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -62,7 +62,7 @@ deploy_underlyings() {
             "decimals": '$ETH_TOKEN_DECIMALS'
         }' &
     near deploy wnear.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/mock_token.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -72,7 +72,7 @@ deploy_underlyings() {
             "decimals": '$NEAR_TOKEN_DECIMALS'
         }' &
     near deploy usdt.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/mock_token.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",
@@ -82,7 +82,7 @@ deploy_underlyings() {
             "decimals": '$USDT_TOKEN_DECIMALS'
         }' &
     near deploy usdc.$1 \
-        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/test_utoken.wasm \
+        --wasmFile ./contracts/target/wasm32-unknown-unknown/release/mock_token.wasm \
         --initFunction 'new_default_meta' \
         --initArgs '{
             "owner_id": "'$1'",

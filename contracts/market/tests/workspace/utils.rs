@@ -5,7 +5,7 @@ use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
 const MARKET_WASM: &str = "../target/wasm32-unknown-unknown/release/market.wasm";
-const UNDERLYING_WASM: &str = "../target/wasm32-unknown-unknown/release/test_utoken.wasm";
+const UNDERLYING_WASM: &str = "../target/wasm32-unknown-unknown/release/mock_token.wasm";
 const CONTROLLER_WASM: &str = "../target/wasm32-unknown-unknown/release/controller.wasm";
 
 pub async fn deploy_underlying(
@@ -20,7 +20,8 @@ pub async fn deploy_underlying(
         .args_json(json!({ "owner_id": owner.id(),
         "name": "Wrapped Ethereum",
         "symbol": "WETH",
-        "total_supply": "1000000000000000000000000000"
+        "total_supply": "1000000000000000000000000000",
+        "decimals": 24
                 }))
         .max_gas()
         .transact()

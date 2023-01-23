@@ -104,6 +104,7 @@ mod tests {
             String::from("Mock Token"),
             String::from("MOCK"),
             TOTAL_SUPPLY.into(),
+            24,
         );
 
         (context, _contract_account, contract)
@@ -168,6 +169,7 @@ mod tests {
             String::from("Mock Token"),
             String::from("MOCK"),
             TOTAL_SUPPLY.into(),
+            24,
         );
 
         testing_env!(context
