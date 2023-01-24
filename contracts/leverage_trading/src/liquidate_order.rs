@@ -34,7 +34,7 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
         //TODO: set real min_amount_x/min_amount_y
         let amount = 1;
@@ -85,7 +85,7 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
         let buy_token_amount =
             BigDecimal::from(order_amount.0) * order.sell_token_price.value * order.leverage

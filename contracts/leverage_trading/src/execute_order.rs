@@ -55,7 +55,7 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
         let min_amount_x = 0;
         let min_amount_y =

@@ -163,11 +163,10 @@ impl Contract {
             .swap_fee
     }
 
-    pub fn convert_token_amount(&self, amount: u128, token_decimals: u8) -> U128 {
+    pub fn convert_token_amount_to_10_24(&self, amount: u128, token_decimals: u8) -> U128 {
         if token_decimals != 24 {
             U128::from(
-                BigDecimal::from(U128::from(amount))
-                    / BigDecimal::from(U128::from(10u128.pow(token_decimals as u32))),
+                BigDecimal::from(amount) / BigDecimal::from(10u128.pow(token_decimals.into())),
             )
         } else {
             U128::from(amount)
@@ -315,14 +314,14 @@ mod tests {
         contract.add_pair(pair_data.clone());
 
         let token: AccountId = "usdt.fakes.testnet".parse().unwrap();
-        let token_amount = U128::from(1000000000);
+        let token_amount = U128::from(1_000_000_000);
         let token_decimals = contract.view_token_decimals(&token);
 
-        // Order keeps containing amount 1000000000 (10^6)
-        // while all calculations in the protocol using converted order amount 1000000000500000000000000000 (10^24)
+        // Order keeps containing amount 1_000_000_000 (1000 * 10^6)
+        // while all calculations in the protocol using converted order amount 1_000_000_000_000_000_000_000_000_000 (10^24)
         assert_eq!(
-            contract.convert_token_amount(token_amount.0, token_decimals),
-            U128::from(1000000000500000000000000000)
+            contract.convert_token_amount_to_10_24(token_amount.0, token_decimals),
+            U128::from(1_000_000_000_000_000_000_000_000_000)
         );
     }
 }

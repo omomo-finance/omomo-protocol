@@ -119,7 +119,8 @@ impl Contract {
 
                     let (sell_token_decimals, _) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+                    let order_amount =
+                        self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
                     let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
 
@@ -148,7 +149,8 @@ impl Contract {
 
                     let (_, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let order_amount = self.convert_token_amount(order.amount, buy_token_decimals); // Order amount of Buy or Sell tokens?
+                    let order_amount =
+                        self.convert_token_amount_to_10_24(order.amount, buy_token_decimals); // Order amount of Buy or Sell tokens?
 
                     let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
 
@@ -218,7 +220,7 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
         self.decrease_balance(&env::signer_account_id(), &order.sell_token, order_amount.0);
 
@@ -251,7 +253,7 @@ impl Contract {
         );
 
         let token_decimals = self.view_token_decimals(&token);
-        let amount = self.convert_token_amount(amount.0, token_decimals);
+        let amount = self.convert_token_amount_to_10_24(amount.0, token_decimals);
 
         require!(
             self.balance_of(env::signer_account_id(), token.clone()) >= amount,

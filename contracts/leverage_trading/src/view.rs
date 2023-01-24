@@ -30,7 +30,7 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
         OrderView {
             order_id,
@@ -76,7 +76,7 @@ impl Contract {
 
         let (_, buy_token_decimals) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, buy_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals); // Order amount of Buy or Sell tokens?
 
         let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
             * BigDecimal::from(order_amount.0)
@@ -145,7 +145,7 @@ impl Contract {
                         let (sell_token_decimals, _) =
                             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
                         let order_amount =
-                            self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+                            self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
                         Some(OrderView {
                             order_id: U128(*id as u128),
@@ -225,7 +225,7 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
 
         let buy_token =
             BigDecimal::from(order_amount) * order.leverage * order.sell_token_price.value
