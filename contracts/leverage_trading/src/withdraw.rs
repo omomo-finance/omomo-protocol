@@ -12,6 +12,9 @@ impl Contract {
         let user = env::signer_account_id();
         let user_balance = self.balance_of(user.clone(), token.clone());
 
+        let token_decimals = self.view_token_decimals(&token);
+        let amount = self.convert_token_amount_to_10_24(amount.0, token_decimals);
+
         require!(
             Balance::from(amount) > 0,
             "Amount should be a positive number"

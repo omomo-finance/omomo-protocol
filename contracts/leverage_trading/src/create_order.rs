@@ -102,7 +102,12 @@ impl Contract {
     }
 
     /// Makes batch of transaction consist of Deposit & Add_Liquidity
-    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order) -> PromiseOrValue<WBalance> {
+    fn add_liquidity(
+        //+-
+        &mut self,
+        pool_info: PoolInfo,
+        order: Order,
+    ) -> PromiseOrValue<WBalance> {
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
 
@@ -120,8 +125,9 @@ impl Contract {
                     let (sell_token_decimals, _) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
                     let order_amount =
-                        self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+                        self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
+                    // В формуле ниже order_amount это количество Sell или Buy токена?
                     let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
 
                     let amount_x = amount;
@@ -150,8 +156,9 @@ impl Contract {
                     let (_, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
                     let order_amount =
-                        self.convert_token_amount_to_10_24(order.amount, buy_token_decimals); // Order amount of Buy or Sell tokens?
+                        self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
 
+                    // В формуле ниже order_amount это количество Sell или Buy токена?
                     let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
 
                     let amount_x = U128::from(0);
@@ -206,7 +213,11 @@ impl Contract {
     }
 
     #[private]
-    pub fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
+    pub fn add_liquidity_callback(
+        //+
+        &mut self,
+        order: Order,
+    ) -> PromiseOrValue<WBalance> {
         require!(
             env::promise_results_count() == 2,
             "Contract expected 2 results on the callback"
@@ -220,9 +231,9 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let token_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
-        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order_amount.0);
+        self.decrease_balance(&env::signer_account_id(), &order.sell_token, token_amount.0);
 
         let lpt_id: String = match env::promise_result(1) {
             PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
@@ -247,6 +258,7 @@ impl Contract {
         amount: U128,
         leverage: U128,
     ) -> PromiseOrValue<WBalance> {
+        //+
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"

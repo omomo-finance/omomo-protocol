@@ -40,7 +40,12 @@ impl Contract {
     }
 
     #[private]
-    pub fn execute_order_callback(&self, order: Order, order_id: U128) -> PromiseOrValue<U128> {
+    pub fn execute_order_callback(
+        //+-
+        &self,
+        order: Order,
+        order_id: U128,
+    ) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Failed to get_liquidity");
 
         let position = match env::promise_result(0) {
@@ -55,8 +60,9 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
+        // В формуле ниже order_amount это количество Sell или Buy токена?
         let min_amount_x = 0;
         let min_amount_y =
             BigDecimal::from(order_amount.0) * order.leverage * order.sell_token_price.value

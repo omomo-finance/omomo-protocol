@@ -8,7 +8,12 @@ use near_sdk::Gas;
 
 #[near_bindgen]
 impl Contract {
-    pub fn liquidate_order(&mut self, order_id: U128, price_impact: U128) {
+    pub fn liquidate_order(
+        //+-
+        &mut self,
+        order_id: U128,
+        price_impact: U128,
+    ) {
         let account_op = self.get_account_by(order_id.0);
         require!(
             account_op.is_some(),
@@ -34,11 +39,11 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
         //TODO: set real min_amount_x/min_amount_y
         let amount = 1;
-        let min_amount_x = order_amount.0;
+        let min_amount_x = order_amount.0; // Тут order_amount это количество Sell или Buy токена?
         let min_amount_y = 0;
 
         if order.status == OrderStatus::Pending {
@@ -69,6 +74,7 @@ impl Contract {
 
     #[private]
     pub fn final_liquidate(
+        //+-
         &mut self,
         order_id: U128,
         order: Order,
@@ -85,8 +91,9 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals); // Order amount of Buy or Sell tokens?
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
+        // В формулах ниже order_amount это количество Sell или Buy токена?
         let buy_token_amount =
             BigDecimal::from(order_amount.0) * order.sell_token_price.value * order.leverage
                 / order.buy_token_price.value;
