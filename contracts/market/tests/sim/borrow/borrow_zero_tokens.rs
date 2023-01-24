@@ -4,8 +4,8 @@ use crate::utils::{
     view_balance,
 };
 use controller::ActionType::Borrow;
-use market::InterestRateModel;
 use general::Price;
+use market::InterestRateModel;
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
@@ -19,7 +19,7 @@ const RESERVE_AMOUNT: Balance = 100;
 fn borrow_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);

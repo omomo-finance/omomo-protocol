@@ -4,8 +4,8 @@ use crate::utils::{
     view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
-use market::{InterestRateModel, WRatio};
 use general::{ratio::Ratio, Price, WBalance};
+use market::{InterestRateModel, WRatio};
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
@@ -24,7 +24,7 @@ near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
 fn upgrade_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);

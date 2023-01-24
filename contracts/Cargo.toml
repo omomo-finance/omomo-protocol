@@ -13,7 +13,7 @@ members = [
     "general",
     "controller",
     "market",
-    "test-utoken",
+    "mock-token",
     "token",
 ]
 exclude = [

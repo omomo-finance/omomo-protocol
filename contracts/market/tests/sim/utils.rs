@@ -6,15 +6,15 @@ use std::str::FromStr;
 
 use controller::ContractContract as Controller;
 use controller::{ActionType, Config as cConfig};
+use general::{ratio::Ratio, Price, WBalance};
 use market::ContractContract as Dtoken;
 use market::InterestRateModel;
 use market::{Config as dConfig, RepayInfo};
-use general::{ratio::Ratio, Price, WBalance};
-use test_utoken::ContractContract as Utoken;
+use mock_token::ContractContract as Utoken;
 
 near_sdk_sim::lazy_static_include::lazy_static_include_bytes! {
     DTOKEN_WASM_BYTES => "../target/wasm32-unknown-unknown/release/market.wasm",
-    UTOKEN_WASM_BYTES => "../target/wasm32-unknown-unknown/release/test_utoken.wasm",
+    UTOKEN_WASM_BYTES => "../target/wasm32-unknown-unknown/release/mock_token.wasm",
     CONTROLLER_WASM_BYTES => "../target/wasm32-unknown-unknown/release/controller.wasm",
 }
 
@@ -79,7 +79,7 @@ pub fn view_balance(
 
 fn internal_utoken_initialize(
     account: &UserAccount,
-    utoken: &ContractAccount<test_utoken::ContractContract>,
+    utoken: &ContractAccount<mock_token::ContractContract>,
     owner: AccountId,
 ) {
     call!(
@@ -88,14 +88,15 @@ fn internal_utoken_initialize(
             owner,
             String::from("Mock Token"),
             String::from("MOCK"),
-            U128(10000)
+            U128(10000),
+            24
         ),
         deposit = 0
     )
     .assert_success();
 }
 
-pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<test_utoken::ContractContract> {
+pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<mock_token::ContractContract> {
     let uroot = root.create_user("utoken".parse().unwrap(), to_yocto("1200000"));
     let utoken = init_utoken(
         &uroot,
@@ -108,8 +109,8 @@ pub fn initialize_utoken(root: &UserAccount) -> ContractAccount<test_utoken::Con
 pub fn initialize_two_utokens(
     root: &UserAccount,
 ) -> (
-    ContractAccount<test_utoken::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
 ) {
     let uroot1 = root.create_user("utoken1".parse().unwrap(), to_yocto("1200000"));
     let utoken1 = init_utoken(
@@ -131,9 +132,9 @@ pub fn initialize_two_utokens(
 pub fn initialize_three_utokens(
     root: &UserAccount,
 ) -> (
-    ContractAccount<test_utoken::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
 ) {
     let uroot1 = root.create_user("utoken1".parse().unwrap(), to_yocto("1200000"));
     let utoken1 = init_utoken(
@@ -190,6 +191,7 @@ fn internal_dtoken_initialize(
         dtoken.new(dConfig {
             initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken_account,
+            underlying_token_decimals: 24,
             owner_id: owner,
             controller_account_id: controller_account,
             interest_rate_model: model,
@@ -340,7 +342,7 @@ pub fn add_market(
 }
 
 pub fn mint_tokens(
-    utoken: &ContractAccount<test_utoken::ContractContract>,
+    utoken: &ContractAccount<mock_token::ContractContract>,
     receiver: AccountId,
     amount: U128,
 ) {
@@ -368,7 +370,7 @@ pub fn set_price(
 
 pub fn reserve_storage(
     dtoken_admin: &UserAccount,
-    utoken: &ContractAccount<test_utoken::ContractContract>,
+    utoken: &ContractAccount<mock_token::ContractContract>,
     dtoken: &ContractAccount<market::ContractContract>,
 ) {
     call!(
@@ -381,7 +383,7 @@ pub fn reserve_storage(
 
 pub fn mint_and_reserve(
     dtoken_admin: &UserAccount,
-    utoken: &ContractAccount<test_utoken::ContractContract>,
+    utoken: &ContractAccount<mock_token::ContractContract>,
     dtoken: &ContractAccount<market::ContractContract>,
     amount: Balance,
 ) {
@@ -419,7 +421,7 @@ pub fn mint_and_reserve(
 
 pub fn supply(
     user: &UserAccount,
-    utoken: &ContractAccount<test_utoken::ContractContract>,
+    utoken: &ContractAccount<mock_token::ContractContract>,
     dtoken: AccountId,
     amount: Balance,
 ) -> ExecutionResult {
@@ -450,7 +452,7 @@ pub fn borrow(
 pub fn repay(
     user: &UserAccount,
     dtoken: AccountId,
-    utoken: &ContractAccount<test_utoken::ContractContract>,
+    utoken: &ContractAccount<mock_token::ContractContract>,
     amount: Balance,
 ) -> ExecutionResult {
     let action = "\"Repay\"".to_string();
@@ -467,7 +469,7 @@ pub fn liquidate(
     liquidator: &UserAccount,
     borrowing_dtoken: &ContractAccount<market::ContractContract>,
     collateral_dtoken: &ContractAccount<market::ContractContract>,
-    borrowing_utoken: &ContractAccount<test_utoken::ContractContract>,
+    borrowing_utoken: &ContractAccount<mock_token::ContractContract>,
     amount: Balance,
 ) -> ExecutionResult {
     let action = json!({

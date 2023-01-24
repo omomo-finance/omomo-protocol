@@ -2,8 +2,8 @@ use crate::utils::{
     add_market, borrow, initialize_controller, initialize_two_dtokens, initialize_two_utokens,
     mint_tokens, new_user, repay, set_price, supply,
 };
-use market::{InterestRateModel, WRatio};
 use general::Price;
+use market::{InterestRateModel, WRatio};
 use near_sdk::{json_types::U128, Balance};
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
 
@@ -16,7 +16,7 @@ const START_PRICE: Balance = 10000;
 fn repay_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);

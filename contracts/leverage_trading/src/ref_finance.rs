@@ -7,6 +7,7 @@ pub type LptId = String;
 
 #[ext_contract(ext_ref_finance)]
 trait RefFinanceInterface {
+    #[allow(clippy::too_many_arguments)]
     fn add_liquidity(
         &mut self,
         pool_id: String,

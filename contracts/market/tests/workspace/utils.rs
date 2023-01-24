@@ -5,7 +5,7 @@ use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
 const MARKET_WASM: &str = "../target/wasm32-unknown-unknown/release/market.wasm";
-const UNDERLYING_WASM: &str = "../target/wasm32-unknown-unknown/release/test_utoken.wasm";
+const UNDERLYING_WASM: &str = "../target/wasm32-unknown-unknown/release/mock_token.wasm";
 const CONTROLLER_WASM: &str = "../target/wasm32-unknown-unknown/release/controller.wasm";
 
 pub async fn deploy_underlying(
@@ -20,7 +20,8 @@ pub async fn deploy_underlying(
         .args_json(json!({ "owner_id": owner.id(),
         "name": "Wrapped Ethereum",
         "symbol": "WETH",
-        "total_supply": "1000000000000000000000000000"
+        "total_supply": "1000000000000000000000000000",
+        "decimals": 24
                 }))
         .max_gas()
         .transact()
@@ -40,19 +41,20 @@ pub async fn deploy_market(
 
     let _ = market
         .call("new_with_config")
-        .args_json(
-            json!({ "owner_id":  owner.id(), "underlying_token_id": underlying_token.id(),
-                "controller_account_id": controller.id(),
-                "initial_exchange_rate":"1000000000000000000000000",
-                "interest_rate_model":{
-                    "kink":"650000000000000000000000",
-                    "multiplier_per_block":"3044140030441400",
-                    "base_rate_per_block":"0",
-                    "jump_multiplier_per_block":"38051750380517500",
-                    "reserve_factor":"10000000000000000000000"
-                }
-            }),
-        )
+        .args_json(json!({
+            "owner_id":  owner.id(),
+            "underlying_token_id": underlying_token.id(),
+            "underlying_token_decimals": 24,
+            "controller_account_id": controller.id(),
+            "initial_exchange_rate":"1000000000000000000000000",
+            "interest_rate_model":{
+                "kink":"650000000000000000000000",
+                "multiplier_per_block":"3044140030441400",
+                "base_rate_per_block":"0",
+                "jump_multiplier_per_block":"38051750380517500",
+                "reserve_factor":"10000000000000000000000"
+            }
+        }))
         .max_gas()
         .transact()
         .await?;

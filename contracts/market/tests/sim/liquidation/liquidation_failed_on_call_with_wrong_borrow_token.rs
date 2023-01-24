@@ -3,8 +3,8 @@ use crate::utils::{
     liquidate, mint_and_reserve, mint_tokens, new_user, set_price, supply, view_balance,
 };
 use controller::ActionType::{Borrow, Supply};
-use market::InterestRateModel;
 use general::Price;
+use market::InterestRateModel;
 use near_sdk::json_types::U128;
 use near_sdk::Balance;
 use near_sdk_sim::{init_simulator, view, ContractAccount, UserAccount};
@@ -20,8 +20,8 @@ fn liquidation_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
     UserAccount,
 ) {

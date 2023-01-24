@@ -11,11 +11,11 @@ use crate::utils::{
     view_balance,
 };
 use controller::ActionType::Supply;
+use general::ratio::Ratio;
+use general::Price;
 use market::Config as dConfig;
 use market::ContractContract as Dtoken;
 use market::InterestRateModel;
-use general::ratio::Ratio;
-use general::Price;
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, Balance};
 use near_sdk_sim::{call, deploy, init_simulator, to_yocto, view, ContractAccount, UserAccount};
@@ -23,7 +23,7 @@ use near_sdk_sim::{call, deploy, init_simulator, to_yocto, view, ContractAccount
 fn upgrade_fixture() -> (
     ContractAccount<market::ContractContract>,
     ContractAccount<controller::ContractContract>,
-    ContractAccount<test_utoken::ContractContract>,
+    ContractAccount<mock_token::ContractContract>,
     UserAccount,
 ) {
     let root = init_simulator(None);
@@ -47,6 +47,7 @@ fn upgrade_fixture() -> (
         dtoken.new(dConfig {
             initial_exchange_rate: U128::from(Ratio::one()),
             underlying_token_id: utoken.account_id(),
+            underlying_token_decimals: 24,
             owner_id: droot.account_id,
             controller_account_id: controller.account_id(),
             interest_rate_model: InterestRateModel::default(),

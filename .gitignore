@@ -4,7 +4,7 @@ contracts/leverage_trading/Cargo.lock
 contracts/target
 contracts/market/target
 contracts/controller/target
-contracts/test-utoken/target
+contracts/mock-token/target
 contracts/general/target
 contracts/leverage_trading/target
 /.idea
