@@ -188,18 +188,16 @@ impl Contract {
     }
 
     pub fn swap(
-        //+-
         &self,
         order_id: U128,
         order: Order,
         price_impact: U128,
         order_action: OrderAction,
     ) {
-        let (sell_token_decimals, _) =
+        let (_, buy_token_decimals) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
 
-        // В формуле ниже order_amount это количество Sell или Buy токена?
         let buy_amount = BigDecimal::from(order_amount)
             * order.leverage
             * order.sell_token_price.value
@@ -300,7 +298,6 @@ impl Contract {
     }
 
     fn final_order_cancel(
-        //+
         &mut self,
         order_id: U128,
         order: Order,
@@ -408,7 +405,6 @@ mod tests {
 
     #[test]
     fn test_order_was_canceled() {
-        //+
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(

@@ -5,7 +5,6 @@ use near_sdk::Gas;
 #[near_bindgen]
 impl Contract {
     pub fn view_order(
-        //+
         &self,
         account_id: AccountId,
         order_id: U128,
@@ -58,7 +57,6 @@ impl Contract {
     }
 
     pub fn calculate_pnl(
-        //+
         &self,
         account_id: AccountId,
         order_id: U128,
@@ -124,7 +122,6 @@ impl Contract {
     }
 
     pub fn view_orders(
-        //+
         &self,
         account_id: AccountId,
         sell_token: AccountId,
@@ -476,7 +473,6 @@ mod tests {
 
     #[test]
     fn calculate_pnl_test() {
-        //+
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -533,7 +529,6 @@ mod tests {
 
     #[test]
     fn calculate_pnl_leverage_3_test() {
-        //+
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -628,7 +623,6 @@ mod tests {
 
     #[test]
     fn test_view_order() {
-        //+
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -704,7 +698,6 @@ mod tests {
 
     #[test]
     fn test_view_orders() {
-        //+
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
