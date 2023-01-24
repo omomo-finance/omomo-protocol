@@ -317,11 +317,16 @@ mod tests {
         let token_amount = U128::from(1_000_000_000);
         let token_decimals = contract.view_token_decimals(&token);
 
+        let result = contract.convert_token_amount_to_10_24(token_amount.0, token_decimals);
+        let expected_result = U128::from(1_000_000_000_000_000_000_000_000_000);
+
         // Order keeps containing amount 1_000_000_000 (1000 * 10^6)
-        // while all calculations in the protocol using converted order amount 1_000_000_000_000_000_000_000_000_000 (10^24)
+        // while all calculations in the protocol using converted order amount 1_000_000_000_000_000_000_000_000_000 (1000 * 10^24)
+        assert_eq!(result, expected_result);
+
         assert_eq!(
-            contract.convert_token_amount_to_10_24(token_amount.0, token_decimals),
-            U128::from(1_000_000_000_000_000_000_000_000_000)
+            BigDecimal::from(result),                      // 1000.0
+            BigDecimal::from(U128::from(expected_result))  // 1000.0
         );
     }
 }
