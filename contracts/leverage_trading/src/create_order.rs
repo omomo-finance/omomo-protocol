@@ -220,13 +220,10 @@ impl Contract {
         let mut order = order;
         order.lpt_id = lpt_id;
 
-        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
         self.order_nonce += 1;
-
         let order_id = self.order_nonce;
 
-        self.insert_order_for_user(&env::signer_account_id(), order.clone(), order_id);
-        self.insert_order_for_pair(&pair_id, order, order_id);
+        self.add_or_update_order(&env::signer_account_id(), order, order_id);
 
         PromiseOrValue::Value(U128(0))
     }
@@ -275,36 +272,28 @@ impl Contract {
     }
 
     #[private]
-    pub fn add_order(&mut self, account_id: AccountId, order: String) {
+    pub fn add_order_from_string(&mut self, account_id: AccountId, order: String) {
         self.order_nonce += 1;
         let order_id = self.order_nonce;
         let order: Order = serde_json::from_str(order.as_str()).unwrap();
-        self.insert_order_for_user(&account_id, order.clone(), order_id);
-        self.insert_order_for_pair(
-            &(order.sell_token.clone(), order.buy_token.clone()),
-            order,
-            order_id,
-        );
-    }
-
-    #[private]
-    pub fn insert_order_for_user(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
-        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
-        user_orders_by_id.insert(order_id, order);
-        self.orders.insert(account_id, &user_orders_by_id);
-    }
-
-    #[private]
-    pub fn insert_order_for_pair(&mut self, pair_id: &PairId, order: Order, order_id: u64) {
-        let mut user_orders_by_id = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
-        user_orders_by_id.insert(order_id, order);
-        self.orders_per_pair_view
-            .insert(pair_id, &user_orders_by_id);
+        self.add_or_update_order(&account_id, order, order_id);
     }
 }
 
 impl Contract {
-    /// used for testing
+    pub fn add_or_update_order(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
+        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
+
+        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
+        user_orders_by_id.insert(order_id, order.clone());
+        self.orders.insert(account_id, &user_orders_by_id);
+
+        let mut pair_orders_by_id = self.orders_per_pair_view.get(&pair_id).unwrap_or_default();
+        pair_orders_by_id.insert(order_id, order);
+        self.orders_per_pair_view.insert(&pair_id, &pair_orders_by_id);
+    }
+
+    /// this method is used for testing
     pub fn imitation_add_liquidity_callback(&mut self, order: Order) {
         self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
 
@@ -316,13 +305,11 @@ impl Contract {
         let mut order = order;
         order.lpt_id = lpt_id;
 
-        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
         self.order_nonce += 1;
 
         let order_id = self.order_nonce;
 
-        self.insert_order_for_user(&env::signer_account_id(), order.clone(), order_id);
-        self.insert_order_for_pair(&pair_id, order, order_id);
+        self.add_or_update_order(&env::signer_account_id(), order, order_id);
     }
 }
 
@@ -342,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_orders_from_create_order() {
+    fn test_add_order_in_create_order() {
         let context = get_context(false);
         testing_env!(context);
 
@@ -378,7 +365,7 @@ mod tests {
             );
         }
 
-        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 5 as usize);
+        assert_eq!(contract.orders.get(&alice()).unwrap_or_default().len(), 5 as usize);
         assert_eq!(
             contract
                 .orders_per_pair_view

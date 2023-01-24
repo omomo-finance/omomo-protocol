@@ -329,15 +329,13 @@ impl Contract {
             self.protocol_profit
                 .insert(&order.sell_token, &(token_profit + protocol_profit));
         }
-
-        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
-
-        let mut orders = self.orders.get(&signer_account_id()).unwrap();
         order.status = OrderStatus::Canceled;
-        orders.insert(order_id.0 as u64, order.clone());
-        self.orders.insert(&signer_account_id(), &orders);
 
-        self.insert_order_for_pair(&pair_id, order, order_id.0 as u64);
+        self.add_or_update_order(
+            &signer_account_id(),
+            order,
+            order_id.0 as u64,
+        );
     }
 
     pub fn repay(&self, order_id: U128, market_data: MarketData) {
@@ -440,7 +438,7 @@ mod tests {
         );
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order1);
+        contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
         let order = Order {
@@ -473,6 +471,11 @@ mod tests {
             borrow_rate_ratio: U128(634273735391536),
         };
 
+        let pair_id = (
+            "usdt.fakes.testnet".parse().unwrap(),
+            "wrap.testnet".parse().unwrap()
+        );
+        
         let price_impact = U128(1);
         contract.final_order_cancel(order_id, order, price_impact, Some(market_data));
 

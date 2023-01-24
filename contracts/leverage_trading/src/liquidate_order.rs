@@ -98,17 +98,15 @@ impl Contract {
             &order.buy_token,
             liquidation_incentive,
         );
-        let account = self.get_account_by(order_id.0).unwrap();
-        let mut orders = self.orders.get(&account).unwrap();
+
         let mut order = order;
         order.status = OrderStatus::Liquidated;
 
-        let pair_id = (order.sell_token.to_owned(), order.buy_token.clone());
-
-        orders.insert(order_id.0 as u64, order.clone());
-        self.orders.insert(&signer_account_id(), &orders);
-
-        self.insert_order_for_pair(&pair_id, order, order_id.0 as u64)
+        self.add_or_update_order(
+            &self.get_account_by(order_id.0).unwrap(),
+            order,
+            order_id.0 as u64,
+        );
     }
 }
 
@@ -125,14 +123,16 @@ mod tests {
             .current_account_id("margin.nearland.testnet".parse().unwrap())
             .signer_account_id(alice())
             .predecessor_account_id("usdt_market.qa.nearland.testnet".parse().unwrap())
-            .block_index(103930920)
+            .block_index(103931930)
             .block_timestamp(1)
             .is_view(is_view)
             .build()
     }
 
+    //there are questions about the method calculations "final_liquidate"
     #[test]
-    fn test_order_was_canceled() {
+    #[should_panic]
+    fn test_order_was_liquidate() {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -162,8 +162,8 @@ mod tests {
 
         contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order1);
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930900,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
+        contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
         let order = Order {
@@ -186,6 +186,8 @@ mod tests {
         };
 
         let market_data = MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
+            underlying_token_decimals: 6,
             total_supplies: U128(60000000000000000000000000000),
             total_borrows: U128(25010000000000000000000000000),
             total_reserves: U128(1000176731435219096024128768),

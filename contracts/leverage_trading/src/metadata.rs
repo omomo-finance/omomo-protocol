@@ -9,6 +9,7 @@ pub enum StorageKeys {
     Markets,
     Prices,
     Orders,
+    OrdersPerPair,
     SupportedMarkets,
     Balances,
     TokenMarkets,

@@ -96,38 +96,21 @@ impl Contract {
 
 impl Contract {
     pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
-        let new_order = Order {
-            status: OrderStatus::Executed,
-            order_type: order.order_type,
-            amount: order.amount,
-            sell_token: order.sell_token,
-            buy_token: order.buy_token,
-            leverage: order.leverage,
-            sell_token_price: order.sell_token_price,
-            buy_token_price: order.buy_token_price,
-            block: order.block,
-            lpt_id: order.lpt_id,
-        };
+        let mut order = order;
+        order.status = OrderStatus::Executed;
 
-        let pair_id = (new_order.sell_token.clone(), new_order.buy_token.clone());
-
-        self.insert_order_for_user(
+        self.add_or_update_order(
             &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
-            new_order.clone(),
+            order,
             order_id.0 as u64,
         );
-        self.insert_order_for_pair(&pair_id, new_order, order_id.0 as u64);
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
         let mut account: Option<AccountId> = None;
-        println!("Len UnorderedMap - {}", self.orders.len());
 
-        println!("1");
         for (account_id, users_order) in self.orders.iter() {
-            println!("2");
             if users_order.contains_key(&(order_id as u64)) {
-                println!("3");
                 account = Some(account_id);
                 break;
             }
@@ -140,11 +123,9 @@ impl Contract {
 mod tests {
     use super::*;
 
-    use near_sdk::test_utils::test_env::{alice, bob};
+    use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
-
-    
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
@@ -165,15 +146,13 @@ mod tests {
         );
 
         let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order.clone());
+        contract.add_order_from_string(alice(), order);
 
         
         let account_id = contract.orders.get(&alice()).unwrap().contains_key(&1);
         
         assert_eq!(account_id, true);
-        
-        //I get a critical error here 
-        assert_eq!(contract.get_account_by(1_u128), Some(alice()));
+        assert_eq!(contract.get_account_by(1), Some(alice()));
     }
 
     #[test]
@@ -190,22 +169,11 @@ mod tests {
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
         );
        
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order1.clone());
-        // contract.add_order(alice(), order1.clone());
-
-        // contract.add_order(bob(), order1.clone());
-        // contract.add_order(bob(), order1.clone());
-
-
-
-        // println!("{:#?}", contract.orders.get(&alice()).unwrap().contains_key(&1));
-
-        // assert_eq!(contract.get_account_by(1u128), Some(alice()));
-
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
+        contract.add_order_from_string(alice(), order_as_string.clone());
+        
         let order_id = U128(1);
-        // let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
-        let order: Order = near_sdk::serde_json::from_str(order1.as_str()).unwrap();
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
         contract.mark_order_as_executed(order, order_id);
 
         let orders = contract.orders.get(&alice()).unwrap();
