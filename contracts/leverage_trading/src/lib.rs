@@ -291,7 +291,7 @@ mod tests {
     }
 
     #[test]
-    fn convert_token_amount_test() {
+    fn convert_token_amount_to_10_24_test() {
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
