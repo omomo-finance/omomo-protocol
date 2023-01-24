@@ -290,7 +290,8 @@ impl Contract {
 
         let mut pair_orders_by_id = self.orders_per_pair_view.get(&pair_id).unwrap_or_default();
         pair_orders_by_id.insert(order_id, order);
-        self.orders_per_pair_view.insert(&pair_id, &pair_orders_by_id);
+        self.orders_per_pair_view
+            .insert(&pair_id, &pair_orders_by_id);
     }
 
     /// this method is used for testing
@@ -347,7 +348,7 @@ mod tests {
 
         assert_eq!(
             contract.orders.get(&alice()).unwrap_or_default().len(),
-            0 as usize
+            0_usize
         );
         assert_eq!(
             contract
@@ -355,7 +356,7 @@ mod tests {
                 .get(&pair_id)
                 .unwrap_or_default()
                 .len(),
-            0 as usize
+            0_usize
         );
 
         for _ in 0..5 {
@@ -365,14 +366,17 @@ mod tests {
             );
         }
 
-        assert_eq!(contract.orders.get(&alice()).unwrap_or_default().len(), 5 as usize);
+        assert_eq!(
+            contract.orders.get(&alice()).unwrap_or_default().len(),
+            5_usize
+        );
         assert_eq!(
             contract
                 .orders_per_pair_view
                 .get(&pair_id)
                 .unwrap_or_default()
                 .len(),
-            5 as usize
+            5_usize
         );
     }
 }

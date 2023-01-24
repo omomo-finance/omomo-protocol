@@ -3,7 +3,7 @@ use crate::cancel_order::ext_self;
 use crate::ref_finance::ext_ref_finance;
 use crate::utils::NO_DEPOSIT;
 use crate::*;
-use near_sdk::env::{block_height, current_account_id, signer_account_id};
+use near_sdk::env::{block_height, current_account_id};
 use near_sdk::Gas;
 
 #[near_bindgen]

@@ -396,15 +396,21 @@ mod tests {
         }
 
         let pending_orders_par_1st_page = contract.get_pending_orders(&pair_id, U128(10), U128(1));
-        
-        assert_eq!(contract.orders_per_pair_view.get(&pair_id).unwrap().len(), 6 as usize);
-        assert_eq!(pending_orders_par_1st_page.data.len(), 3 as usize);
-        assert_eq!(pending_orders_par_1st_page.data.get(0).unwrap().1.status , OrderStatus::Pending);
+
+        assert_eq!(
+            contract.orders_per_pair_view.get(&pair_id).unwrap().len(),
+            6_usize
+        );
+        assert_eq!(pending_orders_par_1st_page.data.len(), 3_usize);
+        assert_eq!(
+            pending_orders_par_1st_page.data.get(0).unwrap().1.status,
+            OrderStatus::Pending
+        );
         assert_eq!(pending_orders_par_1st_page.total, U128(3));
 
         let pending_orders_par_2nd_page = contract.get_pending_orders(&pair_id, U128(10), U128(2));
 
-        assert_eq!(pending_orders_par_2nd_page.data.len(), 0 as usize);
+        assert_eq!(pending_orders_par_2nd_page.data.len(), 0_usize);
     }
 
     #[test]
@@ -476,7 +482,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.fakes.testnet".parse().unwrap(),
@@ -532,7 +538,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.fakes.testnet".parse().unwrap(),

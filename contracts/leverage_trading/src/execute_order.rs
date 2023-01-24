@@ -148,10 +148,9 @@ mod tests {
         let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order);
 
-        
         let account_id = contract.orders.get(&alice()).unwrap().contains_key(&1);
-        
-        assert_eq!(account_id, true);
+
+        assert!(account_id);
         assert_eq!(contract.get_account_by(1), Some(alice()));
     }
 
@@ -168,10 +167,10 @@ mod tests {
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
         );
-       
+
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
-        
+
         let order_id = U128(1);
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
         contract.mark_order_as_executed(order, order_id);
@@ -186,4 +185,3 @@ mod tests {
         assert_eq!(order_from_pair.status, order.status);
     }
 }
-

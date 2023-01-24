@@ -331,11 +331,7 @@ impl Contract {
         }
         order.status = OrderStatus::Canceled;
 
-        self.add_or_update_order(
-            &signer_account_id(),
-            order,
-            order_id.0 as u64,
-        );
+        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
     }
 
     pub fn repay(&self, order_id: U128, market_data: MarketData) {
@@ -420,7 +416,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.fakes.testnet".parse().unwrap(),
@@ -473,9 +469,9 @@ mod tests {
 
         let pair_id = (
             "usdt.fakes.testnet".parse().unwrap(),
-            "wrap.testnet".parse().unwrap()
+            "wrap.testnet".parse().unwrap(),
         );
-        
+
         let price_impact = U128(1);
         contract.final_order_cancel(order_id, order, price_impact, Some(market_data));
 
