@@ -76,12 +76,10 @@ impl Contract {
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
         let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
-        // В формуле ниже order_amount это количетсво Sell или Buy токена?
         let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
             * BigDecimal::from(order_amount.0)
             / order.buy_token_price.value;
 
-        // В формуле ниже order_amount это количетсво Sell или Buy токена?
         let borrow_amount =
             BigDecimal::from(order_amount) * (order.leverage - BigDecimal::from(10u128.pow(24)));
 
@@ -96,11 +94,10 @@ impl Contract {
             - borrow_amount
             - borrow_fee
             - borrow_amount * BigDecimal::from(swap_fee);
-        // В сравнении ниже (expect_amount.round_u128() > order_amount.0) order_amount это количетсво Sell или Buy токена?
         let pnlv: PnLView = if expect_amount.round_u128() > order_amount.0 {
             let lenpnl = (expect_amount
-                - BigDecimal::from(order_amount.0) // Тут order_amount это количетсво Sell или Buy токена?
-                - (BigDecimal::from(order_amount.0) // Тут order_amount это количетсво Sell или Buy токена?
+                - BigDecimal::from(order_amount.0)
+                - (BigDecimal::from(order_amount.0)
                     * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
             .round_u128();
 
@@ -220,21 +217,11 @@ impl Contract {
             panic!("Order with id: {} not found", order_id.0);
         });
 
-        let (sell_token_decimals, buy_token_decimals) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount_buy_token =
-            self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
-        let order_amount_sell_token =
-            self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
+        let buy_token =
+            BigDecimal::from(U128(order.amount)) * order.leverage * order.sell_token_price.value
+                / order.buy_token_price.value;
 
-        // В формуле ниже order_amount_buy_token (order.amount в оригинале) это количетсво Sell или Buy токена?
-        let buy_token = BigDecimal::from(U128(order_amount_buy_token.0))
-            * order.leverage
-            * order.sell_token_price.value
-            / order.buy_token_price.value;
-
-        // В формуле ниже order_amount_sell_token (order.amount в оригинале) это количетсво Sell или Buy токена?
-        let sell_token = BigDecimal::from(order_amount_sell_token) * order.leverage;
+        let sell_token = BigDecimal::from(U128(order.amount)) * order.leverage;
 
         let open_price = order.buy_token_price.clone();
 
