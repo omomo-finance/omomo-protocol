@@ -9,13 +9,14 @@ pub enum StorageKeys {
     Markets,
     Prices,
     Orders,
+    OrdersPerPair,
     SupportedMarkets,
     Balances,
     TokenMarkets,
     ProtocolProfit,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct MarketData {
     pub underlying_token: AccountId,

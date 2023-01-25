@@ -100,28 +100,19 @@ impl Contract {
 
 impl Contract {
     pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
-        let new_order = Order {
-            status: OrderStatus::Executed,
-            order_type: order.order_type,
-            amount: order.amount,
-            sell_token: order.sell_token,
-            buy_token: order.buy_token,
-            leverage: order.leverage,
-            sell_token_price: order.sell_token_price,
-            buy_token_price: order.buy_token_price,
-            block: order.block,
-            lpt_id: order.lpt_id,
-        };
+        let mut order = order;
+        order.status = OrderStatus::Executed;
 
-        self.insert_order_for_user(
+        self.add_or_update_order(
             &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
-            new_order,
+            order,
             order_id.0 as u64,
         );
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
         let mut account: Option<AccountId> = None;
+
         for (account_id, users_order) in self.orders.iter() {
             if users_order.contains_key(&(order_id as u64)) {
                 account = Some(account_id);
@@ -129,5 +120,72 @@ impl Contract {
             }
         }
         account
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use near_sdk::test_utils::test_env::alice;
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, VMContext};
+
+    fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .current_account_id("margin.nearland.testnet".parse().unwrap())
+            .signer_account_id(alice())
+            .predecessor_account_id("usdt_market.qa.nearland.testnet".parse().unwrap())
+            .block_index(103930920)
+            .block_timestamp(1)
+            .is_view(is_view)
+            .build()
+    }
+
+    #[test]
+    fn test_get_account_by() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
+        contract.add_order_from_string(alice(), order);
+
+        let account_id = contract.orders.get(&alice()).unwrap().contains_key(&1);
+
+        assert!(account_id);
+        assert_eq!(contract.get_account_by(1), Some(alice()));
+    }
+
+    #[test]
+    fn test_order_was_execute() {
+        let context = get_context(false);
+        testing_env!(context);
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_id: PairId = (
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        );
+
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\"}".to_string();
+        contract.add_order_from_string(alice(), order_as_string.clone());
+
+        let order_id = U128(1);
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+        contract.mark_order_as_executed(order, order_id);
+
+        let orders = contract.orders.get(&alice()).unwrap();
+        let order = orders.get(&1).unwrap();
+
+        let orders_from_pair = contract.orders_per_pair_view.get(&pair_id).unwrap();
+        let order_from_pair = orders_from_pair.get(&1).unwrap();
+
+        assert_eq!(order.status, OrderStatus::Executed);
+        assert_eq!(order_from_pair.status, order.status);
     }
 }
