@@ -312,6 +312,7 @@ impl Contract {
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
         let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
+        // В формуле ниже order_amount это количетсво Sell или Buy токена?
         let sell_amount =
             order.sell_token_price.value * BigDecimal::from(order_amount) * order.leverage;
 

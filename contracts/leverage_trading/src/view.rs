@@ -28,24 +28,21 @@ impl Contract {
                 * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
         );
 
-        let (sell_token_decimals, _) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let sell_token_amount =
-            self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
-
         OrderView {
             order_id,
             status: order.status,
             order_type: order.order_type,
             amount: U128(order.amount),
-            sell_token: order.sell_token,
+            sell_token: order.sell_token.clone(),
             sell_token_price: WBalance::from(order.sell_token_price.value),
-            buy_token: order.buy_token,
+            buy_token: order.buy_token.clone(),
             buy_token_price: WBalance::from(order.buy_token_price.value),
             leverage: WBigDecimal::from(order.leverage),
             borrow_fee,
             liquidation_price: self.calculate_liquidation_price(
-                sell_token_amount,
+                &order.sell_token,
+                &order.buy_token,
+                U128(order.amount),
                 WBigDecimal::from(order.sell_token_price.value),
                 WBigDecimal::from(order.buy_token_price.value),
                 WBigDecimal::from(order.leverage),
@@ -79,10 +76,12 @@ impl Contract {
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
         let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
+        // В формуле ниже order_amount это количетсво Sell или Buy токена?
         let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
             * BigDecimal::from(order_amount.0)
             / order.buy_token_price.value;
 
+        // В формуле ниже order_amount это количетсво Sell или Buy токена?
         let borrow_amount =
             BigDecimal::from(order_amount) * (order.leverage - BigDecimal::from(10u128.pow(24)));
 
@@ -97,11 +96,11 @@ impl Contract {
             - borrow_amount
             - borrow_fee
             - borrow_amount * BigDecimal::from(swap_fee);
-
+        // В сравнении ниже (expect_amount.round_u128() > order_amount.0) order_amount это количетсво Sell или Buy токена?
         let pnlv: PnLView = if expect_amount.round_u128() > order_amount.0 {
             let lenpnl = (expect_amount
-                - BigDecimal::from(order_amount.0)
-                - (BigDecimal::from(order_amount.0)
+                - BigDecimal::from(order_amount.0) // Тут order_amount это количетсво Sell или Buy токена?
+                - (BigDecimal::from(order_amount.0) // Тут order_amount это количетсво Sell или Buy токена?
                     * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
             .round_u128();
 
@@ -143,11 +142,6 @@ impl Contract {
                                 )),
                         );
 
-                        let (sell_token_decimals, _) =
-                            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                        let sell_token_amount =
-                            self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
-
                         Some(OrderView {
                             order_id: U128(*id as u128),
                             status: order.status.clone(),
@@ -160,7 +154,9 @@ impl Contract {
                             leverage: WBigDecimal::from(order.leverage),
                             borrow_fee,
                             liquidation_price: self.calculate_liquidation_price(
-                                sell_token_amount,
+                                &order.sell_token,
+                                &order.buy_token,
+                                U128(order.amount),
                                 WBigDecimal::from(order.sell_token_price.value),
                                 WBigDecimal::from(order.buy_token_price.value),
                                 WBigDecimal::from(order.leverage),
@@ -211,7 +207,6 @@ impl Contract {
     }
 
     pub fn cancel_order_view(
-        // Not working
         &self,
         account_id: AccountId,
         order_id: U128,
@@ -225,11 +220,21 @@ impl Contract {
             panic!("Order with id: {} not found", order_id.0);
         });
 
-        let buy_token =
-            BigDecimal::from(U128(order.amount)) * order.leverage * order.sell_token_price.value
-                / order.buy_token_price.value;
+        let (sell_token_decimals, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount_buy_token =
+            self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
+        let order_amount_sell_token =
+            self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
 
-        let sell_token = BigDecimal::from(U128(order.amount)) * order.leverage;
+        // В формуле ниже order_amount_buy_token (order.amount в оригинале) это количетсво Sell или Buy токена?
+        let buy_token = BigDecimal::from(U128(order_amount_buy_token.0))
+            * order.leverage
+            * order.sell_token_price.value
+            / order.buy_token_price.value;
+
+        // В формуле ниже order_amount_sell_token (order.amount в оригинале) это количетсво Sell или Buy токена?
+        let sell_token = BigDecimal::from(order_amount_sell_token) * order.leverage;
 
         let open_price = order.buy_token_price.clone();
 
@@ -252,6 +257,8 @@ impl Contract {
 
     pub fn calculate_liquidation_price(
         &self,
+        sell_token: &AccountId,
+        buy_token: &AccountId,
         sell_token_amount: U128,
         sell_token_price: U128,
         buy_token_price: U128,
@@ -259,6 +266,10 @@ impl Contract {
         borrow_fee: U128,
         swap_fee: U128,
     ) -> WBigDecimal {
+        let (sell_token_decimals, _) = self.view_pair_tokens_decimals(sell_token, buy_token);
+        let sell_token_amount =
+            self.convert_token_amount_to_10_24(sell_token_amount.0, sell_token_decimals);
+
         let collateral_usd =
             BigDecimal::from(sell_token_amount) * BigDecimal::from(sell_token_price);
         let position_amount_usd = collateral_usd * BigDecimal::from(leverage);
@@ -585,13 +596,31 @@ mod tests {
 
     #[test]
     fn test_calculate_liquidation_leverage_3() {
-        let contract = Contract::new_with_config(
+        let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
         let result = contract.calculate_liquidation_price(
-            U128(10_u128.pow(27)),
+            &pair_data.sell_token,
+            &pair_data.buy_token,
+            U128(10_u128.pow(9)),
             U128(10_u128.pow(24)),
             U128(10_u128.pow(25)),
             U128(3 * 10_u128.pow(24)),
@@ -604,12 +633,30 @@ mod tests {
 
     #[test]
     fn test_calculate_liquidation_leverage_1_5() {
-        let contract = Contract::new_with_config(
+        let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
         let result = contract.calculate_liquidation_price(
+            &pair_data.sell_token,
+            &pair_data.buy_token,
             U128(10_u128.pow(27)),
             U128(10_u128.pow(24)),
             U128(10_u128.pow(25)),
@@ -663,11 +710,10 @@ mod tests {
                 * BigDecimal::from(U128(env::block_height() as u128 - block_order as u128)),
         );
 
-        let sell_token_amount =
-            contract.convert_token_amount_to_10_24(10_u128.pow(9), pair_data.sell_token_decimals);
-
         let liquidation_price = contract.calculate_liquidation_price(
-            sell_token_amount,
+            &pair_data.sell_token,
+            &pair_data.buy_token,
+            U128(10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
@@ -751,11 +797,10 @@ mod tests {
                 * BigDecimal::from(U128(env::block_height() as u128 - block_order3 as u128)),
         );
 
-        let sell_token_amount =
-            contract.convert_token_amount_to_10_24(10_u128.pow(9), pair_data.sell_token_decimals);
-
         let liquidation_price_order1 = contract.calculate_liquidation_price(
-            sell_token_amount,
+            &pair_data.sell_token,
+            &pair_data.buy_token,
+            U128(10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
@@ -764,7 +809,9 @@ mod tests {
         );
 
         let liquidation_price_order2 = contract.calculate_liquidation_price(
-            sell_token_amount,
+            &pair_data.sell_token,
+            &pair_data.buy_token,
+            U128(2 * 10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
@@ -773,7 +820,9 @@ mod tests {
         );
 
         let liquidation_price_order3 = contract.calculate_liquidation_price(
-            sell_token_amount,
+            &pair_data.sell_token,
+            &pair_data.buy_token,
+            U128(2 * 10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
             U128(10_u128.pow(24)),
