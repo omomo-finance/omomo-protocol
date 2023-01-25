@@ -194,7 +194,11 @@ impl Contract {
         price_impact: U128,
         order_action: OrderAction,
     ) {
-        let buy_amount = BigDecimal::from(U128::from(order.amount))
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
+
+        let buy_amount = BigDecimal::from(order_amount)
             * order.leverage
             * order.sell_token_price.value
             * self.get_price(order.buy_token.clone())
@@ -293,49 +297,6 @@ impl Contract {
         }
     }
 
-    fn final_order_cancel(
-        &mut self,
-        order_id: U128,
-        order: Order,
-        price_impact: U128,
-        market_data: Option<MarketData>,
-    ) {
-        log!("Final order cancel attached gas: {}", env::prepaid_gas().0);
-
-        let mut order = order;
-        let sell_amount = order.sell_token_price.value
-            * BigDecimal::from(U128::from(order.amount))
-            * order.leverage;
-
-        let pnl = self.calculate_pnl(signer_account_id(), order_id, market_data);
-
-        let swap_fee = self.get_swap_fee(&order);
-
-        let expect_amount = self.get_price(order.buy_token.clone())
-            * sell_amount
-            * (BigDecimal::one() - BigDecimal::from(swap_fee))
-            * (BigDecimal::one() - BigDecimal::from(price_impact))
-            / order.buy_token_price.value;
-
-        self.increase_balance(&signer_account_id(), &order.sell_token, order.amount);
-
-        if pnl.is_profit && expect_amount > sell_amount + BigDecimal::from(pnl.amount) {
-            let protocol_profit = expect_amount - sell_amount - BigDecimal::from(pnl.amount);
-
-            let token_profit = self
-                .protocol_profit
-                .get(&order.sell_token)
-                .unwrap_or_default();
-            self.protocol_profit
-                .insert(&order.sell_token, &(token_profit + protocol_profit));
-        }
-
-        let mut orders = self.orders.get(&signer_account_id()).unwrap();
-        order.status = OrderStatus::Canceled;
-        orders.insert(order_id.0 as u64, order);
-        self.orders.insert(&signer_account_id(), &orders);
-    }
-
     pub fn repay(&self, order_id: U128, market_data: MarketData) {
         let orders = self.orders.get(&signer_account_id()).unwrap_or_else(|| {
             panic!("Orders for account: {} not found", signer_account_id());
@@ -376,6 +337,49 @@ impl Contract {
     }
 }
 
+impl Contract {
+    pub fn final_order_cancel(
+        &mut self,
+        order_id: U128,
+        order: Order,
+        price_impact: U128,
+        market_data: Option<MarketData>,
+    ) {
+        log!("Final order cancel attached gas: {}", env::prepaid_gas().0);
+
+        let mut order = order;
+        let sell_amount = order.sell_token_price.value
+            * BigDecimal::from(U128::from(order.amount))
+            * order.leverage;
+
+        let pnl = self.calculate_pnl(signer_account_id(), order_id, market_data);
+
+        let swap_fee = self.get_swap_fee(&order);
+
+        let expect_amount = self.get_price(order.buy_token.clone())
+            * sell_amount
+            * (BigDecimal::one() - BigDecimal::from(swap_fee))
+            * (BigDecimal::one() - BigDecimal::from(price_impact))
+            / order.buy_token_price.value;
+
+        self.increase_balance(&signer_account_id(), &order.sell_token, order.amount);
+
+        if pnl.is_profit && expect_amount > sell_amount + BigDecimal::from(pnl.amount) {
+            let protocol_profit = expect_amount - sell_amount - BigDecimal::from(pnl.amount);
+
+            let token_profit = self
+                .protocol_profit
+                .get(&order.sell_token)
+                .unwrap_or_default();
+            self.protocol_profit
+                .insert(&order.sell_token, &(token_profit + protocol_profit));
+        }
+        order.status = OrderStatus::Canceled;
+
+        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -407,7 +411,7 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
-            sell_token_decimals: 24,
+            sell_token_decimals: 6,
             sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
                 .parse()
                 .unwrap(),
@@ -418,7 +422,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.fakes.testnet".parse().unwrap(),
@@ -435,14 +439,14 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order1);
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
         let order = Order {
             status: OrderStatus::Pending,
             order_type: OrderType::Buy,
-            amount: 1000000000000000000000000000,
+            amount: 1000000000,
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
             buy_token: "wrap.testnet".parse().unwrap(),
             leverage: BigDecimal::from(1.0),
@@ -469,11 +473,21 @@ mod tests {
             borrow_rate_ratio: U128(634273735391536),
         };
 
+        let pair_id = (
+            "usdt.fakes.testnet".parse().unwrap(),
+            "wrap.testnet".parse().unwrap(),
+        );
+
         let price_impact = U128(1);
         contract.final_order_cancel(order_id, order, price_impact, Some(market_data));
 
         let orders = contract.orders.get(&alice()).unwrap();
         let order = orders.get(&1).unwrap();
+
+        let orders_from_pair = contract.orders_per_pair_view.get(&pair_id).unwrap();
+        let order_from_pair = orders_from_pair.get(&1).unwrap();
+
         assert_eq!(order.status, OrderStatus::Canceled);
+        assert_eq!(order_from_pair.status, order.status);
     }
 }

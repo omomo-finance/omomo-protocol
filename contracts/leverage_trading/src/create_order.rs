@@ -118,8 +118,12 @@ impl Contract {
 
                     let right_point = left_point + pool_info.point_delta as i32;
 
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                    let (sell_token_decimals, _) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                    let order_amount =
+                        self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
+
+                    let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
 
                     let amount_x = amount;
                     let amount_y = U128::from(0);
@@ -144,8 +148,12 @@ impl Contract {
 
                     let left_point = right_point - pool_info.point_delta as i32;
 
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                    let (_, buy_token_decimals) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                    let order_amount =
+                        self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
+
+                    let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
 
                     let amount_x = U128::from(0);
                     let amount_y = amount;
@@ -211,7 +219,11 @@ impl Contract {
             _ => (),
         };
 
-        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let token_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
+
+        self.decrease_balance(&env::signer_account_id(), &order.sell_token, token_amount.0);
 
         let lpt_id: String = match env::promise_result(1) {
             PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
@@ -223,7 +235,8 @@ impl Contract {
 
         self.order_nonce += 1;
         let order_id = self.order_nonce;
-        self.insert_order_for_user(&env::signer_account_id(), order, order_id, take_profit_order);
+
+        self.add_or_update_order(&env::signer_account_id(), order, order_id, take_profit_order);
 
         PromiseOrValue::Value(U128(0))
     }
@@ -240,6 +253,9 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
+
+        let token_decimals = self.view_token_decimals(&token);
+        let amount = self.convert_token_amount_to_10_24(amount.0, token_decimals);
 
         require!(
             self.balance_of(env::signer_account_id(), token.clone()) >= amount,
@@ -272,20 +288,11 @@ impl Contract {
     }
 
     #[private]
-    pub fn add_order(&mut self, account_id: AccountId, order: String) {
+    pub fn add_order_from_string(&mut self, account_id: AccountId, order: String) {
         self.order_nonce += 1;
         let order_id = self.order_nonce;
-        let order = serde_json::from_str(order.as_str()).unwrap();
-        self.insert_order_for_user(&account_id, order, order_id, None);
-    }
-
-    pub fn insert_order_for_user(&mut self, account_id: &AccountId, order: Order, order_id: u64, take_profit_order: Option<Price>) {
-        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
-        user_orders_by_id.insert(order_id, order);
-        self.orders.insert(account_id, &user_orders_by_id);
-        if take_profit_order.is_some() {
-            self.insert_or_update_tpo(order_id, take_profit_order.unwrap());
-        }
+        let order: Order = serde_json::from_str(order.as_str()).unwrap();
+        self.add_or_update_order(&account_id, order, order_id, None);
     }
 
     // tpo => take profit order
@@ -296,75 +303,104 @@ impl Contract {
     }
 }
 
+impl Contract {
+    pub fn add_or_update_order(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
+        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
+
+        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
+        user_orders_by_id.insert(order_id, order.clone());
+        self.orders.insert(account_id, &user_orders_by_id);
+
+        let mut pair_orders_by_id = self.orders_per_pair_view.get(&pair_id).unwrap_or_default();
+        pair_orders_by_id.insert(order_id, order);
+        self.orders_per_pair_view
+            .insert(&pair_id, &pair_orders_by_id);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use near_sdk::test_utils::test_env::{alice, bob};
+    use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
-            .current_account_id("margin.nearland.testnet".parse().unwrap())
             .signer_account_id(alice())
-            .predecessor_account_id("usdt_market.qa.nearland.testnet".parse().unwrap())
-            .block_index(103930916)
-            .block_timestamp(1)
             .is_view(is_view)
             .build()
     }
 
+    impl Contract {
+        pub fn imitation_add_liquidity_callback(&mut self, order: Order) {
+            self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
+
+            let mut lpt_id = order.sell_token.to_string();
+            lpt_id.push('|');
+            lpt_id.push_str(order.buy_token.as_str());
+            lpt_id.push_str("|0000#0000");
+
+            let mut order = order;
+            order.lpt_id = lpt_id;
+
+            self.order_nonce += 1;
+
+            let order_id = self.order_nonce;
+
+            self.add_or_update_order(&env::signer_account_id(), order, order_id);
+        }
+    }
+
     #[test]
-    fn insert_tpo_test() {
+    fn test_add_order_in_create_order() {
         let context = get_context(false);
         testing_env!(context);
+
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_data = TradePair {
-            sell_ticker_id: "USDt".to_string(),
-            sell_token: "usdt.fakes.testnet".parse().unwrap(),
-            sell_token_decimals: 24,
-            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
-                .parse()
-                .unwrap(),
-            buy_ticker_id: "near".to_string(),
-            buy_token: "wrap.testnet".parse().unwrap(),
-            buy_token_decimals: 24,
-            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
-            max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(10u128.pow(20)),
-        };
-        contract.add_pair(pair_data.clone());
-
-        contract.update_or_insert_price(
-            "usdt.fakes.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(2.0),
-            },
-        );
-        contract.update_or_insert_price(
-            "wrap.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "near".to_string(),
-                value: BigDecimal::from(4.22),
-            },
+        let pair_id: PairId = (
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
-        contract.add_order(alice(), order1);
+        contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
 
-        let tpo_price = Price {
-            ticker_id: "Near".to_string(),
-            value: BigDecimal::from(4.22)
-        };
+        assert_eq!(
+            contract.orders.get(&alice()).unwrap_or_default().len(),
+            0_usize
+        );
+        assert_eq!(
+            contract
+                .orders_per_pair_view
+                .get(&pair_id)
+                .unwrap_or_default()
+                .len(),
+            0_usize
+        );
 
-        contract.insert_or_update_tpo(1, tpo_price);
+        for _ in 0..5 {
+            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+            contract.imitation_add_liquidity_callback(
+                near_sdk::serde_json::from_str(order.as_str()).unwrap(),
+            );
+        }
 
-        assert_eq!();
+        assert_eq!(
+            contract.orders.get(&alice()).unwrap_or_default().len(),
+            5_usize
+        );
+        assert_eq!(
+            contract
+                .orders_per_pair_view
+                .get(&pair_id)
+                .unwrap_or_default()
+                .len(),
+            5_usize
+        );
     }
 }
