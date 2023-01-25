@@ -6,11 +6,24 @@
 
 ROOT_ACCOUNT=develop.v1.omomo-finance.testnet
 CONTRACT_ID=leverage.develop.v1.omomo-finance.testnet
+
 # latest address version
+ETH_TOKEN=weth.develop.v1.omomo-finance.testnet
+ETH_MARKET=weth_market.develop.v1.omomo-finance.testnet
+ETH_TOKEN_DECIMALS=18
+
+NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+NEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
+NEAR_TOKEN_DECIMALS=24
+
 USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
 USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
-WNEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
-WNEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
+USDT_TOKEN_DECIMALS=6
+
+USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
+USDC_MARKET=usdc_market.develop.v1.omomo-finance.testnet
+USDC_TOKEN_DECIMALS=6
+
 ORACLE_ID=oracle.omomo-finance.testnet
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
@@ -31,11 +44,11 @@ near deploy ${CONTRACT_ID} \
     }'
 
 # register limit orders on tokens
-near call $WNEAR_TOKEN storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 0.25 &
+near call $NEAR_TOKEN storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 0.25 &
 near call $USDT_TOKEN storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 0.25 &
 wait
 
-near call $WNEAR_TOKEN storage_deposit '{"account_id": "'$DEX_ACCOUNT'"}' --accountId $CONTRACT_ID --amount 0.25 &
+near call $NEAR_TOKEN storage_deposit '{"account_id": "'$DEX_ACCOUNT'"}' --accountId $CONTRACT_ID --amount 0.25 &
 near call $USDT_TOKEN storage_deposit '{"account_id": "'$DEX_ACCOUNT'"}' --accountId $CONTRACT_ID --amount 0.25 &
 wait
 
@@ -44,12 +57,12 @@ near call $CONTRACT_ID add_pair '{
         "pair_data": {
             "sell_ticker_id": "USDt",
             "sell_token": "'$USDT_TOKEN'",
-            "sell_token_decimals": 24,
+            "sell_token_decimals": '$USDT_TOKEN_DECIMALS',
             "sell_token_market": "'$USDT_MARKET'",
             "buy_ticker_id": "near",
-            "buy_token": "'$WNEAR_TOKEN'",
-            "buy_token_decimals": 24,
-            "pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000",
+            "buy_token": "'$NEAR_TOKEN'",
+            "buy_token_decimals": '$NEAR_TOKEN_DECIMALS',
+            "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "300000000000000000000"
         }
@@ -57,14 +70,14 @@ near call $CONTRACT_ID add_pair '{
 
 near call $CONTRACT_ID add_pair '{
         "pair_data": {
-            "sell_ticker_id": "near",
-            "sell_token": "'$WNEAR_TOKEN'",
-            "sell_token_decimals": 24,
-            "sell_token_market": "'$WNEAR_MARKET'",
-            "buy_ticker_id": "USDt",
-            "buy_token": "'$USDT_TOKEN'",
-            "buy_token_decimals": 24,
-            "pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000",
+            "sell_ticker_id": "USDt",
+            "sell_token": "'$USDT_TOKEN'",
+            "sell_token_decimals": '$USDT_TOKEN_DECIMALS',
+            "sell_token_market": "'$USDT_MARKET'",
+            "buy_ticker_id": "nWETH",
+            "buy_token": "'$ETH_TOKEN'",
+            "buy_token_decimals": '$ETH_TOKEN_DECIMALS',
+            "pool_id": "'$USDT_TOKEN'|'$ETH_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "300000000000000000000"
         }
@@ -76,13 +89,13 @@ near view $CONTRACT_ID view_supported_pairs '{}'
 wait
 near view $CONTRACT_ID view_pair_tokens_decimals '{
     "sell_token": "'$USDT_TOKEN'",
-    "buy_token": "'$WNEAR_TOKEN'"
+    "buy_token": "'$NEAR_TOKEN'"
 }'
 
 wait
 near view $CONTRACT_ID view_pair_tokens_decimals '{
-    "sell_token": "'$WNEAR_TOKEN'",
-    "buy_token": "'$USDT_TOKEN'"
+    "sell_token": "'$USDT_TOKEN'",
+    "buy_token": "'$ETH_TOKEN'"
 }'
 
 # add mock prices
@@ -95,31 +108,41 @@ near call $CONTRACT_ID update_or_insert_price '{
 }' --accountId $CONTRACT_ID &
 
 near call $CONTRACT_ID update_or_insert_price '{
-    "token_id":"'$WNEAR_TOKEN'",
+    "token_id":"'$NEAR_TOKEN'",
     "price":{
         "ticker_id":"near",
-        "value":"3.07"
+        "value":"2.57"
+    }
+}' --accountId $CONTRACT_ID &
+
+
+near call $CONTRACT_ID update_or_insert_price '{
+    "token_id":"'$ETH_TOKEN'",
+    "price":{
+        "ticker_id":"nWETH",
+        "value":"1623.67"
     }
 }' --accountId $CONTRACT_ID &
 
 wait
 near view $CONTRACT_ID view_price '{"token_id":"'$USDT_TOKEN'"}'
-near view $CONTRACT_ID view_price '{"token_id":"'$WNEAR_TOKEN'"}'
+near view $CONTRACT_ID view_price '{"token_id":"'$NEAR_TOKEN'"}'
+near view $CONTRACT_ID view_price '{"token_id":"'$ETH_TOKEN'"}'
 
 # add mock orders
 near call $CONTRACT_ID add_order_from_string '{
         "account_id":"'$CONTRACT_ID'",
-        "order":"{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1000000100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$WNEAR_TOKEN'\",\"leverage\":\"2.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"1\"}"
+        "order":"{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1000000100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"2.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"1\"}"
     }' --accountId $CONTRACT_ID &
 
 near call $CONTRACT_ID add_order_from_string '{
         "account_id":"'$CONTRACT_ID'",
-        "order":"{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$WNEAR_TOKEN'\",\"leverage\":\"1.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.01\"},\"block\":103930917,\"lpt_id\":\"2\"}"
+        "order":"{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"1.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.01\"},\"block\":103930917,\"lpt_id\":\"2\"}"
     }' --accountId $CONTRACT_ID &
 
 near call $CONTRACT_ID add_order_from_string '{
         "account_id":"'$CONTRACT_ID'",
-        "order":"{\"status\":\"Canceled\",\"order_type\":\"Buy\",\"amount\":2000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$WNEAR_TOKEN'\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"0.99\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.99\"},\"block\":103930918,\"lpt_id\":\"3\"}"
+        "order":"{\"status\":\"Canceled\",\"order_type\":\"Buy\",\"amount\":2000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"0.99\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.99\"},\"block\":103930918,\"lpt_id\":\"3\"}"
     }' --accountId $CONTRACT_ID &
 
 
@@ -127,15 +150,15 @@ wait
 
 near view $CONTRACT_ID view_orders '{
     "account_id":"'$CONTRACT_ID'",
-    "buy_token":"'$WNEAR_TOKEN'",
+    "buy_token":"'$NEAR_TOKEN'",
     "sell_token":"'$USDT_TOKEN'",
     "borrow_rate_ratio": "1000"
 }'
 
-near view dclv2-dev.ref-dev.testnet get_pool '{"pool_id": "'$USDT_TOKEN'|'$WNEAR_TOKEN'|2000"}'
+near view dclv2-dev.ref-dev.testnet get_pool '{"pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000"}'
 
 # mint 30000
-near call $WNEAR_TOKEN mint '{
+near call $NEAR_TOKEN mint '{
         "account_id": "'$CONTRACT_ID'",
         "amount": "30000000000000000000000000000"
     }' --accountId $CONTRACT_ID &
@@ -148,7 +171,7 @@ near call $USDT_TOKEN mint '{
 
 
 near call $CONTRACT_ID add_token_market '{"token_id": "'$USDT_TOKEN'", "market_id": "'$USDT_MARKET'"}' --accountId $CONTRACT_ID
-near call $CONTRACT_ID add_token_market '{"token_id": "'$WNEAR_TOKEN'", "market_id": "'$WNEAR_MARKET'"}' --accountId $CONTRACT_ID
+near call $CONTRACT_ID add_token_market '{"token_id": "'$NEAR_TOKEN'", "market_id": "'$NEAR_MARKET'"}' --accountId $CONTRACT_ID
 
 near call $USDT_MARKET set_eligible_to_borrow_uncollateralized_account '{ "account": "'${CONTRACT_ID}'" }' --accountId shared_admin.testnet
 near view $USDT_MARKET get_eligible_to_borrow_uncollateralized_account '{ "account": "'${CONTRACT_ID}'" }'

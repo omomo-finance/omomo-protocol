@@ -12,7 +12,7 @@ NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
 NEAR_TOKEN_DECIMALS=24
 
 USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
-USDT_TOKEN_DECIMALS=24
+USDT_TOKEN_DECIMALS=6
 
 USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
 USDC_TOKEN_DECIMALS=6
@@ -51,3 +51,13 @@ near view $ETH_TOKEN  ft_balance_of '{"account_id": "weth_market.'$ROOT_ACCOUNT'
 near view $NEAR_TOKEN ft_balance_of '{"account_id": "wnear_market.'$ROOT_ACCOUNT'"}'
 near view $USDT_TOKEN ft_balance_of '{"account_id": "usdt_market.'$ROOT_ACCOUNT'"}'
 near view $USDC_TOKEN ft_balance_of '{"account_id": "usdc_market.'$ROOT_ACCOUNT'"}'
+
+# mark commit with deploy-tag
+LATEST_TAG=`git tag -l "v*" | sort -r | head -n1`
+echo $LATEST_TAG
+
+DEPLOY_TAG="dev_deploy_"${LATEST_TAG}_`date +%s`
+echo $DEPLOY_TAG
+
+git tag $DEPLOY_TAG
+git push origin $DEPLOY_TAG
