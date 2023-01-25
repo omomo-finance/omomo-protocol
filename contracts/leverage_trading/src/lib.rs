@@ -69,6 +69,9 @@ pub struct Contract {
 
     /// Max value for order amount
     max_order_amount: u128,
+
+    /// PairId ➝ order id ➝ Order
+    orders_per_pair_view: UnorderedMap<PairId, HashMap<u64, Order>>,
 }
 
 impl Default for Contract {
@@ -107,6 +110,7 @@ impl Contract {
             liquidation_threshold: 10_u128.pow(23),
             volatility_rate: BigDecimal::from(U128(95 * 10_u128.pow(22))),
             max_order_amount: 10_u128.pow(30),
+            orders_per_pair_view: UnorderedMap::new(StorageKeys::OrdersPerPair),
         }
     }
 
