@@ -194,7 +194,11 @@ impl Contract {
         price_impact: U128,
         order_action: OrderAction,
     ) {
-        let buy_amount = BigDecimal::from(U128::from(order.amount))
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
+
+        let buy_amount = BigDecimal::from(order_amount)
             * order.leverage
             * order.sell_token_price.value
             * self.get_price(order.buy_token.clone())
@@ -407,7 +411,7 @@ mod tests {
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
-            sell_token_decimals: 24,
+            sell_token_decimals: 6,
             sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
                 .parse()
                 .unwrap(),
@@ -435,14 +439,14 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
         let order = Order {
             status: OrderStatus::Pending,
             order_type: OrderType::Buy,
-            amount: 1000000000000000000000000000,
+            amount: 1000000000,
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
             buy_token: "wrap.testnet".parse().unwrap(),
             leverage: BigDecimal::from(1.0),

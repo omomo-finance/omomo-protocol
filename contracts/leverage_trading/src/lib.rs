@@ -1,5 +1,9 @@
 extern crate core;
-
+#[allow(
+    clippy::manual_range_contains,
+    clippy::assign_op_pattern,
+    clippy::ptr_offset_with_cast
+)]
 mod big_decimal;
 mod cancel_order;
 mod common;
@@ -13,8 +17,10 @@ mod market;
 mod metadata;
 mod oraclehook;
 mod price;
+#[allow(clippy::too_many_arguments)]
 mod ref_finance;
 mod utils;
+#[allow(clippy::too_many_arguments)]
 mod view;
 mod withdraw;
 
@@ -166,6 +172,16 @@ impl Contract {
             .unwrap_or_else(|| panic!("Swap fee for pair {} | {} not found", pair.0, pair.1))
             .swap_fee
     }
+
+    pub fn convert_token_amount_to_10_24(&self, amount: u128, token_decimals: u8) -> U128 {
+        if token_decimals != 24 {
+            U128::from(
+                BigDecimal::from(amount) / BigDecimal::from(10u128.pow(token_decimals.into())),
+            )
+        } else {
+            U128::from(amount)
+        }
+    }
 }
 
 #[cfg(test)]
@@ -282,5 +298,45 @@ mod tests {
         let swap_fee = contract.get_swap_fee(&order);
 
         assert_eq!(swap_fee, pair_data.swap_fee);
+    }
+
+    #[test]
+    fn convert_token_amount_to_10_24_test() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let token: AccountId = "usdt.fakes.testnet".parse().unwrap();
+        let token_amount = U128::from(1_000_000_000);
+        let token_decimals = contract.view_token_decimals(&token);
+
+        let result = contract.convert_token_amount_to_10_24(token_amount.0, token_decimals);
+        let expected_result = U128::from(1_000_000_000_000_000_000_000_000_000);
+
+        // Order keeps containing amount 1_000_000_000 (1000 * 10^6)
+        // while all calculations in the protocol using converted order amount 1_000_000_000_000_000_000_000_000_000 (1000 * 10^24)
+        assert_eq!(result, expected_result);
+
+        assert_eq!(
+            BigDecimal::from(result),                      // 1000.0
+            BigDecimal::from(U128::from(expected_result))  // 1000.0
+        );
     }
 }
