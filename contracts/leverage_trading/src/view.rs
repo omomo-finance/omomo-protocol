@@ -371,6 +371,10 @@ impl Contract {
         });
         (pair.sell_token_decimals, pair.buy_token_decimals)
     }
+
+    pub fn view_take_profit_order(&self, order_id: U128) -> Price {
+        self.take_profit_orders.get(&(order_id.0 as u64)).unwrap_or_default()
+    }
 }
 
 #[cfg(test)]
@@ -838,4 +842,7 @@ mod tests {
             (pair_data.sell_token_decimals, pair_data.buy_token_decimals)
         );
     }
+
+    #[test]
+    fn test_view_order() {
 }

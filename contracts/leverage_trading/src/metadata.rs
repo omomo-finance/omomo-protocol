@@ -13,6 +13,7 @@ pub enum StorageKeys {
     Balances,
     TokenMarkets,
     ProtocolProfit,
+    TakeProfitOrder
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]

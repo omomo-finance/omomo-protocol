@@ -44,6 +44,9 @@ pub struct Contract {
     /// user ➝ order_id ➝ Order
     orders: UnorderedMap<AccountId, HashMap<u64, Order>>,
 
+    /// order id ➝ take profit price
+    take_profit_orders: LookupMap<u64, Price>,
+
     /// (sell token, buy token) ➝ TradePair
     supported_markets: UnorderedMap<PairId, TradePair>,
 
@@ -98,6 +101,7 @@ impl Contract {
             prices: UnorderedMap::new(StorageKeys::Prices),
             order_nonce: 0,
             orders: UnorderedMap::new(StorageKeys::Orders),
+            take_profit_orders: LookupMap::new(StorageKeys::TakeProfitOrder),
             supported_markets: UnorderedMap::new(StorageKeys::SupportedMarkets),
             config,
             balances: UnorderedMap::new(StorageKeys::Balances),

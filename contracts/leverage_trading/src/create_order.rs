@@ -2,7 +2,7 @@ use crate::big_decimal::{BigDecimal, WBalance};
 use crate::ref_finance::ext_ref_finance;
 use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
 use crate::*;
-use near_sdk::env::current_account_id;
+use near_sdk::env::{current_account_id, signer_account_id};
 use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
 
 const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
@@ -32,6 +32,7 @@ impl Contract {
         sell_token: AccountId,
         buy_token: AccountId,
         leverage: U128,
+        take_profit_order: Option<Price>
     ) -> PromiseOrValue<WBalance> {
         require!(
             env::attached_deposit() >= self.view_gas_for_execution() * 2,
@@ -69,13 +70,13 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
                     .with_static_gas(Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64)
-                    .get_pool_info_callback(order),
+                    .get_pool_info_callback(order, take_profit_order),
             )
             .into()
     }
 
     #[private]
-    pub fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
+    pub fn get_pool_info_callback(&mut self, order: Order, take_profit_order: Option<Price>) -> PromiseOrValue<WBalance> {
         require!(
             is_promise_success(),
             "Problem with pool on ref finance has occurred"
@@ -98,11 +99,11 @@ impl Contract {
             "Some problem with pool, please contact with ref finance to support."
         );
 
-        self.add_liquidity(pool_info, order)
+        self.add_liquidity(pool_info, order, take_profit_order)
     }
 
     /// Makes batch of transaction consist of Deposit & Add_Liquidity
-    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order) -> PromiseOrValue<WBalance> {
+    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order, take_profit_order: Option<Price>) -> PromiseOrValue<WBalance> {
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
 
@@ -192,13 +193,13 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 2u64)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .add_liquidity_callback(order.clone()),
+                    .add_liquidity_callback(order.clone(), take_profit_order),
             );
         add_liquidity_promise.into()
     }
 
     #[private]
-    pub fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
+    pub fn add_liquidity_callback(&mut self, order: Order, take_profit_order: Option<Price>) -> PromiseOrValue<WBalance> {
         require!(
             env::promise_results_count() == 2,
             "Contract expected 2 results on the callback"
@@ -222,7 +223,7 @@ impl Contract {
 
         self.order_nonce += 1;
         let order_id = self.order_nonce;
-        self.insert_order_for_user(&env::signer_account_id(), order, order_id);
+        self.insert_order_for_user(&env::signer_account_id(), order, order_id, take_profit_order);
 
         PromiseOrValue::Value(U128(0))
     }
@@ -275,12 +276,95 @@ impl Contract {
         self.order_nonce += 1;
         let order_id = self.order_nonce;
         let order = serde_json::from_str(order.as_str()).unwrap();
-        self.insert_order_for_user(&account_id, order, order_id);
+        self.insert_order_for_user(&account_id, order, order_id, None);
     }
 
-    pub fn insert_order_for_user(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
+    pub fn insert_order_for_user(&mut self, account_id: &AccountId, order: Order, order_id: u64, take_profit_order: Option<Price>) {
         let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
         user_orders_by_id.insert(order_id, order);
         self.orders.insert(account_id, &user_orders_by_id);
+        if take_profit_order.is_some() {
+            self.insert_or_update_tpo(order_id, take_profit_order.unwrap());
+        }
+    }
+
+    // tpo => take profit order
+    pub fn insert_or_update_tpo(&mut self, order_id: u64, price: Price) {
+       if signer_account_id() == self.get_account_by(order_id) {
+           self.take_profit_orders.insert(&order_id, &price);
+       }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use near_sdk::test_utils::test_env::{alice, bob};
+    use near_sdk::test_utils::VMContextBuilder;
+    use near_sdk::{testing_env, VMContext};
+
+    fn get_context(is_view: bool) -> VMContext {
+        VMContextBuilder::new()
+            .current_account_id("margin.nearland.testnet".parse().unwrap())
+            .signer_account_id(alice())
+            .predecessor_account_id("usdt_market.qa.nearland.testnet".parse().unwrap())
+            .block_index(103930916)
+            .block_timestamp(1)
+            .is_view(is_view)
+            .build()
+    }
+
+    #[test]
+    fn insert_tpo_test() {
+        let context = get_context(false);
+        testing_env!(context);
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(10u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        contract.update_or_insert_price(
+            "usdt.fakes.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDt".to_string(),
+                value: BigDecimal::from(2.0),
+            },
+        );
+        contract.update_or_insert_price(
+            "wrap.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "near".to_string(),
+                value: BigDecimal::from(4.22),
+            },
+        );
+
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        contract.add_order(alice(), order1);
+
+        let tpo_price = Price {
+            ticker_id: "Near".to_string(),
+            value: BigDecimal::from(4.22)
+        };
+
+        contract.insert_or_update_tpo(1, tpo_price);
+
+        assert_eq!();
     }
 }

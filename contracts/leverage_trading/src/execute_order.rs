@@ -26,6 +26,11 @@ impl Contract {
 
         let order = order.unwrap();
 
+        let current_price = self.get_price(order.buy_token.clone());
+        if Some(price) =  self.take_profit_orders.get(&(order_id.0 as u64)) {
+            require!(current_price >= price.value, format!("Take profit order is active and order can be executed when price will be greater then: {}", price.value));
+        }
+
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 5u64)
             .with_attached_deposit(NO_DEPOSIT)
@@ -54,9 +59,15 @@ impl Contract {
         let remove_liquidity_amount = position.amount;
 
         let min_amount_x = 0;
-        let min_amount_y =
+        let mut min_amount_y =
             BigDecimal::from(order.amount) * order.leverage * order.sell_token_price.value
                 / order.buy_token_price.value;
+
+        if Some(price) =  self.take_profit_orders.get(&(order_id.0 as u64)) {
+            min_amount_y =
+                BigDecimal::from(order.amount) * order.leverage * order.sell_token_price.value
+                    / price.value;
+        }
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 45u64)
@@ -108,18 +119,19 @@ impl Contract {
             block: order.block,
             lpt_id: order.lpt_id,
         };
-
+        let order_id = order_id.0 as u64;
         self.insert_order_for_user(
-            &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
+            &self.get_account_by(order_id ).unwrap(), // assert there is always some user
             new_order,
-            order_id.0 as u64,
+            order_id,
+            None
         );
     }
 
-    pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
+    pub fn get_account_by(&self, order_id: u64) -> Option<AccountId> {
         let mut account: Option<AccountId> = None;
         for (account_id, users_order) in self.orders.iter() {
-            if users_order.contains_key(&(order_id as u64)) {
+            if users_order.contains_key(&order_id) {
                 account = Some(account_id);
                 break;
             }
