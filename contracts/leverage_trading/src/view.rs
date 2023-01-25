@@ -415,13 +415,22 @@ mod tests {
             if count < 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
             } else {
-                contract.final_order_cancel(U128(count as u128 - 5), order.clone(), price_impact, Some(market_data.clone()));
+                contract.final_order_cancel(
+                    U128(count as u128 - 5),
+                    order.clone(),
+                    price_impact,
+                    Some(market_data.clone()),
+                );
             }
         }
 
         let pending_orders_par_1st_page = contract.get_pending_orders(&pair_id, U128(10), U128(1));
-        let order_id_with_pending_status = pending_orders_par_1st_page.data.iter().map(|(order_id, _)| *order_id).collect::<Vec<u64>>();
-        
+        let order_id_with_pending_status = pending_orders_par_1st_page
+            .data
+            .iter()
+            .map(|(order_id, _)| *order_id)
+            .collect::<Vec<u64>>();
+
         assert_eq!(
             contract.orders_per_pair_view.get(&pair_id).unwrap().len(),
             6_usize
