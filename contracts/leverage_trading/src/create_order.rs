@@ -293,25 +293,6 @@ impl Contract {
         self.orders_per_pair_view
             .insert(&pair_id, &pair_orders_by_id);
     }
-
-    /// this method is used for testing
-    pub fn imitation_add_liquidity_callback(&mut self, order: Order) {
-        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
-
-        let mut lpt_id = order.sell_token.to_string();
-        lpt_id.push('|');
-        lpt_id.push_str(order.buy_token.as_str());
-        lpt_id.push_str("|0000#0000");
-
-        let mut order = order;
-        order.lpt_id = lpt_id;
-
-        self.order_nonce += 1;
-
-        let order_id = self.order_nonce;
-
-        self.add_or_update_order(&env::signer_account_id(), order, order_id);
-    }
 }
 
 #[cfg(test)]
@@ -327,6 +308,26 @@ mod tests {
             .signer_account_id(alice())
             .is_view(is_view)
             .build()
+    }
+
+    impl Contract {
+        pub fn imitation_add_liquidity_callback(&mut self, order: Order) {
+            self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
+
+            let mut lpt_id = order.sell_token.to_string();
+            lpt_id.push('|');
+            lpt_id.push_str(order.buy_token.as_str());
+            lpt_id.push_str("|0000#0000");
+
+            let mut order = order;
+            order.lpt_id = lpt_id;
+
+            self.order_nonce += 1;
+
+            let order_id = self.order_nonce;
+
+            self.add_or_update_order(&env::signer_account_id(), order, order_id);
+        }
     }
 
     #[test]

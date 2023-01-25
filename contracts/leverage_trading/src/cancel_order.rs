@@ -293,7 +293,48 @@ impl Contract {
         }
     }
 
-    fn final_order_cancel(
+    pub fn repay(&self, order_id: U128, market_data: MarketData) {
+        let orders = self.orders.get(&signer_account_id()).unwrap_or_else(|| {
+            panic!("Orders for account: {} not found", signer_account_id());
+        });
+
+        let order = orders
+            .get(&(order_id.0 as u64))
+            .unwrap_or_else(|| {
+                panic!("Order with id: {} not found", order_id.0);
+            })
+            .clone();
+        let market_id = self.tokens_markets.get(&order.sell_token).unwrap();
+        let borrow_fee = BigDecimal::from(market_data.borrow_rate_ratio.0)
+            * BigDecimal::from((block_height() - order.block) as u128);
+
+        ext_token::ext(order.sell_token)
+            .with_static_gas(Gas::ONE_TERA * 35u64)
+            .with_attached_deposit(ONE_YOCTO)
+            .ft_transfer_call(
+                market_id,
+                U128(borrow_fee.round_u128()),
+                None,
+                "\"Repay\"".to_string(),
+            )
+            .then(
+                ext_self::ext(current_account_id())
+                    .with_static_gas(Gas::ONE_TERA * 3u64)
+                    .with_attached_deposit(NO_DEPOSIT)
+                    .repay_callback(),
+            );
+    }
+
+    #[private]
+    pub fn repay_callback(&self) -> PromiseOrValue<U128> {
+        require!(is_promise_success(), "failed to repay assets");
+        //TODO: add repay success event
+        PromiseOrValue::Value(U128(0))
+    }
+}
+
+impl Contract {
+    pub fn final_order_cancel(
         &mut self,
         order_id: U128,
         order: Order,
@@ -332,45 +373,6 @@ impl Contract {
         order.status = OrderStatus::Canceled;
 
         self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
-    }
-
-    pub fn repay(&self, order_id: U128, market_data: MarketData) {
-        let orders = self.orders.get(&signer_account_id()).unwrap_or_else(|| {
-            panic!("Orders for account: {} not found", signer_account_id());
-        });
-
-        let order = orders
-            .get(&(order_id.0 as u64))
-            .unwrap_or_else(|| {
-                panic!("Order with id: {} not found", order_id.0);
-            })
-            .clone();
-        let market_id = self.tokens_markets.get(&order.sell_token).unwrap();
-        let borrow_fee = BigDecimal::from(market_data.borrow_rate_ratio.0)
-            * BigDecimal::from((block_height() - order.block) as u128);
-
-        ext_token::ext(order.sell_token)
-            .with_static_gas(Gas::ONE_TERA * 35u64)
-            .with_attached_deposit(ONE_YOCTO)
-            .ft_transfer_call(
-                market_id,
-                U128(borrow_fee.round_u128()),
-                None,
-                "\"Repay\"".to_string(),
-            )
-            .then(
-                ext_self::ext(current_account_id())
-                    .with_static_gas(Gas::ONE_TERA * 3u64)
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .repay_callback(),
-            );
-    }
-
-    #[private]
-    pub fn repay_callback(&self) -> PromiseOrValue<U128> {
-        require!(is_promise_success(), "failed to repay assets");
-        //TODO: add repay success event
-        PromiseOrValue::Value(U128(0))
     }
 }
 
