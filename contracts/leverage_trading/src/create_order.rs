@@ -348,8 +348,8 @@ impl Contract {
         self.orders_per_pair_view
             .insert(&pair_id, &pair_orders_by_id);
 
-        if take_profit_order.is_some() {
-            self.insert_or_update_tpo(order_id, take_profit_order.unwrap())
+        if let Some(price) = take_profit_order {
+            self.insert_or_update_tpo(order_id, price);
         }
     }
 }
