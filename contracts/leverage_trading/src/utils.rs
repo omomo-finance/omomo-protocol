@@ -18,7 +18,7 @@ pub trait NEP141Token {
 
 impl Contract {
     pub fn get_order_by(&self, order_id: u128) -> Option<Order> {
-        let account = self.get_account_by(order_id).unwrap();
+        let account = self.get_account_by(order_id as u64).unwrap();
 
         self.orders
             .get(&account)

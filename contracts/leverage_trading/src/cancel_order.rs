@@ -376,7 +376,7 @@ impl Contract {
         }
         order.status = OrderStatus::Canceled;
 
-        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
+        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64, None);
     }
 }
 

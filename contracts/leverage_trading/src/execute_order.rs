@@ -27,7 +27,7 @@ impl Contract {
         let order = order.unwrap();
 
         let current_price = self.get_price(order.buy_token.clone());
-        if Some(price) =  self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if let Some(price) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             require!(current_price >= price.value, format!("Take profit order is active and order can be executed when price will be greater then: {}", price.value));
         }
 
@@ -64,10 +64,10 @@ impl Contract {
 
         let min_amount_x = 0;
         let mut min_amount_y =
-            BigDecimal::from(order.amount) * order.leverage * order.sell_token_price.value
+            BigDecimal::from(order_amount) * order.leverage * order.sell_token_price.value
                 / order.buy_token_price.value;
 
-        if Some(price) =  self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if let Some(price) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             min_amount_y =
                 BigDecimal::from(order.amount) * order.leverage * order.sell_token_price.value
                     / price.value;
@@ -115,9 +115,10 @@ impl Contract {
         order.status = OrderStatus::Executed;
 
         self.add_or_update_order(
-            &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
+            &self.get_account_by(order_id.0 as u64).unwrap(), // assert there is always some user
             order,
             order_id.0 as u64,
+            None,
         );
     }
 

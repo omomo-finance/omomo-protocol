@@ -9,7 +9,7 @@ use near_sdk::Gas;
 #[near_bindgen]
 impl Contract {
     pub fn liquidate_order(&mut self, order_id: U128, price_impact: U128) {
-        let account_op = self.get_account_by(order_id.0);
+        let account_op = self.get_account_by(order_id.0 as u64);
         require!(
             account_op.is_some(),
             format!("Not found account for order with id: {}", order_id.0)
@@ -111,9 +111,10 @@ impl Contract {
         order.status = OrderStatus::Liquidated;
 
         self.add_or_update_order(
-            &self.get_account_by(order_id.0).unwrap(),
+            &self.get_account_by(order_id.0 as u64).unwrap(),
             order,
             order_id.0 as u64,
+            None,
         );
     }
 }

@@ -359,6 +359,10 @@ impl Contract {
             panic!("Token is not supported");
         }
     }
+
+    pub fn view_take_profit_order(&self, order_id: U128) -> Option<Price> {
+        self.take_profit_orders.get(&(order_id.0 as u64))
+    }
 }
 
 #[cfg(test)]
@@ -367,7 +371,7 @@ mod tests {
 
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{testing_env, VMContext};
+    use near_sdk::{serde_json, testing_env, VMContext};
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
@@ -1002,5 +1006,41 @@ mod tests {
 
         assert_eq!(sell_token_decimals, 24);
         assert_eq!(buy_token_decimals, 18)
+    }
+
+    #[test]
+    fn view_take_profit_order_test() {
+        let context = get_context(false);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_from_string: Order = serde_json::from_str(order.as_str()).unwrap();
+        let order_id: u64 = 3;
+        let top: Option<Price> = Some(Price {
+            ticker_id: "Wnear".to_string(),
+            value: BigDecimal::from(4.6),
+        });
+        contract.add_or_update_order(&alice(), order_from_string.clone(), order_id, top.clone());
+
+        let alice_orders = contract.orders.get(&alice()).unwrap();
+        let order_from_contract = alice_orders.get(&3).unwrap();
+
+        assert_eq!(
+            &order_from_contract.order_type,
+            &order_from_string.order_type
+        );
+        assert_eq!(&order_from_contract.status, &order_from_string.status);
+        //check take profit order
+        assert_eq!(
+            contract.take_profit_orders.get(&order_id).unwrap().value,
+            top.clone().unwrap().value
+        );
+
+        assert_eq!(top, contract.view_take_profit_order(U128(order_id as u128)));
     }
 }
