@@ -321,7 +321,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         let token: AccountId = "usdt.fakes.testnet".parse().unwrap();
         let token_amount = U128::from(1_000_000_000);
@@ -335,8 +335,8 @@ mod tests {
         assert_eq!(result, expected_result);
 
         assert_eq!(
-            BigDecimal::from(result),                      // 1000.0
-            BigDecimal::from(U128::from(expected_result))  // 1000.0
+            BigDecimal::from(result),          // 1000.0
+            BigDecimal::from(expected_result)  // 1000.0
         );
     }
 }
