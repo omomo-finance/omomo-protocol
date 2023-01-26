@@ -32,14 +32,17 @@ impl Contract {
             "Order can't be liquidate."
         );
 
-        let (sell_token_decimals, _) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
-
         //TODO: set real min_amount_x/min_amount_y
         let amount = 1;
-        let min_amount_x = order_amount.0;
+        let min_amount_x = order.amount;
         let min_amount_y = 0;
+
+        let (sell_token_decimals, _) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let min_amount_x = self.convert_token_amount_with_token_decimals(
+            U128::from(min_amount_x),
+            sell_token_decimals,
+        );
 
         if order.status == OrderStatus::Pending {
             ext_ref_finance::ext(self.ref_finance_account.clone())
@@ -48,7 +51,7 @@ impl Contract {
                 .remove_liquidity(
                     order.lpt_id.clone(),
                     U128(amount),
-                    U128(min_amount_x),
+                    min_amount_x,
                     U128(min_amount_y),
                 )
                 .then(
@@ -83,24 +86,20 @@ impl Contract {
             BigDecimal::one()
         };
 
-        let (_, buy_token_decimals) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
-
         let buy_token_amount =
-            BigDecimal::from(order_amount.0) * order.sell_token_price.value * order.leverage
+            BigDecimal::from(order.amount) * order.sell_token_price.value * order.leverage
                 / order.buy_token_price.value;
         let loss = borrow_fee + buy_token_amount * order.buy_token_price.value
-            - BigDecimal::from(order_amount.0);
+            - BigDecimal::from(order.amount);
 
         let is_liquidation_possible = loss
-            >= BigDecimal::from(order_amount.0)
+            >= BigDecimal::from(order.amount)
                 * order.buy_token_price.value
                 * BigDecimal::from(10_u128.pow(24) - self.liquidation_threshold);
 
         require!(is_liquidation_possible, "This order can't be liquidated");
 
-        let liquidation_incentive = order_amount.0 * self.liquidation_threshold;
+        let liquidation_incentive = order.amount * self.liquidation_threshold;
         self.increase_balance(
             &env::signer_account_id(),
             &order.buy_token,

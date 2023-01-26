@@ -1,4 +1,4 @@
-use crate::big_decimal::{BigDecimal, WRatio};
+use crate::big_decimal::BigDecimal;
 use crate::ref_finance::ext_ref_finance;
 use crate::ref_finance::{Action, Swap};
 use crate::utils::NO_DEPOSIT;
@@ -194,15 +194,16 @@ impl Contract {
         price_impact: U128,
         order_action: OrderAction,
     ) {
-        let (_, buy_token_decimals) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
-
-        let buy_amount = BigDecimal::from(order_amount)
+        let buy_amount = BigDecimal::from(U128::from(order.amount))
             * order.leverage
             * order.sell_token_price.value
             * self.get_price(order.buy_token.clone())
             / order.buy_token_price.value;
+
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let buy_amount = self
+            .convert_token_amount_with_token_decimals(U128::from(buy_amount), buy_token_decimals);
 
         let action = Action::SwapAction {
             Swap: Swap {
@@ -221,7 +222,7 @@ impl Contract {
             .with_attached_deposit(1)
             .ft_transfer_call(
                 self.ref_finance_account.clone(),
-                WRatio::from(buy_amount),
+                buy_amount,
                 Some("Swap".to_string()),
                 near_sdk::serde_json::to_string(&action).unwrap(),
             )

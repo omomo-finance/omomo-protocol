@@ -34,6 +34,7 @@ use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::{env, near_bindgen, require, AccountId, Balance, PromiseOrValue};
 use std::collections::HashMap;
+use utils::PROTOCOL_DECIMALS;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -173,14 +174,30 @@ impl Contract {
             .swap_fee
     }
 
-    pub fn convert_token_amount_to_10_24(&self, amount: u128, token_decimals: u8) -> U128 {
-        if token_decimals != 24 {
+    pub fn convert_token_amount_with_protocol_decimals(
+        &self,
+        token_amount: u128,
+        token_decimals: u8,
+    ) -> U128 {
+        if token_decimals != PROTOCOL_DECIMALS {
             U128::from(
-                BigDecimal::from(amount) / BigDecimal::from(10u128.pow(token_decimals.into())),
+                BigDecimal::from(token_amount)
+                    / BigDecimal::from(10u128.pow(token_decimals.into())),
             )
         } else {
-            U128::from(amount)
+            U128::from(token_amount)
         }
+    }
+
+    pub fn convert_token_amount_with_token_decimals(
+        &self,
+        token_amount: U128,
+        token_decimals: u8,
+    ) -> U128 {
+        U128::from(
+            BigDecimal::from(token_amount)
+                * BigDecimal::from(U128::from(10u128.pow(token_decimals.into()))),
+        )
     }
 }
 
@@ -301,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn convert_token_amount_to_10_24_test() {
+    fn convert_token_amount_with_protocol_decimals_test() {
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
@@ -327,11 +344,51 @@ mod tests {
         let token_amount = U128::from(1_000_000_000);
         let token_decimals = contract.view_token_decimals(&token);
 
-        let result = contract.convert_token_amount_to_10_24(token_amount.0, token_decimals);
+        let result =
+            contract.convert_token_amount_with_protocol_decimals(token_amount.0, token_decimals);
         let expected_result = U128::from(1_000_000_000_000_000_000_000_000_000);
 
-        // Order keeps containing amount 1_000_000_000 (1000 * 10^6)
-        // while all calculations in the protocol using converted order amount 1_000_000_000_000_000_000_000_000_000 (1000 * 10^24)
+        assert_eq!(result, expected_result);
+
+        assert_eq!(
+            BigDecimal::from(result),                      // 1000.0
+            BigDecimal::from(U128::from(expected_result))  // 1000.0
+        );
+    }
+
+    #[test]
+    fn convert_token_amount_with_token_decimals_test() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let token: AccountId = "usdt.fakes.testnet".parse().unwrap();
+        let token_amount_with_protocol_decimals = U128::from(1_000_000_000_000_000_000_000_000_000);
+        let token_decimals = contract.view_token_decimals(&token);
+
+        let result = contract.convert_token_amount_with_token_decimals(
+            token_amount_with_protocol_decimals,
+            token_decimals,
+        );
+        let expected_result = U128::from(1_000_000_000);
+
         assert_eq!(result, expected_result);
 
         assert_eq!(
