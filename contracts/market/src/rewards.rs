@@ -49,7 +49,7 @@ pub struct RewardCampaign {
 
 impl fmt::Display for RewardCampaign {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -68,7 +68,7 @@ pub struct RewardCampaignExtended {
 
 impl fmt::Display for RewardCampaignExtended {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -97,7 +97,7 @@ pub struct Reward {
 
 impl fmt::Display for Reward {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -230,8 +230,8 @@ impl Contract {
 
         assert!(
             campaign_option.is_some(),
-            "Campaign for reward {} not exists",
-            reward
+            "{}",
+            "Campaign for reward {reward} not exists"
         );
         let campaign = campaign_option.unwrap();
         let total = self.get_account_total(campaign.clone(), account_id);
@@ -476,8 +476,8 @@ impl Contract {
         );
         assert!(
             amount.0 <= available_amount,
-            "There are not enough amount to claim. Possible amount is {}",
-            available_amount
+            "{}",
+            "There are not enough amount to claim. Possible amount is {available_amount}"
         );
 
         let message = format!("Claim reward with token_amount {}", amount.0);
@@ -504,8 +504,7 @@ impl Contract {
         );
         assert!(
             amount.0 <= available_to_unlock_amount,
-            "There are not enough amount to unlock. Possible amount is {}",
-            available_to_unlock_amount
+            "{}", "There are not enough amount to unlock. Possible amount is {available_to_unlock_amount}"
         );
 
         let amount_with_penalty =
@@ -765,7 +764,7 @@ mod tests {
         contract.increase_borrows(account_id, WBalance::from(1000));
         let reward = contract.adjust_reward(campaign_id);
 
-        println!("{}", reward);
+        println!("{reward}");
         let amount_available_to_claim = contract.get_amount_available_to_claim(reward.clone());
         assert_eq!(
             amount_available_to_claim, 0,
@@ -957,8 +956,7 @@ mod tests {
             contract
                 .get_reward_campaign_by_id(campaign_id.clone())
                 .is_some(),
-            "Campaign with id {} wasn't added",
-            campaign_id
+            "Campaign with id {campaign_id} wasn't added"
         );
 
         contract.remove_reward_campaign(campaign_id.clone());
@@ -966,8 +964,7 @@ mod tests {
             contract
                 .get_reward_campaign_by_id(campaign_id.clone())
                 .is_none(),
-            "Campaign with id {} wasn't removed",
-            campaign_id
+            "Campaign with id {campaign_id} wasn't removed"
         );
     }
 

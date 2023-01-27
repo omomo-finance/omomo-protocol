@@ -26,7 +26,7 @@ pub struct RepayInfo {
 
 impl fmt::Display for RepayInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -40,7 +40,7 @@ pub struct WithdrawInfo {
 
 impl fmt::Display for WithdrawInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 

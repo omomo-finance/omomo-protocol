@@ -264,38 +264,31 @@ impl fmt::Display for Events {
                 underlying_token_id,
             ) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
-                account, balance, contract_id, underlying_token_id
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToGetUnderlyingBalance", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to get {contract_id} balance on {underlying_token_id}"}}}}"#
             ),
             Events::BorrowFailedToIncreaseBorrowOnController(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToInceaseBorrowOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to make borrow for {} on {} token amount"}}}}"#,
-                account, balance, account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToInceaseBorrowOnController", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to make borrow for {account} on {balance} token amount"}}}}"#
             ),
             Events::BorrowSuccess(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowSuccess", "data": {{"account_id": "{account}", "amount": "{balance}"}}}}"#
             ),
             Events::BorrowFailedToFallback(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToMakeFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#,
-                account, balance, account
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFailedToMakeFallback", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to revert state for {account}"}}}}"#
             ),
             Events::BorrowFallbackSuccess(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "BorrowFallbackSuccess", "data": {{"account_id": "{account}", "amount": "{balance}"}}}}"#
             ),
             Events::RepayFailedToUpdateUserBalance(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepayFailedToUpdateUserBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to update user {} balance {}: user is not registered"}}}}"#,
-                account, balance, account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepayFailedToUpdateUserBalance", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to update user {account} balance {balance}: user is not registered"}}}}"#
             ),
             Events::RepaySuccess(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepaySuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "RepaySuccess", "data": {{"account_id": "{account}", "amount": "{balance}"}}}}"#
             ),
             Events::SupplyFailedToGetUnderlyingBalance(
                 account,
@@ -304,18 +297,15 @@ impl fmt::Display for Events {
                 underlying_token_id,
             ) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
-                account, balance, contract_id, underlying_token_id
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToGetUnderlyingBalance", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to get {contract_id} balance on {underlying_token_id}"}}}}"#
             ),
             Events::SupplyFailedToIncreaseSupplyOnController(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToInceaseSupplyOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} supply balance of {} on controller"}}}}"#,
-                account, balance, account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplyFailedToInceaseSupplyOnController", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to increase {account} supply balance of {balance} on controller"}}}}"#
             ),
             Events::SupplySuccess(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplySuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "SupplySuccess", "data": {{"account_id": "{account}", "amount": "{balance}"}}}}"#
             ),
             Events::WithdrawFailedToGetUnderlyingBalance(
                 account,
@@ -324,40 +314,33 @@ impl fmt::Display for Events {
                 underlying_token_id,
             ) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
-                account, balance, contract_id, underlying_token_id
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToGetUnderlyingBalance", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to get {contract_id} balance on {underlying_token_id}"}}}}"#
             ),
             Events::WithdrawFailedToDecreaseSupplyOnController(account, balance, contract_id) => {
                 write!(
                     f,
-                    r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToDecreaseSupplyOnController", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to decrease {} supply balance of {} on controller"}}}}"#,
-                    account, balance, account, contract_id
+                    r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToDecreaseSupplyOnController", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to decrease {account} supply balance of {contract_id} on controller"}}}}"#
                 )
             }
             Events::WithdrawSuccess(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawSuccess", "data": {{"account_id": "{account}", "amount": "{balance}"}}}}"#
             ),
             Events::WithdrawFailedToFallback(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToMakeFallback", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#,
-                account, balance, account
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFailedToMakeFallback", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to revert state for {account}"}}}}"#
             ),
             Events::WithdrawFallbackSuccess(account, balance) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFallbackSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, balance
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "WithdrawFallbackSuccess", "data": {{"account_id": "{account}", "amount": "{balance}"}}}}"#
             ),
             Events::LiquidationSuccess(liquidator, borrower, amount_liquidate) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationSuccess", "data": {{"liquidator_account_id": "{}", "borrower_account_id": {},"amount": "{}"}}}}"#,
-                liquidator, borrower, amount_liquidate
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationSuccess", "data": {{"liquidator_account_id": "{liquidator}", "borrower_account_id": {borrower},"amount": "{amount_liquidate}"}}}}"#
             ),
             Events::LiquidationFailed(liquidator, borrower, amount_liquidate) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationFailed", "data": {{"liquidator_account_id": "{}", "borrower_account_id": {},"amount": "{}"}}}}"#,
-                liquidator, borrower, amount_liquidate
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "LiquidationFailed", "data": {{"liquidator_account_id": "{liquidator}", "borrower_account_id": {borrower},"amount": "{amount_liquidate}"}}}}"#
             ),
             Events::DepositFailedToGetUnderlyingBalance(
                 account,
@@ -366,28 +349,23 @@ impl fmt::Display for Events {
                 underlying_token_id,
             ) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "DepositFailedToGetUnderlyingBalance", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to get {} balance on {}"}}}}"#,
-                account, balance, contract_id, underlying_token_id
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "DepositFailedToGetUnderlyingBalance", "data": {{"account_id": "{account}", "amount": "{balance}", "reason": "failed to get {contract_id} balance on {underlying_token_id}"}}}}"#
             ),
             Events::MarginTradingFailedToIncreaseUserDeposit(account, amount) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MtradingFailedToIncreaseUserDeposit", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to increase {} deposit balance of {} on margin trading contract"}}}}"#,
-                account, amount, account, amount
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MtradingFailedToIncreaseUserDeposit", "data": {{"account_id": "{account}", "amount": "{amount}", "reason": "failed to increase {account} deposit balance of {amount} on margin trading contract"}}}}"#
             ),
             Events::MarginTradingDepositSuccess(account, amount) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingDepositSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, amount
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingDepositSuccess", "data": {{"account_id": "{account}", "amount": "{amount}"}}}}"#
             ),
             Events::MarginTradingFailedToDecreaseUserDeposit(account, amount) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingFailedToDecreaseUserDeposit", "data": {{"account_id": "{}", "amount": "{}", "reason": "failed to revert state for {}"}}}}"#,
-                account, amount, account
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingFailedToDecreaseUserDeposit", "data": {{"account_id": "{account}", "amount": "{amount}", "reason": "failed to revert state for {account}"}}}}"#
             ),
             Events::MarginTradingRevertDepositSuccess(account, amount) => write!(
                 f,
-                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingRevertDepositSuccess", "data": {{"account_id": "{}", "amount": "{}"}}}}"#,
-                account, amount
+                r#"EVENT_JSON:{{"standard": "nep297", "version": "1.0.0", "event": "MarginTradingRevertDepositSuccess", "data": {{"account_id": "{account}", "amount": "{amount}"}}}}"#
             ),
         }
     }
@@ -425,8 +403,7 @@ mod tests {
         assert_eq!(
             uuid,
             contract.get_unique_id(),
-            "uuid {} doesn't match to state value",
-            uuid
+            "uuid {uuid} doesn't match to state value"
         );
     }
 
