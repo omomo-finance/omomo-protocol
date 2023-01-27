@@ -264,10 +264,6 @@ impl Contract {
         let borrow_amount =
             U128::from(BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one()));
 
-        let token_decimals = self.view_token_decimals(&token);
-        let borrow_amount =
-            self.convert_token_amount_with_token_decimals(borrow_amount, token_decimals);
-
         ext_market::ext(token_market)
             .with_static_gas(GAS_FOR_BORROW)
             .borrow(borrow_amount)
