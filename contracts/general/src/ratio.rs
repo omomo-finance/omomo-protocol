@@ -35,16 +35,16 @@ impl Display for BigDecimal {
         let a = self.0 / U384::from(BIG_DIVISOR);
         let b = (self.0 - a * U384::from(BIG_DIVISOR)).as_u128();
         if b > 0 {
-            write!(f, "{}", format!("{}.{:024}", a, b).trim_end_matches('0'))
+            write!(f, "{}", format!("{a}.{b:024}").trim_end_matches('0'))
         } else {
-            write!(f, "{}.0", a)
+            write!(f, "{a}.0")
         }
     }
 }
 
 impl std::fmt::Debug for BigDecimal {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 

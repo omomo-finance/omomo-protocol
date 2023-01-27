@@ -193,8 +193,8 @@ impl Contract {
             self.get_entity_by_token(Supply, account.clone(), token_address.clone());
         assert!(
             Balance::from(token_amount) <= existing_supplies,
-            "Not enough existing supplies for {}",
-            account
+            "{}",
+            "Not enough existing supplies for {account}"
         );
         self.get_potential_health_factor(account, token_address, token_amount, Supply)
             >= self.get_liquidation_threshold()

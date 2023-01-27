@@ -235,7 +235,7 @@ impl Contract {
 
         self.add_or_update_order(&env::signer_account_id(), order, order_id);
 
-        PromiseOrValue::Value(U128(0))
+        PromiseOrValue::Value(U128(order_id as u128))
     }
 
     /// Borrow step made within batch of transaction
