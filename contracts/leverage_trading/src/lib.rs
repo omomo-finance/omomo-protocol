@@ -1,9 +1,5 @@
 extern crate core;
-#[allow(
-    clippy::manual_range_contains,
-    clippy::assign_op_pattern,
-    clippy::ptr_offset_with_cast
-)]
+
 mod big_decimal;
 mod cancel_order;
 mod common;
@@ -17,10 +13,8 @@ mod market;
 mod metadata;
 mod oraclehook;
 mod price;
-#[allow(clippy::too_many_arguments)]
 mod ref_finance;
 mod utils;
-#[allow(clippy::too_many_arguments)]
 mod view;
 mod withdraw;
 
