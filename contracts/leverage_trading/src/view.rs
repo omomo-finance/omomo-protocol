@@ -11,7 +11,7 @@ impl Contract {
         borrow_rate_ratio: WRatio,
     ) -> OrderView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
-            panic!("Orders for account: {} not found", account_id);
+            panic!("Orders for account: {account_id} not found");
         });
 
         let order = orders
@@ -60,7 +60,7 @@ impl Contract {
         data: Option<MarketData>,
     ) -> PnLView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
-            panic!("Orders for account: {} not found", account_id);
+            panic!("Orders for account: {account_id} not found");
         });
 
         let order = orders
@@ -199,7 +199,7 @@ impl Contract {
     /// Returns price of the given token. If the token is not registered, will return `"0"`.
     pub fn view_price(&self, token_id: AccountId) -> Price {
         self.prices.get(&token_id).unwrap_or_else(|| {
-            panic!("Price for token: {} not found", token_id);
+            panic!("Price for token: {token_id} not found");
         })
     }
 
@@ -210,7 +210,7 @@ impl Contract {
         market_data: MarketData,
     ) -> CancelOrderView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
-            panic!("Orders for account: {} not found", account_id);
+            panic!("Orders for account: {account_id} not found");
         });
 
         let order = orders.get(&(order_id.0 as u64)).unwrap_or_else(|| {
