@@ -956,15 +956,15 @@ mod tests {
             contract
                 .get_reward_campaign_by_id(campaign_id.clone())
                 .is_some(),
-            "{}", "Campaign with id {campaign_id} wasn't added"
+            "{}",
+            "Campaign with id {campaign_id} wasn't added"
         );
 
         contract.remove_reward_campaign(campaign_id.clone());
         assert!(
-            contract
-                .get_reward_campaign_by_id(campaign_id)
-                .is_none(),
-            "{}", "Campaign with id {campaign_id} wasn't removed"
+            contract.get_reward_campaign_by_id(campaign_id).is_none(),
+            "{}",
+            "Campaign with id {campaign_id} wasn't removed"
         );
     }
 
