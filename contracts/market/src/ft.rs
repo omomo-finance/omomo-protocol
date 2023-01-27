@@ -22,7 +22,7 @@ impl FungibleTokenReceiver for Contract {
             "Amount should be a positive number"
         );
 
-        log!(format!("sender_id {}, msg {}", sender_id, msg));
+        log!(format!("sender_id {sender_id}, msg {msg}"));
 
         let action: Actions = serde_json::from_str(&msg).expect("Incorrect command in transfer");
 

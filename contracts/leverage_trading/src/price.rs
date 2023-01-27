@@ -12,7 +12,7 @@ impl Contract {
         self.prices
             .get(&token_id)
             .unwrap_or_else(|| {
-                panic!("Price for token: {} not found", token_id);
+                panic!("Price for token: {token_id} not found");
             })
             .value
     }
@@ -23,7 +23,7 @@ impl Contract {
 
     pub fn get_market_by(&self, token: &AccountId) -> AccountId {
         self.tokens_markets.get(token).unwrap_or_else(|| {
-            panic!("Market for token: {} was not found", token);
+            panic!("Market for token: {token} was not found");
         })
     }
 }

@@ -15,8 +15,8 @@ impl Contract {
 
         assert!(
             reserve_factor <= max_reserve_factor_value,
-            "Reserve factor should be less {}",
-            max_reserve_factor_value
+            "{}",
+            "Reserve factor should be less {max_reserve_factor_value}"
         );
         let rest_of_supply_factor = Ratio::one() - reserve_factor;
         let borrow_rate = self.get_borrow_rate(underlying_balance, total_borrows, total_reserves);
