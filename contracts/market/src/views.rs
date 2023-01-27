@@ -236,7 +236,8 @@ mod tests {
             "Withdraw exchange_rate is not matches to expected"
         );
         assert_eq!(
-            withdraw_info.total_interest, 0,
+            withdraw_info.total_interest,
+            U128(0),
             "Withdraw total_interest is not matches to expected"
         );
     }
