@@ -14,7 +14,7 @@ impl Contract {
 
     pub fn post_deposit(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(self.to_decimals_token(token_amount));
         }
         underlying_token::ft_balance_of(
             env::current_account_id(),
@@ -48,7 +48,7 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(amount);
+            return PromiseOrValue::Value(self.to_decimals_token(amount));
         }
         log!(
             "prepaid {:?}; burn{:?}",
@@ -133,7 +133,7 @@ impl Contract {
             );
             self.mutex_account_unlock();
 
-            PromiseOrValue::Value(amount)
+            PromiseOrValue::Value(self.to_decimals_token(amount))
         } else {
             log!(
                 "{}",

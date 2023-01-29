@@ -13,7 +13,7 @@ impl Contract {
 
     pub fn post_repay(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(self.to_decimals_token(token_amount));
         }
         self.adjust_rewards_by_campaign_type(CampaignType::Borrow);
 
@@ -92,7 +92,7 @@ impl Contract {
                 )
             );
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(self.to_decimals_token(token_amount));
         }
 
         let mut borrow_interest = self.get_accrued_borrow_interest(env::signer_account_id());
@@ -102,10 +102,12 @@ impl Contract {
                 .round_u128();
         self.set_total_reserves(new_total_reserve);
 
-        let dust_balance = token_amount
-            .0
-            .saturating_sub(self.get_account_borrows(env::signer_account_id()))
-            .saturating_sub(borrow_interest.accumulated_interest);
+        let dust_balance = U128::from(
+            token_amount
+                .0
+                .saturating_sub(self.get_account_borrows(env::signer_account_id()))
+                .saturating_sub(borrow_interest.accumulated_interest),
+        );
 
         let borrow_accrued_interest = self.get_accrued_borrow_interest(env::signer_account_id());
         let borrow_amount = self.get_account_borrows(env::signer_account_id());
@@ -139,6 +141,6 @@ impl Contract {
             Events::RepaySuccess(env::signer_account_id(), Balance::from(token_amount))
         );
 
-        PromiseOrValue::Value(U128(dust_balance))
+        PromiseOrValue::Value(self.to_decimals_token(dust_balance))
     }
 }

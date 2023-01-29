@@ -104,7 +104,7 @@ impl Contract {
         // Cross-contract call to market token
         underlying_token::ft_transfer(
             user_account,
-            whole_amount,
+            self.to_decimals_token(whole_amount),
             Some(format!(
                 "Withdraw with token_amount {}",
                 Balance::from(whole_amount)
