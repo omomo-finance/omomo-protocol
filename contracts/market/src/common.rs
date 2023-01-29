@@ -173,10 +173,11 @@ impl Contract {
             self.get_account_supplies(user_id.clone()),
             self.get_accrued_supply_interest(user_id.clone()),
         );
-        let total_interest = self
-            .get_accrued_supply_interest(user_id)
-            .accumulated_interest
-            + accrued_supply_interest.accumulated_interest;
+        let total_interest = U128::from(
+            self.get_accrued_supply_interest(user_id)
+                .accumulated_interest
+                + accrued_supply_interest.accumulated_interest,
+        );
 
         WithdrawInfo {
             exchange_rate,
