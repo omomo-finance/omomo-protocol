@@ -1,9 +1,5 @@
 CONTRACT_ID="$(cat neardev/dev-account)"
 # latest address version
-ETH_TOKEN=weth.develop.v1.omomo-finance.testnet
-ETH_MARKET=weth_market.develop.v1.omomo-finance.testnet
-ETH_TOKEN_DECIMALS=18
-
 NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
 NEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
 NEAR_TOKEN_DECIMALS=24
@@ -12,9 +8,6 @@ USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
 USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
 USDT_TOKEN_DECIMALS=6
 
-USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
-USDC_MARKET=usdc_market.develop.v1.omomo-finance.testnet
-USDC_TOKEN_DECIMALS=6
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # User account for work with leverage trading
