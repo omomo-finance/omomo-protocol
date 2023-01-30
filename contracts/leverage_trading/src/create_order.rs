@@ -112,7 +112,6 @@ impl Contract {
                     let left_point = pool_info.current_point as i32 + pool_info.point_delta as i32;
                     let right_point = left_point + pool_info.point_delta as i32;
 
-
                     let (sell_token_decimals, _) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
                     let order_amount =
