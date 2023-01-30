@@ -18,7 +18,7 @@ USDC_TOKEN_DECIMALS=6
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # User account for work with leverage trading
-USER_ACCOUNT=mtrading_cl.testnet
+USER_ACCOUNT=...
 
 near call $DEX_ACCOUNT storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
 
