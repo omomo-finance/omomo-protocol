@@ -35,7 +35,7 @@ impl fmt::Display for RepayInfo {
 #[serde(crate = "near_sdk::serde")]
 pub struct WithdrawInfo {
     pub exchange_rate: U128,
-    pub total_interest: Balance,
+    pub total_interest: U128,
 }
 
 impl fmt::Display for WithdrawInfo {

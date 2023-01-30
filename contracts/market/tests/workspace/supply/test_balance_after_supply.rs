@@ -4,6 +4,8 @@ use near_sdk::serde_json::json;
 use workspaces::network::Sandbox;
 use workspaces::{Account, Worker};
 
+const DECIMALS: u8 = 24;
+
 async fn supply_fixture(
     owner: &Account,
     worker: &Worker<Sandbox>,
@@ -19,12 +21,13 @@ async fn supply_fixture(
     // Stage 1: Deploy contracts such as underlying, controller, and markets
     ////////////////////////////////////////////////////////////////////////////
 
-    let underlying = deploy_underlying(owner, worker).await?;
+    let underlying = deploy_underlying(owner, worker, DECIMALS).await?;
     let controller = deploy_controller(owner, worker).await?;
     let market = deploy_market(
         owner,
         worker,
         underlying.as_account(),
+        DECIMALS,
         controller.as_account(),
     )
     .await?;

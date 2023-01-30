@@ -393,7 +393,7 @@ impl Contract {
     ) {
         underlying_token::ft_transfer(
             account_id.clone(),
-            transfer_amount,
+            self.to_decimals_token(transfer_amount),
             Some(msg),
             token_address,
             ONE_YOCTO,
@@ -956,14 +956,14 @@ mod tests {
             contract
                 .get_reward_campaign_by_id(campaign_id.clone())
                 .is_some(),
+            "{}",
             "Campaign with id {campaign_id} wasn't added"
         );
 
         contract.remove_reward_campaign(campaign_id.clone());
         assert!(
-            contract
-                .get_reward_campaign_by_id(campaign_id.clone())
-                .is_none(),
+            contract.get_reward_campaign_by_id(campaign_id).is_none(),
+            "{}",
             "Campaign with id {campaign_id} wasn't removed"
         );
     }
