@@ -109,12 +109,7 @@ impl Contract {
         let (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity) =
             match order.order_type {
                 OrderType::Buy => {
-                    let mut left_point = pool_info.current_point as i32;
-
-                    while left_point % pool_info.point_delta as i32 != 0 {
-                        left_point += 1;
-                    }
-
+                    let left_point = pool_info.current_point as i32 + pool_info.point_delta as i32;
                     let right_point = left_point + pool_info.point_delta as i32;
 
                     let amount =
@@ -140,13 +135,8 @@ impl Contract {
                     )
                 }
                 OrderType::Sell => {
-                    let mut right_point = pool_info.current_point as i32;
-
-                    while right_point % pool_info.point_delta as i32 != 0 {
-                        right_point -= 1;
-                    }
-
-                    let left_point = right_point - pool_info.point_delta as i32;
+                    let left_point = pool_info.current_point as i32 - pool_info.point_delta as i32;
+                    let right_point = left_point - pool_info.point_delta as i32;
 
                     let amount =
                         U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
