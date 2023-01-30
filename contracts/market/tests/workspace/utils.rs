@@ -11,6 +11,7 @@ const CONTROLLER_WASM: &str = "../target/wasm32-unknown-unknown/release/controll
 pub async fn deploy_underlying(
     owner: &Account,
     worker: &Worker<Sandbox>,
+    decimals: u8,
 ) -> Result<workspaces::Contract, workspaces::error::Error> {
     let wasm = std::fs::read(UNDERLYING_WASM);
     let underlying = worker.dev_deploy(&wasm.unwrap()).await?;
@@ -21,7 +22,7 @@ pub async fn deploy_underlying(
         "name": "Wrapped Ethereum",
         "symbol": "WETH",
         "total_supply": "1000000000000000000000000000",
-        "decimals": 24
+        "decimals": decimals
                 }))
         .max_gas()
         .transact()
@@ -34,6 +35,7 @@ pub async fn deploy_market(
     owner: &Account,
     worker: &Worker<Sandbox>,
     underlying_token: &Account,
+    decimals: u8,
     controller: &Account,
 ) -> Result<workspaces::Contract, workspaces::error::Error> {
     let wasm = std::fs::read(MARKET_WASM);
@@ -44,7 +46,7 @@ pub async fn deploy_market(
         .args_json(json!({
             "owner_id":  owner.id(),
             "underlying_token_id": underlying_token.id(),
-            "underlying_token_decimals": 24,
+            "underlying_token_decimals": decimals,
             "controller_account_id": controller.id(),
             "initial_exchange_rate":"1000000000000000000000000",
             "interest_rate_model":{

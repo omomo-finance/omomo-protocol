@@ -24,6 +24,7 @@ pub use crate::repay::*;
 pub use crate::rewards::*;
 pub use crate::supply::*;
 pub use crate::user_profile::*;
+pub use crate::utils::*;
 pub use crate::views::*;
 pub use crate::withdraw::*;
 
@@ -42,6 +43,7 @@ mod rewards;
 mod supply;
 mod upgrade;
 mod user_profile;
+mod utils;
 mod views;
 mod withdraw;
 
