@@ -109,13 +109,9 @@ impl Contract {
         let (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity) =
             match order.order_type {
                 OrderType::Buy => {
-                    let mut left_point = pool_info.current_point as i32;
-
-                    while left_point % pool_info.point_delta as i32 != 0 {
-                        left_point += 1;
-                    }
-
+                    let left_point = pool_info.current_point as i32 + pool_info.point_delta as i32;
                     let right_point = left_point + pool_info.point_delta as i32;
+
 
                     let (sell_token_decimals, _) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
@@ -139,13 +135,8 @@ impl Contract {
                     )
                 }
                 OrderType::Sell => {
-                    let mut right_point = pool_info.current_point as i32;
-
-                    while right_point % pool_info.point_delta as i32 != 0 {
-                        right_point -= 1;
-                    }
-
-                    let left_point = right_point - pool_info.point_delta as i32;
+                    let left_point = pool_info.current_point as i32 - pool_info.point_delta as i32;
+                    let right_point = left_point - pool_info.point_delta as i32;
 
                     let (_, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);

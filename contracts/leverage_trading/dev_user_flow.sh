@@ -1,14 +1,24 @@
 CONTRACT_ID="$(cat neardev/dev-account)"
 # latest address version
-USDT_TOKEN=usdt.dev.v1.omomo-finance.testnet
-USDT_MARKET=usdt_market.dev.v1.omomo-finance.testnet
-WNEAR_TOKEN=wnear.dev.v1.omomo-finance.testnet
-WNEAR_MARKET=wnear_market.dev.v1.omomo-finance.testnet
-ORACLE_ID=oracle.omomo-finance.testnet
+ETH_TOKEN=weth.develop.v1.omomo-finance.testnet
+ETH_MARKET=weth_market.develop.v1.omomo-finance.testnet
+ETH_TOKEN_DECIMALS=18
+
+NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
+NEAR_MARKET=wnear_market.develop.v1.omomo-finance.testnet
+NEAR_TOKEN_DECIMALS=24
+
+USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
+USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
+USDT_TOKEN_DECIMALS=6
+
+USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
+USDC_MARKET=usdc_market.develop.v1.omomo-finance.testnet
+USDC_TOKEN_DECIMALS=6
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # User account for work with leverage trading
-USER_ACCOUNT=...
+USER_ACCOUNT=mtrading_cl.testnet
 
 near call $DEX_ACCOUNT storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
 
@@ -17,7 +27,7 @@ near call $USDT_TOKEN mint '{
     "amount": "4000000000000000000000000000000000"
 }' --accountId $USER_ACCOUNT
 
-near call $WNEAR_TOKEN mint '{
+near call $NEAR_TOKEN mint '{
     "account_id": "'$USER_ACCOUNT'",
     "amount": "4000000000000000000000000000000000"
 }' --accountId $USER_ACCOUNT
@@ -33,14 +43,14 @@ near call $CONTRACT_ID create_order '{
     "order_type": "Buy",
     "amount": "1000000000000000000000000000",
     "sell_token": "'$USDT_TOKEN'",
-    "buy_token": "'$WNEAR_TOKEN'",
+    "buy_token": "'$NEAR_TOKEN'",
     "leverage": "10000000000000000000000000"
 }' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
 
 # View new order
 near view $CONTRACT_ID view_orders '{
     "account_id":"'$USER_ACCOUNT'",
-    "buy_token":"'$WNEAR_TOKEN'",
+    "buy_token":"'$NEAR_TOKEN'",
     "sell_token":"'$USDT_TOKEN'",
     "borrow_rate_ratio": "1000"
 }'
