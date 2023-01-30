@@ -2,6 +2,8 @@ use crate::utils::*;
 use near_sdk::json_types::U128;
 use near_sdk::serde_json::json;
 
+const DECIMALS: u8 = 24;
+
 #[tokio::test]
 async fn test_balance_after_reserve() -> anyhow::Result<()> {
     let worker = workspaces::sandbox().await?;
@@ -11,12 +13,13 @@ async fn test_balance_after_reserve() -> anyhow::Result<()> {
     // Stage 1: Deploy contracts such as underlying, controller, and markets
     ////////////////////////////////////////////////////////////////////////////
 
-    let underlying = deploy_underlying(&owner, &worker).await?;
+    let underlying = deploy_underlying(&owner, &worker, DECIMALS).await?;
     let controller = deploy_controller(&owner, &worker).await?;
     let market = deploy_market(
         &owner,
         &worker,
         underlying.as_account(),
+        DECIMALS,
         controller.as_account(),
     )
     .await?;

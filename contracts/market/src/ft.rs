@@ -24,11 +24,13 @@ impl FungibleTokenReceiver for Contract {
 
         log!(format!("sender_id {sender_id}, msg {msg}"));
 
+        let converted_amount = self.to_decimals_system(amount);
+
         let action: Actions = serde_json::from_str(&msg).expect("Incorrect command in transfer");
 
         match action {
-            Actions::Supply => self.supply(amount),
-            Actions::Repay => self.repay(amount),
+            Actions::Supply => self.supply(converted_amount),
+            Actions::Repay => self.repay(converted_amount),
             Actions::Liquidate {
                 borrower,
                 borrowing_dtoken,
@@ -38,10 +40,10 @@ impl FungibleTokenReceiver for Contract {
                 borrowing_dtoken,
                 env::signer_account_id(),
                 collateral_dtoken,
-                amount,
+                converted_amount,
             ),
-            Actions::Reserve => self.reserve(amount),
-            Actions::Deposit => self.deposit(amount),
+            Actions::Reserve => self.reserve(converted_amount),
+            Actions::Deposit => self.deposit(converted_amount),
             _ => {
                 panic!("Incorrect action in transfer")
             }

@@ -123,7 +123,7 @@ impl Contract {
 
         underlying_token::ft_transfer(
             account_to_borrow.clone(),
-            token_amount,
+            self.to_decimals_token(token_amount),
             Some(format!(
                 "Borrow with token_amount {}",
                 Balance::from(token_amount)

@@ -17,7 +17,7 @@ impl Contract {
 impl Contract {
     pub fn post_supply(&mut self, token_amount: WBalance) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(token_amount);
+            return PromiseOrValue::Value(self.to_decimals_token(token_amount));
         }
         self.adjust_rewards_by_campaign_type(CampaignType::Supply);
 
@@ -92,7 +92,7 @@ impl Contract {
             self.burn(&self.get_signer_address(), dtoken_amount);
 
             self.mutex_account_unlock();
-            return PromiseOrValue::Value(amount);
+            return PromiseOrValue::Value(self.to_decimals_token(amount));
         }
         self.update_campaigns_market_total_by_type(CampaignType::Supply);
         log!(

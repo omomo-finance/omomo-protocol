@@ -393,7 +393,7 @@ impl Contract {
     ) {
         underlying_token::ft_transfer(
             account_id.clone(),
-            transfer_amount,
+            self.to_decimals_token(transfer_amount),
             Some(msg),
             token_address,
             ONE_YOCTO,
