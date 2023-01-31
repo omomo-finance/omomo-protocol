@@ -10,7 +10,7 @@ USDT_TOKEN_DECIMALS=6
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # User account for work with leverage trading
-USER_ACCOUNT=...
+USER_ACCOUNT=mtrading_cl.testnet
 
 near call $DEX_ACCOUNT storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
 
@@ -21,6 +21,16 @@ near call $USDT_TOKEN mint '{
 
 near call $NEAR_TOKEN mint '{
     "account_id": "'$USER_ACCOUNT'",
+    "amount": "4000000000000000000000000000000000"
+}' --accountId $USER_ACCOUNT
+
+near call $USDT_TOKEN mint '{
+    "account_id": "'$CONTRACT_ID'",
+    "amount": "4000000000000000000000000000000000"
+}' --accountId $USER_ACCOUNT
+
+near call $NEAR_TOKEN mint '{
+    "account_id": "'$CONTRACT_ID'",
     "amount": "4000000000000000000000000000000000"
 }' --accountId $USER_ACCOUNT
 
