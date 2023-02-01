@@ -1,9 +1,11 @@
 use crate::big_decimal::{BigDecimal, WBalance};
+use crate::common::Events;
 use crate::ref_finance::ext_ref_finance;
 use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
 use crate::*;
+
 use near_sdk::env::current_account_id;
-use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
+use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult, log};
 
 const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
@@ -225,7 +227,17 @@ impl Contract {
         self.order_nonce += 1;
         let order_id = self.order_nonce;
 
-        self.add_or_update_order(&env::signer_account_id(), order, order_id);
+        self.add_or_update_order(&env::signer_account_id(), order.clone(), order_id);
+
+        log!(
+            "{}",
+            Events::CreateOrderSuccess(
+                order_id,
+                order.sell_token_price,
+                order.buy_token_price,
+                self.view_pair(&order.sell_token, &order.buy_token).pool_id
+            )
+        );
 
         PromiseOrValue::Value(U128(order_id as u128))
     }
