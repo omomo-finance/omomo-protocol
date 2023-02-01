@@ -117,8 +117,7 @@ impl Contract {
 
                     let (sell_token_decimals, _) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount =
-                        self.convert_token_amount_with_token_decimals(amount, sell_token_decimals);
+                    let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
 
                     let amount_x = amount;
                     let amount_y = U128::from(0);
@@ -143,8 +142,7 @@ impl Contract {
 
                     let (_, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount =
-                        self.convert_token_amount_with_token_decimals(amount, buy_token_decimals);
+                    let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
 
                     let amount_x = U128::from(0);
                     let amount_y = amount;

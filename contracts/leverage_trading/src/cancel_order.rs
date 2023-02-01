@@ -202,8 +202,8 @@ impl Contract {
 
         let (_, buy_token_decimals) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let buy_amount = self
-            .convert_token_amount_with_token_decimals(U128::from(buy_amount), buy_token_decimals);
+        let buy_amount =
+            self.from_protocol_to_token_decimals(U128::from(buy_amount), buy_token_decimals);
 
         let action = Action::SwapAction {
             Swap: Swap {

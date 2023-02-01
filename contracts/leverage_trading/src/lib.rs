@@ -174,11 +174,7 @@ impl Contract {
             .swap_fee
     }
 
-    pub fn convert_token_amount_with_protocol_decimals(
-        &self,
-        token_amount: u128,
-        token_decimals: u8,
-    ) -> U128 {
+    pub fn from_token_to_protocol_decimals(&self, token_amount: u128, token_decimals: u8) -> U128 {
         if token_decimals != PROTOCOL_DECIMALS {
             U128::from(
                 BigDecimal::from(token_amount)
@@ -189,11 +185,7 @@ impl Contract {
         }
     }
 
-    pub fn convert_token_amount_with_token_decimals(
-        &self,
-        token_amount: U128,
-        token_decimals: u8,
-    ) -> U128 {
+    pub fn from_protocol_to_token_decimals(&self, token_amount: U128, token_decimals: u8) -> U128 {
         U128::from(
             BigDecimal::from(token_amount)
                 * BigDecimal::from(U128::from(10u128.pow(token_decimals.into()))),
@@ -318,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn convert_token_amount_with_protocol_decimals_test() {
+    fn from_token_to_protocol_decimals_test() {
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
@@ -344,8 +336,7 @@ mod tests {
         let token_amount = U128::from(1_000_000_000);
         let token_decimals = contract.view_token_decimals(&token);
 
-        let result =
-            contract.convert_token_amount_with_protocol_decimals(token_amount.0, token_decimals);
+        let result = contract.from_token_to_protocol_decimals(token_amount.0, token_decimals);
         let expected_result = U128::from(1_000_000_000_000_000_000_000_000_000);
 
         assert_eq!(result, expected_result);
@@ -357,7 +348,7 @@ mod tests {
     }
 
     #[test]
-    fn convert_token_amount_with_token_decimals_test() {
+    fn from_protocol_to_token_decimals_test() {
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
@@ -383,10 +374,8 @@ mod tests {
         let token_amount_with_protocol_decimals = U128::from(1_000_000_000_000_000_000_000_000_000);
         let token_decimals = contract.view_token_decimals(&token);
 
-        let result = contract.convert_token_amount_with_token_decimals(
-            token_amount_with_protocol_decimals,
-            token_decimals,
-        );
+        let result = contract
+            .from_protocol_to_token_decimals(token_amount_with_protocol_decimals, token_decimals);
         let expected_result = U128::from(1_000_000_000);
 
         assert_eq!(result, expected_result);

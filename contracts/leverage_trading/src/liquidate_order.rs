@@ -39,10 +39,8 @@ impl Contract {
 
         let (sell_token_decimals, _) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let min_amount_x = self.convert_token_amount_with_token_decimals(
-            U128::from(min_amount_x),
-            sell_token_decimals,
-        );
+        let min_amount_x =
+            self.from_protocol_to_token_decimals(U128::from(min_amount_x), sell_token_decimals);
 
         if order.status == OrderStatus::Pending {
             ext_ref_finance::ext(self.ref_finance_account.clone())

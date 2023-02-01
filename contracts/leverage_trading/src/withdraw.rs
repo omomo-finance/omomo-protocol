@@ -22,7 +22,7 @@ impl Contract {
         );
 
         let token_decimals = self.view_token_decimals(&token);
-        let token_amount = self.convert_token_amount_with_token_decimals(amount, token_decimals);
+        let token_amount = self.from_protocol_to_token_decimals(amount, token_decimals);
 
         ext_token::ext(token.clone())
             .with_attached_deposit(ONE_YOCTO)

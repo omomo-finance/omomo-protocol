@@ -60,8 +60,8 @@ impl Contract {
 
         let (_, buy_token_decimals) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let min_amount_y = self
-            .convert_token_amount_with_token_decimals(U128::from(min_amount_y), buy_token_decimals);
+        let min_amount_y =
+            self.from_protocol_to_token_decimals(U128::from(min_amount_y), buy_token_decimals);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 45u64)
