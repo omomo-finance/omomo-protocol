@@ -24,6 +24,16 @@ near call $NEAR_TOKEN mint '{
     "amount": "4000000000000000000000000000000000"
 }' --accountId $USER_ACCOUNT
 
+near call $USDT_TOKEN mint '{
+    "account_id": "'$CONTRACT_ID'",
+    "amount": "4000000000000000000000000000000000"
+}' --accountId $USER_ACCOUNT
+
+near call $NEAR_TOKEN mint '{
+    "account_id": "'$CONTRACT_ID'",
+    "amount": "4000000000000000000000000000000000"
+}' --accountId $USER_ACCOUNT
+
 # Deposit
 near call $USDT_TOKEN ft_transfer_call '{"receiver_id": "'$CONTRACT_ID'", "amount": "1000000000000000000000000000", "msg": "{\"Deposit\": {\"token\": \"'$USDT_TOKEN'\"}}"}' --accountId $USER_ACCOUNT --depositYocto 1 --gas 300000000000000
 near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'$USDT_TOKEN'" }'
