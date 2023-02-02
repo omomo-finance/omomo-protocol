@@ -11,14 +11,19 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance>;
+    fn get_pool_info_callback(
+        &mut self,
+        order: Order,
+        left_point: i32,
+        right_point: i32,
+    ) -> PromiseOrValue<WBalance>;
     fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<Balance>;
 }
 
 #[near_bindgen]
 impl Contract {
-    /// Creates an order with given order_type, amount, sell_token, buy_token & leverage.
+    /// Creates an order with given order_type, left_point, right_point, amount, sell_token, buy_token & leverage.
     ///
     /// Checks ref finance pool information for current price & borrow if leverage > 1.
     ///
@@ -30,6 +35,10 @@ impl Contract {
     pub fn create_order(
         &mut self,
         order_type: OrderType,
+        // left point for add_liquidity acquired via getPointByPrice
+        left_point: i32,
+        // right point for add_liquidity acquired via getPointByPrice
+        right_point: i32,
         amount: WBalance,
         sell_token: AccountId,
         buy_token: AccountId,
@@ -71,13 +80,18 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
                     .with_static_gas(Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64)
-                    .get_pool_info_callback(order),
+                    .get_pool_info_callback(order, left_point, right_point),
             )
             .into()
     }
 
     #[private]
-    pub fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
+    pub fn get_pool_info_callback(
+        &mut self,
+        order: Order,
+        left_point: i32,
+        right_point: i32,
+    ) -> PromiseOrValue<WBalance> {
         require!(
             is_promise_success(),
             "Problem with pool on ref finance has occurred"
@@ -100,67 +114,51 @@ impl Contract {
             "Some problem with pool, please contact with ref finance to support."
         );
 
-        self.add_liquidity(pool_info, order)
+        self.add_liquidity(order, left_point, right_point)
     }
 
     /// Makes batch of transaction consist of Deposit & Add_Liquidity
-    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order) -> PromiseOrValue<WBalance> {
+    fn add_liquidity(
+        &mut self,
+        order: Order,
+        left_point: i32,
+        right_point: i32,
+    ) -> PromiseOrValue<WBalance> {
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
 
-        let (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity) =
-            match order.order_type {
-                OrderType::Buy => {
-                    let left_point = pool_info.current_point as i32 + pool_info.point_delta as i32;
-                    let right_point = left_point + pool_info.point_delta as i32;
+        let (amount, amount_x, amount_y, token_to_add_liquidity) = match order.order_type {
+            OrderType::Buy => {
+                let amount =
+                    U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
 
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
 
-                    let (sell_token_decimals, _) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
+                let amount_x = amount;
+                let amount_y = U128::from(0);
 
-                    let amount_x = amount;
-                    let amount_y = U128::from(0);
+                let token_to_add_liquidity = order.sell_token.clone();
 
-                    let token_to_add_liquidity = order.sell_token.clone();
+                (amount, amount_x, amount_y, token_to_add_liquidity)
+            }
+            OrderType::Sell => {
+                let amount =
+                    U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
 
-                    (
-                        left_point,
-                        right_point,
-                        amount,
-                        amount_x,
-                        amount_y,
-                        token_to_add_liquidity,
-                    )
-                }
-                OrderType::Sell => {
-                    let left_point = pool_info.current_point as i32 - pool_info.point_delta as i32;
-                    let right_point = left_point - pool_info.point_delta as i32;
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
 
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                let amount_x = U128::from(0);
+                let amount_y = amount;
 
-                    let (_, buy_token_decimals) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
+                let token_to_add_liquidity = order.buy_token.clone();
 
-                    let amount_x = U128::from(0);
-                    let amount_y = amount;
-
-                    let token_to_add_liquidity = order.buy_token.clone();
-
-                    (
-                        left_point,
-                        right_point,
-                        amount,
-                        amount_x,
-                        amount_y,
-                        token_to_add_liquidity,
-                    )
-                }
-            };
+                (amount, amount_x, amount_y, token_to_add_liquidity)
+            }
+        };
 
         let min_amount_x = U128::from(0);
         let min_amount_y = U128::from(0);
