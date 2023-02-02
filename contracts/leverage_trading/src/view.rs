@@ -359,6 +359,80 @@ impl Contract {
             panic!("Token is not supported");
         }
     }
+
+    #[allow(unused_variables)]
+    pub fn view_pending_limit_orders_by_user(&self, account_id: AccountId) -> Vec<LimitOrderView> {
+        let order_type = "Limit".to_string();
+
+        let limit_order_1 = LimitOrderView {
+            time_stamp: 1675332394281,
+            pair: "USDT/NEAR".to_string(),
+            order_type: order_type.clone(),
+            side: OrderType::Buy,
+            price: WBalance::from(302 * 10_u128.pow(22)), // 3.05 / 1.01 = 3.01980198
+            amount: U128(500 * 10_u128.pow(24)),
+            filled: 0,
+            total: WBalance::from(505 * 10_u128.pow(24)), //500 * 1.01 = 505
+        };
+
+        let limit_order_2 = LimitOrderView {
+            time_stamp: 1675336439706,
+            pair: "USDT/NEAR".to_string(),
+            order_type: order_type.clone(),
+            side: OrderType::Buy,
+            price: WBalance::from(302 * 10_u128.pow(22)), // 3.05 / 1.01 = 3.01980198
+            amount: U128(1000 * 10_u128.pow(24)),
+            filled: 0,
+            total: WBalance::from(1010 * 10_u128.pow(24)), //1000 * 1.01 = 1010
+        };
+
+        let limit_order_3 = LimitOrderView {
+            time_stamp: 1675335439706,
+            pair: "NEAR/USDT".to_string(),
+            order_type,
+            side: OrderType::Buy,
+            price: WBalance::from(33 * 10_u128.pow(22)), // 1.01 / 3.05 = 0.331147541
+            amount: U128(1000 * 10_u128.pow(24)),
+            filled: 0,
+            total: WBalance::from(3050 * 10_u128.pow(24)), //1000 * 3.05 = 3050
+        };
+
+        vec![limit_order_1, limit_order_2, limit_order_3]
+    }
+
+    #[allow(unused_variables)]
+    pub fn view_pending_limit_orders_by_user_by_pair(
+        &self,
+        account_id: AccountId,
+        sell_token: AccountId,
+        buy_token: AccountId,
+    ) -> Vec<LimitOrderView> {
+        let order_type = "Limit".to_string();
+
+        let limit_order_1 = LimitOrderView {
+            time_stamp: 1675332394281,
+            pair: "USDT/NEAR".to_string(),
+            order_type: order_type.clone(),
+            side: OrderType::Buy,
+            price: WBalance::from(302 * 10_u128.pow(22)), // 3.05 / 1.01 = 3.01980198
+            amount: U128(500 * 10_u128.pow(24)),
+            filled: 0,
+            total: WBalance::from(505 * 10_u128.pow(24)), //500 * 1.01 = 505
+        };
+
+        let limit_order_2 = LimitOrderView {
+            time_stamp: 1675336439706,
+            pair: "USDT/NEAR".to_string(),
+            order_type: order_type.clone(),
+            side: OrderType::Buy,
+            price: WBalance::from(302 * 10_u128.pow(22)), // 3.05 / 1.01 = 3.01980198
+            amount: U128(1000 * 10_u128.pow(24)),
+            filled: 0,
+            total: WBalance::from(1010 * 10_u128.pow(24)), //1000 * 1.01 = 1010
+        };
+
+        vec![limit_order_1, limit_order_2]
+    }
 }
 
 #[cfg(test)]
@@ -1002,5 +1076,30 @@ mod tests {
 
         assert_eq!(sell_token_decimals, 24);
         assert_eq!(buy_token_decimals, 18)
+    }
+
+    #[ignore]
+    #[test]
+    fn test_view_pending_limit_orders_by_user() {
+        let contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        println!("{:#?}", contract.view_pending_limit_orders_by_user(alice()));
+    }
+
+    #[ignore]
+    #[test]
+    fn test_view_pending_limit_orders_by_user_by_pair() {
+        let contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        println!(
+            "{:#?}",
+            contract.view_pending_limit_orders_by_user_by_pair(alice(), bob(), alice())
+        );
     }
 }
