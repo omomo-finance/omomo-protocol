@@ -114,12 +114,12 @@ impl Contract {
                     let left_point = pool_info.current_point as i32 + pool_info.point_delta as i32;
                     let right_point = left_point + pool_info.point_delta as i32;
 
+                    let amount =
+                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+
                     let (sell_token_decimals, _) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let order_amount =
-                        self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
-
-                    let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
+                    let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
 
                     let amount_x = amount;
                     let amount_y = U128::from(0);
@@ -139,12 +139,12 @@ impl Contract {
                     let left_point = pool_info.current_point as i32 - pool_info.point_delta as i32;
                     let right_point = left_point - pool_info.point_delta as i32;
 
+                    let amount =
+                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+
                     let (_, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let order_amount =
-                        self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
-
-                    let amount = U128::from(BigDecimal::from(order_amount) * order.leverage);
+                    let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
 
                     let amount_x = U128::from(0);
                     let amount_y = amount;
@@ -210,11 +210,7 @@ impl Contract {
             _ => (),
         };
 
-        let (sell_token_decimals, _) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let token_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
-
-        self.decrease_balance(&env::signer_account_id(), &order.sell_token, token_amount.0);
+        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
 
         let lpt_id: String = match env::promise_result(1) {
             PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
@@ -254,9 +250,6 @@ impl Contract {
             env::prepaid_gas() >= GAS_FOR_BORROW,
             "Prepaid gas is not enough for borrow flow"
         );
-
-        let token_decimals = self.view_token_decimals(&token);
-        let amount = self.convert_token_amount_to_10_24(amount.0, token_decimals);
 
         require!(
             self.balance_of(env::signer_account_id(), token.clone()) >= amount,

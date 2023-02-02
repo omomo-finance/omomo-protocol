@@ -2,6 +2,7 @@ use crate::*;
 use near_sdk::ext_contract;
 
 pub const NO_DEPOSIT: Balance = 0;
+pub const PROTOCOL_DECIMALS: u8 = 24;
 
 #[ext_contract(ext_token)]
 pub trait NEP141Token {
