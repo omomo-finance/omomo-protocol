@@ -11,12 +11,6 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn get_pool_info_callback(
-        &mut self,
-        order: Order,
-        left_point: i32,
-        right_point: i32,
-    ) -> PromiseOrValue<WBalance>;
     fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<Balance>;
 }
@@ -24,8 +18,6 @@ trait ContractCallbackInterface {
 #[near_bindgen]
 impl Contract {
     /// Creates an order with given order_type, left_point, right_point, amount, sell_token, buy_token & leverage.
-    ///
-    /// Checks ref finance pool information for current price & borrow if leverage > 1.
     ///
     /// As far as we surpassed gas limit for contract call,
     /// borrow call was separated & made within batch of transaction alongside with Deposit & Add_Liquidity function
@@ -71,48 +63,6 @@ impl Contract {
             block: env::block_height(),
             lpt_id: "".to_string(),
         };
-
-        ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_attached_deposit(NO_DEPOSIT)
-            .with_static_gas(Gas::ONE_TERA * 5u64)
-            .get_pool(self.view_pair(&order.sell_token, &order.buy_token).pool_id)
-            .then(
-                ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .with_static_gas(Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64)
-                    .get_pool_info_callback(order, left_point, right_point),
-            )
-            .into()
-    }
-
-    #[private]
-    pub fn get_pool_info_callback(
-        &mut self,
-        order: Order,
-        left_point: i32,
-        right_point: i32,
-    ) -> PromiseOrValue<WBalance> {
-        require!(
-            is_promise_success(),
-            "Problem with pool on ref finance has occurred"
-        );
-
-        let pool_info = match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(val) => {
-                if let Ok(pool) = serde_json::from_slice::<PoolInfo>(&val) {
-                    pool
-                } else {
-                    panic!("Some problem with pool parsing.")
-                }
-            }
-            PromiseResult::Failed => panic!("Ref finance not found pool"),
-        };
-
-        require!(
-            pool_info.state == PoolState::Running,
-            "Some problem with pool, please contact with ref finance to support."
-        );
 
         self.add_liquidity(order, left_point, right_point)
     }
