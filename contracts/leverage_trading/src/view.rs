@@ -423,7 +423,7 @@ impl Contract {
         let limit_order_2 = LimitOrderView {
             time_stamp: 1675336439706,
             pair: "USDT/NEAR".to_string(),
-            order_type: order_type.clone(),
+            order_type,
             side: OrderType::Buy,
             price: WBalance::from(302 * 10_u128.pow(22)), // 3.05 / 1.01 = 3.01980198
             amount: U128(1000 * 10_u128.pow(24)),
