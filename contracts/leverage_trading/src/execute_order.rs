@@ -53,14 +53,15 @@ impl Contract {
 
         let remove_liquidity_amount = position.amount;
 
-        let (_, buy_token_decimals) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, buy_token_decimals);
-
         let min_amount_x = 0;
         let min_amount_y =
-            BigDecimal::from(order_amount.0) * order.leverage * order.sell_token_price.value
+            BigDecimal::from(order.amount) * order.leverage * order.sell_token_price.value
                 / order.buy_token_price.value;
+
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let min_amount_y =
+            self.from_protocol_to_token_decimals(U128::from(min_amount_y), buy_token_decimals);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 45u64)
@@ -68,7 +69,7 @@ impl Contract {
                 order.lpt_id.clone(),
                 remove_liquidity_amount,
                 U128(min_amount_x),
-                U128::from(min_amount_y),
+                min_amount_y,
             )
             .then(
                 ext_self::ext(current_account_id())

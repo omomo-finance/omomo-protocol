@@ -28,7 +28,7 @@ impl Contract {
         );
 
         let token_decimals = self.view_token_decimals(&token);
-        let token_amount = self.convert_token_amount_to_10_24(token_amount.0, token_decimals);
+        let token_amount = self.from_token_to_protocol_decimals(token_amount.0, token_decimals);
 
         self.increase_balance(&env::signer_account_id(), &token, token_amount.0);
 

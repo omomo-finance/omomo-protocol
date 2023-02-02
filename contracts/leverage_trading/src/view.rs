@@ -33,15 +33,13 @@ impl Contract {
             status: order.status,
             order_type: order.order_type,
             amount: U128(order.amount),
-            sell_token: order.sell_token.clone(),
+            sell_token: order.sell_token,
             sell_token_price: WBalance::from(order.sell_token_price.value),
-            buy_token: order.buy_token.clone(),
+            buy_token: order.buy_token,
             buy_token_price: WBalance::from(order.buy_token_price.value),
             leverage: WBigDecimal::from(order.leverage),
             borrow_fee,
             liquidation_price: self.calculate_liquidation_price(
-                &order.sell_token,
-                &order.buy_token,
                 U128(order.amount),
                 WBigDecimal::from(order.sell_token_price.value),
                 WBigDecimal::from(order.buy_token_price.value),
@@ -72,16 +70,12 @@ impl Contract {
 
         let swap_fee = self.get_swap_fee(&order);
 
-        let (sell_token_decimals, _) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let order_amount = self.convert_token_amount_to_10_24(order.amount, sell_token_decimals);
-
         let buy_amount = order.leverage / BigDecimal::from(10_u128.pow(24))
-            * BigDecimal::from(order_amount.0)
+            * BigDecimal::from(order.amount)
             / order.buy_token_price.value;
 
-        let borrow_amount =
-            BigDecimal::from(order_amount) * (order.leverage - BigDecimal::from(10u128.pow(24)));
+        let borrow_amount = BigDecimal::from(U128(order.amount))
+            * (order.leverage - BigDecimal::from(10u128.pow(24)));
 
         let mut borrow_fee = BigDecimal::zero();
         #[allow(clippy::unnecessary_unwrap)]
@@ -94,10 +88,11 @@ impl Contract {
             - borrow_amount
             - borrow_fee
             - borrow_amount * BigDecimal::from(swap_fee);
-        let pnlv: PnLView = if expect_amount.round_u128() > order_amount.0 {
+
+        let pnlv: PnLView = if expect_amount.round_u128() > order.amount {
             let lenpnl = (expect_amount
-                - BigDecimal::from(order_amount.0)
-                - (BigDecimal::from(order_amount.0)
+                - BigDecimal::from(order.amount)
+                - (BigDecimal::from(order.amount)
                     * BigDecimal::from(self.protocol_fee / 10_u128.pow(24))))
             .round_u128();
 
@@ -106,7 +101,7 @@ impl Contract {
                 amount: U128(lenpnl),
             }
         } else {
-            let lenpnl = (BigDecimal::from(order_amount.0) - expect_amount).round_u128();
+            let lenpnl = (BigDecimal::from(order.amount) - expect_amount).round_u128();
 
             PnLView {
                 is_profit: false,
@@ -151,8 +146,6 @@ impl Contract {
                             leverage: WBigDecimal::from(order.leverage),
                             borrow_fee,
                             liquidation_price: self.calculate_liquidation_price(
-                                &order.sell_token,
-                                &order.buy_token,
                                 U128(order.amount),
                                 WBigDecimal::from(order.sell_token_price.value),
                                 WBigDecimal::from(order.buy_token_price.value),
@@ -244,8 +237,6 @@ impl Contract {
 
     pub fn calculate_liquidation_price(
         &self,
-        sell_token: &AccountId,
-        buy_token: &AccountId,
         sell_token_amount: U128,
         sell_token_price: U128,
         buy_token_price: U128,
@@ -253,10 +244,6 @@ impl Contract {
         borrow_fee: U128,
         swap_fee: U128,
     ) -> WBigDecimal {
-        let (sell_token_decimals, _) = self.view_pair_tokens_decimals(sell_token, buy_token);
-        let sell_token_amount =
-            self.convert_token_amount_to_10_24(sell_token_amount.0, sell_token_decimals);
-
         let collateral_usd =
             BigDecimal::from(sell_token_amount) * BigDecimal::from(sell_token_price);
         let position_amount_usd = collateral_usd * BigDecimal::from(leverage);
@@ -639,7 +626,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let market_data = MarketData {
@@ -697,7 +684,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order1 = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"3.3\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.59\"},\"block\":1,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let market_data = MarketData {
@@ -739,9 +726,7 @@ mod tests {
         contract.add_pair(pair_data.clone());
 
         let result = contract.calculate_liquidation_price(
-            &pair_data.sell_token,
-            &pair_data.buy_token,
-            U128(10_u128.pow(9)),
+            U128(10_u128.pow(27)),
             U128(10_u128.pow(24)),
             U128(10_u128.pow(25)),
             U128(3 * 10_u128.pow(24)),
@@ -776,8 +761,6 @@ mod tests {
         contract.add_pair(pair_data.clone());
 
         let result = contract.calculate_liquidation_price(
-            &pair_data.sell_token,
-            &pair_data.buy_token,
             U128(10_u128.pow(27)),
             U128(10_u128.pow(24)),
             U128(10_u128.pow(25)),
@@ -832,8 +815,6 @@ mod tests {
         );
 
         let liquidation_price = contract.calculate_liquidation_price(
-            &pair_data.sell_token,
-            &pair_data.buy_token,
             U128(10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
@@ -919,8 +900,6 @@ mod tests {
         );
 
         let liquidation_price_order1 = contract.calculate_liquidation_price(
-            &pair_data.sell_token,
-            &pair_data.buy_token,
             U128(10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
@@ -930,8 +909,6 @@ mod tests {
         );
 
         let liquidation_price_order2 = contract.calculate_liquidation_price(
-            &pair_data.sell_token,
-            &pair_data.buy_token,
             U128(2 * 10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),
@@ -941,8 +918,6 @@ mod tests {
         );
 
         let liquidation_price_order3 = contract.calculate_liquidation_price(
-            &pair_data.sell_token,
-            &pair_data.buy_token,
             U128(2 * 10_u128.pow(9)),
             U128(101 * 10_u128.pow(22)),
             U128(305 * 10_u128.pow(22)),

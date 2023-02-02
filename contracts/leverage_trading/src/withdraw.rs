@@ -12,9 +12,6 @@ impl Contract {
         let user = env::signer_account_id();
         let user_balance = self.balance_of(user.clone(), token.clone());
 
-        let token_decimals = self.view_token_decimals(&token);
-        let amount = self.convert_token_amount_to_10_24(amount.0, token_decimals);
-
         require!(
             Balance::from(amount) > 0,
             "Amount should be a positive number"
@@ -24,14 +21,17 @@ impl Contract {
             "The account doesn't have enough digital tokens to do withdraw"
         );
 
+        let token_decimals = self.view_token_decimals(&token);
+        let token_amount = self.from_protocol_to_token_decimals(amount, token_decimals);
+
         ext_token::ext(token.clone())
             .with_attached_deposit(ONE_YOCTO)
             .ft_transfer(
                 user.clone(),
-                amount,
+                token_amount,
                 Some(format!(
                     "Withdraw with token_amount {}",
-                    Balance::from(amount)
+                    Balance::from(token_amount)
                 )),
             )
             .then(
