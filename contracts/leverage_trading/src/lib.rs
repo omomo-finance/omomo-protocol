@@ -9,6 +9,7 @@ mod big_decimal;
 mod cancel_order;
 mod common;
 mod config;
+#[allow(clippy::too_many_arguments)]
 mod create_order;
 mod deposit;
 mod execute_order;
