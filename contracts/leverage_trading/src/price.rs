@@ -5,6 +5,11 @@ use crate::*;
 impl Contract {
     #[private]
     pub fn update_or_insert_price(&mut self, token_id: AccountId, price: Price) {
+        require!(
+            price.value != BigDecimal::zero(),
+            "Token price cannot be zero"
+        );
+
         self.prices.insert(&token_id, &price);
     }
 

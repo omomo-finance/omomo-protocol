@@ -51,15 +51,27 @@ impl Contract {
             "User doesn't have enough deposit to proceed this action"
         );
 
+        let sell_token_price = self.view_price(sell_token.clone());
+        require!(
+            sell_token_price.value != BigDecimal::zero(),
+            "Sell token price cannot be zero"
+        );
+
+        let buy_token_price = self.view_price(buy_token.clone());
+        require!(
+            buy_token_price.value != BigDecimal::zero(),
+            "Buy token price cannot be zero"
+        );
+
         let order = Order {
             status: OrderStatus::Pending,
             order_type,
             amount: Balance::from(amount),
-            sell_token: sell_token.clone(),
-            buy_token: buy_token.clone(),
+            sell_token,
+            buy_token,
             leverage: BigDecimal::from(leverage),
-            sell_token_price: self.view_price(sell_token),
-            buy_token_price: self.view_price(buy_token),
+            sell_token_price,
+            buy_token_price,
             block: env::block_height(),
             lpt_id: "".to_string(),
         };
