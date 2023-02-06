@@ -300,7 +300,9 @@ mod tests {
                 ticker_id: "near".to_string(),
                 value: BigDecimal::from(3.07),
             },
+            open_price: BigDecimal::from(U128(1)),
             block: 105210654,
+            time_stamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
         };
 
