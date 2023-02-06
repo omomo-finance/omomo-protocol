@@ -617,7 +617,7 @@ mod tests {
             "usdt.fakes.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(1 * 10_u128.pow(24))), // current price token
+                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
             },
         );
         contract.update_or_insert_price(
@@ -678,7 +678,7 @@ mod tests {
             "usdt.fakes.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(1 * 10_u128.pow(24))), // current price token
+                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
             },
         );
         contract.update_or_insert_price(
@@ -739,7 +739,7 @@ mod tests {
             "usdt.fakes.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(1 * 10_u128.pow(24))), // current price token
+                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
             },
         );
         contract.update_or_insert_price(
@@ -800,7 +800,7 @@ mod tests {
             "usdt.fakes.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(1 * 10_u128.pow(24))), // current price token
+                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
             },
         );
         contract.update_or_insert_price(
@@ -848,7 +848,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         let result = contract.calculate_liquidation_price(
             U128(10_u128.pow(27)),
@@ -883,7 +883,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         let result = contract.calculate_liquidation_price(
             U128(10_u128.pow(27)),
