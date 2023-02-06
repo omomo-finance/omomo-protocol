@@ -198,3 +198,19 @@ pub struct PendingOrders {
     pub page: U128,
     pub total: U128,
 }
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LimitOrderView {
+    pub time_stamp: Timestamp,
+    pub pair: String,
+    pub order_type: String,
+    pub side: OrderType,
+    /// (buy_token_price / sell_token_price from order)
+    pub price: WBalance,
+    pub amount: U128,
+    /// (0% if an order is pending, 100% if an order is executed)
+    pub filled: u8,
+    /// (amount * sell_token_price)
+    pub total: WBalance,
+}

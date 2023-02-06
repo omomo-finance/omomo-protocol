@@ -11,16 +11,13 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance>;
     fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<Balance>;
 }
 
 #[near_bindgen]
 impl Contract {
-    /// Creates an order with given order_type, amount, sell_token, buy_token & leverage.
-    ///
-    /// Checks ref finance pool information for current price & borrow if leverage > 1.
+    /// Creates an order with given order_type, left_point, right_point, amount, sell_token, buy_token & leverage.
     ///
     /// As far as we surpassed gas limit for contract call,
     /// borrow call was separated & made within batch of transaction alongside with Deposit & Add_Liquidity function
@@ -30,6 +27,10 @@ impl Contract {
     pub fn create_order(
         &mut self,
         order_type: OrderType,
+        // left point for add_liquidity acquired via getPointByPrice
+        left_point: i32,
+        // right point for add_liquidity acquired via getPointByPrice
+        right_point: i32,
         amount: WBalance,
         sell_token: AccountId,
         buy_token: AccountId,
@@ -51,119 +52,78 @@ impl Contract {
             "User doesn't have enough deposit to proceed this action"
         );
 
+        let sell_token_price = self.view_price(sell_token.clone());
+        require!(
+            sell_token_price.value != BigDecimal::zero(),
+            "Sell token price cannot be zero"
+        );
+
+        let buy_token_price = self.view_price(buy_token.clone());
+        require!(
+            buy_token_price.value != BigDecimal::zero(),
+            "Buy token price cannot be zero"
+        );
+
         let order = Order {
             status: OrderStatus::Pending,
             order_type,
             amount: Balance::from(amount),
-            sell_token: sell_token.clone(),
-            buy_token: buy_token.clone(),
+            sell_token,
+            buy_token,
             leverage: BigDecimal::from(leverage),
-            sell_token_price: self.view_price(sell_token),
-            buy_token_price: self.view_price(buy_token),
+            sell_token_price,
+            buy_token_price,
             open_price: BigDecimal::from(open_price),
             block: env::block_height(),
             time_stamp_ms: env::block_timestamp_ms(),
             lpt_id: "".to_string(),
         };
 
-        ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_attached_deposit(NO_DEPOSIT)
-            .with_static_gas(Gas::ONE_TERA * 5u64)
-            .get_pool(self.view_pair(&order.sell_token, &order.buy_token).pool_id)
-            .then(
-                ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .with_static_gas(Gas::ONE_TERA * 200u64 + Gas::ONE_TERA * 50u64)
-                    .get_pool_info_callback(order),
-            )
-            .into()
-    }
-
-    #[private]
-    pub fn get_pool_info_callback(&mut self, order: Order) -> PromiseOrValue<WBalance> {
-        require!(
-            is_promise_success(),
-            "Problem with pool on ref finance has occurred"
-        );
-
-        let pool_info = match env::promise_result(0) {
-            PromiseResult::NotReady => unreachable!(),
-            PromiseResult::Successful(val) => {
-                if let Ok(pool) = serde_json::from_slice::<PoolInfo>(&val) {
-                    pool
-                } else {
-                    panic!("Some problem with pool parsing.")
-                }
-            }
-            PromiseResult::Failed => panic!("Ref finance not found pool"),
-        };
-
-        require!(
-            pool_info.state == PoolState::Running,
-            "Some problem with pool, please contact with ref finance to support."
-        );
-
-        self.add_liquidity(pool_info, order)
+        self.add_liquidity(order, left_point, right_point)
     }
 
     /// Makes batch of transaction consist of Deposit & Add_Liquidity
-    fn add_liquidity(&mut self, pool_info: PoolInfo, order: Order) -> PromiseOrValue<WBalance> {
+    fn add_liquidity(
+        &mut self,
+        order: Order,
+        left_point: i32,
+        right_point: i32,
+    ) -> PromiseOrValue<WBalance> {
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
 
-        let (left_point, right_point, amount, amount_x, amount_y, token_to_add_liquidity) =
-            match order.order_type {
-                OrderType::Buy => {
-                    let left_point = pool_info.current_point as i32 + pool_info.point_delta as i32;
-                    let right_point = left_point + pool_info.point_delta as i32;
+        let (amount, amount_x, amount_y, token_to_add_liquidity) = match order.order_type {
+            OrderType::Buy => {
+                let amount =
+                    U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
 
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
 
-                    let (sell_token_decimals, _) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
+                let amount_x = amount;
+                let amount_y = U128::from(0);
 
-                    let amount_x = amount;
-                    let amount_y = U128::from(0);
+                let token_to_add_liquidity = order.sell_token.clone();
 
-                    let token_to_add_liquidity = order.sell_token.clone();
+                (amount, amount_x, amount_y, token_to_add_liquidity)
+            }
+            OrderType::Sell => {
+                let amount =
+                    U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
 
-                    (
-                        left_point,
-                        right_point,
-                        amount,
-                        amount_x,
-                        amount_y,
-                        token_to_add_liquidity,
-                    )
-                }
-                OrderType::Sell => {
-                    let left_point = pool_info.current_point as i32 - pool_info.point_delta as i32;
-                    let right_point = left_point - pool_info.point_delta as i32;
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
 
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+                let amount_x = U128::from(0);
+                let amount_y = amount;
 
-                    let (_, buy_token_decimals) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
+                let token_to_add_liquidity = order.buy_token.clone();
 
-                    let amount_x = U128::from(0);
-                    let amount_y = amount;
-
-                    let token_to_add_liquidity = order.buy_token.clone();
-
-                    (
-                        left_point,
-                        right_point,
-                        amount,
-                        amount_x,
-                        amount_y,
-                        token_to_add_liquidity,
-                    )
-                }
-            };
+                (amount, amount_x, amount_y, token_to_add_liquidity)
+            }
+        };
 
         let min_amount_x = U128::from(0);
         let min_amount_y = U128::from(0);
