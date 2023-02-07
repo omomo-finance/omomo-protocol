@@ -2,7 +2,6 @@ use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
 use near_sdk::Gas;
 
-
 #[near_bindgen]
 impl Contract {
     pub fn view_order(
