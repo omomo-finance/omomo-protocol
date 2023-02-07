@@ -18,6 +18,7 @@ mod liquidate_order;
 mod market;
 mod metadata;
 mod oraclehook;
+mod pnl;
 mod price;
 #[allow(clippy::too_many_arguments)]
 mod ref_finance;
@@ -301,7 +302,9 @@ mod tests {
                 ticker_id: "near".to_string(),
                 value: BigDecimal::from(3.07),
             },
+            open_price: BigDecimal::from(U128(1)),
             block: 105210654,
+            time_stamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
         };
 
@@ -343,8 +346,8 @@ mod tests {
         assert_eq!(result, expected_result);
 
         assert_eq!(
-            BigDecimal::from(result),                      // 1000.0
-            BigDecimal::from(U128::from(expected_result))  // 1000.0
+            BigDecimal::from(result),          // 1000.0
+            BigDecimal::from(expected_result)  // 1000.0
         );
     }
 
@@ -369,7 +372,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         let token: AccountId = "usdt.fakes.testnet".parse().unwrap();
         let token_amount_with_protocol_decimals = U128::from(1_000_000_000_000_000_000_000_000_000);
