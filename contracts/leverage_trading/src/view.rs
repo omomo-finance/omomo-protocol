@@ -244,6 +244,16 @@ impl Contract {
         borrow_fee: U128,
         swap_fee: U128,
     ) -> WBigDecimal {
+        require!(
+            sell_token_price != U128::from(0),
+            "Sell token price cannot be zero"
+        );
+
+        require!(
+            buy_token_price != U128::from(0),
+            "Buy token price cannot be zero"
+        );
+
         let collateral_usd =
             BigDecimal::from(sell_token_amount) * BigDecimal::from(sell_token_price);
         let position_amount_usd = collateral_usd * BigDecimal::from(leverage);
