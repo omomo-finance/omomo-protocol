@@ -18,6 +18,7 @@ mod liquidate_order;
 mod market;
 mod metadata;
 mod oraclehook;
+mod pnl;
 mod price;
 #[allow(clippy::too_many_arguments)]
 mod ref_finance;
