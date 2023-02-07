@@ -6,16 +6,21 @@ use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn remove_liquidity_for_execute_order_callback(&self, order: Order, order_id: U128);
-    fn execute_order_callback(&self, order: Order, order_id: U128);
+    fn remove_liquidity_for_execute_order_callback(&self, order: Order, order_id: U128, take_profit_order: bool);
+    fn execute_order_callback(&self, order: Order, order_id: U128, take_profit_order: bool);
 }
 
 #[near_bindgen]
 impl Contract {
     /// Executes order by inner order_id set on ref finance once the price range was crossed.
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
-    pub fn execute_order(&self, order_id: U128) -> PromiseOrValue<U128> {
-        let order = self.get_order_by(order_id.0);
+    pub fn execute_order(&self, order_id: U128, take_profit_order: bool) -> PromiseOrValue<U128> {
+        let order = if take_profit_order {
+            self.take_profit_orders.get(&(order_id.0 as u64))
+        } else {
+            self.get_order_by(order_id.0)
+        };
+
         require!(order.is_some(), "There is no such order to be executed");
 
         assert_eq!(
@@ -34,13 +39,18 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .execute_order_callback(order, order_id),
+                    .execute_order_callback(order, order_id, take_profit_order),
             )
             .into()
     }
 
     #[private]
-    pub fn execute_order_callback(&self, order: Order, order_id: U128) -> PromiseOrValue<U128> {
+    pub fn execute_order_callback(
+        &self,
+        order: Order,
+        order_id: U128,
+        take_profit_order: bool,
+    ) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Failed to get_liquidity");
 
         let position = match env::promise_result(0) {
@@ -75,7 +85,11 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .remove_liquidity_for_execute_order_callback(order, order_id),
+                    .remove_liquidity_for_execute_order_callback(
+                        order,
+                        order_id,
+                        take_profit_order,
+                    ),
             )
             .into()
     }
@@ -85,11 +99,18 @@ impl Contract {
         &mut self,
         order: Order,
         order_id: U128,
+        take_profit_order: bool,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             panic!("Some problem with remove liquidity");
         } else {
-            self.mark_order_as_executed(order, order_id);
+            self.mark_order_as_executed(order, order_id, take_profit_order);
+
+            if !take_profit_order {
+                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)){
+                    self.add_take_profit_order(order_id,tpo.clone(), WRatio::from(tpo.buy_token_price.value));
+                }
+            }
 
             let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
             Promise::new(env::signer_account_id())
@@ -100,15 +121,24 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
+    pub fn mark_order_as_executed(
+        &mut self,
+        order: Order,
+        order_id: U128,
+        take_profit_order: bool,
+    ) {
         let mut order = order;
         order.status = OrderStatus::Executed;
 
-        self.add_or_update_order(
-            &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
-            order,
-            order_id.0 as u64,
-        );
+        if !take_profit_order {
+            self.add_or_update_order(
+                &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
+                order,
+                order_id.0 as u64,
+            );
+        } else {
+            self.take_profit_orders.insert(&(order_id.0 as u64), &order);
+        }
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
@@ -178,7 +208,7 @@ mod tests {
 
         let order_id = U128(1);
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
-        contract.mark_order_as_executed(order, order_id);
+        contract.mark_order_as_executed(order, order_id, false);
 
         let orders = contract.orders.get(&alice()).unwrap();
         let order = orders.get(&1).unwrap();

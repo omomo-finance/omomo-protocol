@@ -13,7 +13,7 @@ impl Contract {
         self.prices.insert(&token_id, &price);
     }
 
-    pub fn get_price(&self, token_id: AccountId) -> BigDecimal {
+    pub fn get_price(&self, token_id: &AccountId) -> BigDecimal {
         self.prices
             .get(&token_id)
             .unwrap_or_else(|| {

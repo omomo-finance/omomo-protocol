@@ -1,5 +1,6 @@
 use crate::big_decimal::{BigDecimal, WRatio};
 use crate::*;
+use near_sdk::env::signer_account_id;
 use near_sdk::Gas;
 
 #[near_bindgen]
@@ -218,7 +219,7 @@ impl Contract {
 
         let open_price = order.buy_token_price.clone();
 
-        let close_price = self.get_price(order.buy_token.clone());
+        let close_price = self.get_price(&order.buy_token);
 
         let calc_pnl = self.calculate_pnl(account_id, order_id, Some(market_data));
 
@@ -429,6 +430,23 @@ impl Contract {
         };
 
         vec![limit_order_1, limit_order_2]
+    }
+
+    pub fn take_profit_order_view(&self, order_id: U128) -> TakeProfitOrderView {
+        require!(
+            Some(signer_account_id()) == self.get_account_by(order_id.0),
+            "You have no access for this order."
+        );
+
+        let order = self
+            .take_profit_orders
+            .get(&(order_id.0 as u64))
+            .unwrap_or_else(|| panic!("Take profit order for: {} not found", order_id.0));
+
+        TakeProfitOrderView {
+            order_id,
+            take_profit_price: WRatio::from(order.buy_token_price.value),
+        }
     }
 }
 
@@ -1086,5 +1104,43 @@ mod tests {
             "{:#?}",
             contract.view_pending_limit_orders_by_user_by_pair(alice(), bob(), alice())
         );
+    }
+
+    #[test]
+    fn test_take_profit_order_view() {
+        let context = get_context(false);
+        testing_env!(context);
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 18,
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data.clone());
+
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        contract.add_order_from_string(alice(), order_string);
+
+        let order = contract.get_order_by(1).unwrap();
+        let new_price = U128(5);
+        contract.add_take_profit_order( U128(1), order, new_price);
+
+        let tpo = contract.take_profit_orders.get(&1).unwrap();
+        assert_eq!(tpo.status, OrderStatus::Pending);
+        assert_eq!(tpo.buy_token_price.value, BigDecimal::from(new_price));
+
+        let tpo_view  = contract.take_profit_order_view(U128(1));
+        assert_eq!(tpo_view.take_profit_price, new_price);
     }
 }

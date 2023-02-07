@@ -197,7 +197,7 @@ impl Contract {
         let buy_amount = BigDecimal::from(U128::from(order.amount))
             * order.leverage
             * order.sell_token_price.value
-            * self.get_price(order.buy_token.clone())
+            * self.get_price(&order.buy_token)
             / order.buy_token_price.value;
 
         let (_, buy_token_decimals) =
@@ -357,7 +357,7 @@ impl Contract {
 
         let swap_fee = self.get_swap_fee(&order);
 
-        let expect_amount = self.get_price(order.buy_token.clone())
+        let expect_amount = self.get_price(&order.buy_token)
             * sell_amount
             * (BigDecimal::one() - BigDecimal::from(swap_fee))
             * (BigDecimal::one() - BigDecimal::from(price_impact))

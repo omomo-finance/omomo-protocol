@@ -1,11 +1,11 @@
 use crate::big_decimal::{BigDecimal, WBalance};
-use crate::common::Events;
+use crate::common::Event;
 use crate::ref_finance::ext_ref_finance;
 use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
 use crate::*;
 
-use near_sdk::env::current_account_id;
-use near_sdk::{ext_contract, is_promise_success, log, serde_json, Gas, PromiseResult};
+use near_sdk::env::{current_account_id, signer_account_id};
+use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
 
 const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
@@ -185,15 +185,13 @@ impl Contract {
 
         self.add_or_update_order(&env::signer_account_id(), order.clone(), order_id);
 
-        log!(
-            "{}",
-            Events::CreateOrderSuccess(
-                order_id,
-                order.sell_token_price,
-                order.buy_token_price,
-                self.view_pair(&order.sell_token, &order.buy_token).pool_id
-            )
-        );
+        Event::CreateOrderEvent {
+            order_id,
+            sell_token_price: order.sell_token_price,
+            buy_token_price: order.buy_token_price,
+            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+        }
+        .emit();
 
         PromiseOrValue::Value(U128(order_id as u128))
     }
@@ -247,6 +245,64 @@ impl Contract {
         let order_id = self.order_nonce;
         let order: Order = serde_json::from_str(order.as_str()).unwrap();
         self.add_or_update_order(&account_id, order, order_id);
+    }
+
+    #[payable]
+    pub fn add_take_profit_order(
+        &mut self,
+        order_id: U128,
+        order: Order,
+        new_price: U128,
+    ) -> PromiseOrValue<bool> {
+        require!(
+            Some(signer_account_id()) == self.get_account_by(order_id.0),
+            "You do not have permission for this action."
+        );
+
+        let mut order = order;
+        order.status = OrderStatus::Pending;
+        order.buy_token_price.value = BigDecimal::from(new_price);
+        self.take_profit_orders.insert(&(order_id.0 as u64), &order);
+
+        Event::CreateTakeProfitOrderEvent {
+            order_id,
+            price: new_price,
+            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+        }
+        .emit();
+
+        PromiseOrValue::Value(true)
+    }
+
+    #[payable]
+    pub fn set_take_profit_order_price(
+        &mut self,
+        order_id: U128,
+        new_price: U128,
+    ) -> PromiseOrValue<bool> {
+        require!(
+            Some(signer_account_id()) == self.get_account_by(order_id.0),
+            "You do not have permission for this action."
+        );
+
+        if let Some(mut current_order) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            current_order.buy_token_price.value = BigDecimal::from(new_price);
+            self.take_profit_orders
+                .insert(&(order_id.0 as u64), &current_order);
+
+            Event::UpdateTakeProfitOrderEvent {
+                order_id,
+                price: new_price,
+                pool_id: self
+                    .view_pair(&current_order.sell_token, &current_order.buy_token)
+                    .pool_id,
+            }
+            .emit();
+
+            return PromiseOrValue::Value(true);
+        }
+
+        PromiseOrValue::Value(false)
     }
 }
 

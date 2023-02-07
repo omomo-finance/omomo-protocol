@@ -14,6 +14,7 @@ pub enum StorageKeys {
     Balances,
     TokenMarkets,
     ProtocolProfit,
+    TakeProfitOrders,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
@@ -42,7 +43,7 @@ pub struct PnLView {
     pub amount: U128,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Price {
     pub ticker_id: String,
@@ -95,6 +96,13 @@ pub struct OrderView {
     pub borrow_fee: WBalance,
     pub liquidation_price: WBalance,
     pub lpt_id: String,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TakeProfitOrderView {
+    pub order_id: U128,
+    pub take_profit_price: WBalance,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
