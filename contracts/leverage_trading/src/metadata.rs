@@ -66,7 +66,7 @@ pub enum OrderType {
     Sell,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Order {
     pub status: OrderStatus,

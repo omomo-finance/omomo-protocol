@@ -1132,15 +1132,14 @@ mod tests {
         let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"block\":103930910,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
-        let order = contract.get_order_by(1).unwrap();
         let new_price = U128(5);
-        contract.add_take_profit_order( U128(1), order, new_price);
+        contract.add_take_profit_order(U128(1), new_price);
 
         let tpo = contract.take_profit_orders.get(&1).unwrap();
         assert_eq!(tpo.status, OrderStatus::Pending);
         assert_eq!(tpo.buy_token_price.value, BigDecimal::from(new_price));
 
-        let tpo_view  = contract.take_profit_order_view(U128(1));
+        let tpo_view = contract.take_profit_order_view(U128(1));
         assert_eq!(tpo_view.take_profit_price, new_price);
     }
 }

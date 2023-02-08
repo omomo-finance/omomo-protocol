@@ -19,13 +19,15 @@ pub trait NEP141Token {
 
 impl Contract {
     pub fn get_order_by(&self, order_id: u128) -> Option<Order> {
-        let account = self.get_account_by(order_id).unwrap();
-
-        self.orders
-            .get(&account)
-            .unwrap()
-            .get(&(order_id as u64))
-            .cloned()
+        if let Some(account) = self.get_account_by(order_id) {
+            self.orders
+                .get(&account)
+                .unwrap()
+                .get(&(order_id as u64))
+                .cloned()
+        } else {
+            None
+        }
     }
 }
 

@@ -6,7 +6,12 @@ use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn remove_liquidity_for_execute_order_callback(&self, order: Order, order_id: U128, take_profit_order: bool);
+    fn remove_liquidity_for_execute_order_callback(
+        &self,
+        order: Order,
+        order_id: U128,
+        take_profit_order: bool,
+    );
     fn execute_order_callback(&self, order: Order, order_id: U128, take_profit_order: bool);
 }
 
@@ -107,8 +112,8 @@ impl Contract {
             self.mark_order_as_executed(order, order_id, take_profit_order);
 
             if !take_profit_order {
-                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)){
-                    self.add_take_profit_order(order_id,tpo.clone(), WRatio::from(tpo.buy_token_price.value));
+                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                    self.add_take_profit_order(order_id, WRatio::from(tpo.buy_token_price.value));
                 }
             }
 
