@@ -389,21 +389,25 @@ mod tests {
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
 
-    fn get_context(is_view: bool) -> VMContext {
+    use crate::pnl::MILLISECONDS_PER_DAY;
+
+    fn get_context(is_view: bool, block_timestamp: Option<u64>) -> VMContext {
         VMContextBuilder::new()
             .current_account_id("leverage.develop.v1.omomo-finance.testnet".parse().unwrap())
             .signer_account_id(alice())
             .predecessor_account_id("alice.testnet".parse().unwrap())
             .block_index(103930920)
-            .block_timestamp(1)
+            .block_timestamp(block_timestamp.unwrap_or(1))
             .is_view(is_view)
             .build()
     }
 
     #[test]
     fn test_order_was_canceled() {
-        let context = get_context(false);
+        let borrow_period = Some(MILLISECONDS_PER_DAY * 91 * 1_000_000); //90 days
+        let context = get_context(false, borrow_period);
         testing_env!(context);
+
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
@@ -440,26 +444,28 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"block\":103930916,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"open_price\":\"2.5\",\"block\":103930916,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
         let order = Order {
             status: OrderStatus::Pending,
             order_type: OrderType::Buy,
-            amount: 1000000000,
+            amount: 100000000000000000000000000,
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
             buy_token: "wrap.testnet".parse().unwrap(),
-            leverage: BigDecimal::from(1.0),
+            leverage: BigDecimal::from(U128(10_u128.pow(24))),
             sell_token_price: Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(1.01),
+                value: BigDecimal::from(U128(101 * 10_u128.pow(22))),
             },
             buy_token_price: Price {
                 ticker_id: "near".to_string(),
-                value: BigDecimal::from(3.07),
+                value: BigDecimal::from(U128(307 * 10_u128.pow(22))),
             },
+            open_price: BigDecimal::from(U128(1)),
             block: 105210654,
+            time_stamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
         };
 
