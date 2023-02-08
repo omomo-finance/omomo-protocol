@@ -399,7 +399,7 @@ impl Contract {
 
                         let total =
                             BigDecimal::from(U128(order.amount)) * order.sell_token_price.value;
-                        
+
                         Some(LimitOrderView {
                             time_stamp: order.time_stamp_ms,
                             pair,
