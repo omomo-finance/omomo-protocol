@@ -54,13 +54,13 @@ impl Contract {
 
         let sell_token_price = self.view_price(sell_token.clone());
         require!(
-            sell_token_price.value != BigDecimal::zero(),
+            BigDecimal::from(sell_token_price.value) != BigDecimal::zero(),
             "Sell token price cannot be zero"
         );
 
         let buy_token_price = self.view_price(buy_token.clone());
         require!(
-            buy_token_price.value != BigDecimal::zero(),
+            BigDecimal::from(buy_token_price.value) != BigDecimal::zero(),
             "Buy token price cannot be zero"
         );
 
@@ -334,7 +334,7 @@ mod tests {
         );
 
         for _ in 0..5 {
-            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
             contract.imitation_add_liquidity_callback(
                 near_sdk::serde_json::from_str(order.as_str()).unwrap(),
             );

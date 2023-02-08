@@ -296,11 +296,11 @@ mod tests {
             leverage: BigDecimal::from(1.0),
             sell_token_price: Price {
                 ticker_id: "USDT".to_string(),
-                value: BigDecimal::from(1.01),
+                value: U128::from(1010000000000000000000000),
             },
             buy_token_price: Price {
                 ticker_id: "near".to_string(),
-                value: BigDecimal::from(3.07),
+                value: U128::from(3070000000000000000000000),
             },
             open_price: BigDecimal::from(U128(1)),
             block: 105210654,
