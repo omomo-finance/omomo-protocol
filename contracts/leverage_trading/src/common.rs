@@ -76,5 +76,5 @@ pub(crate) fn emit_event<T: ?Sized + Serialize>(data: &T) {
         data: result["data"].clone()
     })
     .to_string();
-    log!(format!("{}{}", EVENT_JSON_STR, event_json));
+    log!(format!("{EVENT_JSON_STR}{event_json}"));
 }

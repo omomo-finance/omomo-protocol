@@ -15,7 +15,7 @@ impl Contract {
 
     pub fn get_price(&self, token_id: &AccountId) -> BigDecimal {
         self.prices
-            .get(&token_id)
+            .get(token_id)
             .unwrap_or_else(|| {
                 panic!("Price for token: {token_id} not found");
             })
