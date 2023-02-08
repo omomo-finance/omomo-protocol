@@ -76,7 +76,10 @@ pub struct Order {
     pub leverage: BigDecimal,
     pub sell_token_price: Price,
     pub buy_token_price: Price,
+    /// position opening price (xrate)
+    pub open_price: BigDecimal,
     pub block: BlockHeight,
+    pub time_stamp_ms: Timestamp,
     pub lpt_id: String,
 }
 
