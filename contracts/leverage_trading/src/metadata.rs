@@ -57,6 +57,7 @@ pub enum OrderStatus {
     Executed,
     Canceled,
     Liquidated,
+    PendingOrderExecute
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]

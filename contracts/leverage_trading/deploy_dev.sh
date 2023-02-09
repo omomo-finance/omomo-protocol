@@ -103,7 +103,7 @@ near call $CONTRACT_ID update_or_insert_price '{
     "token_id":"'$USDT_TOKEN'",
     "price":{
         "ticker_id":"USDt",
-        "value":"1.01"
+        "value":"1010000000000000000000000"
     }
 }' --accountId $CONTRACT_ID &
 
@@ -111,7 +111,7 @@ near call $CONTRACT_ID update_or_insert_price '{
     "token_id":"'$NEAR_TOKEN'",
     "price":{
         "ticker_id":"near",
-        "value":"2.57"
+        "value":"2570000000000000000000000"
     }
 }' --accountId $CONTRACT_ID &
 
@@ -120,7 +120,7 @@ near call $CONTRACT_ID update_or_insert_price '{
     "token_id":"'$ETH_TOKEN'",
     "price":{
         "ticker_id":"nWETH",
-        "value":"1623.67"
+        "value":"1623670000000000000000000000"
     }
 }' --accountId $CONTRACT_ID &
 

@@ -18,6 +18,7 @@ trait ContractCallbackInterface {
         order_id: U128,
         close_price: Price,
         order: Order,
+        amount: U128,
     ) -> PromiseOrValue<bool>;
 }
 
@@ -304,7 +305,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .take_profit_liquidity_callback(order_id, close_price, order, expect_amount),
+                    .take_profit_liquidity_callback(order_id, close_price, order, WRatio::from(expect_amount)),
             )
             .into()
     }
@@ -315,7 +316,7 @@ impl Contract {
         order_id: U128,
         close_price: Price,
         order: Order,
-        amount: U128
+        amount: U128,
     ) -> PromiseOrValue<bool> {
         self.decrease_balance(&env::signer_account_id(), &order.sell_token, amount.0);
 
@@ -326,7 +327,7 @@ impl Contract {
 
         let mut order = order;
         order.lpt_id = lpt_id;
-        order.status = OrderStatus::Pending;
+        order.status = OrderStatus::PendingOrderExecute;
         order.order_type = OrderType::Sell;
         order.amount = amount.0;
         order.leverage = BigDecimal::one();

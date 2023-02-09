@@ -112,8 +112,9 @@ impl Contract {
             self.mark_order_as_executed(order, order_id, take_profit_order);
 
             if !take_profit_order {
-                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                    self.add_take_profit_order(order_id, WRatio::from(tpo.buy_token_price.value));
+                if let Some(mut tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                    tpo.status = OrderStatus::Pending;
+                    self.take_profit_orders.insert(&(order_id.0 as u64), &tpo);
                 }
             }
 
