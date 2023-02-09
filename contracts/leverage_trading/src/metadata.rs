@@ -60,7 +60,7 @@ pub enum OrderStatus {
     Executed,
     Canceled,
     Liquidated,
-    PendingOrderExecute
+    PendingOrderExecute,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -88,6 +88,13 @@ pub struct Order {
     pub lpt_id: String,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TakeProfitOrderView {
+    pub order_id: U128,
+    pub close_price: Price,
+}
+
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct OrderView {
@@ -103,13 +110,6 @@ pub struct OrderView {
     pub borrow_fee: WBalance,
     pub liquidation_price: WBalance,
     pub lpt_id: String,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
-#[serde(crate = "near_sdk::serde")]
-pub struct TakeProfitOrderView {
-    pub order_id: U128,
-    pub take_profit_price: WBalance,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

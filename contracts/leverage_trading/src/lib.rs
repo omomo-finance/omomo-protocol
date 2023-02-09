@@ -54,7 +54,7 @@ pub struct Contract {
     orders: UnorderedMap<AccountId, HashMap<u64, Order>>,
 
     /// take profit orders, order_id ➝ Order
-    take_profit_orders: LookupMap<u64, (PricePoints,Order)>,
+    take_profit_orders: LookupMap<u64, (PricePoints, Order)>,
 
     /// (sell token, buy token) ➝ TradePair
     supported_markets: UnorderedMap<PairId, TradePair>,

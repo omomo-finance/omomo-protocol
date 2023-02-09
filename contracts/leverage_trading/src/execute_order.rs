@@ -21,10 +21,12 @@ impl Contract {
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
     pub fn execute_order(&self, order_id: U128, take_profit_order: bool) -> PromiseOrValue<U128> {
         let order = if take_profit_order {
-            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)){
+            let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
                 Some(tpo.1)
-            }
-            None
+            } else {
+                None
+            };
+            order
         } else {
             self.get_order_by(order_id.0)
         };
@@ -112,11 +114,11 @@ impl Contract {
         if !is_promise_success() {
             panic!("Some problem with remove liquidity");
         } else {
-            self.mark_order_as_executed(order, order_id, take_profit_order);
+            self.mark_order_as_executed(order, order_id);
 
             if !take_profit_order {
                 if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                   self.set_take_profit_order_pending(order_id, tpo);
+                    self.set_take_profit_order_pending(order_id, tpo);
                 }
             }
 
@@ -129,20 +131,15 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn mark_order_as_executed(
-        &mut self,
-        order: Order,
-        order_id: U128,
-        take_profit_order: bool,
-    ) {
+    pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
         let mut order = order;
         order.status = OrderStatus::Executed;
 
         self.add_or_update_order(
-                &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
-                order,
-                order_id.0 as u64,
-            );
+            &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
+            order,
+            order_id.0 as u64,
+        );
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
@@ -212,7 +209,7 @@ mod tests {
 
         let order_id = U128(1);
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
-        contract.mark_order_as_executed(order, order_id, false);
+        contract.mark_order_as_executed(order, order_id);
 
         let orders = contract.orders.get(&alice()).unwrap();
         let order = orders.get(&1).unwrap();

@@ -13,11 +13,7 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 trait ContractCallbackInterface {
     fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<Balance>;
-    fn take_profit_liquidity_callback(
-        &mut self,
-        order_id: U128,
-        amount: U128,
-    );
+    fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128);
 }
 
 #[near_bindgen]
@@ -272,82 +268,79 @@ impl Contract {
         let sell_amount = current_order.sell_token_price.value
             * BigDecimal::from(U128::from(current_order.amount))
             * current_order.leverage;
-        let expect_amount =
-            self.get_price(&current_order.buy_token) * sell_amount / current_order.buy_token_price.value;
+        let expect_amount = self.get_price(&current_order.buy_token) * sell_amount
+            / current_order.buy_token_price.value;
 
         let order = Order {
             status: OrderStatus::PendingOrderExecute,
             order_type: OrderType::Sell,
             amount: expect_amount.round_u128(),
-            sell_token: current_order.buy_token,
-            buy_token: current_order.sell_token,
-            leverage:  BigDecimal::one(),
+            sell_token: current_order.buy_token.clone(),
+            buy_token: current_order.sell_token.clone(),
+            leverage: BigDecimal::one(),
             sell_token_price: current_order.buy_token_price,
             buy_token_price: close_price.clone(),
             open_price: Default::default(),
             block: block_height(),
             time_stamp_ms: block_timestamp_ms(),
-            lpt_id: "".to_string()
+            lpt_id: "".to_string(),
         };
 
-        self.take_profit_orders.insert(&(order_id.0 as u64),&((left_point,right_point), order));
+        self.take_profit_orders
+            .insert(&(order_id.0 as u64), &((left_point, right_point), order));
 
         Event::CreateTakeProfitOrderEvent {
             order_id,
             price: WRatio::from(close_price.value),
-            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+            pool_id: self
+                .view_pair(&current_order.sell_token, &current_order.buy_token)
+                .pool_id,
         }
-            .emit();
+        .emit();
 
         PromiseOrValue::Value(true)
-
     }
 
     #[private]
-    pub fn take_profit_liquidity_callback(
-        &mut self,
-        order_id: U128,
-        amount: U128,
-    ){
-        require!(is_promise_success(),"Some problems with liquidity adding.");
+    pub fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128) {
+        require!(is_promise_success(), "Some problems with liquidity adding.");
 
         let lpt_id: String = match env::promise_result(1) {
             PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
             _ => panic!("failed to add liquidity"),
         };
 
-        if let Some(mut current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if let Some(current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             let mut order = current_tpo.1;
             order.lpt_id = lpt_id;
             order.status = OrderStatus::Pending;
-            self.take_profit_orders.insert(&(order_id.0 as u64), &(current_tpo.0, order));
+            self.take_profit_orders
+                .insert(&(order_id.0 as u64), &(current_tpo.0, order.clone()));
 
             self.decrease_balance(&signer_account_id(), &order.sell_token, amount.0);
         }
     }
 
     #[payable]
-    pub fn set_take_profit_order_price(
-        &mut self,
-        order_id: U128,
-        new_price: U128,
-    ){
+    pub fn set_take_profit_order_price(&mut self, order_id: U128, new_price: U128) {
         require!(
             Some(signer_account_id()) == self.get_account_by(order_id.0),
             "You do not have permission for this action."
         );
 
-        if let Some(mut current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if let Some(current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             let mut current_order = current_tpo.1;
             current_order.buy_token_price.value = BigDecimal::from(new_price);
-            self.take_profit_orders
-                .insert(&(order_id.0 as u64), &(current_tpo.0, current_order));
+            self.take_profit_orders.insert(
+                &(order_id.0 as u64),
+                &(current_tpo.0, current_order.clone()),
+            );
 
             Event::UpdateTakeProfitOrderEvent {
                 order_id,
                 price: new_price,
                 pool_id: self
-                    .view_pair(&current_order.sell_token, &current_order.buy_token)
+                    .view_pair(&current_order.buy_token, &current_order.sell_token)
                     .pool_id,
             }
             .emit();
@@ -369,7 +362,11 @@ impl Contract {
             .insert(&pair_id, &pair_orders_by_id);
     }
 
-    pub fn set_take_profit_order_pending(&self, order_id: U128, take_profit_order: (PricePoints, Order)){
+    pub fn set_take_profit_order_pending(
+        &self,
+        order_id: U128,
+        take_profit_order: (PricePoints, Order),
+    ) {
         let order = self.get_order_by(order_id.0).unwrap();
 
         let sell_amount = order.sell_token_price.value
@@ -395,8 +392,8 @@ impl Contract {
             .with_attached_deposit(NO_DEPOSIT)
             .add_liquidity(
                 self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-                take_profit_order.0.0,
-                take_profit_order.0.1,
+                take_profit_order.0 .0,
+                take_profit_order.0 .1,
                 amount_x,
                 amount_y,
                 min_amount_x,
@@ -497,7 +494,7 @@ mod tests {
     }
 
     #[test]
-    fn test_add_take_profit_order() {
+    fn test_create_take_profit_order() {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -519,20 +516,40 @@ mod tests {
         };
         contract.add_pair(pair_data.clone());
 
+        contract.update_or_insert_price(
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDt".to_string(),
+                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
+            },
+        );
+        contract.update_or_insert_price(
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "near".to_string(),
+                value: BigDecimal::from(U128(3 * 10_u128.pow(24))), // current price token
+            },
+        );
+
         let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"open_price\":\"2.5\",\"block\":103930912,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
-        let new_price = U128(5);
-        contract.add_take_profit_order(U128(1), new_price);
+        let new_price = Price {
+            ticker_id: "WNEAR".to_string(),
+            value: BigDecimal::from(U128(30500000000000000000000000)),
+        };
+        let left_point = -9860;
+        let right_point = -9820;
+        contract.create_take_profit_order(U128(1), new_price.clone(), left_point, right_point);
 
         let tpo = contract.take_profit_orders.get(&1).unwrap();
-        assert_eq!(tpo.status, OrderStatus::Pending);
-        assert_eq!(tpo.buy_token_price.value, BigDecimal::from(new_price));
+        assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
+        assert_eq!(tpo.1.buy_token_price.value, new_price.value);
     }
 
     #[test]
     #[should_panic(expected = "You do not have permission for this action")]
-    fn test_add_take_profit_order_without_order() {
+    fn test_create_take_profit_order_without_order() {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -541,10 +558,20 @@ mod tests {
         );
 
         let order_id: u128 = 33;
-        let new_price = U128(5);
         assert_eq!(contract.get_order_by(order_id), None);
 
-        contract.add_take_profit_order(U128(order_id), new_price);
+        let new_price = Price {
+            ticker_id: "WNEAR".to_string(),
+            value: BigDecimal::from(U128(30500000000000000000000000)),
+        };
+        let left_point = -9860;
+        let right_point = -9820;
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price.clone(),
+            left_point,
+            right_point,
+        );
     }
 
     #[test]
@@ -570,21 +597,49 @@ mod tests {
         };
         contract.add_pair(pair_data.clone());
 
+        contract.update_or_insert_price(
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDt".to_string(),
+                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
+            },
+        );
+        contract.update_or_insert_price(
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "near".to_string(),
+                value: BigDecimal::from(U128(3 * 10_u128.pow(24))), // current price token
+            },
+        );
+
         let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"open_price\":\"2.5\",\"block\":103930912,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
-        let new_price = U128(5);
-        contract.add_take_profit_order(U128(order_id), new_price);
+        let new_price = Price {
+            ticker_id: "near".to_string(),
+            value: BigDecimal::from(U128(30500000000000000000000000)),
+        };
+        let left_point = -9860;
+        let right_point = -9820;
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price.clone(),
+            left_point,
+            right_point,
+        );
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
-        assert_eq!(tpo.status, OrderStatus::Pending);
-        assert_eq!(tpo.buy_token_price.value, BigDecimal::from(new_price));
+        assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
+        assert_eq!(tpo.1.buy_token_price.value, new_price.value);
 
-        let new_price = U128(23);
-        contract.set_take_profit_order_price(U128(order_id), new_price);
+        let new_price = Price {
+            ticker_id: "near".to_string(),
+            value: BigDecimal::from(U128(33500000000000000000000000)),
+        };
+        contract.set_take_profit_order_price(U128(order_id), WRatio::from(new_price.value));
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
-        assert_eq!(tpo.buy_token_price.value, BigDecimal::from(new_price));
+        assert_eq!(tpo.1.buy_token_price.value, new_price.value);
     }
 }
