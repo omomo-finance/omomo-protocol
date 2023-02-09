@@ -4,7 +4,7 @@ use crate::ref_finance::ext_ref_finance;
 use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
 use crate::*;
 
-use near_sdk::env::{current_account_id, signer_account_id};
+use near_sdk::env::{block_height, block_timestamp_ms, current_account_id, signer_account_id};
 use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
 
 const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
@@ -13,6 +13,12 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 trait ContractCallbackInterface {
     fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order) -> PromiseOrValue<Balance>;
+    fn take_profit_liquidity_callback(
+        &mut self,
+        order_id: U128,
+        close_price: Price,
+        order: Order,
+    ) -> PromiseOrValue<bool>;
 }
 
 #[near_bindgen]
@@ -251,24 +257,93 @@ impl Contract {
     }
 
     #[payable]
-    pub fn add_take_profit_order(
+    pub fn create_take_profit_order(
         &mut self,
         order_id: U128,
-        new_price: U128,
+        close_price: Price,
+        left_point: i32,
+        right_point: i32,
     ) -> PromiseOrValue<bool> {
         require!(
             Some(signer_account_id()) == self.get_account_by(order_id.0),
             "You do not have permission for this action."
         );
 
-        let mut order = self.get_order_by(order_id.0).unwrap();
+        let order = self.get_order_by(order_id.0).unwrap();
+
+        let sell_amount = order.sell_token_price.value
+            * BigDecimal::from(U128::from(order.amount))
+            * order.leverage;
+
+        let expect_amount =
+            self.get_price(&order.buy_token) * sell_amount / order.buy_token_price.value;
+
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let amount =
+            self.from_protocol_to_token_decimals(WRatio::from(expect_amount), buy_token_decimals);
+
+        let amount_x = U128::from(0);
+        let amount_y = amount;
+
+        let min_amount_x = U128::from(0);
+        let min_amount_y = U128::from(0);
+
+        ext_ref_finance::ext(self.ref_finance_account.clone())
+            .with_static_gas(Gas::ONE_TERA * 10u64)
+            .with_attached_deposit(NO_DEPOSIT)
+            .add_liquidity(
+                self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                left_point,
+                right_point,
+                amount_x,
+                amount_y,
+                min_amount_x,
+                min_amount_y,
+            )
+            .then(
+                ext_self::ext(current_account_id())
+                    .with_attached_deposit(NO_DEPOSIT)
+                    .take_profit_liquidity_callback(order_id, close_price, order, expect_amount),
+            )
+            .into()
+    }
+
+    #[private]
+    pub fn take_profit_liquidity_callback(
+        &mut self,
+        order_id: U128,
+        close_price: Price,
+        order: Order,
+        amount: U128
+    ) -> PromiseOrValue<bool> {
+        self.decrease_balance(&env::signer_account_id(), &order.sell_token, amount.0);
+
+        let lpt_id: String = match env::promise_result(1) {
+            PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
+            _ => panic!("failed to add liquidity"),
+        };
+
+        let mut order = order;
+        order.lpt_id = lpt_id;
         order.status = OrderStatus::Pending;
-        order.buy_token_price.value = BigDecimal::from(new_price);
+        order.order_type = OrderType::Sell;
+        order.amount = amount.0;
+        order.leverage = BigDecimal::one();
+        order.block = block_height();
+        order.time_stamp_ms = block_timestamp_ms();
+
+        let sell_token = order.sell_token;
+        order.sell_token = order.buy_token;
+        order.buy_token = sell_token;
+        order.sell_token_price = order.buy_token_price;
+        order.buy_token_price = close_price.clone();
+
         self.take_profit_orders.insert(&(order_id.0 as u64), &order);
 
         Event::CreateTakeProfitOrderEvent {
             order_id,
-            price: new_price,
+            price: WRatio::from(close_price.value),
             pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
         }
         .emit();
