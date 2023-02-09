@@ -21,7 +21,10 @@ impl Contract {
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
     pub fn execute_order(&self, order_id: U128, take_profit_order: bool) -> PromiseOrValue<U128> {
         let order = if take_profit_order {
-            self.take_profit_orders.get(&(order_id.0 as u64))
+            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)){
+                Some(tpo.1)
+            }
+            None
         } else {
             self.get_order_by(order_id.0)
         };
@@ -112,9 +115,8 @@ impl Contract {
             self.mark_order_as_executed(order, order_id, take_profit_order);
 
             if !take_profit_order {
-                if let Some(mut tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                    tpo.status = OrderStatus::Pending;
-                    self.take_profit_orders.insert(&(order_id.0 as u64), &tpo);
+                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                   self.set_take_profit_order_pending(order_id, tpo);
                 }
             }
 
@@ -136,15 +138,11 @@ impl Contract {
         let mut order = order;
         order.status = OrderStatus::Executed;
 
-        if !take_profit_order {
-            self.add_or_update_order(
+        self.add_or_update_order(
                 &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
                 order,
                 order_id.0 as u64,
             );
-        } else {
-            self.take_profit_orders.insert(&(order_id.0 as u64), &order);
-        }
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {

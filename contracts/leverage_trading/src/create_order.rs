@@ -16,10 +16,8 @@ trait ContractCallbackInterface {
     fn take_profit_liquidity_callback(
         &mut self,
         order_id: U128,
-        close_price: Price,
-        order: Order,
         amount: U128,
-    ) -> PromiseOrValue<bool>;
+    );
 }
 
 #[near_bindgen]
@@ -270,6 +268,108 @@ impl Contract {
             "You do not have permission for this action."
         );
 
+        let current_order = self.get_order_by(order_id.0).unwrap();
+        let sell_amount = current_order.sell_token_price.value
+            * BigDecimal::from(U128::from(current_order.amount))
+            * current_order.leverage;
+        let expect_amount =
+            self.get_price(&current_order.buy_token) * sell_amount / current_order.buy_token_price.value;
+
+        let order = Order {
+            status: OrderStatus::PendingOrderExecute,
+            order_type: OrderType::Sell,
+            amount: expect_amount.round_u128(),
+            sell_token: current_order.buy_token,
+            buy_token: current_order.sell_token,
+            leverage:  BigDecimal::one(),
+            sell_token_price: current_order.buy_token_price,
+            buy_token_price: close_price.clone(),
+            open_price: Default::default(),
+            block: block_height(),
+            time_stamp_ms: block_timestamp_ms(),
+            lpt_id: "".to_string()
+        };
+
+        self.take_profit_orders.insert(&(order_id.0 as u64),&((left_point,right_point), order));
+
+        Event::CreateTakeProfitOrderEvent {
+            order_id,
+            price: WRatio::from(close_price.value),
+            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+        }
+            .emit();
+
+        PromiseOrValue::Value(true)
+
+    }
+
+    #[private]
+    pub fn take_profit_liquidity_callback(
+        &mut self,
+        order_id: U128,
+        amount: U128,
+    ){
+        require!(is_promise_success(),"Some problems with liquidity adding.");
+
+        let lpt_id: String = match env::promise_result(1) {
+            PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
+            _ => panic!("failed to add liquidity"),
+        };
+
+        if let Some(mut current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            let mut order = current_tpo.1;
+            order.lpt_id = lpt_id;
+            order.status = OrderStatus::Pending;
+            self.take_profit_orders.insert(&(order_id.0 as u64), &(current_tpo.0, order));
+
+            self.decrease_balance(&signer_account_id(), &order.sell_token, amount.0);
+        }
+    }
+
+    #[payable]
+    pub fn set_take_profit_order_price(
+        &mut self,
+        order_id: U128,
+        new_price: U128,
+    ){
+        require!(
+            Some(signer_account_id()) == self.get_account_by(order_id.0),
+            "You do not have permission for this action."
+        );
+
+        if let Some(mut current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            let mut current_order = current_tpo.1;
+            current_order.buy_token_price.value = BigDecimal::from(new_price);
+            self.take_profit_orders
+                .insert(&(order_id.0 as u64), &(current_tpo.0, current_order));
+
+            Event::UpdateTakeProfitOrderEvent {
+                order_id,
+                price: new_price,
+                pool_id: self
+                    .view_pair(&current_order.sell_token, &current_order.buy_token)
+                    .pool_id,
+            }
+            .emit();
+        }
+    }
+}
+
+impl Contract {
+    pub fn add_or_update_order(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
+        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
+
+        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
+        user_orders_by_id.insert(order_id, order.clone());
+        self.orders.insert(account_id, &user_orders_by_id);
+
+        let mut pair_orders_by_id = self.orders_per_pair_view.get(&pair_id).unwrap_or_default();
+        pair_orders_by_id.insert(order_id, order);
+        self.orders_per_pair_view
+            .insert(&pair_id, &pair_orders_by_id);
+    }
+
+    pub fn set_take_profit_order_pending(&self, order_id: U128, take_profit_order: (PricePoints, Order)){
         let order = self.get_order_by(order_id.0).unwrap();
 
         let sell_amount = order.sell_token_price.value
@@ -295,8 +395,8 @@ impl Contract {
             .with_attached_deposit(NO_DEPOSIT)
             .add_liquidity(
                 self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-                left_point,
-                right_point,
+                take_profit_order.0.0,
+                take_profit_order.0.1,
                 amount_x,
                 amount_y,
                 min_amount_x,
@@ -305,97 +405,8 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .take_profit_liquidity_callback(order_id, close_price, order, WRatio::from(expect_amount)),
-            )
-            .into()
-    }
-
-    #[private]
-    pub fn take_profit_liquidity_callback(
-        &mut self,
-        order_id: U128,
-        close_price: Price,
-        order: Order,
-        amount: U128,
-    ) -> PromiseOrValue<bool> {
-        self.decrease_balance(&env::signer_account_id(), &order.sell_token, amount.0);
-
-        let lpt_id: String = match env::promise_result(1) {
-            PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
-            _ => panic!("failed to add liquidity"),
-        };
-
-        let mut order = order;
-        order.lpt_id = lpt_id;
-        order.status = OrderStatus::PendingOrderExecute;
-        order.order_type = OrderType::Sell;
-        order.amount = amount.0;
-        order.leverage = BigDecimal::one();
-        order.block = block_height();
-        order.time_stamp_ms = block_timestamp_ms();
-
-        let sell_token = order.sell_token;
-        order.sell_token = order.buy_token;
-        order.buy_token = sell_token;
-        order.sell_token_price = order.buy_token_price;
-        order.buy_token_price = close_price.clone();
-
-        self.take_profit_orders.insert(&(order_id.0 as u64), &order);
-
-        Event::CreateTakeProfitOrderEvent {
-            order_id,
-            price: WRatio::from(close_price.value),
-            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-        }
-        .emit();
-
-        PromiseOrValue::Value(true)
-    }
-
-    #[payable]
-    pub fn set_take_profit_order_price(
-        &mut self,
-        order_id: U128,
-        new_price: U128,
-    ) -> PromiseOrValue<bool> {
-        require!(
-            Some(signer_account_id()) == self.get_account_by(order_id.0),
-            "You do not have permission for this action."
-        );
-
-        if let Some(mut current_order) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            current_order.buy_token_price.value = BigDecimal::from(new_price);
-            self.take_profit_orders
-                .insert(&(order_id.0 as u64), &current_order);
-
-            Event::UpdateTakeProfitOrderEvent {
-                order_id,
-                price: new_price,
-                pool_id: self
-                    .view_pair(&current_order.sell_token, &current_order.buy_token)
-                    .pool_id,
-            }
-            .emit();
-
-            return PromiseOrValue::Value(true);
-        }
-
-        PromiseOrValue::Value(false)
-    }
-}
-
-impl Contract {
-    pub fn add_or_update_order(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
-        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
-
-        let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
-        user_orders_by_id.insert(order_id, order.clone());
-        self.orders.insert(account_id, &user_orders_by_id);
-
-        let mut pair_orders_by_id = self.orders_per_pair_view.get(&pair_id).unwrap_or_default();
-        pair_orders_by_id.insert(order_id, order);
-        self.orders_per_pair_view
-            .insert(&pair_id, &pair_orders_by_id);
+                    .take_profit_liquidity_callback(order_id, WRatio::from(expect_amount)),
+            );
     }
 }
 

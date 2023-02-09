@@ -50,6 +50,9 @@ pub struct Price {
     pub value: BigDecimal,
 }
 
+/// left і right points for work with liquidity from ref-finance
+pub type PricePoints = (i32, i32);
+
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum OrderStatus {
