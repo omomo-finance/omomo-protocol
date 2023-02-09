@@ -55,13 +55,13 @@ impl Contract {
 
         let sell_token_price = self.view_price(sell_token.clone());
         require!(
-            sell_token_price.value != BigDecimal::zero(),
+            BigDecimal::from(sell_token_price.value) != BigDecimal::zero(),
             "Sell token price cannot be zero"
         );
 
         let buy_token_price = self.view_price(buy_token.clone());
         require!(
-            buy_token_price.value != BigDecimal::zero(),
+            BigDecimal::from(buy_token_price.value) != BigDecimal::zero(),
             "Buy token price cannot be zero"
         );
 
@@ -265,11 +265,12 @@ impl Contract {
         );
 
         let current_order = self.get_order_by(order_id.0).unwrap();
-        let sell_amount = current_order.sell_token_price.value
+        let sell_amount = BigDecimal::from(current_order.sell_token_price.value)
             * BigDecimal::from(U128::from(current_order.amount))
             * current_order.leverage;
-        let expect_amount = self.get_price(&current_order.buy_token) * sell_amount
-            / current_order.buy_token_price.value;
+
+        let expect_amount = self.get_price(current_order.buy_token.clone()) * sell_amount
+            / BigDecimal::from(current_order.buy_token_price.value.clone());
 
         let order = Order {
             status: OrderStatus::PendingOrderExecute,
@@ -291,7 +292,7 @@ impl Contract {
 
         Event::CreateTakeProfitOrderEvent {
             order_id,
-            price: WRatio::from(close_price.value),
+            close_price: WRatio::from(close_price.value),
             pool_id: self
                 .view_pair(&current_order.sell_token, &current_order.buy_token)
                 .pool_id,
@@ -330,7 +331,7 @@ impl Contract {
 
         if let Some(current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             let mut current_order = current_tpo.1;
-            current_order.buy_token_price.value = BigDecimal::from(new_price);
+            current_order.buy_token_price.value = new_price;
             self.take_profit_orders.insert(
                 &(order_id.0 as u64),
                 &(current_tpo.0, current_order.clone()),
@@ -338,7 +339,7 @@ impl Contract {
 
             Event::UpdateTakeProfitOrderEvent {
                 order_id,
-                price: new_price,
+                close_price: new_price,
                 pool_id: self
                     .view_pair(&current_order.buy_token, &current_order.sell_token)
                     .pool_id,
@@ -369,12 +370,12 @@ impl Contract {
     ) {
         let order = self.get_order_by(order_id.0).unwrap();
 
-        let sell_amount = order.sell_token_price.value
+        let sell_amount = BigDecimal::from(order.sell_token_price.value)
             * BigDecimal::from(U128::from(order.amount))
             * order.leverage;
 
-        let expect_amount =
-            self.get_price(&order.buy_token) * sell_amount / order.buy_token_price.value;
+        let expect_amount = self.get_price(order.buy_token.clone()) * sell_amount
+            / BigDecimal::from(order.buy_token_price.value);
 
         let (_, buy_token_decimals) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
@@ -473,7 +474,7 @@ mod tests {
         );
 
         for _ in 0..5 {
-            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
             contract.imitation_add_liquidity_callback(
                 near_sdk::serde_json::from_str(order.as_str()).unwrap(),
             );
@@ -520,23 +521,23 @@ mod tests {
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
+                value: U128(10_u128.pow(24)), // current price token
             },
         );
         contract.update_or_insert_price(
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
                 ticker_id: "near".to_string(),
-                value: BigDecimal::from(U128(3 * 10_u128.pow(24))), // current price token
+                value: U128(3 * 10_u128.pow(24)), // current price token
             },
         );
 
-        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"open_price\":\"2.5\",\"block\":103930912,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
         let new_price = Price {
             ticker_id: "WNEAR".to_string(),
-            value: BigDecimal::from(U128(30500000000000000000000000)),
+            value: U128(30500000000000000000000000),
         };
         let left_point = -9860;
         let right_point = -9820;
@@ -562,7 +563,7 @@ mod tests {
 
         let new_price = Price {
             ticker_id: "WNEAR".to_string(),
-            value: BigDecimal::from(U128(30500000000000000000000000)),
+            value: U128(30500000000000000000000000),
         };
         let left_point = -9860;
         let right_point = -9820;
@@ -601,24 +602,24 @@ mod tests {
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(10_u128.pow(24))), // current price token
+                value: U128(10_u128.pow(24)), // current price token
             },
         );
         contract.update_or_insert_price(
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
                 ticker_id: "near".to_string(),
-                value: BigDecimal::from(U128(3 * 10_u128.pow(24))), // current price token
+                value: U128(3 * 10_u128.pow(24)), // current price token
             },
         );
 
-        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.05\"},\"open_price\":\"2.5\",\"block\":103930912,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
         let new_price = Price {
             ticker_id: "near".to_string(),
-            value: BigDecimal::from(U128(30500000000000000000000000)),
+            value: U128(30500000000000000000000000),
         };
         let left_point = -9860;
         let right_point = -9820;
@@ -635,7 +636,7 @@ mod tests {
 
         let new_price = Price {
             ticker_id: "near".to_string(),
-            value: BigDecimal::from(U128(33500000000000000000000000)),
+            value: U128(33500000000000000000000000),
         };
         contract.set_take_profit_order_price(U128(order_id), WRatio::from(new_price.value));
 

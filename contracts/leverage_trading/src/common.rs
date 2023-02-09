@@ -40,12 +40,12 @@ pub enum Event {
     },
     CreateTakeProfitOrderEvent {
         order_id: U128,
-        price: U128,
+        close_price: U128,
         pool_id: String,
     },
     UpdateTakeProfitOrderEvent {
         order_id: U128,
-        price: U128,
+        close_price: U128,
         pool_id: String,
     },
 }

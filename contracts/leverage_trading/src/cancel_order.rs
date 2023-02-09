@@ -196,9 +196,9 @@ impl Contract {
     ) {
         let buy_amount = BigDecimal::from(U128::from(order.amount))
             * order.leverage
-            * order.sell_token_price.value
-            * self.get_price(&order.buy_token)
-            / order.buy_token_price.value;
+            * BigDecimal::from(order.sell_token_price.value)
+            * self.get_price(order.buy_token.clone())
+            / BigDecimal::from(order.buy_token_price.value);
 
         let (_, buy_token_decimals) =
             self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
@@ -349,7 +349,7 @@ impl Contract {
         log!("Final order cancel attached gas: {}", env::prepaid_gas().0);
 
         let mut order = order;
-        let sell_amount = order.sell_token_price.value
+        let sell_amount = BigDecimal::from(order.sell_token_price.value)
             * BigDecimal::from(U128::from(order.amount))
             * order.leverage;
 
@@ -357,11 +357,11 @@ impl Contract {
 
         let swap_fee = self.get_swap_fee(&order);
 
-        let expect_amount = self.get_price(&order.buy_token)
+        let expect_amount = self.get_price(order.buy_token.clone())
             * sell_amount
             * (BigDecimal::one() - BigDecimal::from(swap_fee))
             * (BigDecimal::one() - BigDecimal::from(price_impact))
-            / order.buy_token_price.value;
+            / BigDecimal::from(order.buy_token_price.value);
 
         self.increase_balance(&signer_account_id(), &order.sell_token, order.amount);
 
@@ -433,18 +433,18 @@ mod tests {
             "usdt.fakes.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(2.0),
+                value: U128::from(2000000000000000000000000),
             },
         );
         contract.update_or_insert_price(
             "wrap.testnet".parse().unwrap(),
             Price {
                 ticker_id: "near".to_string(),
-                value: BigDecimal::from(4.22),
+                value: U128::from(4220000000000000000000000),
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"open_price\":\"2.5\",\"block\":103930916,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930916,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
@@ -457,11 +457,11 @@ mod tests {
             leverage: BigDecimal::from(U128(10_u128.pow(24))),
             sell_token_price: Price {
                 ticker_id: "USDt".to_string(),
-                value: BigDecimal::from(U128(101 * 10_u128.pow(22))),
+                value: U128::from(101 * 10_u128.pow(22)),
             },
             buy_token_price: Price {
                 ticker_id: "near".to_string(),
-                value: BigDecimal::from(U128(307 * 10_u128.pow(22))),
+                value: U128::from(307 * 10_u128.pow(22)),
             },
             open_price: BigDecimal::from(U128(1)),
             block: 105210654,
