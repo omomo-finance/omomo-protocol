@@ -46,7 +46,7 @@ pub struct PnLView {
 #[serde(crate = "near_sdk::serde")]
 pub struct Price {
     pub ticker_id: String,
-    pub value: BigDecimal,
+    pub value: U128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
