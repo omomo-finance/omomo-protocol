@@ -20,6 +20,7 @@ impl Contract {
     /// Executes order by inner order_id set on ref finance once the price range was crossed.
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
     pub fn execute_order(&self, order_id: U128, take_profit_order: bool) -> PromiseOrValue<U128> {
+        #[allow(clippy::let_and_return)]
         let order = if take_profit_order {
             let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
                 Some(tpo.1)

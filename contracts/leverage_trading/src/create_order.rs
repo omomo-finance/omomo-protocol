@@ -270,7 +270,7 @@ impl Contract {
             * current_order.leverage;
 
         let expect_amount = self.get_price(current_order.buy_token.clone()) * sell_amount
-            / BigDecimal::from(current_order.buy_token_price.value.clone());
+            / BigDecimal::from(current_order.buy_token_price.value);
 
         let order = Order {
             status: OrderStatus::PendingOrderExecute,
@@ -292,7 +292,7 @@ impl Contract {
 
         Event::CreateTakeProfitOrderEvent {
             order_id,
-            close_price: WRatio::from(close_price.value),
+            close_price: close_price.value,
             pool_id: self
                 .view_pair(&current_order.sell_token, &current_order.buy_token)
                 .pool_id,
