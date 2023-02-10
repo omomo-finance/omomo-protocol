@@ -14,6 +14,7 @@ pub enum StorageKeys {
     Balances,
     TokenMarkets,
     ProtocolProfit,
+    TakeProfitOrders,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
@@ -35,14 +36,14 @@ pub struct MarketData {
     pub borrow_rate_ratio: WRatio,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct PnLView {
     pub is_profit: bool,
     pub amount: U128,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Price {
     pub ticker_id: String,
@@ -65,7 +66,14 @@ pub enum OrderType {
     Sell,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub enum PositionType {
+    Long,
+    Short,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Order {
     pub status: OrderStatus,
@@ -221,4 +229,32 @@ pub struct LimitOrders {
     pub data: Vec<LimitOrderView>,
     pub page: U128,
     pub total_orders: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LeveragedPositionView {
+    pub time_stamp: Timestamp,
+    pub pair: String,
+    pub order_type: String,
+    pub side: PositionType,
+    /// (buy_token_price / sell_token_price from order)
+    pub price: WBalance,
+    pub leverage: U128,
+    pub amount: U128,
+    /// (0% if an order is pending, 100% if an order is executed)
+    pub filled: u8,
+    /// (amount * sell_token_price)
+    pub total: WBalance,
+    pub pnl: PnLView,
+    /// Optional field with Take profit order related to the position
+    pub take_profit_order: Option<LimitOrderView>,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LeveragedPositions {
+    pub data: Vec<LeveragedPositionView>,
+    pub page: U128,
+    pub total_positions: U128,
 }
