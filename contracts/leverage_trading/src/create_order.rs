@@ -123,7 +123,9 @@ impl Contract {
 
                 (amount, amount_x, amount_y, token_to_add_liquidity)
             }
-            _ => todo!("Currently, the functionality is developed only for 'Buy' and 'Sell' order types"),
+            _ => todo!(
+                "Currently, the functionality is developed only for 'Buy' and 'Sell' order types"
+            ),
         };
 
         let min_amount_x = U128::from(0);

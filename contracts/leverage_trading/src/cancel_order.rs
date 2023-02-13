@@ -152,7 +152,9 @@ impl Contract {
         let (min_amount_x, min_amount_y) = match order.order_type {
             OrderType::Buy => (liquidity.amount.0 - 1000, 0),
             OrderType::Sell => (0, liquidity.amount.0 - 1000),
-            _ => todo!("Currently, the functionality is developed only for 'Buy' and 'Sell' order types"),
+            _ => todo!(
+                "Currently, the functionality is developed only for 'Buy' and 'Sell' order types"
+            ),
         };
 
         require!(

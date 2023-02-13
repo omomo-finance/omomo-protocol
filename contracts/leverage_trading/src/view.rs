@@ -533,11 +533,7 @@ impl Contract {
             1_u8
         };
 
-        let pnl = self.calculate_pnl(
-            account_id.clone(),
-            U128(*order_id as u128),
-            market_data.clone(),
-        );
+        let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
         let take_profit_order = self.get_take_profit_order(order_id);
 
