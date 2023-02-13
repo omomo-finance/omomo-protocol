@@ -69,8 +69,9 @@ impl Contract {
             .clone();
 
         match order.order_type {
-            OrderType::Buy => self.calculate_pnl_buy_order(order, data),
-            OrderType::Sell => self.calculate_pnl_sell_order(order, data),
+            OrderType::Long => self.calculate_pnl_long_order(order, data),
+            OrderType::Short => self.calculate_pnl_short_order(order, data),
+            _ => panic!("PnL calculation only for 'Long' and 'Short' order types"),
         }
     }
 
@@ -338,7 +339,7 @@ impl Contract {
             })
             .collect::<Vec<LimitOrderView>>();
 
-        pending_limit_orders.sort_by(|a, b| a.time_stamp.cmp(&b.time_stamp));
+        pending_limit_orders.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
         let total_orders = U128(pending_limit_orders.len() as u128);
 
@@ -379,7 +380,7 @@ impl Contract {
             })
             .collect::<Vec<LimitOrderView>>();
 
-        pending_limit_orders.sort_by(|a, b| a.time_stamp.cmp(&b.time_stamp));
+        pending_limit_orders.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
         let total_orders = U128(pending_limit_orders.len() as u128);
 
@@ -422,7 +423,7 @@ impl Contract {
             })
             .collect::<Vec<LeveragedPositionView>>();
 
-        pending_limit_orders.sort_by(|a, b| a.time_stamp.cmp(&b.time_stamp));
+        pending_limit_orders.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
         let total_positions = U128(pending_limit_orders.len() as u128);
 
@@ -473,7 +474,7 @@ impl Contract {
             })
             .collect::<Vec<LeveragedPositionView>>();
 
-        pending_limit_orders.sort_by(|a, b| a.time_stamp.cmp(&b.time_stamp));
+        pending_limit_orders.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
         let total_positions = U128(pending_limit_orders.len() as u128);
 
@@ -501,7 +502,7 @@ impl Contract {
             BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
 
         Some(LimitOrderView {
-            time_stamp: order.time_stamp_ms,
+            timestamp: order.timestamp_ms,
             pair,
             order_type: "Limit".to_string(),
             side: order.order_type.clone(),
@@ -523,11 +524,6 @@ impl Contract {
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-        let side = match order.order_type {
-            OrderType::Buy => PositionType::Long,
-            OrderType::Sell => PositionType::Short,
-        };
-
         let total =
             BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
 
@@ -546,10 +542,9 @@ impl Contract {
         let take_profit_order = self.get_take_profit_order(order_id);
 
         Some(LeveragedPositionView {
-            time_stamp: order.time_stamp_ms,
+            timestamp: order.timestamp_ms,
             pair,
-            order_type: "Margin".to_string(),
-            side,
+            order_type: order.order_type.clone(),
             price: WBigDecimal::from(order.open_price),
             leverage: WBigDecimal::from(order.leverage),
             amount: U128(order.amount),
@@ -560,7 +555,7 @@ impl Contract {
         })
     }
 
-    pub fn get_take_profit_order(&self, order_id: &u64) -> Option<LimitOrderView> {
+    pub fn get_take_profit_order(&self, order_id: &u64) -> Option<TakeProfitOrderView> {
         match self.take_profit_orders.get(order_id) {
             Some(order) => {
                 if order.status == OrderStatus::Pending {
@@ -572,11 +567,10 @@ impl Contract {
                     let total = BigDecimal::from(U128(order.amount))
                         * BigDecimal::from(order.sell_token_price.value);
 
-                    Some(LimitOrderView {
-                        time_stamp: order.time_stamp_ms,
+                    Some(TakeProfitOrderView {
+                        timestamp: order.timestamp_ms,
                         pair,
-                        order_type: "Limit".to_string(),
-                        side: order.order_type.clone(),
+                        order_type: order.order_type.clone(),
                         price: WBigDecimal::from(order.open_price),
                         amount: U128(order.amount),
                         filled: 0,
@@ -677,7 +671,7 @@ mod tests {
         contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
 
         let price_impact = U128(1);
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
         for count in 0..9 {
@@ -790,7 +784,7 @@ mod tests {
         };
         contract.add_pair(pair_data);
 
-        let order = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order);
 
         contract.update_or_insert_price(
@@ -921,10 +915,10 @@ mod tests {
 
         let borrow_rate_ratio = U128(634273735391536);
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#540\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
-        let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#541\"}".to_string();
+        let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#541\"}".to_string();
         contract.add_order_from_string(alice(), order2);
 
         let order_id = U128(1); //order_id for order1
@@ -993,13 +987,13 @@ mod tests {
 
         let borrow_rate_ratio = U128(634273735391536);
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#540\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
-        let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930911,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#541\"}".to_string();
+        let order2 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930911,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#541\"}".to_string();
         contract.add_order_from_string(alice(), order2);
 
-        let order3 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930912,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#542\"}".to_string();
+        let order3 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930912,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#542\"}".to_string();
         contract.add_order_from_string(bob(), order3);
 
         let block_order1 = 103930910_u64;
@@ -1182,6 +1176,7 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        // pair data for "USDT/WNEAR"
         let pair_data = TradePair {
             sell_ticker_id: "USDT".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -1199,26 +1194,26 @@ mod tests {
 
         for count in 0..6 {
             if count < 1 {
-                // order with status of "Pending" on leverage "1.0" and wirh time stamp "86400000"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                // order with status of "Pending" on leverage "1.0" and with timestamp "86400000"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 2 {
-                // order with status of "Pending" on leverage "1.0"and wirh time stamp "86400001"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                // order with status of "Pending" on leverage "1.0"and with timestamp "86400001"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 4 {
                 // order with status of "Pending" on leverage "2.0"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else {
                 // order with status of "Executed" on leverage "1.0"
-                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             }
         }
 
         let true_2nd_limit_order = LimitOrderView {
-            time_stamp: 86400001,
+            timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: "Limit".to_string(),
             side: OrderType::Buy,
@@ -1242,11 +1237,13 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        // pair id "USDT/WNEAR"
         let pair_id: PairId = (
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
         );
 
+        // pair data for "USDT/WNEAR"
         let pair_data1 = TradePair {
             sell_ticker_id: "USDT".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -1260,6 +1257,7 @@ mod tests {
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
 
+        // pair data for "WNEAR/USDT"
         let pair_data2 = TradePair {
             sell_ticker_id: "WNEAR".to_string(),
             sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -1278,30 +1276,30 @@ mod tests {
 
         for count in 0..6 {
             if count < 1 {
-                // der with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR" wirh time stamp "86400000"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                // order with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR" with timestamp "86400000"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 2 {
-                // der with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR" wirh time stamp "86400001"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                // order with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR" with timestamp "86400001"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 3 {
                 // order with status of "Pending" on leverage "1.0" and in pair "WNEAR/USDT"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 4 {
                 // order with status of "Pending" on leverage "2.0" and in pair "USDT/WNEAR"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else {
                 // order with status of "Executed" on leverage "1.0" and in pair "USDT/WNEAR"
-                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             }
         }
 
         let true_2nd_limit_order = LimitOrderView {
-            time_stamp: 86400001,
+            timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: "Limit".to_string(),
             side: OrderType::Buy,
@@ -1339,27 +1337,24 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_data = TradePair {
-            sell_ticker_id: "USDT".to_string(),
-            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            sell_token_decimals: 6,
-            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_ticker_id: "WNEAR".to_string(),
-            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_token_decimals: 24,
-            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
-            max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(3 * 10_u128.pow(20)),
-        };
-
-        contract.add_pair(pair_data);
-
-        // order with status of "Executed" on leverage "1.0"
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-        contract.add_order_from_string(alice(), order_as_string);
+        for count in 0..3 {
+            if count < 1 {
+                // order with status of "Liquidated" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Liquidated\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 2 {
+                // order with status of "Canceled" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Canceled\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else {
+                // order with status of "Executed" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400002,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            }
+        }
 
         let limit_orders = contract.view_pending_limit_orders_by_user(alice(), U128(10), U128(1));
-        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 1_usize);
+        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 3_usize);
         assert_eq!(limit_orders.data.len(), 0_usize);
         assert_eq!(limit_orders.total_orders, U128(0));
     }
@@ -1371,11 +1366,13 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        // pair id "WNEAR/USDT"
         let pair_id: PairId = (
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
         );
 
+        // pair data for "USDT/WNEAR"
         let pair_data = TradePair {
             sell_ticker_id: "USDT".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -1391,9 +1388,25 @@ mod tests {
 
         contract.add_pair(pair_data);
 
-        // order with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR"
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-        contract.add_order_from_string(alice(), order_as_string);
+        for count in 0..4 {
+            if count < 1 {
+                // order with status of "Liquidated" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Liquidated\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 2 {
+                // order with status of "Canceled" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Canceled\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 3 {
+                // order with status of "Executed" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400002,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else {
+                // order with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            }
+        }
 
         // view pending limit orders by pair "WNEAR/USDT"
         let limit_orders = contract.view_pending_limit_orders_by_user_by_pair(
@@ -1404,7 +1417,7 @@ mod tests {
             U128(1),
         );
 
-        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 1_usize);
+        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 4_usize);
         assert_eq!(
             contract
                 .view_pending_limit_orders_by_user(alice(), U128(10), U128(1))
@@ -1426,153 +1439,7 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_data = TradePair {
-            sell_ticker_id: "USDT".to_string(),
-            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            sell_token_decimals: 6,
-            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_ticker_id: "WNEAR".to_string(),
-            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            buy_token_decimals: 24,
-            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
-            max_leverage: U128(25 * 10_u128.pow(23)),
-            swap_fee: U128(3 * 10_u128.pow(20)),
-        };
-
-        contract.add_pair(pair_data);
-
-        let market_data = Some(MarketData {
-            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
-            underlying_token_decimals: 6,
-            total_supplies: U128(10_u128.pow(24)),
-            total_borrows: U128(10_u128.pow(24)),
-            total_reserves: U128(10_u128.pow(24)),
-            exchange_rate_ratio: U128(10_u128.pow(24)),
-            interest_rate_ratio: U128(10_u128.pow(24)),
-            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
-        });
-
-        contract.update_or_insert_price(
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDT".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "WNEAR".to_string(),
-                value: U128::from(3 * 10_u128.pow(24)), // current price token
-            },
-        );
-
-        for count in 0..6 {
-            if count < 1 {
-                // order with status of "Pending" on leverage "3.0" and wirh time stamp "86400000"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-                contract.add_order_from_string(alice(), order_as_string);
-            } else if count < 2 {
-                // order with status of "Executed" on leverage "2.0" and wirh time stamp "86400001"
-                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Sell\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-                contract.add_order_from_string(alice(), order_as_string);
-            } else if count < 4 {
-                // order with status of "Pending" on leverage "1.0"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400002,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-                contract.add_order_from_string(alice(), order_as_string);
-            } else {
-                // order with status of "Executed" on leverage "1.0"
-                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":4000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400003,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-                contract.add_order_from_string(alice(), order_as_string);
-            }
-        }
-        //tare-profit order
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
-        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
-
-        contract.take_profit_orders.insert(&2, &order);
-
-        // opened position with take-profit order
-        let true_1st_opened_position = LeveragedPositionView {
-            time_stamp: 86400000,
-            pair: "USDT/WNEAR".to_string(),
-            order_type: "Margin".to_string(),
-            side: PositionType::Long,
-            price: U128(25 * 10_u128.pow(23)),
-            leverage: U128(3 * 10_u128.pow(24)),
-            amount: U128(2 * 10_u128.pow(27)),
-            filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
-            pnl: PnLView {
-                is_profit: true,
-                amount: U128(114784 * 10_u128.pow(22)),
-            },
-            take_profit_order: None,
-        };
-
-        // opened position without take-profit order
-        let true_2nd_opened_position = LeveragedPositionView {
-            time_stamp: 86400001,
-            pair: "USDT/WNEAR".to_string(),
-            order_type: "Margin".to_string(),
-            side: PositionType::Short,
-            price: U128(25 * 10_u128.pow(23)),
-            leverage: U128(3 * 10_u128.pow(24)),
-            amount: U128(2 * 10_u128.pow(27)),
-            filled: 1,
-            total: U128(3 * 10_u128.pow(27)),
-            pnl: PnLView {
-                is_profit: false,
-                amount: U128(12918 * 10_u128.pow(23)),
-            },
-            take_profit_order: Some(LimitOrderView {
-                time_stamp: 86400050,
-                pair: "USDT/WNEAR".to_string(),
-                order_type: "Limit".to_string(),
-                side: OrderType::Buy,
-                price: U128(25 * 10_u128.pow(23)),
-                amount: U128(2 * 10_u128.pow(27)),
-                filled: 0,
-                total: U128(3 * 10_u128.pow(27)),
-            }),
-        };
-
-        let opened_positions = contract.view_opened_leverage_positions_by_user(
-            alice(),
-            market_data,
-            U128(10),
-            U128(1),
-        );
-        println!("{opened_positions:#?}");
-        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 6_usize);
-        assert_eq!(opened_positions.data.len(), 2_usize);
-        assert_eq!(opened_positions.total_positions, U128(2));
-        assert_eq!(
-            opened_positions.data.get(0).unwrap(),
-            &true_1st_opened_position
-        );
-        assert_eq!(
-            opened_positions.data.get(1).unwrap(),
-            &true_2nd_opened_position
-        );
-    }
-
-    #[test]
-    fn test_view_opened_leverage_positions_by_user_by_pair() {
-        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
-        let context = get_context(false, current_day);
-        testing_env!(context);
-
-        let mut contract = Contract::new_with_config(
-            "owner_id.testnet".parse().unwrap(),
-            "oracle_account_id.testnet".parse().unwrap(),
-        );
-
-        let pair_id: PairId = (
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
-
+        // pair data for "USDT/WNEAR"
         let pair_data1 = TradePair {
             sell_ticker_id: "USDT".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -1586,6 +1453,7 @@ mod tests {
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
 
+        // pair data for "WNEAR/USDT"
         let pair_data2 = TradePair {
             sell_ticker_id: "WNEAR".to_string(),
             sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -1630,35 +1498,35 @@ mod tests {
 
         for count in 0..6 {
             if count < 1 {
-                // order with status of "Executed" on leverage "3.0" and in pair "WNEAR/USDT" wirh time stamp "86400000"
-                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                // order with status of "Pending" on leverage "3.0" and with timestamp "86400000"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 2 {
-                // order with status of "Pending" on leverage "2.0" and in pair "USDT/WNEAR" wirh time stamp "86400001"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Sell\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                // order with status of "Executed" on leverage "3.0" and with timestamp "86400001"
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 4 {
                 // order with status of "Pending" on leverage "1.0"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400002,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400002,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else {
                 // order with status of "Executed" on leverage "1.0"
-                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":4000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400003,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":4000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400003,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             }
         }
-
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        // take-profit order for order with timestamp "86400001"
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.take_profit_orders.insert(&1, &order);
+        contract.take_profit_orders.insert(&2, &order);
 
         // opened position without take-profit order
         let true_1st_opened_position = LeveragedPositionView {
-            time_stamp: 86400000,
-            pair: "WNEAR/USDT".to_string(),
-            order_type: "Margin".to_string(),
-            side: PositionType::Long,
+            timestamp: 86400000,
+            pair: "USDT/WNEAR".to_string(),
+            order_type: OrderType::Long,
+            // side: PositionType::Long,
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
@@ -1671,42 +1539,39 @@ mod tests {
             take_profit_order: None,
         };
 
-        // // opened position without take-profit order
-        // let true_2nd_opened_position = LeveragedPositionView {
-        //     time_stamp: 86400001,
-        //     pair: "USDT/WNEAR".to_string(),
-        //     order_type: "Margin".to_string(),
-        //     side: PositionType::Short,
-        //     price: U128(25 * 10_u128.pow(23)),
-        //     leverage: U128(3 * 10_u128.pow(24)),
-        //     amount: U128(2 * 10_u128.pow(27)),
-        //     filled: 1,
-        //     total: U128(3 * 10_u128.pow(27)),
-        //     pnl: PnLView {
-        //         is_profit: false,
-        //         amount: U128(12918 * 10_u128.pow(23)),
-        //     },
-        //     take_profit_order: Some(LimitOrderView {
-        //         time_stamp: 86400050,
-        //         pair: "USDT/WNEAR".to_string(),
-        //         order_type: "Limit".to_string(),
-        //         side: OrderType::Buy,
-        //         price: U128(25 * 10_u128.pow(23)),
-        //         amount: U128(2 * 10_u128.pow(27)),
-        //         filled: 0,
-        //         total: U128(3 * 10_u128.pow(27)),
-        //     }),
-        // };
+        // opened position with take-profit order
+        let true_2nd_opened_position = LeveragedPositionView {
+            timestamp: 86400001,
+            pair: "USDT/WNEAR".to_string(),
+            order_type: OrderType::Short,
+            // side: PositionType::Short,
+            price: U128(25 * 10_u128.pow(23)),
+            leverage: U128(3 * 10_u128.pow(24)),
+            amount: U128(2 * 10_u128.pow(27)),
+            filled: 1,
+            total: U128(3 * 10_u128.pow(27)),
+            pnl: PnLView {
+                is_profit: false,
+                amount: U128(12918 * 10_u128.pow(23)),
+            },
+            take_profit_order: Some(TakeProfitOrderView {
+                timestamp: 86400050,
+                pair: "WNEAR/USDT".to_string(),
+                order_type: OrderType::TP,
+                price: U128(25 * 10_u128.pow(23)),
+                amount: U128(2 * 10_u128.pow(27)),
+                filled: 0,
+                total: U128(3 * 10_u128.pow(27)),
+            }),
+        };
 
-        let opened_positions = contract.view_opened_leverage_positions_by_user_by_pair(
+        let opened_positions = contract.view_opened_leverage_positions_by_user(
             alice(),
-            pair_id.0,
-            pair_id.1,
             market_data,
             U128(10),
             U128(1),
         );
-        println!("{opened_positions:#?}");
+
         assert_eq!(contract.orders.get(&alice()).unwrap().len(), 6_usize);
         assert_eq!(opened_positions.data.len(), 2_usize);
         assert_eq!(opened_positions.total_positions, U128(2));
@@ -1714,9 +1579,317 @@ mod tests {
             opened_positions.data.get(0).unwrap(),
             &true_1st_opened_position
         );
-        // assert_eq!(
-        //     opened_positions.data.get(1).unwrap(),
-        //     &true_2nd_opened_position
-        // );
+        assert_eq!(
+            opened_positions.data.get(1).unwrap(),
+            &true_2nd_opened_position
+        );
+    }
+
+    #[test]
+    fn test_view_opened_leverage_positions_by_user_by_pair() {
+        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
+        let context = get_context(false, current_day);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // pair id "WNEAR/USDT"
+        let pair_id: PairId = (
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+        );
+
+        // pair data for "USDT/WNEAR"
+        let pair_data1 = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        // pair data for "WNEAR/USDT"
+        let pair_data2 = TradePair {
+            sell_ticker_id: "WNEAR".to_string(),
+            sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "wnear_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "USDT".to_string(),
+            buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 6,
+            pool_id: "wnear.qa.v1.nearlend.testnet|usdt.qa.v1.nearlend.testnet|2001".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data1);
+        contract.add_pair(pair_data2);
+
+        let market_data = Some(MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
+            underlying_token_decimals: 6,
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        });
+
+        contract.update_or_insert_price(
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDT".to_string(),
+                value: U128::from(10_u128.pow(24)), // current price token
+            },
+        );
+        contract.update_or_insert_price(
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "WNEAR".to_string(),
+                value: U128::from(3 * 10_u128.pow(24)), // current price token
+            },
+        );
+
+        for count in 0..6 {
+            if count < 1 {
+                // order with status of "Pending" on leverage "3.0" and in pair "USDT/WNEAR" with timestamp "86400000"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 2 {
+                // order with status of "Executed" on leverage "2.0" and in pair "WNEAR/USDT" with timestamp "86400001"
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 3 {
+                // order with status of "Pending" on leverage "4.0" and in pair "WNEAR/USDT" with timestamp "86400002"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"4.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400002,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 4 {
+                // order with status of "Pending" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400003,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else {
+                // order with status of "Executed" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":4000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400004,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            }
+        }
+        // take-profit order for order with timestamp "86400001"
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+
+        contract.take_profit_orders.insert(&2, &order);
+
+        // opened position with take-profit order in pair "WNEAR/USDT"
+        let true_1st_opened_position_by_pair = LeveragedPositionView {
+            timestamp: 86400001,
+            pair: "WNEAR/USDT".to_string(),
+            order_type: OrderType::Short,
+            price: U128(25 * 10_u128.pow(23)),
+            leverage: U128(2 * 10_u128.pow(24)),
+            amount: U128(2 * 10_u128.pow(27)),
+            filled: 1,
+            total: U128(3 * 10_u128.pow(27)),
+            pnl: PnLView {
+                is_profit: false,
+                amount: U128(2153 * 10_u128.pow(23)),
+            },
+            take_profit_order: Some(TakeProfitOrderView {
+                timestamp: 86400050,
+                pair: "USDT/WNEAR".to_string(),
+                order_type: OrderType::TP,
+                price: U128(25 * 10_u128.pow(23)),
+                amount: U128(2 * 10_u128.pow(27)),
+                filled: 0,
+                total: U128(3 * 10_u128.pow(27)),
+            }),
+        };
+
+        // opened position without take-profit order in pair "USDT/WNEAR"
+        let true_2nd_opened_position_by_pair = LeveragedPositionView {
+            timestamp: 86400002,
+            pair: "WNEAR/USDT".to_string(),
+            order_type: OrderType::Short,
+            price: U128(25 * 10_u128.pow(23)),
+            leverage: U128(4 * 10_u128.pow(24)),
+            amount: U128(2 * 10_u128.pow(27)),
+            filled: 0,
+            total: U128(3 * 10_u128.pow(27)),
+            pnl: PnLView {
+                is_profit: false,
+                amount: U128(6459 * 10_u128.pow(23)),
+            },
+            take_profit_order: None,
+        };
+
+        let opened_positions = contract.view_opened_leverage_positions_by_user_by_pair(
+            alice(),
+            pair_id.0,
+            pair_id.1,
+            market_data.clone(),
+            U128(10),
+            U128(1),
+        );
+
+        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 6_usize);
+        assert_eq!(
+            contract
+                .view_opened_leverage_positions_by_user(alice(), market_data, U128(10), U128(1))
+                .total_positions,
+            U128(3)
+        );
+        assert_eq!(opened_positions.data.len(), 2_usize);
+        assert_eq!(opened_positions.total_positions, U128(2));
+        assert_eq!(
+            opened_positions.data.get(0).unwrap(),
+            &true_1st_opened_position_by_pair
+        );
+        assert_eq!(
+            opened_positions.data.get(1).unwrap(),
+            &true_2nd_opened_position_by_pair
+        );
+    }
+
+    #[test]
+    fn test_view_view_opened_leverage_positions_when_user_has_no_opened_positions() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // pair data for "USDT/WNEAR"
+        let pair_data = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data);
+
+        let market_data = Some(MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
+            underlying_token_decimals: 6,
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        });
+
+        for count in 0..3 {
+            if count < 1 {
+                // order with status of "Pending" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 2 {
+                // order with status of "Liquidated" on leverage "2.0"
+                let order_as_string = "{\"status\":\"Liquidated\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else {
+                // order with status of "Canceled" on leverage "3.0"
+                let order_as_string = "{\"status\":\"Canceled\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            }
+        }
+
+        let limit_orders = contract.view_opened_leverage_positions_by_user(
+            alice(),
+            market_data,
+            U128(10),
+            U128(1),
+        );
+        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 3_usize);
+        assert_eq!(limit_orders.data.len(), 0_usize);
+        assert_eq!(limit_orders.total_positions, U128(0));
+    }
+
+    #[test]
+    fn test_view_view_opened_leverage_positions_when_user_has_no_view_opened_positions_by_pair() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // pair id "WNEAR/USDT"
+        let pair_id: PairId = (
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+        );
+
+        // pair data for "USDT/WNEAR"
+        let pair_data = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data);
+
+        let market_data = Some(MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
+            underlying_token_decimals: 6,
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        });
+
+        for count in 0..4 {
+            if count < 1 {
+                // order with status of "Pending" on leverage "1.0"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 2 {
+                // order with status of "Liquidated" on leverage "2.0"
+                let order_as_string = "{\"status\":\"Liquidated\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else if count < 3 {
+                // order with status of "Canceled" on leverage "3.0"
+                let order_as_string = "{\"status\":\"Canceled\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            } else {
+                // order with status of "Pending" on leverage "3.0" in pair "USDT/WNEAR"
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                contract.add_order_from_string(alice(), order_as_string);
+            }
+        }
+
+        // view opened leverage positions in pair "WNEAR/USDT"
+        let limit_orders = contract.view_opened_leverage_positions_by_user_by_pair(
+            alice(),
+            pair_id.0,
+            pair_id.1,
+            market_data,
+            U128(10),
+            U128(1),
+        );
+        assert_eq!(contract.orders.get(&alice()).unwrap().len(), 4_usize);
+        assert_eq!(limit_orders.data.len(), 0_usize);
+        assert_eq!(limit_orders.total_positions, U128(0));
     }
 }

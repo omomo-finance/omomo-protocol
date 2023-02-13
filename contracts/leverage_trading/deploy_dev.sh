@@ -132,17 +132,17 @@ near view $CONTRACT_ID view_price '{"token_id":"'$ETH_TOKEN'"}'
 # add mock orders
 near call $CONTRACT_ID add_order_from_string '{
         "account_id":"'$CONTRACT_ID'",
-        "order":"{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1000000100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"2.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"open_price\":\"2.5\",\"block\":103930916,\"time_stamp_ms\":86400000,\"lpt_id\":\"1\"}"
+        "order":"{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":1000000100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"2.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4.22\"},\"open_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"1\"}"
     }' --accountId $CONTRACT_ID &
 
 near call $CONTRACT_ID add_order_from_string '{
         "account_id":"'$CONTRACT_ID'",
-        "order":"{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"1.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.01\"},\"open_price\":\"2.5\",\"block\":103930917,\"time_stamp_ms\":86400000,\"lpt_id\":\"2\"}"
+        "order":"{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"1.5\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"1.01\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.01\"},\"open_price\":\"2.5\",\"block\":103930917,\"timestamp_ms\":86400000,\"lpt_id\":\"2\"}"
     }' --accountId $CONTRACT_ID &
 
 near call $CONTRACT_ID add_order_from_string '{
         "account_id":"'$CONTRACT_ID'",
-        "order":"{\"status\":\"Canceled\",\"order_type\":\"Buy\",\"amount\":2000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"0.99\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.99\"},\"open_price\":\"2.5\",\"block\":103930918,\"time_stamp_ms\":86400000,\"lpt_id\":\"3\"}"
+        "order":"{\"status\":\"Canceled\",\"order_type\":\"Buy\",\"amount\":2000001100000000000000000000,\"sell_token\":\"'$USDT_TOKEN'\",\"buy_token\":\"'$NEAR_TOKEN'\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDt\",\"value\":\"0.99\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3.99\"},\"open_price\":\"2.5\",\"block\":103930918,\"timestamp_ms\":86400000,\"lpt_id\":\"3\"}"
     }' --accountId $CONTRACT_ID &
 
 

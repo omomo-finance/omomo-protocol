@@ -152,6 +152,7 @@ impl Contract {
         let (min_amount_x, min_amount_y) = match order.order_type {
             OrderType::Buy => (liquidity.amount.0 - 1000, 0),
             OrderType::Sell => (0, liquidity.amount.0 - 1000),
+            _ => todo!("Currently, the functionality is developed only for 'Buy' and 'Sell' order types"),
         };
 
         require!(
@@ -444,7 +445,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930916,\"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
@@ -454,7 +455,7 @@ mod tests {
             amount: 100000000000000000000000000,
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
             buy_token: "wrap.testnet".parse().unwrap(),
-            leverage: BigDecimal::from(U128(10_u128.pow(24))),
+            leverage: BigDecimal::from(U128(2 * 10_u128.pow(24))),
             sell_token_price: Price {
                 ticker_id: "USDt".to_string(),
                 value: U128::from(101 * 10_u128.pow(22)),
@@ -465,7 +466,7 @@ mod tests {
             },
             open_price: BigDecimal::from(U128(1)),
             block: 105210654,
-            time_stamp_ms: 1675423354862,
+            timestamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
         };
 

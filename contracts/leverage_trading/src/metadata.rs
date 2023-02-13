@@ -64,13 +64,10 @@ pub enum OrderStatus {
 pub enum OrderType {
     Buy,
     Sell,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(crate = "near_sdk::serde")]
-pub enum PositionType {
     Long,
     Short,
+    /// Take-Profit
+    TP,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
@@ -87,7 +84,7 @@ pub struct Order {
     /// position opening price (xrate)
     pub open_price: BigDecimal,
     pub block: BlockHeight,
-    pub time_stamp_ms: Timestamp,
+    pub timestamp_ms: Timestamp,
     pub lpt_id: String,
 }
 
@@ -210,7 +207,7 @@ pub struct PendingOrders {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LimitOrderView {
-    pub time_stamp: Timestamp,
+    pub timestamp: Timestamp,
     pub pair: String,
     pub order_type: String,
     pub side: OrderType,
@@ -234,10 +231,9 @@ pub struct LimitOrders {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LeveragedPositionView {
-    pub time_stamp: Timestamp,
+    pub timestamp: Timestamp,
     pub pair: String,
-    pub order_type: String,
-    pub side: PositionType,
+    pub order_type: OrderType,
     /// (buy_token_price / sell_token_price from order)
     pub price: WBalance,
     pub leverage: U128,
@@ -248,7 +244,7 @@ pub struct LeveragedPositionView {
     pub total: WBalance,
     pub pnl: PnLView,
     /// Optional field with Take profit order related to the position
-    pub take_profit_order: Option<LimitOrderView>,
+    pub take_profit_order: Option<TakeProfitOrderView>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
@@ -257,4 +253,19 @@ pub struct LeveragedPositions {
     pub data: Vec<LeveragedPositionView>,
     pub page: U128,
     pub total_positions: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TakeProfitOrderView {
+    pub timestamp: Timestamp,
+    pub pair: String,
+    pub order_type: OrderType,
+    /// position opening price (xrate)
+    pub price: WBalance,
+    pub amount: U128,
+    /// (0% if an order is pending, 100% if an order is executed)
+    pub filled: u8,
+    /// (amount * sell_token_price)
+    pub total: WBalance,
 }

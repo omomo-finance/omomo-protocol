@@ -75,7 +75,7 @@ impl Contract {
             buy_token_price,
             open_price: BigDecimal::from(open_price),
             block: env::block_height(),
-            time_stamp_ms: env::block_timestamp_ms(),
+            timestamp_ms: env::block_timestamp_ms(),
             lpt_id: "".to_string(),
         };
 
@@ -123,6 +123,7 @@ impl Contract {
 
                 (amount, amount_x, amount_y, token_to_add_liquidity)
             }
+            _ => todo!("Currently, the functionality is developed only for 'Buy' and 'Sell' order types"),
         };
 
         let min_amount_x = U128::from(0);
@@ -334,7 +335,7 @@ mod tests {
         );
 
         for _ in 0..5 {
-            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
             contract.imitation_add_liquidity_callback(
                 near_sdk::serde_json::from_str(order.as_str()).unwrap(),
             );
