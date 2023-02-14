@@ -18,7 +18,7 @@ NEAR_TOKEN_DECIMALS=24
 
 USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
 USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
-USDT_TOKEN_DECIMALS=6
+USDT_TOKEN_DECIMALS=24
 
 USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
 USDC_MARKET=usdc_market.develop.v1.omomo-finance.testnet
@@ -64,7 +64,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_token_decimals": '$NEAR_TOKEN_DECIMALS',
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
-            "swap_fee": "300000000000000000000"
+            "swap_fee": "200000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 
@@ -79,7 +79,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_token_decimals": '$ETH_TOKEN_DECIMALS',
             "pool_id": "'$USDT_TOKEN'|'$ETH_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
-            "swap_fee": "300000000000000000000"
+            "swap_fee": "200000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 

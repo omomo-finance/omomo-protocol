@@ -59,7 +59,7 @@ impl Contract {
         let remove_liquidity_amount = position.amount;
 
         let min_amount_x = 0;
-        let min_amount_y = BigDecimal::from(order.amount)
+        let min_amount_y = BigDecimal::from(U128::from(order.amount))
             * order.leverage
             * BigDecimal::from(order.sell_token_price.value)
             / BigDecimal::from(order.buy_token_price.value);

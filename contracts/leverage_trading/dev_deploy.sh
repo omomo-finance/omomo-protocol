@@ -13,7 +13,7 @@ NEAR_TOKEN_DECIMALS=24
 
 USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
 USDT_MARKET=usdt_market.develop.v1.omomo-finance.testnet
-USDT_TOKEN_DECIMALS=6
+USDT_TOKEN_DECIMALS=24
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 ORACLE_ACCOUNT=oracle.omomo-finance.testnet
 
@@ -40,7 +40,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_token_decimals": '$NEAR_TOKEN_DECIMALS',
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
-            "swap_fee": "300000000000000000000"
+            "swap_fee": "200000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 
@@ -55,7 +55,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_token_decimals": '$USDT_TOKEN_DECIMALS',
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
-            "swap_fee": "300000000000000000000"
+            "swap_fee": "200000000000000000000"
         }
     }' --accountId $CONTRACT_ID &
 
@@ -87,7 +87,7 @@ near call $CONTRACT_ID update_or_insert_price '{
     "token_id":"'$NEAR_TOKEN'",
     "price":{
         "ticker_id":"near",
-        "value":"3070000000000000000000000"
+        "value":"2570000000000000000000000"
     }
 }' --accountId $CONTRACT_ID &
 
