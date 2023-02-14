@@ -265,10 +265,14 @@ impl Contract {
         );
 
         let current_order = self.get_order_by(order_id.0).unwrap();
+        require!(
+            current_order.buy_token_price.value.0 < close_price.value.0,
+            "Close price must be greater then current buy token price."
+        );
+
         let sell_amount = BigDecimal::from(current_order.sell_token_price.value)
             * BigDecimal::from(U128::from(current_order.amount))
             * current_order.leverage;
-
         let expect_amount = self.get_price(current_order.buy_token.clone()) * sell_amount
             / BigDecimal::from(current_order.buy_token_price.value);
 

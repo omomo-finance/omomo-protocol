@@ -6,28 +6,17 @@ use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn remove_liquidity_for_execute_order_callback(
-        &self,
-        order: Order,
-        order_id: U128,
-        take_profit_order: bool,
-    );
-    fn execute_order_callback(&self, order: Order, order_id: U128, take_profit_order: bool);
+    fn remove_liquidity_for_execute_order_callback(&self, order: Order, order_id: U128);
+    fn execute_order_callback(&self, order: Order, order_id: U128);
 }
 
 #[near_bindgen]
 impl Contract {
     /// Executes order by inner order_id set on ref finance once the price range was crossed.
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
-    pub fn execute_order(&self, order_id: U128, take_profit_order: bool) -> PromiseOrValue<U128> {
-        #[allow(clippy::let_and_return)]
-        let order = if take_profit_order {
-            let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                Some(tpo.1)
-            } else {
-                None
-            };
-            order
+    pub fn execute_order(&self, order_id: U128) -> PromiseOrValue<U128> {
+        let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            Some(tpo.1)
         } else {
             self.get_order_by(order_id.0)
         };
@@ -50,18 +39,13 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .execute_order_callback(order, order_id, take_profit_order),
+                    .execute_order_callback(order, order_id),
             )
             .into()
     }
 
     #[private]
-    pub fn execute_order_callback(
-        &self,
-        order: Order,
-        order_id: U128,
-        take_profit_order: bool,
-    ) -> PromiseOrValue<U128> {
+    pub fn execute_order_callback(&self, order: Order, order_id: U128) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Failed to get_liquidity");
 
         let position = match env::promise_result(0) {
@@ -97,11 +81,7 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .remove_liquidity_for_execute_order_callback(
-                        order,
-                        order_id,
-                        take_profit_order,
-                    ),
+                    .remove_liquidity_for_execute_order_callback(order, order_id),
             )
             .into()
     }
@@ -111,17 +91,14 @@ impl Contract {
         &mut self,
         order: Order,
         order_id: U128,
-        take_profit_order: bool,
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             panic!("Some problem with remove liquidity");
         } else {
             self.mark_order_as_executed(order, order_id);
 
-            if !take_profit_order {
-                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                    self.set_take_profit_order_pending(order_id, tpo);
-                }
+            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                self.set_take_profit_order_pending(order_id, tpo);
             }
 
             let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
