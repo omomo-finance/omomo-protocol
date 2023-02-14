@@ -447,7 +447,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":100000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
@@ -466,7 +466,7 @@ mod tests {
                 ticker_id: "near".to_string(),
                 value: U128::from(307 * 10_u128.pow(22)),
             },
-            open_price: BigDecimal::from(U128(1)),
+            open_or_close_price: BigDecimal::from(U128(1)),
             block: 105210654,
             timestamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),

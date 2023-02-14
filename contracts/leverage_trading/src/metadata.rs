@@ -85,18 +85,11 @@ pub struct Order {
     pub leverage: BigDecimal,
     pub sell_token_price: Price,
     pub buy_token_price: Price,
-    /// position opening price (xrate)
-    pub open_price: BigDecimal,
+    /// position opening or closing price (xrate)
+    pub open_or_close_price: BigDecimal,
     pub block: BlockHeight,
     pub timestamp_ms: Timestamp,
     pub lpt_id: String,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(crate = "near_sdk::serde")]
-pub struct TakeProfitOrderView {
-    pub order_id: U128,
-    pub close_price: Price,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -136,7 +129,7 @@ pub struct TradePair {
 pub struct CancelOrderView {
     pub buy_token_amount: WRatio,
     pub sell_token_amount: WRatio,
-    pub open_price: WRatio,
+    pub open_or_close_price: WRatio,
     pub close_price: WRatio,
     pub pnl: PnLView,
 }
