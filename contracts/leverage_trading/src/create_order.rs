@@ -288,7 +288,7 @@ impl Contract {
             leverage: BigDecimal::one(),
             sell_token_price: current_order.buy_token_price,
             buy_token_price: current_order.sell_token_price,
-            open_or_close_price: BigDecimal::from(close_price.value.clone()),
+            open_or_close_price: BigDecimal::from(close_price.value),
             block: block_height(),
             timestamp_ms: block_timestamp_ms(),
             lpt_id: "".to_string(),
@@ -522,7 +522,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -574,12 +574,7 @@ mod tests {
         };
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(
-            U128(order_id),
-            new_price.clone(),
-            left_point,
-            right_point,
-        );
+        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
     }
 
     #[test]
@@ -603,7 +598,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -645,7 +640,7 @@ mod tests {
             ticker_id: "near".to_string(),
             value: U128(33500000000000000000000000),
         };
-        contract.set_take_profit_order_price(U128(order_id), WRatio::from(new_price.value));
+        contract.set_take_profit_order_price(U128(order_id), new_price.value);
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(tpo.1.open_or_close_price, BigDecimal::from(new_price.value));

@@ -1987,7 +1987,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
