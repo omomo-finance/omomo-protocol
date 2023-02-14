@@ -15,7 +15,12 @@ impl Contract {
     /// Executes order by inner order_id set on ref finance once the price range was crossed.
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
     pub fn execute_order(&self, order_id: U128) -> PromiseOrValue<U128> {
-        let order = self.get_order_by(order_id.0);
+        let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            Some(tpo.1)
+        } else {
+            self.get_order_by(order_id.0)
+        };
+
         require!(order.is_some(), "There is no such order to be executed");
 
         assert_eq!(
@@ -91,6 +96,10 @@ impl Contract {
             panic!("Some problem with remove liquidity");
         } else {
             self.mark_order_as_executed(order, order_id);
+
+            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                self.set_take_profit_order_pending(order_id, tpo);
+            }
 
             let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
             Promise::new(env::signer_account_id())

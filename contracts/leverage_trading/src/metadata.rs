@@ -14,6 +14,7 @@ pub enum StorageKeys {
     Balances,
     TokenMarkets,
     ProtocolProfit,
+    TakeProfitOrders,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
@@ -42,12 +43,15 @@ pub struct PnLView {
     pub amount: U128,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Price {
     pub ticker_id: String,
     pub value: U128,
 }
+
+/// left і right points for work with liquidity from ref-finance
+pub type PricePoints = (i32, i32);
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
@@ -56,6 +60,7 @@ pub enum OrderStatus {
     Executed,
     Canceled,
     Liquidated,
+    PendingOrderExecute,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -65,7 +70,7 @@ pub enum OrderType {
     Sell,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Order {
     pub status: OrderStatus,
@@ -81,6 +86,13 @@ pub struct Order {
     pub block: BlockHeight,
     pub time_stamp_ms: Timestamp,
     pub lpt_id: String,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TakeProfitOrderView {
+    pub order_id: U128,
+    pub close_price: Price,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
