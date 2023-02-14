@@ -451,6 +451,34 @@ impl Contract {
             close_price: tpo.1.buy_token_price,
         }
     }
+
+    pub fn calculate_short_liquidation_price(
+        &self,
+        sell_token_amount: U128,
+        buy_token_amount: U128,
+        open_price: U128,
+        leverage: U128,
+        borrow_fee: U128,
+        swap_fee: U128,
+    ) -> U128 {
+        let sell_token_amount = BigDecimal::from(sell_token_amount);
+        let buy_token_amount = BigDecimal::from(buy_token_amount);
+        let open_price = BigDecimal::from(open_price);
+        let leverage = BigDecimal::from(leverage);
+        let borrow_fee = BigDecimal::from(borrow_fee);
+        let swap_fee = BigDecimal::from(swap_fee);
+
+        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one()) / open_price;
+        let borrow_period = BigDecimal::one();
+
+        let liquidation_price = (sell_token_amount
+            + self.volatility_rate * buy_token_amount * open_price
+            - borrow_amount * borrow_period * borrow_fee
+            - borrow_amount * swap_fee)
+            / buy_token_amount;
+
+        U128::from(liquidation_price)
+    }
 }
 
 #[cfg(test)]
@@ -1390,5 +1418,40 @@ mod tests {
 
         let tpo_view = contract.take_profit_order_view(U128(order_id));
         assert_eq!(tpo_view.close_price, new_price);
+    }
+
+    #[test]
+    fn calculate_short_liquidation_price_test() {
+        let contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // 3000.00 USDT
+        let sell_token_amount = U128::from(3000000000000000000000000000);
+        // 12000.00 NEAR
+        let buy_token_amount = U128::from(12000000000000000000000000000);
+        // 2.50$
+        let open_price = U128::from(2500000000000000000000000);
+        // 5.0
+        let leverage = U128::from(5000000000000000000000000);
+        // 5.00%
+        let borrow_fee = U128::from(50000000000000000000000);
+        // 0.20%
+        let swap_fee = U128::from(2000000000000000000000);
+
+        let short_liquidation_price = contract.calculate_short_liquidation_price(
+            sell_token_amount,
+            buy_token_amount,
+            open_price,
+            leverage,
+            borrow_fee,
+            swap_fee,
+        );
+
+        // 2.6042$
+        let expected_result = U128::from(2604200000000000000000000);
+
+        assert_eq!(short_liquidation_price, expected_result);
     }
 }
