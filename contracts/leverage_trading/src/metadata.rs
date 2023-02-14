@@ -50,6 +50,9 @@ pub struct Price {
     pub value: U128,
 }
 
+/// left і right points for work with liquidity from ref-finance
+pub type PricePoints = (i32, i32);
+
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum OrderStatus {
@@ -57,6 +60,7 @@ pub enum OrderStatus {
     Executed,
     Canceled,
     Liquidated,
+    PendingOrderExecute,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
@@ -86,6 +90,13 @@ pub struct Order {
     pub block: BlockHeight,
     pub timestamp_ms: Timestamp,
     pub lpt_id: String,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TakeProfitOrderView {
+    pub order_id: U128,
+    pub close_price: Price,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
