@@ -528,6 +528,65 @@ impl Contract {
             None
         }
     }
+
+    pub fn calculate_short_liquidation_price(
+        &self,
+        sell_token_amount: U128,
+        buy_token_amount: U128,
+        open_price: U128,
+        leverage: U128,
+        borrow_fee: U128,
+        swap_fee: U128,
+    ) -> U128 {
+        let sell_token_amount = BigDecimal::from(sell_token_amount);
+        let buy_token_amount = BigDecimal::from(buy_token_amount);
+        let open_price = BigDecimal::from(open_price);
+        let leverage = BigDecimal::from(leverage);
+        let borrow_fee = BigDecimal::from(borrow_fee);
+        let swap_fee = BigDecimal::from(swap_fee);
+
+        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one()) / open_price;
+        let borrow_period = BigDecimal::one();
+
+        let liquidation_price = (sell_token_amount
+            + self.volatility_rate * buy_token_amount * open_price
+            - borrow_amount * borrow_period * borrow_fee
+            - borrow_amount * swap_fee)
+            / buy_token_amount;
+
+        U128::from(liquidation_price)
+    }
+
+    pub fn calculate_long_liquidation_price(
+        &self,
+        sell_token_amount: U128,
+        open_price: U128,
+        leverage: U128,
+        borrow_fee: U128,
+        swap_fee: U128,
+    ) -> U128 {
+        let sell_token_amount = BigDecimal::from(sell_token_amount);
+        let open_price = BigDecimal::from(open_price);
+        let leverage = BigDecimal::from(leverage);
+        let borrow_fee = BigDecimal::from(borrow_fee);
+        let swap_fee = BigDecimal::from(swap_fee);
+
+        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one());
+        let borrow_period = BigDecimal::one();
+        let days_per_year = BigDecimal::from(U128::from(
+            DAYS_PER_YEAR as u128 * 10u128.pow(PROTOCOL_DECIMALS.into()),
+        ));
+        let buy_token_amount = (sell_token_amount + borrow_amount) / open_price;
+
+        let liquidation_price = open_price
+            - self.volatility_rate
+                * (sell_token_amount
+                    - borrow_amount * (borrow_period * borrow_fee / days_per_year)
+                    - borrow_amount * swap_fee)
+                / buy_token_amount;
+
+        U128::from(liquidation_price)
+    }
 }
 
 impl Contract {
@@ -618,65 +677,6 @@ impl Contract {
             }
             None => None,
         }
-    }
-
-    pub fn calculate_short_liquidation_price(
-        &self,
-        sell_token_amount: U128,
-        buy_token_amount: U128,
-        open_price: U128,
-        leverage: U128,
-        borrow_fee: U128,
-        swap_fee: U128,
-    ) -> U128 {
-        let sell_token_amount = BigDecimal::from(sell_token_amount);
-        let buy_token_amount = BigDecimal::from(buy_token_amount);
-        let open_price = BigDecimal::from(open_price);
-        let leverage = BigDecimal::from(leverage);
-        let borrow_fee = BigDecimal::from(borrow_fee);
-        let swap_fee = BigDecimal::from(swap_fee);
-
-        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one()) / open_price;
-        let borrow_period = BigDecimal::one();
-
-        let liquidation_price = (sell_token_amount
-            + self.volatility_rate * buy_token_amount * open_price
-            - borrow_amount * borrow_period * borrow_fee
-            - borrow_amount * swap_fee)
-            / buy_token_amount;
-
-        U128::from(liquidation_price)
-    }
-
-    pub fn calculate_long_liquidation_price(
-        &self,
-        sell_token_amount: U128,
-        open_price: U128,
-        leverage: U128,
-        borrow_fee: U128,
-        swap_fee: U128,
-    ) -> U128 {
-        let sell_token_amount = BigDecimal::from(sell_token_amount);
-        let open_price = BigDecimal::from(open_price);
-        let leverage = BigDecimal::from(leverage);
-        let borrow_fee = BigDecimal::from(borrow_fee);
-        let swap_fee = BigDecimal::from(swap_fee);
-
-        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one());
-        let borrow_period = BigDecimal::one();
-        let days_per_year = BigDecimal::from(U128::from(
-            DAYS_PER_YEAR as u128 * 10u128.pow(PROTOCOL_DECIMALS.into()),
-        ));
-        let buy_token_amount = (sell_token_amount + borrow_amount) / open_price;
-
-        let liquidation_price = open_price
-            - self.volatility_rate
-                * (sell_token_amount
-                    - borrow_amount * (borrow_period * borrow_fee / days_per_year)
-                    - borrow_amount * swap_fee)
-                / buy_token_amount;
-
-        U128::from(liquidation_price)
     }
 }
 
