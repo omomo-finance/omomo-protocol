@@ -386,13 +386,13 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::MILLISECONDS_PER_DAY;
+
     use super::*;
 
     use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
-
-    use crate::pnl::MILLISECONDS_PER_DAY;
 
     fn get_context(is_view: bool, block_timestamp: Option<u64>) -> VMContext {
         VMContextBuilder::new()
@@ -426,6 +426,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(20)),

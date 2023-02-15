@@ -6,16 +6,16 @@ CONTROLLER_ACCOUNT=controller
 ORACLE_ACCOUNT=oracle.omomo-finance.testnet
 
 ETH_TOKEN=weth.develop.v1.omomo-finance.testnet
-ETH_TOKEN_DECIMALS=18
+ETH_TOKEN_DECIMALS=24
 
 NEAR_TOKEN=wnear.develop.v1.omomo-finance.testnet
 NEAR_TOKEN_DECIMALS=24
 
 USDT_TOKEN=usdt.develop.v1.omomo-finance.testnet
-USDT_TOKEN_DECIMALS=6
+USDT_TOKEN_DECIMALS=24
 
 USDC_TOKEN=usdc.develop.v1.omomo-finance.testnet
-USDC_TOKEN_DECIMALS=6
+USDC_TOKEN_DECIMALS=24
 
 # deployment steps
 build_and_test

@@ -1,11 +1,9 @@
 use crate::big_decimal::{BigDecimal, LowU128};
 use crate::metadata::{MarketData, Order, PnLView};
+use crate::utils::{DAYS_PER_YEAR, MILLISECONDS_PER_DAY};
 use crate::Contract;
 
 use near_sdk::{env, json_types::U128};
-
-pub const MILLISECONDS_PER_DAY: u64 = 86400000;
-const DAYS_PER_YEAR: u16 = 360;
 
 impl Contract {
     pub fn calculate_pnl_long_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
@@ -164,6 +162,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(2 * 10_u128.pow(21)),
