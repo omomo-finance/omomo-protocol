@@ -41,7 +41,7 @@ near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'
 # Create order
 # amount = 1000.0
 # leverage = 1.0
-# open_price = 1.0
+# open_or_close_price = 1.0
 # current_point = -7000
 near call $CONTRACT_ID create_order '{
     "order_type": "Buy",
@@ -51,7 +51,7 @@ near call $CONTRACT_ID create_order '{
     "sell_token": "'$USDT_TOKEN'",
     "buy_token": "'$NEAR_TOKEN'",
     "leverage": "1000000000000000000000000",
-    "open_price": "1000000000000000000000000"
+    "open_or_close_price": "1000000000000000000000000"
 }' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
 
 # View new order
