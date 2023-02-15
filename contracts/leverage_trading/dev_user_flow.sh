@@ -10,19 +10,19 @@ USDT_TOKEN_DECIMALS=24
 DEX_ACCOUNT=dclv2-dev.ref-dev.testnet
 
 # User account for work with leverage trading
-USER_ACCOUNT=...
+USER_ACCOUNT=arseniik.testnet
 
 near call $DEX_ACCOUNT storage_deposit '{"account_id": "'$CONTRACT_ID'"}' --accountId $CONTRACT_ID --amount 1
 
-near call $USDT_TOKEN mint '{
-    "account_id": "'$USER_ACCOUNT'",
-    "amount": "4000000000000000000000000000000000"
-}' --accountId $USER_ACCOUNT
+# near call $USDT_TOKEN mint '{
+#     "account_id": "'$USER_ACCOUNT'",
+#     "amount": "4000000000000000000000000000000000"
+# }' --accountId $USER_ACCOUNT
 
-near call $NEAR_TOKEN mint '{
-    "account_id": "'$USER_ACCOUNT'",
-    "amount": "4000000000000000000000000000000000"
-}' --accountId $USER_ACCOUNT
+# near call $NEAR_TOKEN mint '{
+#     "account_id": "'$USER_ACCOUNT'",
+#     "amount": "4000000000000000000000000000000000"
+# }' --accountId $USER_ACCOUNT
 
 near call $USDT_TOKEN mint '{
     "account_id": "'$CONTRACT_ID'",
@@ -45,9 +45,9 @@ near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'
 # current_point = -7000
 near call $CONTRACT_ID create_order '{
     "order_type": "Buy",
-    "left_point": -6960,
-    "right_point": -6920,
-    "amount": "1000000000000000000000000000",
+    "left_point": -6920,
+    "right_point": -6880,
+    "amount": "5000000000000000000000000000",
     "sell_token": "'$USDT_TOKEN'",
     "buy_token": "'$NEAR_TOKEN'",
     "leverage": "1000000000000000000000000",
@@ -62,15 +62,23 @@ near view $CONTRACT_ID view_orders '{
     "borrow_rate_ratio": "1000"
 }'
 
-# Cancel order
-near call $CONTRACT_ID cancel_order '{"order_id": "4", "price_impact": "1"}' --accountId $USER_ACCOUNT --gas 160000000000000
-# Deposit balance should be returned after cancel order
-near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'$USDT_TOKEN'" }'
+# # Cancel order
+# near call $CONTRACT_ID cancel_order '{"order_id": "4", "price_impact": "1"}' --accountId $USER_ACCOUNT --gas 160000000000000
+# # Deposit balance should be returned after cancel order
+# near view $CONTRACT_ID balance_of '{"account_id": "'$USER_ACCOUNT'", "token": "'$USDT_TOKEN'" }'
 
-# View orders
-near view $CONTRACT_ID view_orders '{
-    "account_id":"'$USER_ACCOUNT'",
-    "buy_token":"'$NEAR_TOKEN'",
-    "sell_token":"'$USDT_TOKEN'",
-    "borrow_rate_ratio": "1000"
-}'
+# # View orders
+# near view $CONTRACT_ID view_orders '{
+#     "account_id":"'$USER_ACCOUNT'",
+#     "buy_token":"'$NEAR_TOKEN'",
+#     "sell_token":"'$USDT_TOKEN'",
+#     "borrow_rate_ratio": "1000"
+# }'
+
+
+# near call $CONTRACT_ID simulate_create_order '{}' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
+# wait
+# near call $CONTRACT_ID simulate_create_order '{}' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
+# wait
+# near call $CONTRACT_ID simulate_create_order '{}' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
+# wait

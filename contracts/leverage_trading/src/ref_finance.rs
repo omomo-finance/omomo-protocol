@@ -29,6 +29,8 @@ trait RefFinanceInterface {
     fn get_pool(&self, pool_id: PoolId);
 
     fn get_liquidity(&self, lpt_id: LptId);
+
+    fn list_liquidities(&self, account_id: AccountId);
 }
 
 /// Single swap action.
@@ -63,4 +65,11 @@ pub struct LiquidityInfo {
     pub amount: U128,
     pub unclaimed_fee_x: U128,
     pub unclaimed_fee_y: U128,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ShortLiquidityInfo {
+    pub lpt_id: LptId,
+    pub amount: U128,
 }
