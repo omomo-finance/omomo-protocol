@@ -34,7 +34,7 @@ use crate::config::Config;
 use crate::ref_finance::ShortLiquidityInfo;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::env::current_account_id;
+use near_sdk::env::{current_account_id, prepaid_gas};
 use near_sdk::json_types::U128;
 use near_sdk::{
     env, ext_contract, is_promise_success, log, near_bindgen, require, AccountId, Balance, Gas,
@@ -204,7 +204,7 @@ impl Contract {
             .list_liquidities(current_account_id())
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(98)
+                    .with_unused_gas_weight(1)
                     .with_attached_deposit(NO_DEPOSIT)
                     .list_liquidities_callback(),
             );
@@ -212,6 +212,8 @@ impl Contract {
 
     #[private]
     pub fn list_liquidities_callback(&self) {
+        log!("prepaid_gas {:?}", prepaid_gas());
+
         require!(
             is_promise_success(),
             "Some problem with liquidity on ref finance"
@@ -239,7 +241,7 @@ impl Contract {
 
         for liquidity in list_liquidities {
             ext_ref_finance::ext(self.ref_finance_account.clone())
-                .with_static_gas(Gas::ONE_TERA * 45u64)
+                .with_static_gas(Gas::ONE_TERA * 75u64)
                 .remove_liquidity(
                     liquidity.lpt_id.clone(),
                     liquidity.amount,
