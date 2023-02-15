@@ -62,6 +62,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_ticker_id": "near",
             "buy_token": "'$NEAR_TOKEN'",
             "buy_token_decimals": '$NEAR_TOKEN_DECIMALS',
+            "buy_token_market": "'$NEAR_MARKET'",
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "200000000000000000000"
@@ -77,6 +78,7 @@ near call $CONTRACT_ID add_pair '{
             "buy_ticker_id": "nWETH",
             "buy_token": "'$ETH_TOKEN'",
             "buy_token_decimals": '$ETH_TOKEN_DECIMALS',
+            "buy_token_market": "'$ETH_MARKET'",
             "pool_id": "'$USDT_TOKEN'|'$ETH_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "200000000000000000000"

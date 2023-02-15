@@ -32,6 +32,7 @@ async fn withdraw_fixture(
             "buy_ticker_id": mock_token.id().to_string(),
             "buy_token": mock_token.id(),
             "buy_token_decimals": 24,
+            "buy_token_market": mock_token.id(),
             "pool_id": mock_token.id().to_string(),
             "max_leverage": "2500000000000000000000000",
             "swap_fee": "300000000000000000000"

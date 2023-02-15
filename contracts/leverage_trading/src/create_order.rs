@@ -518,6 +518,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -594,6 +597,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),

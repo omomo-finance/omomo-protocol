@@ -54,6 +54,7 @@ near call ${CONTRACT_ADDRESS} add_pair '{
             "buy_ticker_id": "near",
             "buy_token": "'$NEAR_TOKEN'",
             "buy_token_decimals": 24,
+            "buy_token_market": "'$NEAR_MARKET'",
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "300000000000000000000"
@@ -69,6 +70,7 @@ near call ${CONTRACT_ADDRESS} add_pair '{
             "buy_ticker_id": "USDt",
             "buy_token": "'$USDT_TOKEN'",
             "buy_token_decimals": 24,
+            "buy_token_market": "'$USDT_MARKET'",
             "pool_id": "'$USDT_TOKEN'|'$NEAR_TOKEN'|2000",
             "max_leverage": "25000000000000000000000000",
             "swap_fee": "300000000000000000000"
