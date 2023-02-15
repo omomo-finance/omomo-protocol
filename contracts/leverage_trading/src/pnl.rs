@@ -8,10 +8,10 @@ pub const MILLISECONDS_PER_DAY: u64 = 86400000;
 const DAYS_PER_YEAR: u16 = 360;
 
 impl Contract {
-    pub fn calculate_pnl_buy_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
-        let current_time_stamp_ms = env::block_timestamp_ms();
+    pub fn calculate_pnl_long_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
+        let current_timestamp_ms = env::block_timestamp_ms();
 
-        let borrow_period = ((current_time_stamp_ms - order.time_stamp_ms) as f64
+        let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
             / MILLISECONDS_PER_DAY as f64)
             .ceil();
 
@@ -20,7 +20,8 @@ impl Contract {
         let borrow_amount =
             BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one());
 
-        let buy_amount = order.leverage * BigDecimal::from(U128(order.amount)) / order.open_price;
+        let buy_amount =
+            order.leverage * BigDecimal::from(U128(order.amount)) / order.open_or_close_price;
 
         let mut borrow_fee_amount = BigDecimal::zero();
         #[allow(clippy::unnecessary_unwrap)]
@@ -64,10 +65,10 @@ impl Contract {
         pnlv
     }
 
-    pub fn calculate_pnl_sell_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
-        let current_time_stamp_ms = env::block_timestamp_ms();
+    pub fn calculate_pnl_short_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
+        let current_timestamp_ms = env::block_timestamp_ms();
 
-        let borrow_period = ((current_time_stamp_ms - order.time_stamp_ms) as f64
+        let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
             / MILLISECONDS_PER_DAY as f64)
             .ceil();
 
@@ -78,7 +79,7 @@ impl Contract {
             * BigDecimal::from(order.sell_token_price.value)
             / BigDecimal::from(order.buy_token_price.value);
 
-        let buy_amount = borrow_amount * order.open_price;
+        let buy_amount = borrow_amount * order.open_or_close_price;
 
         let mut borrow_fee_amount = BigDecimal::zero();
         #[allow(clippy::unnecessary_unwrap)]
@@ -188,7 +189,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -208,7 +209,7 @@ mod tests {
         );
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_buy_order(order, Some(market_data));
+        let pnl = contract.calculate_pnl_long_order(order, Some(market_data));
         assert!(pnl.is_profit);
         assert_eq!(pnl.amount, U128(7654 * 10_u128.pow(23)));
     }
@@ -227,7 +228,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Sell\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -247,7 +248,7 @@ mod tests {
         );
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_sell_order(order, Some(market_data));
+        let pnl = contract.calculate_pnl_short_order(order, Some(market_data));
         assert!(pnl.is_profit);
         assert_eq!(pnl.amount, U128(1128 * 10_u128.pow(24)));
     }
@@ -266,7 +267,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -286,7 +287,7 @@ mod tests {
         );
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_buy_order(order, Some(market_data));
+        let pnl = contract.calculate_pnl_long_order(order, Some(market_data));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(8314 * 10_u128.pow(23)));
     }
@@ -305,7 +306,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Sell\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_price\":\"2.5\",\"block\":1, \"time_stamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -325,7 +326,7 @@ mod tests {
         );
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_sell_order(order, Some(market_data));
+        let pnl = contract.calculate_pnl_short_order(order, Some(market_data));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(651 * 10_u128.pow(24)));
     }
