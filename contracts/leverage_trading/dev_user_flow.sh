@@ -152,3 +152,5 @@ near call $CONTRACT_ID simulate_create_order '{}' --accountId $USER_ACCOUNT --ga
 wait
 near call $CONTRACT_ID simulate_create_order '{}' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
 wait
+near call $CONTRACT_ID simulate_create_order '{}' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
+wait

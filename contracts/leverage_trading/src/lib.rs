@@ -199,8 +199,6 @@ impl Contract {
         self.orders.clear();
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_unused_gas_weight(2)
-            .with_attached_deposit(NO_DEPOSIT)
             .list_liquidities(current_account_id())
             .then(
                 ext_self::ext(current_account_id())
