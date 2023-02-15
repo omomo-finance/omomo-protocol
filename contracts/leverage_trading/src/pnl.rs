@@ -1,11 +1,9 @@
 use crate::big_decimal::{BigDecimal, LowU128};
 use crate::metadata::{MarketData, Order, PnLView};
+use crate::utils::{DAYS_PER_YEAR, MILLISECONDS_PER_DAY};
 use crate::Contract;
 
 use near_sdk::{env, json_types::U128};
-
-pub const MILLISECONDS_PER_DAY: u64 = 86400000;
-const DAYS_PER_YEAR: u16 = 360;
 
 impl Contract {
     pub fn calculate_pnl_long_order(&self, order: Order, data: Option<MarketData>) -> PnLView {

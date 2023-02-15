@@ -386,13 +386,13 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::MILLISECONDS_PER_DAY;
+
     use super::*;
 
     use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
-
-    use crate::pnl::MILLISECONDS_PER_DAY;
 
     fn get_context(is_view: bool, block_timestamp: Option<u64>) -> VMContext {
         VMContextBuilder::new()

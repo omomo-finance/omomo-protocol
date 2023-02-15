@@ -1,4 +1,5 @@
 use crate::big_decimal::{BigDecimal, WRatio};
+use crate::utils::DAYS_PER_YEAR;
 use crate::*;
 use near_sdk::env::signer_account_id;
 use near_sdk::Gas;
@@ -646,17 +647,48 @@ impl Contract {
 
         U128::from(liquidation_price)
     }
+
+    pub fn calculate_long_liquidation_price(
+        &self,
+        sell_token_amount: U128,
+        open_price: U128,
+        leverage: U128,
+        borrow_fee: U128,
+        swap_fee: U128,
+    ) -> U128 {
+        let sell_token_amount = BigDecimal::from(sell_token_amount);
+        let open_price = BigDecimal::from(open_price);
+        let leverage = BigDecimal::from(leverage);
+        let borrow_fee = BigDecimal::from(borrow_fee);
+        let swap_fee = BigDecimal::from(swap_fee);
+
+        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one());
+        let borrow_period = BigDecimal::one();
+        let days_per_year = BigDecimal::from(U128::from(
+            DAYS_PER_YEAR as u128 * 10u128.pow(PROTOCOL_DECIMALS.into()),
+        ));
+        let buy_token_amount = (sell_token_amount + borrow_amount) / open_price;
+
+        let liquidation_price = open_price
+            - self.volatility_rate
+                * (sell_token_amount
+                    - borrow_amount * (borrow_period * borrow_fee / days_per_year)
+                    - borrow_amount * swap_fee)
+                / buy_token_amount;
+
+        U128::from(liquidation_price)
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::MILLISECONDS_PER_DAY;
+
     use super::*;
 
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
-
-    use crate::pnl::MILLISECONDS_PER_DAY;
 
     fn get_context(is_view: bool, block_timestamp: Option<u64>) -> VMContext {
         VMContextBuilder::new()
@@ -2159,5 +2191,37 @@ mod tests {
         let expected_result = U128::from(2604200000000000000000000);
 
         assert_eq!(short_liquidation_price, expected_result);
+    }
+
+    #[test]
+    fn calculate_long_liquidation_price_test() {
+        let contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // 2000.00 USDT
+        let sell_token_amount = U128::from(2000000000000000000000000000);
+        // 2.50$
+        let open_price = U128::from(2500000000000000000000000);
+        // 5.0
+        let leverage = U128::from(5000000000000000000000000);
+        // 5.00%
+        let borrow_fee = U128::from(50000000000000000000000);
+        // 0.20%
+        let swap_fee = U128::from(2000000000000000000000);
+
+        let long_liquidation_price = contract.calculate_long_liquidation_price(
+            sell_token_amount,
+            open_price,
+            leverage,
+            borrow_fee,
+            swap_fee,
+        );
+
+        // 2.0221$
+        let expected_result = U128::from(2029063888888888888888888);
+
+        assert_eq!(long_liquidation_price, expected_result);
     }
 }
