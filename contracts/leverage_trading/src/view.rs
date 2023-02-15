@@ -492,40 +492,39 @@ impl Contract {
         }
     }
 
-    pub fn take_profit_order_view(&self, order_id: U128) -> TakeProfitOrderView {
+    pub fn take_profit_order_view(&self, order_id: U128) -> Option<TakeProfitOrderView> {
         require!(
             Some(signer_account_id()) == self.get_account_by(order_id.0),
             "You have no access for this order."
         );
 
-        let (_, order) = self
-            .take_profit_orders
-            .get(&(order_id.0 as u64))
-            .unwrap_or_else(|| panic!("Take profit order not found."));
+        if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            let trade_pair = self.view_pair(&order.buy_token, &order.sell_token);
 
-        let trade_pair = self.view_pair(&order.buy_token, &order.sell_token);
+            let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-        let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
+            let total = BigDecimal::from(U128(order.amount))
+                * BigDecimal::from(order.sell_token_price.value);
 
-        let total =
-            BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
+            let filled = if order.status == OrderStatus::Executed {
+                // 1 -> 100%
+                1_u8
+            } else {
+                // 0 -> 0%
+                0_u8
+            };
 
-        let filled = if order.status == OrderStatus::Executed {
-            // 1 -> 100%
-            1
+            Some(TakeProfitOrderView {
+                timestamp: order.timestamp_ms,
+                pair,
+                order_type: order.order_type.clone(),
+                price: WBigDecimal::from(order.open_or_close_price),
+                amount: U128(order.amount),
+                filled,
+                total: LowU128::from(total),
+            })
         } else {
-            // 0 -> 0%
-            0
-        };
-
-        TakeProfitOrderView {
-            timestamp: order.timestamp_ms,
-            pair,
-            order_type: order.order_type.clone(),
-            price: WBigDecimal::from(order.open_or_close_price),
-            amount: U128(order.amount),
-            filled,
-            total: LowU128::from(total),
+            None
         }
     }
 }
@@ -1989,11 +1988,10 @@ mod tests {
         assert_eq!(tpo.1.open_or_close_price, BigDecimal::from(new_price.value));
 
         let tpo_view = contract.take_profit_order_view(U128(order_id));
-        assert_eq!(tpo_view.price, new_price.value);
+        assert_eq!(tpo_view.unwrap().price, new_price.value);
     }
 
     #[test]
-    #[should_panic]
     fn test_take_profit_order_view_if_not_exist() {
         let context = get_context(false, None);
         testing_env!(context);
@@ -2035,12 +2033,8 @@ mod tests {
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
-        let new_price = Price {
-            ticker_id: "near".to_string(),
-            value: U128(305 * 10_u128.pow(22)),
-        };
 
         let tpo_view = contract.take_profit_order_view(U128(order_id));
-        assert_eq!(tpo_view.price, new_price.value);
+        assert_eq!(tpo_view, None);
     }
 }
