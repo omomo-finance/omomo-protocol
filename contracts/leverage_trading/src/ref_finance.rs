@@ -64,3 +64,10 @@ pub struct LiquidityInfo {
     pub unclaimed_fee_x: U128,
     pub unclaimed_fee_y: U128,
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ShortLiquidityInfo {
+    pub lpt_id: LptId,
+    pub amount: U128,
+}
