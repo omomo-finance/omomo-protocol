@@ -609,7 +609,7 @@ impl Contract {
         let total = if order.order_type == OrderType::Buy {
             BigDecimal::from(U128(order.amount))
         } else {
-            BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.open_or_close_price)
+            BigDecimal::from(U128(order.amount)) * order.open_or_close_price
         };
 
         Some(LimitOrderView {
