@@ -1,4 +1,7 @@
-use near_sdk::{env::current_account_id, ext_contract, is_promise_success, Gas, PromiseResult};
+use near_sdk::{
+    env::{current_account_id, signer_account_id},
+    ext_contract, is_promise_success, Gas, PromiseResult,
+};
 
 use crate::{
     ref_finance::{ext_ref_finance, LptId, ShortLiquidityInfo},
@@ -8,20 +11,24 @@ use crate::{
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn get_liquidity_info_callback(&self, lpt_id: LptId);
-    fn remove_oldest_liquidity_callback(&self);
+    fn get_liquidity_info_callback(&self, lpt_id: LptId, user: Option<AccountId>, order_id: u64);
+    fn remove_oldest_liquidity_callback(&mut self, user: Option<AccountId>, order_id: u64);
 }
 
 #[near_bindgen]
 impl Contract {
     pub fn free_up_liquidity_slot(&mut self, order_id: U128) {
+        require!(
+            signer_account_id() == self.config.oracle_account_id,
+            "You do not have access to call this method."
+        );
+
         let order_id = order_id.0 as u64;
 
         if let Some((user, order)) = self.get_order_by_id(order_id) {
             match order.status {
                 OrderStatus::Pending => {
-                    self.get_liquidity_info(order.lpt_id);
-                    self.remove_order_by_ids(user, order_id);
+                    self.get_liquidity_info(order.lpt_id, Some(user), order_id);
                 }
                 _ => {
                     self.remove_order_by_ids(user, order_id);
@@ -32,8 +39,7 @@ impl Contract {
         if let Some(take_profit_order) = self.get_take_profit_order_by_id(order_id) {
             match take_profit_order.status {
                 OrderStatus::Pending => {
-                    self.get_liquidity_info(take_profit_order.lpt_id);
-                    self.remove_take_profit_order_by_id(order_id);
+                    self.get_liquidity_info(take_profit_order.lpt_id, None, order_id);
                 }
                 _ => {
                     self.remove_take_profit_order_by_id(order_id);
@@ -47,7 +53,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn get_liquidity_info(&self, lpt_id: LptId) {
+    pub fn get_liquidity_info(&self, lpt_id: LptId, user: Option<AccountId>, order_id: u64) {
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(2)
             .with_attached_deposit(NO_DEPOSIT)
@@ -56,12 +62,17 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(98)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .get_liquidity_info_callback(lpt_id),
+                    .get_liquidity_info_callback(lpt_id, user, order_id),
             );
     }
 
     #[private]
-    pub fn get_liquidity_info_callback(&self, lpt_id: LptId) {
+    pub fn get_liquidity_info_callback(
+        &self,
+        lpt_id: LptId,
+        user: Option<AccountId>,
+        order_id: u64,
+    ) {
         require!(is_promise_success(), "Some problem with getting liquidity.");
 
         let liquidity_info: ShortLiquidityInfo = match env::promise_result(0) {
@@ -87,16 +98,22 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .remove_oldest_liquidity_callback(),
+                    .remove_oldest_liquidity_callback(user, order_id),
             );
     }
 
     #[private]
-    pub fn remove_oldest_liquidity_callback(&self) {
+    pub fn remove_oldest_liquidity_callback(&mut self, user: Option<AccountId>, order_id: u64) {
         require!(
             is_promise_success(),
             "Some problem with removing liquidity."
         );
+
+        if let Some(account_id) = user {
+            self.remove_order_by_ids(account_id, order_id);
+        } else {
+            self.remove_take_profit_order_by_id(order_id);
+        }
     }
 }
 impl Contract {
