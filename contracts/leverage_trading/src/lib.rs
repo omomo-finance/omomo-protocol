@@ -15,6 +15,7 @@ mod deposit;
 mod execute_order;
 mod ft;
 mod liquidate_order;
+mod liquidity_slot;
 mod market;
 mod metadata;
 mod oraclehook;
