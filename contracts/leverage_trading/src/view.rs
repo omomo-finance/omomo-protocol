@@ -504,8 +504,19 @@ impl Contract {
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-            let total = BigDecimal::from(U128(order.amount))
-                * BigDecimal::from(order.sell_token_price.value);
+            let leverage_positions = self
+                .orders_per_pair_view
+                .get(&(trade_pair.sell_token, trade_pair.buy_token))
+                .unwrap();
+
+            let leverage_position = leverage_positions.get(&(order_id.0 as u64)).unwrap();
+
+            let total = if order.order_type == OrderType::Long {
+                BigDecimal::from(U128(leverage_position.amount)) * leverage_position.leverage
+            } else {
+                BigDecimal::from(U128(leverage_position.amount))
+                    * (leverage_position.leverage - BigDecimal::one())
+            };
 
             let filled = if order.status == OrderStatus::Executed {
                 // 1 -> 100%
@@ -595,8 +606,11 @@ impl Contract {
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-        let total =
-            BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
+        let total = if order.order_type == OrderType::Buy {
+            BigDecimal::from(U128(order.amount))
+        } else {
+            BigDecimal::from(U128(order.amount)) * order.open_or_close_price
+        };
 
         Some(LimitOrderView {
             timestamp: order.timestamp_ms,
@@ -621,8 +635,11 @@ impl Contract {
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-        let total =
-            BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
+        let total = if order.order_type == OrderType::Long {
+            BigDecimal::from(U128(order.amount)) * order.leverage
+        } else {
+            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
+        };
 
         let filled = if order.status == OrderStatus::Pending {
             0_u8
@@ -632,7 +649,7 @@ impl Contract {
 
         let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
-        let take_profit_order = self.get_take_profit_order(order_id);
+        let take_profit_order = self.get_take_profit_order(order, order_id);
 
         Some(LeveragedPositionView {
             timestamp: order.timestamp_ms,
@@ -648,7 +665,11 @@ impl Contract {
         })
     }
 
-    pub fn get_take_profit_order(&self, order_id: &u64) -> Option<TakeProfitOrderView> {
+    pub fn get_take_profit_order(
+        &self,
+        leverage_position: &Order,
+        order_id: &u64,
+    ) -> Option<TakeProfitOrderView> {
         match self.take_profit_orders.get(order_id) {
             Some((_, order)) => {
                 if order.status == OrderStatus::Pending
@@ -659,8 +680,13 @@ impl Contract {
                     let pair =
                         format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-                    let total = BigDecimal::from(U128(order.amount))
-                        * BigDecimal::from(order.sell_token_price.value);
+                    let total = if leverage_position.order_type == OrderType::Long {
+                        BigDecimal::from(U128(leverage_position.amount))
+                            * leverage_position.leverage
+                    } else {
+                        BigDecimal::from(U128(leverage_position.amount))
+                            * (leverage_position.leverage - BigDecimal::one())
+                    };
 
                     Some(TakeProfitOrderView {
                         timestamp: order.timestamp_ms,
@@ -1348,7 +1374,7 @@ mod tests {
             price: U128(25 * 10_u128.pow(23)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(2 * 10_u128.pow(27)),
         };
 
         let limit_orders = contract.view_pending_limit_orders_by_user(alice(), U128(10), U128(1));
@@ -1413,7 +1439,7 @@ mod tests {
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 2 {
                 // order with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR" with timestamp "86400001"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Sell\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 3 {
                 // order with status of "Pending" on leverage "1.0" and in pair "WNEAR/USDT"
@@ -1434,11 +1460,11 @@ mod tests {
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: "Limit".to_string(),
-            side: OrderType::Buy,
+            side: OrderType::Sell,
             price: U128(25 * 10_u128.pow(23)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(5 * 10_u128.pow(27)),
         };
 
         // view pending limit orders by pair "USDT/WNEAR"
@@ -1665,12 +1691,11 @@ mod tests {
             timestamp: 86400000,
             pair: "USDT/WNEAR".to_string(),
             order_type: OrderType::Long,
-            // side: PositionType::Long,
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: true,
                 amount: U128(114784 * 10_u128.pow(22)),
@@ -1683,12 +1708,11 @@ mod tests {
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: OrderType::Short,
-            // side: PositionType::Short,
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 1,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(4 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
                 amount: U128(12918 * 10_u128.pow(23)),
@@ -1700,7 +1724,7 @@ mod tests {
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
                 filled: 0,
-                total: U128(3 * 10_u128.pow(27)),
+                total: U128(4 * 10_u128.pow(27)),
             }),
         };
 
@@ -1840,7 +1864,7 @@ mod tests {
             leverage: U128(2 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 1,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(2 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
                 amount: U128(2153 * 10_u128.pow(23)),
@@ -1852,7 +1876,7 @@ mod tests {
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
                 filled: 0,
-                total: U128(3 * 10_u128.pow(27)),
+                total: U128(2 * 10_u128.pow(27)),
             }),
         };
 
@@ -1865,7 +1889,7 @@ mod tests {
             leverage: U128(4 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
                 amount: U128(6459 * 10_u128.pow(23)),
