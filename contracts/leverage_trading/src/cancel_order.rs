@@ -150,10 +150,10 @@ impl Contract {
         let remove_liquidity_amount = liquidity.amount.0;
 
         let (min_amount_x, min_amount_y) = match order.order_type {
-            OrderType::Buy => (liquidity.amount.0 - 1000, 0),
-            OrderType::Sell => (0, liquidity.amount.0 - 1000),
+            OrderType::Buy | OrderType::Long => (liquidity.amount.0 - 1000, 0),
+            OrderType::Sell | OrderType::Short => (0, liquidity.amount.0 - 1000),
             _ => todo!(
-                "Currently, the functionality is developed only for 'Buy' and 'Sell' order types"
+                "Currently, the functionality is developed only for the 'Buy', 'Long', 'Sell' and 'Short' order types"
             ),
         };
 
