@@ -212,6 +212,7 @@ pub struct PendingOrders {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LimitOrderView {
+    pub order_id: U128,
     pub timestamp: Timestamp,
     pub pair: String,
     pub order_type: String,
@@ -236,6 +237,7 @@ pub struct LimitOrders {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LeveragedPositionView {
+    pub order_id: U128,
     pub timestamp: Timestamp,
     pub pair: String,
     pub order_type: OrderType,
