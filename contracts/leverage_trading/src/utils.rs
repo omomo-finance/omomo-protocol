@@ -3,6 +3,8 @@ use near_sdk::ext_contract;
 
 pub const NO_DEPOSIT: Balance = 0;
 pub const PROTOCOL_DECIMALS: u8 = 24;
+pub const DAYS_PER_YEAR: u16 = 360;
+pub const MILLISECONDS_PER_DAY: u64 = 86400000;
 
 #[ext_contract(ext_token)]
 pub trait NEP141Token {

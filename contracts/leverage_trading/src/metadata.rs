@@ -119,6 +119,7 @@ pub struct TradePair {
     pub buy_ticker_id: String,
     pub buy_token: AccountId,
     pub buy_token_decimals: u8,
+    pub buy_token_market: AccountId,
     pub pool_id: String,
     pub max_leverage: U128,
     pub swap_fee: U128,

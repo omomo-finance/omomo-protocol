@@ -124,8 +124,25 @@ impl Contract {
 
                 (amount, amount_x, amount_y, token_to_add_liquidity)
             }
+            OrderType::Short => {
+                let amount = U128::from(
+                    BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one())
+                    / order.open_or_close_price
+                );
+
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
+
+                let amount_x = U128::from(0);
+                let amount_y = amount;
+
+                let token_to_add_liquidity = order.buy_token.clone();
+
+                (amount, amount_x, amount_y, token_to_add_liquidity)
+            }
             _ => todo!(
-                "Currently, the functionality is developed only for 'Buy' and 'Sell' order types"
+                "Currently, the functionality is developed only for the 'Buy', 'Sell' and 'Short' order types"
             ),
         };
 
@@ -207,9 +224,11 @@ impl Contract {
     /// Doesn't borrow when leverage is less or equal to 1.0
     pub fn borrow(
         &mut self,
+        order_type: OrderType,
         token: AccountId,
         amount: U128,
         leverage: U128,
+        open_price: U128,
     ) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
@@ -226,12 +245,23 @@ impl Contract {
         }
 
         let token_market = self.get_market_by(&token);
-        let borrow_amount =
-            U128::from(BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one()));
+
+        let borrow_amount: BigDecimal = match order_type {
+            OrderType::Long => {
+                BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
+            }
+            OrderType::Short => {
+                BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
+                    / BigDecimal::from(open_price)
+            }
+            _ => unreachable!(
+                "Borrow amount calculation only for the 'Long' and 'Short' order types"
+            ),
+        };
 
         ext_market::ext(token_market)
             .with_static_gas(GAS_FOR_BORROW)
-            .borrow(borrow_amount)
+            .borrow(U128::from(borrow_amount))
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_unused_gas_weight(100)
@@ -518,6 +548,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -594,6 +627,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),

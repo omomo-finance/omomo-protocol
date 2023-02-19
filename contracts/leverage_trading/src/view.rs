@@ -1,4 +1,5 @@
 use crate::big_decimal::{BigDecimal, WRatio};
+use crate::utils::DAYS_PER_YEAR;
 use crate::*;
 use near_sdk::env::signer_account_id;
 use near_sdk::Gas;
@@ -503,8 +504,19 @@ impl Contract {
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-            let total = BigDecimal::from(U128(order.amount))
-                * BigDecimal::from(order.sell_token_price.value);
+            let leverage_positions = self
+                .orders_per_pair_view
+                .get(&(trade_pair.sell_token, trade_pair.buy_token))
+                .unwrap();
+
+            let leverage_position = leverage_positions.get(&(order_id.0 as u64)).unwrap();
+
+            let total = if order.order_type == OrderType::Long {
+                BigDecimal::from(U128(leverage_position.amount)) * leverage_position.leverage
+            } else {
+                BigDecimal::from(U128(leverage_position.amount))
+                    * (leverage_position.leverage - BigDecimal::one())
+            };
 
             let filled = if order.status == OrderStatus::Executed {
                 // 1 -> 100%
@@ -527,6 +539,65 @@ impl Contract {
             None
         }
     }
+
+    pub fn calculate_short_liquidation_price(
+        &self,
+        sell_token_amount: U128,
+        buy_token_amount: U128,
+        open_price: U128,
+        leverage: U128,
+        borrow_fee: U128,
+        swap_fee: U128,
+    ) -> U128 {
+        let sell_token_amount = BigDecimal::from(sell_token_amount);
+        let buy_token_amount = BigDecimal::from(buy_token_amount);
+        let open_price = BigDecimal::from(open_price);
+        let leverage = BigDecimal::from(leverage);
+        let borrow_fee = BigDecimal::from(borrow_fee);
+        let swap_fee = BigDecimal::from(swap_fee);
+
+        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one()) / open_price;
+        let borrow_period = BigDecimal::one();
+
+        let liquidation_price = (sell_token_amount
+            + self.volatility_rate * buy_token_amount * open_price
+            - borrow_amount * borrow_period * borrow_fee
+            - borrow_amount * swap_fee)
+            / buy_token_amount;
+
+        U128::from(liquidation_price)
+    }
+
+    pub fn calculate_long_liquidation_price(
+        &self,
+        sell_token_amount: U128,
+        open_price: U128,
+        leverage: U128,
+        borrow_fee: U128,
+        swap_fee: U128,
+    ) -> U128 {
+        let sell_token_amount = BigDecimal::from(sell_token_amount);
+        let open_price = BigDecimal::from(open_price);
+        let leverage = BigDecimal::from(leverage);
+        let borrow_fee = BigDecimal::from(borrow_fee);
+        let swap_fee = BigDecimal::from(swap_fee);
+
+        let borrow_amount = sell_token_amount * (leverage - BigDecimal::one());
+        let borrow_period = BigDecimal::one();
+        let days_per_year = BigDecimal::from(U128::from(
+            DAYS_PER_YEAR as u128 * 10u128.pow(PROTOCOL_DECIMALS.into()),
+        ));
+        let buy_token_amount = (sell_token_amount + borrow_amount) / open_price;
+
+        let liquidation_price = open_price
+            - self.volatility_rate
+                * (sell_token_amount
+                    - borrow_amount * (borrow_period * borrow_fee / days_per_year)
+                    - borrow_amount * swap_fee)
+                / buy_token_amount;
+
+        U128::from(liquidation_price)
+    }
 }
 
 impl Contract {
@@ -535,8 +606,11 @@ impl Contract {
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-        let total =
-            BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
+        let total = if order.order_type == OrderType::Buy {
+            BigDecimal::from(U128(order.amount))
+        } else {
+            BigDecimal::from(U128(order.amount)) * order.open_or_close_price
+        };
 
         Some(LimitOrderView {
             timestamp: order.timestamp_ms,
@@ -561,8 +635,11 @@ impl Contract {
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-        let total =
-            BigDecimal::from(U128(order.amount)) * BigDecimal::from(order.sell_token_price.value);
+        let total = if order.order_type == OrderType::Long {
+            BigDecimal::from(U128(order.amount)) * order.leverage
+        } else {
+            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
+        };
 
         let filled = if order.status == OrderStatus::Pending {
             0_u8
@@ -572,7 +649,7 @@ impl Contract {
 
         let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
-        let take_profit_order = self.get_take_profit_order(order_id);
+        let take_profit_order = self.get_take_profit_order(order, order_id);
 
         Some(LeveragedPositionView {
             timestamp: order.timestamp_ms,
@@ -588,7 +665,11 @@ impl Contract {
         })
     }
 
-    pub fn get_take_profit_order(&self, order_id: &u64) -> Option<TakeProfitOrderView> {
+    pub fn get_take_profit_order(
+        &self,
+        leverage_position: &Order,
+        order_id: &u64,
+    ) -> Option<TakeProfitOrderView> {
         match self.take_profit_orders.get(order_id) {
             Some((_, order)) => {
                 if order.status == OrderStatus::Pending
@@ -599,8 +680,13 @@ impl Contract {
                     let pair =
                         format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
-                    let total = BigDecimal::from(U128(order.amount))
-                        * BigDecimal::from(order.sell_token_price.value);
+                    let total = if leverage_position.order_type == OrderType::Long {
+                        BigDecimal::from(U128(leverage_position.amount))
+                            * leverage_position.leverage
+                    } else {
+                        BigDecimal::from(U128(leverage_position.amount))
+                            * (leverage_position.leverage - BigDecimal::one())
+                    };
 
                     Some(TakeProfitOrderView {
                         timestamp: order.timestamp_ms,
@@ -622,13 +708,13 @@ impl Contract {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::MILLISECONDS_PER_DAY;
+
     use super::*;
 
     use near_sdk::test_utils::test_env::{alice, bob};
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
-
-    use crate::pnl::MILLISECONDS_PER_DAY;
 
     fn get_context(is_view: bool, block_timestamp: Option<u64>) -> VMContext {
         VMContextBuilder::new()
@@ -670,6 +756,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -764,6 +853,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -780,6 +872,9 @@ mod tests {
             buy_ticker_id: "USDt".to_string(),
             buy_token: "usdt.fakes.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -813,6 +908,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(2 * 10_u128.pow(21)),
@@ -870,6 +968,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -905,6 +1006,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -942,6 +1046,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(23)),
@@ -1014,6 +1121,9 @@ mod tests {
             buy_ticker_id: "near".to_string(),
             buy_token: "wrap.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(10u128.pow(23)),
@@ -1159,6 +1269,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1191,6 +1304,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1220,6 +1336,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1255,7 +1374,7 @@ mod tests {
             price: U128(25 * 10_u128.pow(23)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(2 * 10_u128.pow(27)),
         };
 
         let limit_orders = contract.view_pending_limit_orders_by_user(alice(), U128(10), U128(1));
@@ -1287,6 +1406,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1301,6 +1423,7 @@ mod tests {
             buy_ticker_id: "USDT".to_string(),
             buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 6,
+            buy_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "wnear.qa.v1.nearlend.testnet|usdt.qa.v1.nearlend.testnet|2001".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1316,7 +1439,7 @@ mod tests {
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 2 {
                 // order with status of "Pending" on leverage "1.0" and in pair "USDT/WNEAR" with timestamp "86400001"
-                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+                let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Sell\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400001,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
                 contract.add_order_from_string(alice(), order_as_string);
             } else if count < 3 {
                 // order with status of "Pending" on leverage "1.0" and in pair "WNEAR/USDT"
@@ -1337,11 +1460,11 @@ mod tests {
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: "Limit".to_string(),
-            side: OrderType::Buy,
+            side: OrderType::Sell,
             price: U128(25 * 10_u128.pow(23)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(5 * 10_u128.pow(27)),
         };
 
         // view pending limit orders by pair "USDT/WNEAR"
@@ -1416,6 +1539,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1483,6 +1609,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1497,6 +1626,7 @@ mod tests {
             buy_ticker_id: "USDT".to_string(),
             buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 6,
+            buy_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "wnear.qa.v1.nearlend.testnet|usdt.qa.v1.nearlend.testnet|2001".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1561,12 +1691,11 @@ mod tests {
             timestamp: 86400000,
             pair: "USDT/WNEAR".to_string(),
             order_type: OrderType::Long,
-            // side: PositionType::Long,
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: true,
                 amount: U128(114784 * 10_u128.pow(22)),
@@ -1579,12 +1708,11 @@ mod tests {
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: OrderType::Short,
-            // side: PositionType::Short,
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 1,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(4 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
                 amount: U128(12918 * 10_u128.pow(23)),
@@ -1596,7 +1724,7 @@ mod tests {
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
                 filled: 0,
-                total: U128(3 * 10_u128.pow(27)),
+                total: U128(4 * 10_u128.pow(27)),
             }),
         };
 
@@ -1646,6 +1774,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1660,6 +1791,7 @@ mod tests {
             buy_ticker_id: "USDT".to_string(),
             buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 6,
+            buy_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
             pool_id: "wnear.qa.v1.nearlend.testnet|usdt.qa.v1.nearlend.testnet|2001".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1732,7 +1864,7 @@ mod tests {
             leverage: U128(2 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 1,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(2 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
                 amount: U128(2153 * 10_u128.pow(23)),
@@ -1744,7 +1876,7 @@ mod tests {
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
                 filled: 0,
-                total: U128(3 * 10_u128.pow(27)),
+                total: U128(2 * 10_u128.pow(27)),
             }),
         };
 
@@ -1757,7 +1889,7 @@ mod tests {
             leverage: U128(4 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
             filled: 0,
-            total: U128(3 * 10_u128.pow(27)),
+            total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
                 amount: U128(6459 * 10_u128.pow(23)),
@@ -1809,6 +1941,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1876,6 +2011,9 @@ mod tests {
             buy_ticker_id: "WNEAR".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -1945,6 +2083,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -2008,6 +2149,9 @@ mod tests {
             buy_ticker_id: "wnear".to_string(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
             pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
@@ -2036,5 +2180,72 @@ mod tests {
 
         let tpo_view = contract.take_profit_order_view(U128(order_id));
         assert_eq!(tpo_view, None);
+    }
+
+    #[test]
+    fn calculate_short_liquidation_price_test() {
+        let contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // 3000.00 USDT
+        let sell_token_amount = U128::from(3000000000000000000000000000);
+        // 12000.00 NEAR
+        let buy_token_amount = U128::from(12000000000000000000000000000);
+        // 2.50$
+        let open_price = U128::from(2500000000000000000000000);
+        // 5.0
+        let leverage = U128::from(5000000000000000000000000);
+        // 5.00%
+        let borrow_fee = U128::from(50000000000000000000000);
+        // 0.20%
+        let swap_fee = U128::from(2000000000000000000000);
+
+        let short_liquidation_price = contract.calculate_short_liquidation_price(
+            sell_token_amount,
+            buy_token_amount,
+            open_price,
+            leverage,
+            borrow_fee,
+            swap_fee,
+        );
+
+        // 2.6042$
+        let expected_result = U128::from(2604200000000000000000000);
+
+        assert_eq!(short_liquidation_price, expected_result);
+    }
+
+    #[test]
+    fn calculate_long_liquidation_price_test() {
+        let contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        // 2000.00 USDT
+        let sell_token_amount = U128::from(2000000000000000000000000000);
+        // 2.50$
+        let open_price = U128::from(2500000000000000000000000);
+        // 5.0
+        let leverage = U128::from(5000000000000000000000000);
+        // 5.00%
+        let borrow_fee = U128::from(50000000000000000000000);
+        // 0.20%
+        let swap_fee = U128::from(2000000000000000000000);
+
+        let long_liquidation_price = contract.calculate_long_liquidation_price(
+            sell_token_amount,
+            open_price,
+            leverage,
+            borrow_fee,
+            swap_fee,
+        );
+
+        // 2.0221$
+        let expected_result = U128::from(2029063888888888888888888);
+
+        assert_eq!(long_liquidation_price, expected_result);
     }
 }
