@@ -218,7 +218,7 @@ impl Contract {
             .with_attached_deposit(near_sdk::ONE_YOCTO)
             .ft_transfer_call(
                 self.ref_finance_account.clone(),
-                amount.clone(),
+                amount,
                 None,
                 "\"Deposit\"".to_string(),
             )
