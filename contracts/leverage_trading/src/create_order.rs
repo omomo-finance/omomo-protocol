@@ -302,9 +302,11 @@ impl Contract {
     /// Doesn't borrow when leverage is less or equal to 1.0
     pub fn borrow(
         &mut self,
+        order_type: OrderType,
         token: AccountId,
         amount: U128,
         leverage: U128,
+        open_price: U128,
     ) -> PromiseOrValue<WBalance> {
         require!(
             env::prepaid_gas() >= GAS_FOR_BORROW,
@@ -321,12 +323,23 @@ impl Contract {
         }
 
         let token_market = self.get_market_by(&token);
-        let borrow_amount =
-            U128::from(BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one()));
+
+        let borrow_amount: BigDecimal = match order_type {
+            OrderType::Long => {
+                BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
+            }
+            OrderType::Short => {
+                BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
+                    / BigDecimal::from(open_price)
+            }
+            _ => unreachable!(
+                "Borrow amount calculation only for the 'Long' and 'Short' order types"
+            ),
+        };
 
         ext_market::ext(token_market)
             .with_static_gas(GAS_FOR_BORROW)
-            .borrow(borrow_amount)
+            .borrow(U128::from(borrow_amount))
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_unused_gas_weight(100)
