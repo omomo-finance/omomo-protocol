@@ -51,7 +51,7 @@ near call $CONTRACT_ID create_order '{
     "sell_token": "'$USDT_TOKEN'",
     "buy_token": "'$NEAR_TOKEN'",
     "leverage": "1000000000000000000000000",
-    "open_or_close_price": "1000000000000000000000000"
+    "entry_price": "1000000000000000000000000"
 }' --accountId $USER_ACCOUNT --gas 300000000000000 --depositYocto 100000000000000
 
 # View new order
