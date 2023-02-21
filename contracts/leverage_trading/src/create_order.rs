@@ -164,11 +164,18 @@ impl Contract {
                 PromiseResult::Successful(result) => {
                     let lpt_id = serde_json::from_slice::<Option<String>>(&result).unwrap();
 
-                    self.decrease_balance(
-                        &env::signer_account_id(),
-                        &order.sell_token,
-                        order.amount,
-                    );
+                    match order.order_type {
+                        OrderType::Sell => self.decrease_balance(
+                            &signer_account_id(),
+                            &order.buy_token,
+                            order.amount,
+                        ),
+                        _ => self.decrease_balance(
+                            &signer_account_id(),
+                            &order.sell_token,
+                            order.amount,
+                        ),
+                    }
 
                     let mut order = order;
                     order.lpt_id = lpt_id.unwrap();
