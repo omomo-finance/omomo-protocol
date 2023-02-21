@@ -4,6 +4,7 @@ use near_sdk::{
 };
 
 use crate::{
+    common::Event,
     ref_finance::{ext_ref_finance, ShortLiquidityInfo},
     utils::NO_DEPOSIT,
     *,
@@ -91,5 +92,7 @@ impl Contract {
         order.status = OrderStatus::Canceled;
 
         self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
+
+        Event::CancelLimitOrderEvent { order_id }.emit();
     }
 }
