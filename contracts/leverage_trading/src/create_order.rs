@@ -14,6 +14,7 @@ trait ContractCallbackInterface {
     fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order, amount: U128) -> PromiseOrValue<Balance>;
     fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128);
+    fn withdraw_asset_callback(token_id: AccountId, amount: U128);
 }
 
 #[near_bindgen]
@@ -85,68 +86,18 @@ impl Contract {
                 buy_token_price,
                 entry_price,
             ),
-            OrderType::Long | OrderType::Short => {
-                let order = Order {
-                    status: OrderStatus::Pending,
-                    order_type,
-                    amount: Balance::from(amount),
-                    sell_token,
-                    buy_token,
-                    leverage: BigDecimal::from(leverage),
-                    sell_token_price,
-                    buy_token_price,
-                    open_or_close_price: BigDecimal::from(entry_price),
-                    block: env::block_height(),
-                    timestamp_ms: env::block_timestamp_ms(),
-                    lpt_id: "".to_string(),
-                };
-
-                // calculating the range for the liquidity to be added into
-                // consider the smallest gap is point_delta for given pool
-                let (amount, amount_x, amount_y, token_id) = if order.order_type == OrderType::Long
-                {
-                    let amount =
-                        U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
-
-                    let (sell_token_decimals, _) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
-
-                    let amount_x = amount;
-                    let amount_y = U128::from(0);
-
-                    let token_to_add_liquidity = order.sell_token.clone();
-
-                    (amount, amount_x, amount_y, token_to_add_liquidity)
-                } else {
-                    let amount = U128::from(
-                        BigDecimal::from(U128::from(order.amount))
-                            * (order.leverage - BigDecimal::one())
-                            / order.open_or_close_price,
-                    );
-
-                    let (_, buy_token_decimals) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                    let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
-
-                    let amount_x = U128::from(0);
-                    let amount_y = amount;
-
-                    let token_to_add_liquidity = order.buy_token.clone();
-
-                    (amount, amount_x, amount_y, token_to_add_liquidity)
-                };
-
-                self.add_liquidity(
-                    order,
-                    token_id,
-                    amount,
-                    left_point,
-                    right_point,
-                    amount_x,
-                    amount_y,
-                )
-            }
+            OrderType::Long | OrderType::Short => self.create_leverage_order(
+                order_type,
+                left_point,
+                right_point,
+                amount,
+                sell_token,
+                sell_token_price,
+                buy_token,
+                buy_token_price,
+                leverage,
+                entry_price,
+            ),
             OrderType::TP => panic!(
                 "Incorrect type of order 'TP'. Expected one of 'Buy', 'Sell', 'Long', 'Short'"
             ),
@@ -209,47 +160,65 @@ impl Contract {
             PromiseResult::NotReady | PromiseResult::Failed => {
                 panic!("Failed to deposit liquidity")
             }
-            _ => (),
-        };
+            _ => match env::promise_result(1) {
+                PromiseResult::Successful(result) => {
+                    let lpt_id = serde_json::from_slice::<Option<String>>(&result).unwrap();
 
-        let lpt_id: String = match env::promise_result(1) {
-            PromiseResult::Successful(result) => serde_json::from_slice::<String>(&result).unwrap(),
-            _ => {
-                let token_id =
-                    if order.order_type == OrderType::Buy || order.order_type == OrderType::Long {
+                    self.decrease_balance(
+                        &env::signer_account_id(),
+                        &order.sell_token,
+                        order.amount,
+                    );
+
+                    let mut order = order;
+                    order.lpt_id = lpt_id.unwrap();
+
+                    self.order_nonce += 1;
+                    let order_id = self.order_nonce;
+
+                    self.add_or_update_order(&env::signer_account_id(), order.clone(), order_id);
+
+                    Event::CreateOrderEvent {
+                        order_id,
+                        sell_token_price: order.sell_token_price,
+                        buy_token_price: order.buy_token_price,
+                        pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                    }
+                    .emit();
+
+                    PromiseOrValue::Value(U128(order_id as u128))
+                }
+                _ => {
+                    let token_id = if order.order_type == OrderType::Buy
+                        || order.order_type == OrderType::Long
+                    {
                         order.sell_token
                     } else {
                         order.buy_token
                     };
 
-                ext_ref_finance::ext(self.ref_finance_account.clone())
-                    .with_static_gas(Gas::ONE_TERA * 45_u64)
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .withdraw_asset(token_id, amount);
+                    near_sdk::log!("Liquidity has not been added. Deposit return from DEX");
 
-                panic!("Failed to add liquidity")
-            }
-        };
-
-        self.decrease_balance(&env::signer_account_id(), &order.sell_token, order.amount);
-
-        let mut order = order;
-        order.lpt_id = lpt_id;
-
-        self.order_nonce += 1;
-        let order_id = self.order_nonce;
-
-        self.add_or_update_order(&env::signer_account_id(), order.clone(), order_id);
-
-        Event::CreateOrderEvent {
-            order_id,
-            sell_token_price: order.sell_token_price,
-            buy_token_price: order.buy_token_price,
-            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                    ext_ref_finance::ext(self.ref_finance_account.clone())
+                        .with_static_gas(Gas::ONE_TERA * 45_u64)
+                        .with_attached_deposit(NO_DEPOSIT)
+                        .withdraw_asset(token_id.clone(), amount)
+                        .then(
+                            ext_self::ext(current_account_id())
+                                .with_static_gas(Gas::ONE_TERA * 2u64)
+                                .with_attached_deposit(NO_DEPOSIT)
+                                .withdraw_asset_callback(token_id, amount),
+                        )
+                        .into()
+                }
+            },
         }
-        .emit();
+    }
 
-        PromiseOrValue::Value(U128(order_id as u128))
+    #[private]
+    pub fn withdraw_asset_callback(token_id: AccountId, amount: U128) {
+        panic!(
+            "Failed to add liquidity. The token '{token_id}' in the amount of '{amount}', was returned from the deposit DEX to the protocol balance  ", amount = amount.0)
     }
 
     /// Borrow step made within batch of transaction
@@ -453,16 +422,87 @@ impl Contract {
             let (sell_token_decimals, _) =
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
+            let amount_x = self.from_protocol_to_token_decimals(amount, sell_token_decimals);
             // (amount_x, amount_y, token_id)
-            (amount, U128::from(0), order.sell_token.clone())
+            (amount_x, U128::from(0), order.sell_token.clone())
         } else {
             let (_, buy_token_decimals) =
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
+            let amount_y = self.from_protocol_to_token_decimals(amount, buy_token_decimals);
             // (amount_x, amount_y, token_id)
-            (U128::from(0), amount, order.buy_token.clone())
+            (U128::from(0), amount_y, order.buy_token.clone())
+        };
+
+        self.add_liquidity(
+            order,
+            token_to_add_liquidity,
+            amount,
+            left_point,
+            right_point,
+            amount_x,
+            amount_y,
+        )
+    }
+
+    pub fn create_leverage_order(
+        &mut self,
+        order_type: OrderType,
+        // left point for add_liquidity acquired via getPointByPrice
+        left_point: i32,
+        // right point for add_liquidity acquired via getPointByPrice
+        right_point: i32,
+        amount: WBalance,
+        sell_token: AccountId,
+        sell_token_price: Price,
+        buy_token: AccountId,
+        buy_token_price: Price,
+        leverage: U128,
+        open_price: U128,
+    ) -> PromiseOrValue<WBalance> {
+        require!(
+            BigDecimal::from(leverage) > BigDecimal::one(),
+            "Incorrect leverage for order typt 'Long' and 'Short'"
+        );
+
+        let order = Order {
+            status: OrderStatus::Pending,
+            order_type,
+            amount: Balance::from(amount),
+            sell_token,
+            buy_token,
+            leverage: BigDecimal::from(leverage),
+            sell_token_price,
+            buy_token_price,
+            open_or_close_price: BigDecimal::from(open_price),
+            block: env::block_height(),
+            timestamp_ms: env::block_timestamp_ms(),
+            lpt_id: "".to_string(),
+        };
+        // calculating the range for the liquidity to be added into
+        // consider the smallest gap is point_delta for given pool
+        let (amount_x, amount_y, token_to_add_liquidity) = if order.order_type == OrderType::Long {
+            let total_amount =
+                U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
+
+            let (sell_token_decimals, _) =
+                self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+
+            let amount_x = self.from_protocol_to_token_decimals(total_amount, sell_token_decimals);
+            // (amount, amount_x, amount_y, token_id)
+            (amount_x, U128::from(0), order.sell_token.clone())
+        } else {
+            let total_amount = U128::from(
+                BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one())
+                    / order.open_or_close_price,
+            );
+
+            let (_, buy_token_decimals) =
+                self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+
+            let amount_y = self.from_protocol_to_token_decimals(total_amount, buy_token_decimals);
+            // (amount, amount_x, amount_y, token_id)
+            (U128::from(0), amount_y, order.buy_token.clone())
         };
 
         self.add_liquidity(
