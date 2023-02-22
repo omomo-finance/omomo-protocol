@@ -48,7 +48,7 @@ jobs:
       #    command: clippy
       #    args:  --manifest-path ./contracts/Cargo.toml -- -A clippy::too-many-arguments -A clippy::ptr-offset-with-cast -A clippy::assign-op-pattern -A clippy::manual-range-contains -D warnings
 
-      #- run: ./build.sh
+      - run: ./build.sh
       #- run: ./test.sh
 
       # linter checks leverage trading
