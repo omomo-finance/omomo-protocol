@@ -1,14 +1,19 @@
-use crate::ref_finance::{ext_ref_finance, LiquidityInfo};
-use crate::utils::NO_DEPOSIT;
+use crate::ref_finance::{ext_ref_finance, Action, LiquidityInfo, Swap};
+use crate::utils::{ext_token, NO_DEPOSIT};
 use crate::*;
 use near_sdk::env::current_account_id;
-use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
+use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
 /// DEX underutilization ratio of the transferred deposit
 const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn remove_liquidity_for_execute_order_callback(&self, order: Order, order_id: U128);
+    fn remove_liquidity_for_execute_order_callback(
+        &self,
+        order: Order,
+        order_id: U128,
+        expected_amount: (U128, U128),
+    );
     fn execute_order_callback(&self, order: Order, order_id: U128);
 }
 
@@ -68,7 +73,11 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .remove_liquidity_for_execute_order_callback(order, order_id),
+                    .remove_liquidity_for_execute_order_callback(
+                        order,
+                        order_id,
+                        (min_amount_x, min_amount_y),
+                    ),
             )
             .into()
     }
@@ -78,10 +87,23 @@ impl Contract {
         &mut self,
         order: Order,
         order_id: U128,
+        expected_amount: (U128, U128),
     ) -> PromiseOrValue<U128> {
         if !is_promise_success() {
             panic!("Some problem with remove liquidity");
         } else {
+            let account_id = self.get_account_by(order_id.0).unwrap();
+
+            match order.order_type {
+                OrderType::Buy => {
+                    self.increase_balance(&account_id, &order.buy_token, expected_amount.1 .0);
+                }
+                OrderType::Sell => {
+                    self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
+                }
+                _ => (), // To do: implement transfer tokens to user balance for other order types (Long, Short, TP)
+            }
+
             self.mark_order_as_executed(order, order_id);
 
             if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
@@ -93,6 +115,36 @@ impl Contract {
                 .transfer(executor_reward_in_near)
                 .into()
         }
+    }
+
+    pub fn manual_swap(
+        &self,
+        pool_id: String,
+        sell_token: AccountId,
+        buy_token: AccountId,
+        buy_token_amount: U128,
+    ) {
+        let action = Action::SwapAction {
+            Swap: Swap {
+                pool_ids: vec![pool_id],
+                output_token: sell_token,
+                min_output_amount: WBalance::from(0),
+            },
+        };
+
+        log!(
+            "Action {}",
+            near_sdk::serde_json::to_string(&action).unwrap()
+        );
+
+        ext_token::ext(buy_token)
+            .with_attached_deposit(1)
+            .ft_transfer_call(
+                self.ref_finance_account.clone(),
+                buy_token_amount,
+                Some("Swap".to_string()),
+                near_sdk::serde_json::to_string(&action).unwrap(),
+            );
     }
 }
 
@@ -137,7 +189,8 @@ impl Contract {
             OrderType::Buy => {
                 let min_amount_x = U128::from(0);
                 let min_amount_y = U128::from(
-                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
+                    BigDecimal::from(U128::from(order.amount)) / order.open_or_close_price
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
                 );
 
                 let (_, buy_token_decimals) =
@@ -150,7 +203,8 @@ impl Contract {
 
             OrderType::Sell => {
                 let min_amount_x = U128::from(
-                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
+                    BigDecimal::from(U128::from(order.amount)) / order.open_or_close_price
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
                 );
                 let min_amount_y = U128::from(0);
 
