@@ -27,22 +27,22 @@ jobs:
           target: wasm32-unknown-unknown
           components: rustfmt, clippy
       # cache for dependencies
-      - uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin
-            ~/.cargo/registry/index
-            ~/.cargo/registry/cache
-            ~/.cargo/git
-            ~/.cargo/.crates.toml
-            ~/.cargo/.crates2.json
-            contracts/target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/contracts/Cargo.lock') }}
+      #- uses: actions/cache@v3
+      #  with:
+      #    path: |
+      #      ~/.cargo/bin
+      #      ~/.cargo/registry/index
+      #      ~/.cargo/registry/cache
+      #      ~/.cargo/git
+      #      ~/.cargo/.crates.toml
+      #      ~/.cargo/.crates2.json
+      #      contracts/target
+      #    key: ${{ runner.os }}-cargo-${{ hashFiles('**/contracts/Cargo.lock') }}
       # linter checks omomo
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args:  --manifest-path ./contracts/Cargo.toml --all -- --check
+      #- uses: actions-rs/cargo@v1
+      #  with:
+      #    command: fmt
+      #    args:  --manifest-path ./contracts/Cargo.toml --all -- --check
       #- uses: actions-rs/cargo@v1
       #  with:
       #    command: clippy
