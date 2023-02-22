@@ -3,7 +3,7 @@ use crate::utils::NO_DEPOSIT;
 use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
-/// DEX underutilization ratio of the transferred deposit 
+/// DEX underutilization ratio of the transferred deposit
 const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
 #[ext_contract(ext_self)]
@@ -137,7 +137,7 @@ impl Contract {
 
                 [liquidity_info.amount, min_amount_x, min_amount_y]
             }
-            _ => [U128(0); 3_usize],// It is necessary to implement the functionality for order type 'Buy' and 'Sell'
+            _ => [U128(0); 3_usize], // It is necessary to implement the functionality for order type 'Buy' and 'Sell'
         }
     }
 
