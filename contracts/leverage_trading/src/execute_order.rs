@@ -1,8 +1,10 @@
-use crate::ref_finance::ext_ref_finance;
+use crate::ref_finance::{ext_ref_finance, LiquidityInfo};
 use crate::utils::NO_DEPOSIT;
 use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
+/// DEX underutilization ratio of the transferred deposit 
+const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -48,7 +50,7 @@ impl Contract {
     pub fn execute_order_callback(&self, order: Order, order_id: U128) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Failed to get_liquidity");
 
-        let position = match env::promise_result(0) {
+        let liquidity_info = match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(val) => {
                 near_sdk::serde_json::from_slice::<ref_finance::LiquidityInfo>(&val).unwrap()
@@ -56,27 +58,12 @@ impl Contract {
             PromiseResult::Failed => panic!("Ref finance not found pool"),
         };
 
-        let remove_liquidity_amount = position.amount;
-
-        let min_amount_x = 0;
-        let min_amount_y = BigDecimal::from(U128::from(order.amount))
-            * order.leverage
-            * BigDecimal::from(order.sell_token_price.value)
-            / BigDecimal::from(order.buy_token_price.value);
-
-        let (_, buy_token_decimals) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let min_amount_y =
-            self.from_protocol_to_token_decimals(U128::from(min_amount_y), buy_token_decimals);
+        let [amount, min_amount_x, min_amount_y] =
+            self.get_amounts_to_remove_liquidity(order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 45u64)
-            .remove_liquidity(
-                order.lpt_id.clone(),
-                remove_liquidity_amount,
-                U128(min_amount_x),
-                min_amount_y,
-            )
+            .remove_liquidity(order.lpt_id.clone(), amount, min_amount_x, min_amount_y)
             .then(
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
@@ -110,6 +97,50 @@ impl Contract {
 }
 
 impl Contract {
+    pub fn get_amounts_to_remove_liquidity(
+        &self,
+        order: Order,
+        liquidity_info: LiquidityInfo,
+    ) -> [U128; 3_usize] {
+        match order.order_type {
+            OrderType::Long => {
+                let min_amount_x = U128::from(0);
+                let min_amount_y = U128::from(
+                    (BigDecimal::from(U128::from(order.amount)) * order.leverage
+                        - BigDecimal::from(U128::from(order.amount))
+                            * order.leverage
+                            * BigDecimal::from(INACCURACY_RATE))
+                        / order.open_or_close_price,
+                );
+
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_y =
+                    self.from_protocol_to_token_decimals(min_amount_y, buy_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+            OrderType::Short => {
+                let min_amount_x = U128::from(
+                    BigDecimal::from(U128::from(order.amount))
+                        * (order.leverage - BigDecimal::one())
+                        - BigDecimal::from(U128::from(order.amount))
+                            * (order.leverage - BigDecimal::one())
+                            * BigDecimal::from(INACCURACY_RATE),
+                );
+                let min_amount_y = U128::from(0);
+
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_y =
+                    self.from_protocol_to_token_decimals(min_amount_y, sell_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+            _ => [U128(0); 3_usize],// It is necessary to implement the functionality for order type 'Buy' and 'Sell'
+        }
+    }
+
     pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
         let mut order = order;
         order.status = OrderStatus::Executed;
