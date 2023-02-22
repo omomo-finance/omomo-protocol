@@ -400,7 +400,7 @@ impl Contract {
                     order.lpt_id = lpt_id;
                     order.status = OrderStatus::Pending;
                     self.take_profit_orders
-                        .insert(&(order_id.0 as u64), &(current_tpo.0, order.clone()));
+                        .insert(&(order_id.0 as u64), &(current_tpo.0, order));
                 }
             }
             _ => {

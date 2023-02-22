@@ -518,13 +518,7 @@ impl Contract {
                     * (leverage_position.leverage - BigDecimal::one())
             };
 
-            let filled = if order.status == OrderStatus::Executed {
-                // 1 -> 100%
-                1_u8
-            } else {
-                // 0 -> 0%
-                0_u8
-            };
+            let filled = (order.status == OrderStatus::Executed).into();
 
             Some(TakeProfitOrderView {
                 timestamp: order.timestamp_ms,
@@ -642,11 +636,7 @@ impl Contract {
             BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
         };
 
-        let filled = if order.status == OrderStatus::Pending {
-            0_u8
-        } else {
-            1_u8
-        };
+        let filled = (order.status != OrderStatus::Pending).into();
 
         let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
