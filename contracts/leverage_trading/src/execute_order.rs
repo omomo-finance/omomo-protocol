@@ -132,12 +132,39 @@ impl Contract {
 
                 let (sell_token_decimals, _) =
                     self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-                let min_amount_y =
-                    self.from_protocol_to_token_decimals(min_amount_y, sell_token_decimals);
+                let min_amount_x =
+                    self.from_protocol_to_token_decimals(min_amount_x, sell_token_decimals);
 
                 [liquidity_info.amount, min_amount_x, min_amount_y]
             }
-            _ => [U128(0); 3_usize], // It is necessary to implement the functionality for order type 'Buy' and 'Sell'
+            OrderType::Buy => {
+                let min_amount_x = U128::from(0);
+                let min_amount_y = U128::from(
+                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
+                );
+
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_y =
+                    self.from_protocol_to_token_decimals(min_amount_y, buy_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+
+            OrderType::Sell => {
+                let min_amount_x = U128::from(
+                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
+                );
+                let min_amount_y = U128::from(0);
+
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_x =
+                    self.from_protocol_to_token_decimals(min_amount_x, sell_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+            _ => [U128(0); 3_usize], // It is necessary to implement the functionality for order type TP (TakeProfit)
         }
     }
 
