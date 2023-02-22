@@ -48,6 +48,9 @@ pub enum Event {
         close_price: U128,
         pool_id: String,
     },
+    CancelLimitOrderEvent {
+        order_id: U128,
+    },
 }
 
 impl Event {
