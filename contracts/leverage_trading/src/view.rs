@@ -2119,25 +2119,17 @@ mod tests {
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
-        let new_price = Price {
-            ticker_id: "near".to_string(),
-            value: U128(305 * 10_u128.pow(22)),
-        };
+        let new_price = U128(305 * 10_u128.pow(22));
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(
-            U128(order_id),
-            new_price.clone(),
-            left_point,
-            right_point,
-        );
+        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
-        assert_eq!(tpo.1.open_or_close_price, BigDecimal::from(new_price.value));
+        assert_eq!(tpo.1.open_or_close_price, BigDecimal::from(new_price));
 
-        let tpo_view = contract.take_profit_order_view(U128(order_id));
-        assert_eq!(tpo_view.unwrap().price, new_price.value);
+        let tpo_view = contract.take_profit_order_view(U128(order_id)).unwrap();
+        assert_eq!(tpo_view.price, new_price);
     }
 
     #[test]
