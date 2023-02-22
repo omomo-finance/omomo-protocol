@@ -17,21 +17,21 @@ impl Contract {
     /// Executes order by inner order_id set on ref finance once the price range was crossed.
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
     pub fn execute_order(&self, order_id: U128) -> PromiseOrValue<U128> {
-        let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            Some(tpo.1)
-        } else {
-            self.get_order_by(order_id.0)
-        };
-
+        let order = self.get_order_by(order_id.0);
         require!(order.is_some(), "There is no such order to be executed");
 
-        assert_eq!(
-            order.as_ref().unwrap().status.clone(),
-            OrderStatus::Pending,
+        let mut order = order.unwrap();
+
+        if order.status == OrderStatus::Executed {
+            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                order = tpo.1
+            }
+        }
+
+        require!(
+            order.status == OrderStatus::Pending,
             "Error. Order has to be Pending to be executed"
         );
-
-        let order = order.unwrap();
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 5u64)
@@ -79,20 +79,23 @@ impl Contract {
         order: Order,
         order_id: U128,
     ) -> PromiseOrValue<U128> {
-        if !is_promise_success() {
-            panic!("Some problem with remove liquidity");
-        } else {
+        require!(is_promise_success(), "Some problem with remove liquidity");
+
+        let parent_order = self.get_order_by(order_id.0).unwrap();
+        if parent_order.status == OrderStatus::Pending {
             self.mark_order_as_executed(order, order_id);
 
             if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
                 self.set_take_profit_order_pending(order_id, tpo);
             }
-
-            let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
-            Promise::new(env::signer_account_id())
-                .transfer(executor_reward_in_near)
-                .into()
+        } else {
+            self.mark_take_profit_order_as_executed(order_id);
         }
+
+        let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
+        Promise::new(env::signer_account_id())
+            .transfer(executor_reward_in_near)
+            .into()
     }
 }
 
@@ -174,6 +177,14 @@ impl Contract {
             order,
             order_id.0 as u64,
         );
+    }
+
+    pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
+        let order_id = order_id.0 as u64;
+        let tpo = self.take_profit_orders.get(&order_id).unwrap();
+        let mut order = tpo.1;
+        order.status = OrderStatus::Executed;
+        self.take_profit_orders.insert(&(order_id), &(tpo.0, order));
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
