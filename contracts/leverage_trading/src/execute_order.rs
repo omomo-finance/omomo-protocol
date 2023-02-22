@@ -106,7 +106,8 @@ impl Contract {
             OrderType::Long => {
                 let min_amount_x = U128::from(0);
                 let min_amount_y = U128::from(
-                    BigDecimal::from(U128::from(order.amount)) * order.leverage
+                    BigDecimal::from(U128::from(order.amount))
+                        * order.leverage
                         * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
                         / order.open_or_close_price,
                 );
@@ -279,10 +280,9 @@ mod tests {
 
         contract.add_pair(pair_data);
 
-
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":2500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.3\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
-        
+
         let liquidity_info = LiquidityInfo {
             lpt_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100".to_string(),
             owner_id: "owner_id.testnet".parse().unwrap(),
@@ -294,12 +294,24 @@ mod tests {
             unclaimed_fee_y: U128(3 * 10_u128.pow(24)),
         };
 
-        let expect_amount = U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage / order.open_or_close_price);
-        let expect_amount_with_inaccuracy_rate = U128::from(BigDecimal::from(expect_amount) * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)));
+        let expect_amount = U128::from(
+            BigDecimal::from(U128::from(order.amount)) * order.leverage / order.open_or_close_price,
+        );
+        let expect_amount_with_inaccuracy_rate = U128::from(
+            BigDecimal::from(expect_amount)
+                * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+        );
 
         let result = contract.get_amounts_to_remove_liquidity(order, liquidity_info);
 
-        assert_eq!([U128(35 * 10_u128.pow(24)),U128(0), expect_amount_with_inaccuracy_rate], result);
+        assert_eq!(
+            [
+                U128(35 * 10_u128.pow(24)),
+                U128(0),
+                expect_amount_with_inaccuracy_rate
+            ],
+            result
+        );
     }
 
     #[test]
@@ -327,10 +339,9 @@ mod tests {
 
         contract.add_pair(pair_data);
 
-
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":2500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.3\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
-        
+
         let liquidity_info = LiquidityInfo {
             lpt_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100".to_string(),
             owner_id: "owner_id.testnet".parse().unwrap(),
@@ -342,11 +353,23 @@ mod tests {
             unclaimed_fee_y: U128(0),
         };
 
-        let expect_amount = U128::from(BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one()));
-        let expect_amount_with_inaccuracy_rate = U128::from(BigDecimal::from(expect_amount) * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)));
+        let expect_amount = U128::from(
+            BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one()),
+        );
+        let expect_amount_with_inaccuracy_rate = U128::from(
+            BigDecimal::from(expect_amount)
+                * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+        );
 
         let result = contract.get_amounts_to_remove_liquidity(order, liquidity_info);
 
-        assert_eq!([U128(35 * 10_u128.pow(24)), expect_amount_with_inaccuracy_rate, U128(0)], result);
+        assert_eq!(
+            [
+                U128(35 * 10_u128.pow(24)),
+                expect_amount_with_inaccuracy_rate,
+                U128(0)
+            ],
+            result
+        );
     }
 }
