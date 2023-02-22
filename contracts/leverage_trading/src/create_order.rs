@@ -127,7 +127,7 @@ impl Contract {
                 None,
                 "\"Deposit\"".to_string(),
             )
-            .and(
+            .then(
                 ext_ref_finance::ext(self.ref_finance_account.clone())
                     .with_static_gas(Gas::ONE_TERA * 10u64)
                     .with_attached_deposit(NO_DEPOSIT)
@@ -157,77 +157,77 @@ impl Contract {
         amount: U128,
     ) -> PromiseOrValue<WBalance> {
         match env::promise_result(0) {
-            PromiseResult::NotReady | PromiseResult::Failed => {
-                panic!("Failed to deposit liquidity")
-            }
-            _ => match env::promise_result(1) {
-                PromiseResult::Successful(result) => {
-                    let lpt_id = serde_json::from_slice::<Option<String>>(&result).unwrap();
+            PromiseResult::Successful(result) => {
+                let lpt_id = serde_json::from_slice::<String>(&result).unwrap();
 
-                    match order.order_type {
-                        OrderType::Sell => self.decrease_balance(
-                            &signer_account_id(),
-                            &order.buy_token,
-                            order.amount,
-                        ),
-                        _ => self.decrease_balance(
-                            &signer_account_id(),
-                            &order.sell_token,
-                            order.amount,
-                        ),
-                    }
-
-                    let mut order = order;
-                    order.lpt_id = lpt_id.unwrap();
-
-                    self.order_nonce += 1;
-                    let order_id = self.order_nonce;
-
-                    self.add_or_update_order(&env::signer_account_id(), order.clone(), order_id);
-
-                    Event::CreateOrderEvent {
-                        order_id,
-                        sell_token_price: order.sell_token_price,
-                        buy_token_price: order.buy_token_price,
-                        pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-                    }
-                    .emit();
-
-                    PromiseOrValue::Value(U128(order_id as u128))
+                if order.order_type == OrderType::Sell {
+                    self.decrease_balance(
+                        &env::signer_account_id(),
+                        &order.buy_token,
+                        order.amount,
+                    );
+                } else {
+                    self.decrease_balance(
+                        &env::signer_account_id(),
+                        &order.sell_token,
+                        order.amount,
+                    );
                 }
-                _ => {
-                    let token_id = if order.order_type == OrderType::Buy
-                        || order.order_type == OrderType::Long
-                    {
+
+                let mut order = order;
+                order.lpt_id = lpt_id;
+
+                self.order_nonce += 1;
+                let order_id = self.order_nonce;
+
+                self.add_or_update_order(&env::signer_account_id(), order.clone(), order_id);
+
+                Event::CreateOrderEvent {
+                    order_id,
+                    sell_token_price: order.sell_token_price,
+                    buy_token_price: order.buy_token_price,
+                    pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                }
+                .emit();
+
+                PromiseOrValue::Value(U128(order_id as u128))
+            }
+            _ => {
+                let token_id =
+                    if order.order_type == OrderType::Buy || order.order_type == OrderType::Long {
                         order.sell_token
                     } else {
                         order.buy_token
                     };
 
-                    near_sdk::log!("Liquidity has not been added. Deposit return from DEX");
+                near_sdk::log!("No liquidity was added. We return deposits from DEX");
 
-                    ext_ref_finance::ext(self.ref_finance_account.clone())
-                        .with_static_gas(Gas::ONE_TERA * 45_u64)
-                        .with_attached_deposit(NO_DEPOSIT)
-                        .withdraw_asset(token_id.clone(), amount)
-                        .then(
-                            ext_self::ext(current_account_id())
-                                .with_static_gas(Gas::ONE_TERA * 2u64)
-                                .with_attached_deposit(NO_DEPOSIT)
-                                .withdraw_asset_callback(token_id, amount),
-                        )
-                        .into()
-                }
-            },
+                ext_ref_finance::ext(self.ref_finance_account.clone())
+                    .with_static_gas(Gas::ONE_TERA * 45_u64)
+                    .with_attached_deposit(NO_DEPOSIT)
+                    .withdraw_asset(token_id.clone(), amount)
+                    .then(
+                        ext_self::ext(current_account_id())
+                            .with_static_gas(Gas::ONE_TERA * 2u64)
+                            .with_attached_deposit(NO_DEPOSIT)
+                            .withdraw_asset_callback(token_id, amount),
+                    )
+                    .into()
+            }
         }
     }
 
     #[private]
     pub fn withdraw_asset_callback(token_id: AccountId, amount: U128) {
-        panic!(
-            "Failed to add liquidity. The token '{token_id}' in the amount of '{amount}', was returned from the deposit DEX to the protocol balance  ", amount = amount.0)
+        if is_promise_success() {
+            panic!(
+                "Failed to add liquidity. The token '{token_id}' in the amount of '{amount}', was returned from the deposit DEX to the protocol balance", amount = amount.0)
+        } else {
+            panic!(
+                "Failed to add liquidity and returned from the deposit DEX to the protocol balance"
+            )
+        };
     }
-
     /// Borrow step made within batch of transaction
     /// Doesn't borrow when leverage is less or equal to 1.0
     pub fn borrow(

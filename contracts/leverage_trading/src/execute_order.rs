@@ -1,8 +1,10 @@
-use crate::ref_finance::ext_ref_finance;
+use crate::ref_finance::{ext_ref_finance, LiquidityInfo};
 use crate::utils::NO_DEPOSIT;
 use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
+/// DEX underutilization ratio of the transferred deposit
+const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -48,7 +50,7 @@ impl Contract {
     pub fn execute_order_callback(&self, order: Order, order_id: U128) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Failed to get_liquidity");
 
-        let position = match env::promise_result(0) {
+        let liquidity_info = match env::promise_result(0) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(val) => {
                 near_sdk::serde_json::from_slice::<ref_finance::LiquidityInfo>(&val).unwrap()
@@ -56,27 +58,12 @@ impl Contract {
             PromiseResult::Failed => panic!("Ref finance not found pool"),
         };
 
-        let remove_liquidity_amount = position.amount;
-
-        let min_amount_x = 0;
-        let min_amount_y = BigDecimal::from(U128::from(order.amount))
-            * order.leverage
-            * BigDecimal::from(order.sell_token_price.value)
-            / BigDecimal::from(order.buy_token_price.value);
-
-        let (_, buy_token_decimals) =
-            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-        let min_amount_y =
-            self.from_protocol_to_token_decimals(U128::from(min_amount_y), buy_token_decimals);
+        let [amount, min_amount_x, min_amount_y] =
+            self.get_amounts_to_remove_liquidity(order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 45u64)
-            .remove_liquidity(
-                order.lpt_id.clone(),
-                remove_liquidity_amount,
-                U128(min_amount_x),
-                min_amount_y,
-            )
+            .remove_liquidity(order.lpt_id.clone(), amount, min_amount_x, min_amount_y)
             .then(
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(99)
@@ -110,6 +97,74 @@ impl Contract {
 }
 
 impl Contract {
+    pub fn get_amounts_to_remove_liquidity(
+        &self,
+        order: Order,
+        liquidity_info: LiquidityInfo,
+    ) -> [U128; 3_usize] {
+        match order.order_type {
+            OrderType::Long => {
+                let min_amount_x = U128::from(0);
+                let min_amount_y = U128::from(
+                    BigDecimal::from(U128::from(order.amount))
+                        * order.leverage
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
+                        / order.open_or_close_price,
+                );
+
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_y =
+                    self.from_protocol_to_token_decimals(min_amount_y, buy_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+            OrderType::Short => {
+                let min_amount_x = U128::from(
+                    BigDecimal::from(U128::from(order.amount))
+                        * (order.leverage - BigDecimal::one())
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                );
+                let min_amount_y = U128::from(0);
+
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_x =
+                    self.from_protocol_to_token_decimals(min_amount_x, sell_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+            OrderType::Buy => {
+                let min_amount_x = U128::from(0);
+                let min_amount_y = U128::from(
+                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
+                );
+
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_y =
+                    self.from_protocol_to_token_decimals(min_amount_y, buy_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+
+            OrderType::Sell => {
+                let min_amount_x = U128::from(
+                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
+                );
+                let min_amount_y = U128::from(0);
+
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let min_amount_x =
+                    self.from_protocol_to_token_decimals(min_amount_x, sell_token_decimals);
+
+                [liquidity_info.amount, min_amount_x, min_amount_y]
+            }
+            _ => [U128(0); 3_usize], // It is necessary to implement the functionality for order type TP (TakeProfit)
+        }
+    }
+
     pub fn mark_order_as_executed(&mut self, order: Order, order_id: U128) {
         let mut order = order;
         order.status = OrderStatus::Executed;
@@ -198,5 +253,123 @@ mod tests {
 
         assert_eq!(order.status, OrderStatus::Executed);
         assert_eq!(order_from_pair.status, order.status);
+    }
+
+    #[test]
+    fn test_get_amounts_to_remove_liquidity_for_long() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data);
+
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":2500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.3\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100\"}".to_string();
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+
+        let liquidity_info = LiquidityInfo {
+            lpt_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100".to_string(),
+            owner_id: "owner_id.testnet".parse().unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            left_point: -7040,
+            right_point: -7000,
+            amount: U128(35 * 10_u128.pow(24)),
+            unclaimed_fee_x: U128(0),
+            unclaimed_fee_y: U128(3 * 10_u128.pow(24)),
+        };
+
+        let expect_amount = U128::from(
+            BigDecimal::from(U128::from(order.amount)) * order.leverage / order.open_or_close_price,
+        );
+        let expect_amount_with_inaccuracy_rate = U128::from(
+            BigDecimal::from(expect_amount)
+                * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+        );
+
+        let result = contract.get_amounts_to_remove_liquidity(order, liquidity_info);
+
+        assert_eq!(
+            [
+                U128(35 * 10_u128.pow(24)),
+                U128(0),
+                expect_amount_with_inaccuracy_rate
+            ],
+            result
+        );
+    }
+
+    #[test]
+    fn test_get_amounts_to_remove_liquidity_for_short() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data);
+
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":2500000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.3\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100\"}".to_string();
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+
+        let liquidity_info = LiquidityInfo {
+            lpt_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#100".to_string(),
+            owner_id: "owner_id.testnet".parse().unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            left_point: -7040,
+            right_point: -7000,
+            amount: U128(35 * 10_u128.pow(24)),
+            unclaimed_fee_x: U128(3 * 10_u128.pow(24)),
+            unclaimed_fee_y: U128(0),
+        };
+
+        let expect_amount = U128::from(
+            BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one()),
+        );
+        let expect_amount_with_inaccuracy_rate = U128::from(
+            BigDecimal::from(expect_amount)
+                * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+        );
+
+        let result = contract.get_amounts_to_remove_liquidity(order, liquidity_info);
+
+        assert_eq!(
+            [
+                U128(35 * 10_u128.pow(24)),
+                expect_amount_with_inaccuracy_rate,
+                U128(0)
+            ],
+            result
+        );
     }
 }
