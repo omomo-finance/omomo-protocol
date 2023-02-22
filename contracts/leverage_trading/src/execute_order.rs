@@ -4,7 +4,7 @@ use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, Gas, Promise, PromiseResult};
 /// DEX underutilization ratio of the transferred deposit
-const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
+pub const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {

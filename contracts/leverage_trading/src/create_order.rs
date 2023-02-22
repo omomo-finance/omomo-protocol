@@ -4,6 +4,7 @@ use crate::ref_finance::ext_ref_finance;
 use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
 use crate::*;
 
+use crate::execute_order::INACCURACY_RATE;
 use near_sdk::env::{block_height, block_timestamp_ms, current_account_id, signer_account_id};
 use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
 
@@ -307,25 +308,64 @@ impl Contract {
 
         let current_order = self.get_order_by(order_id.0).unwrap();
         require!(
-            current_order.buy_token_price.value.0 < close_price.0,
+            current_order.open_or_close_price < BigDecimal::from(close_price.0),
             "Close price must be greater then current buy token price."
         );
 
-        let sell_amount = BigDecimal::from(current_order.sell_token_price.value)
-            * BigDecimal::from(U128::from(current_order.amount))
-            * current_order.leverage;
-        let expect_amount = self.get_price(current_order.buy_token.clone()) * sell_amount
-            / BigDecimal::from(current_order.buy_token_price.value);
+        let sell_token_price = self.view_price(current_order.sell_token.clone());
+        require!(
+            BigDecimal::from(sell_token_price.value) != BigDecimal::zero(),
+            "Sell token price cannot be zero"
+        );
+
+        let buy_token_price = self.view_price(current_order.buy_token.clone());
+        require!(
+            BigDecimal::from(buy_token_price.value) != BigDecimal::zero(),
+            "Buy token price cannot be zero"
+        );
+
+        let take_profit_order_info = match current_order.order_type {
+            OrderType::Long => {
+                let expect_amount = U128::from(
+                    BigDecimal::from(U128::from(current_order.amount))
+                        * current_order.leverage
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
+                        / current_order.open_or_close_price,
+                );
+
+                let (_, buy_token_decimals) = self
+                    .view_pair_tokens_decimals(&current_order.sell_token, &current_order.buy_token);
+                let expect_amount =
+                    self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals);
+
+                (OrderType::Buy, expect_amount)
+            }
+            OrderType::Short => {
+                let expect_amount = U128::from(
+                    BigDecimal::from(U128::from(current_order.amount))
+                        * (current_order.leverage - BigDecimal::one())
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                );
+
+                let (sell_token_decimals, _) = self
+                    .view_pair_tokens_decimals(&current_order.sell_token, &current_order.buy_token);
+                let expect_amount =
+                    self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals);
+
+                (OrderType::Sell, expect_amount)
+            }
+            _ => (OrderType::Sell, U128(0)),
+        };
 
         let order = Order {
             status: OrderStatus::PendingOrderExecute,
-            order_type: OrderType::TP,
-            amount: LowU128::from(expect_amount).0,
-            sell_token: current_order.buy_token.clone(),
-            buy_token: current_order.sell_token.clone(),
+            order_type: take_profit_order_info.0,
+            amount: take_profit_order_info.1 .0,
+            sell_token: current_order.sell_token.clone(),
+            buy_token: current_order.buy_token.clone(),
             leverage: BigDecimal::one(),
-            sell_token_price: current_order.buy_token_price,
-            buy_token_price: current_order.sell_token_price,
+            sell_token_price,
+            buy_token_price,
             open_or_close_price: BigDecimal::from(close_price),
             block: block_height(),
             timestamp_ms: block_timestamp_ms(),
@@ -361,17 +401,14 @@ impl Contract {
                     order.status = OrderStatus::Pending;
                     self.take_profit_orders
                         .insert(&(order_id.0 as u64), &(current_tpo.0, order.clone()));
-
-                    self.decrease_balance(&signer_account_id(), &order.sell_token, amount.0);
                 }
             }
             _ => {
-                let token_id =
-                    if order.order_type == OrderType::Buy || order.order_type == OrderType::Long {
-                        order.sell_token
-                    } else {
-                        order.buy_token
-                    };
+                let token_id = if order.order_type == OrderType::Long {
+                    order.buy_token
+                } else {
+                    order.sell_token
+                };
 
                 near_sdk::log!("No liquidity was added. We return deposits from DEX");
 
@@ -408,7 +445,7 @@ impl Contract {
                 order_id,
                 close_price: new_price,
                 pool_id: self
-                    .view_pair(&current_order.buy_token, &current_order.sell_token)
+                    .view_pair(&current_order.sell_token, &current_order.buy_token)
                     .pool_id,
             }
             .emit();

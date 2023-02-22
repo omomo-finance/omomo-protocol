@@ -500,7 +500,7 @@ impl Contract {
         );
 
         if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            let trade_pair = self.view_pair(&order.buy_token, &order.sell_token);
+            let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
