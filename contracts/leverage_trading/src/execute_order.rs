@@ -4,7 +4,7 @@ use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
 /// DEX underutilization ratio of the transferred deposit
-const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
+pub const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -22,21 +22,21 @@ impl Contract {
     /// Executes order by inner order_id set on ref finance once the price range was crossed.
     /// Gets pool info, removes liquidity presented by one asset and marks order as executed.
     pub fn execute_order(&self, order_id: U128) -> PromiseOrValue<U128> {
-        let order = if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            Some(tpo.1)
-        } else {
-            self.get_order_by(order_id.0)
-        };
-
+        let order = self.get_order_by(order_id.0);
         require!(order.is_some(), "There is no such order to be executed");
 
-        assert_eq!(
-            order.as_ref().unwrap().status.clone(),
-            OrderStatus::Pending,
+        let mut order = order.unwrap();
+
+        if order.status == OrderStatus::Executed {
+            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                order = tpo.1
+            }
+        }
+
+        require!(
+            order.status == OrderStatus::Pending,
             "Error. Order has to be Pending to be executed"
         );
-
-        let order = order.unwrap();
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 5u64)
@@ -89,32 +89,34 @@ impl Contract {
         order_id: U128,
         expected_amount: (U128, U128),
     ) -> PromiseOrValue<U128> {
-        if !is_promise_success() {
-            panic!("Some problem with remove liquidity");
-        } else {
-            let account_id = self.get_account_by(order_id.0).unwrap();
+        require!(is_promise_success(), "Some problem with remove liquidity");
 
-            match order.order_type {
-                OrderType::Buy => {
-                    self.increase_balance(&account_id, &order.buy_token, expected_amount.1 .0);
-                }
-                OrderType::Sell => {
-                    self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
-                }
-                _ => (), // To do: implement transfer tokens to user balance for other order types (Long, Short, TP)
+        let account_id = self.get_account_by(order_id.0).unwrap();
+        match order.order_type {
+            OrderType::Buy => {
+                self.increase_balance(&account_id, &order.buy_token, expected_amount.1 .0);
             }
+            OrderType::Sell => {
+                self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
+            }
+            _ => (), // To do: implement transfer tokens to user balance for other order types (Long, Short, TP)
+        }
 
+        let parent_order = self.get_order_by(order_id.0).unwrap();
+        if parent_order.status == OrderStatus::Pending {
             self.mark_order_as_executed(order, order_id);
 
             if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
                 self.set_take_profit_order_pending(order_id, tpo);
             }
-
-            let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
-            Promise::new(env::signer_account_id())
-                .transfer(executor_reward_in_near)
-                .into()
+        } else {
+            self.mark_take_profit_order_as_executed(order_id);
         }
+
+        let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
+        Promise::new(env::signer_account_id())
+            .transfer(executor_reward_in_near)
+            .into()
     }
 
     pub fn manual_swap(
@@ -228,6 +230,14 @@ impl Contract {
             order,
             order_id.0 as u64,
         );
+    }
+
+    pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
+        let order_id = order_id.0 as u64;
+        let tpo = self.take_profit_orders.get(&order_id).unwrap();
+        let mut order = tpo.1;
+        order.status = OrderStatus::Executed;
+        self.take_profit_orders.insert(&(order_id), &(tpo.0, order));
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
