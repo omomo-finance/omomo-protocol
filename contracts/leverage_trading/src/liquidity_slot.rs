@@ -11,8 +11,8 @@ use crate::{
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn get_liquidity_info_callback(&self, lpt_id: LptId, user: Option<AccountId>, order_id: u64);
-    fn remove_oldest_liquidity_callback(&mut self, user: Option<AccountId>, order_id: u64);
+    fn get_liquidity_info_callback(&self, lpt_id: LptId, user: Option<AccountId>, order_id: U128);
+    fn remove_oldest_liquidity_callback(&mut self, user: Option<AccountId>, order_id: U128);
 }
 
 #[near_bindgen]
@@ -22,8 +22,6 @@ impl Contract {
             signer_account_id() == self.config.oracle_account_id,
             "You do not have access to call this method."
         );
-
-        let order_id = order_id.0 as u64;
 
         if let Some((user, order)) = self.get_order_by_id(order_id) {
             match order.status {
@@ -53,7 +51,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn get_liquidity_info(&self, lpt_id: LptId, user: Option<AccountId>, order_id: u64) {
+    pub fn get_liquidity_info(&self, lpt_id: LptId, user: Option<AccountId>, order_id: U128) {
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(2)
             .with_attached_deposit(NO_DEPOSIT)
@@ -71,7 +69,7 @@ impl Contract {
         &self,
         lpt_id: LptId,
         user: Option<AccountId>,
-        order_id: u64,
+        order_id: U128,
     ) {
         require!(is_promise_success(), "Some problem with getting liquidity.");
 
@@ -103,7 +101,7 @@ impl Contract {
     }
 
     #[private]
-    pub fn remove_oldest_liquidity_callback(&mut self, user: Option<AccountId>, order_id: u64) {
+    pub fn remove_oldest_liquidity_callback(&mut self, user: Option<AccountId>, order_id: U128) {
         require!(
             is_promise_success(),
             "Some problem with removing liquidity."
@@ -116,30 +114,37 @@ impl Contract {
         }
     }
 }
+
 impl Contract {
-    fn get_order_by_id(&self, order_id: u64) -> Option<(AccountId, Order)> {
+    pub fn get_order_by_id(&self, order_id: U128) -> Option<(AccountId, Order)> {
         for user in self.orders.keys().collect::<Vec<_>>() {
-            if let Some(order) = self.orders.get(&user).unwrap().get(&order_id).cloned() {
+            if let Some(order) = self
+                .orders
+                .get(&user)
+                .unwrap()
+                .get(&(order_id.0 as u64))
+                .cloned()
+            {
                 return Some((user, order));
             }
         }
         None
     }
 
-    fn get_take_profit_order_by_id(&self, order_id: u64) -> Option<Order> {
-        if let Some((_, order)) = self.take_profit_orders.get(&order_id) {
+    pub fn get_take_profit_order_by_id(&self, order_id: U128) -> Option<Order> {
+        if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             return Some(order);
         }
         None
     }
 
-    fn get_order_per_pair_view_by_id(&self, order_id: u64) -> Option<(PairId, Order)> {
+    pub fn get_order_per_pair_view_by_id(&self, order_id: U128) -> Option<(PairId, Order)> {
         for pair_id in self.orders_per_pair_view.keys().collect::<Vec<_>>() {
             if let Some(order) = self
                 .orders_per_pair_view
                 .get(&pair_id)
                 .unwrap()
-                .get(&order_id)
+                .get(&(order_id.0 as u64))
                 .cloned()
             {
                 return Some((pair_id, order));
@@ -148,20 +153,20 @@ impl Contract {
         None
     }
 
-    fn remove_order_by_ids(&mut self, account_id: AccountId, order_id: u64) {
+    fn remove_order_by_ids(&mut self, account_id: AccountId, order_id: U128) {
         let mut orders = self.orders.get(&account_id).unwrap();
-        orders.remove(&order_id);
+        orders.remove(&(order_id.0 as u64));
         self.orders.remove(&account_id);
         self.orders.insert(&account_id, &orders);
     }
 
-    fn remove_take_profit_order_by_id(&mut self, order_id: u64) {
-        self.take_profit_orders.remove(&order_id);
+    fn remove_take_profit_order_by_id(&mut self, order_id: U128) {
+        self.take_profit_orders.remove(&(order_id.0 as u64));
     }
 
-    fn remove_order_per_pair_view_by_ids(&mut self, pair_id: PairId, order_id: u64) {
+    fn remove_order_per_pair_view_by_ids(&mut self, pair_id: PairId, order_id: U128) {
         let mut orders = self.orders_per_pair_view.get(&pair_id).unwrap();
-        orders.remove(&order_id);
+        orders.remove(&(order_id.0 as u64));
         self.orders_per_pair_view.remove(&pair_id);
         self.orders_per_pair_view.insert(&pair_id, &orders);
     }

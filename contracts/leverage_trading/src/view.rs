@@ -1,5 +1,5 @@
 use crate::big_decimal::{BigDecimal, WRatio};
-use crate::utils::DAYS_PER_YEAR;
+use crate::utils::{DAYS_PER_YEAR, MILLISECONDS_PER_DAY};
 use crate::*;
 use near_sdk::env::signer_account_id;
 use near_sdk::Gas;
@@ -592,9 +592,92 @@ impl Contract {
 
         U128::from(liquidation_price)
     }
+
+    pub fn view_order_by_id(&self, order_id: U128, borrow_rate_ratio: U128) -> Option<OrderView> {
+        if let Some((_, order)) = self.get_order_by_id(order_id) {
+            return Some(self.get_order_view(order_id, order, borrow_rate_ratio));
+        }
+        None
+    }
+
+    pub fn view_take_profit_order_by_id(
+        &self,
+        order_id: U128,
+        borrow_rate_ratio: U128,
+    ) -> Option<OrderView> {
+        if let Some(order) = self.get_take_profit_order_by_id(order_id) {
+            return Some(self.get_order_view(order_id, order, borrow_rate_ratio));
+        }
+        None
+    }
 }
 
 impl Contract {
+    pub fn get_order_view(
+        &self,
+        order_id: U128,
+        order: Order,
+        borrow_rate_ratio: U128,
+    ) -> OrderView {
+        let borrow_fee = self.calculate_borrow_fee(order.timestamp_ms, borrow_rate_ratio);
+        let swap_fee = self.get_swap_fee(&order);
+
+        let liquidation_price = match order.order_type {
+            OrderType::Long => self.calculate_long_liquidation_price(
+                U128::from(order.amount),
+                U128::from(order.open_or_close_price),
+                U128::from(order.leverage),
+                borrow_fee,
+                swap_fee,
+            ),
+            OrderType::Short => {
+                let borrow_amount = BigDecimal::from(U128::from(order.amount))
+                    * (order.leverage - BigDecimal::one())
+                    / order.open_or_close_price;
+                let buy_token_amount = BigDecimal::from(U128::from(order.amount)) * borrow_amount;
+
+                self.calculate_short_liquidation_price(
+                    U128::from(order.amount),
+                    U128::from(buy_token_amount),
+                    U128::from(order.open_or_close_price),
+                    U128::from(order.leverage),
+                    borrow_fee,
+                    swap_fee,
+                )
+            }
+            _ => U128::from(0),
+        };
+
+        OrderView {
+            order_id,
+            status: order.status,
+            order_type: order.order_type,
+            amount: U128::from(order.amount),
+            sell_token: order.sell_token,
+            sell_token_price: order.sell_token_price.value,
+            buy_token: order.buy_token,
+            buy_token_price: order.buy_token_price.value,
+            leverage: U128::from(order.leverage),
+            borrow_fee,
+            liquidation_price,
+            lpt_id: order.lpt_id,
+        }
+    }
+
+    pub fn calculate_borrow_fee(&self, order_timestamp_ms: u64, borrow_rate_ratio: U128) -> U128 {
+        let current_timestamp_ms = env::block_timestamp_ms();
+
+        let borrow_period = ((current_timestamp_ms - order_timestamp_ms) as f64
+            / MILLISECONDS_PER_DAY as f64)
+            .ceil();
+
+        U128::from(
+            BigDecimal::from(borrow_rate_ratio)
+                / BigDecimal::from(U128::from(DAYS_PER_YEAR as u128))
+                * BigDecimal::from(U128::from(borrow_period as u128)),
+        )
+    }
+
     pub fn get_pending_limit_order(&self, order_id: &u64, order: &Order) -> Option<LimitOrderView> {
         let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
 
