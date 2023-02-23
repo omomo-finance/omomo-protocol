@@ -69,16 +69,21 @@ impl Contract {
             })
             .clone();
 
-        ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_unused_gas_weight(1)
-            .with_attached_deposit(NO_DEPOSIT)
-            .get_pool(self.view_pair(&order.sell_token, &order.buy_token).pool_id)
-            .then(
-                ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(29)
+        match order.order_type {
+            OrderType::Buy | OrderType::Sell => self.cancel_limit_order(order_id, order),
+            _ => {
+                ext_ref_finance::ext(self.ref_finance_account.clone())
+                    .with_unused_gas_weight(1)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .get_pool_callback(order_id, order, price_impact, OrderAction::Cancel),
-            );
+                    .get_pool(self.view_pair(&order.sell_token, &order.buy_token).pool_id)
+                    .then(
+                        ext_self::ext(current_account_id())
+                            .with_unused_gas_weight(29)
+                            .with_attached_deposit(NO_DEPOSIT)
+                            .get_pool_callback(order_id, order, price_impact, OrderAction::Cancel),
+                    );
+            }
+        }
     }
 
     #[private]

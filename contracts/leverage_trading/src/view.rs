@@ -333,9 +333,9 @@ impl Contract {
 
         let mut pending_limit_orders = orders
             .iter()
-            .filter_map(|(_, order)| {
+            .filter_map(|(id, order)| {
                 match order.status == OrderStatus::Pending && order.leverage == BigDecimal::one() {
-                    true => self.get_pending_limit_order(order),
+                    true => self.get_pending_limit_order(id, order),
                     false => None,
                 }
             })
@@ -370,13 +370,13 @@ impl Contract {
 
         let mut pending_limit_orders = orders
             .iter()
-            .filter_map(|(_, order)| {
+            .filter_map(|(id, order)| {
                 match order.status == OrderStatus::Pending
                     && order.leverage == BigDecimal::one()
                     && order.sell_token == sell_token
                     && order.buy_token == buy_token
                 {
-                    true => self.get_pending_limit_order(order),
+                    true => self.get_pending_limit_order(id, order),
                     false => None,
                 }
             })
@@ -500,7 +500,7 @@ impl Contract {
         );
 
         if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            let trade_pair = self.view_pair(&order.buy_token, &order.sell_token);
+            let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
@@ -518,13 +518,7 @@ impl Contract {
                     * (leverage_position.leverage - BigDecimal::one())
             };
 
-            let filled = if order.status == OrderStatus::Executed {
-                // 1 -> 100%
-                1_u8
-            } else {
-                // 0 -> 0%
-                0_u8
-            };
+            let filled = (order.status == OrderStatus::Executed).into();
 
             Some(TakeProfitOrderView {
                 timestamp: order.timestamp_ms,
@@ -601,7 +595,7 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn get_pending_limit_order(&self, order: &Order) -> Option<LimitOrderView> {
+    pub fn get_pending_limit_order(&self, order_id: &u64, order: &Order) -> Option<LimitOrderView> {
         let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
@@ -613,6 +607,7 @@ impl Contract {
         };
 
         Some(LimitOrderView {
+            order_id: U128(*order_id as u128),
             timestamp: order.timestamp_ms,
             pair,
             order_type: "Limit".to_string(),
@@ -641,17 +636,14 @@ impl Contract {
             BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
         };
 
-        let filled = if order.status == OrderStatus::Pending {
-            0_u8
-        } else {
-            1_u8
-        };
+        let filled = (order.status != OrderStatus::Pending).into();
 
         let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
-        let take_profit_order = self.get_take_profit_order(order, order_id);
+        let take_profit_order = self.get_take_profit_order(order_id, order);
 
         Some(LeveragedPositionView {
+            order_id: U128(*order_id as u128),
             timestamp: order.timestamp_ms,
             pair,
             order_type: order.order_type.clone(),
@@ -667,8 +659,8 @@ impl Contract {
 
     pub fn get_take_profit_order(
         &self,
-        leverage_position: &Order,
         order_id: &u64,
+        leverage_position: &Order,
     ) -> Option<TakeProfitOrderView> {
         match self.take_profit_orders.get(order_id) {
             Some((_, order)) => {
@@ -1367,6 +1359,7 @@ mod tests {
         }
 
         let true_2nd_limit_order = LimitOrderView {
+            order_id: U128(2),
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: "Limit".to_string(),
@@ -1457,6 +1450,7 @@ mod tests {
         }
 
         let true_2nd_limit_order = LimitOrderView {
+            order_id: U128(2),
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: "Limit".to_string(),
@@ -1688,6 +1682,7 @@ mod tests {
 
         // opened position without take-profit order
         let true_1st_opened_position = LeveragedPositionView {
+            order_id: U128(1),
             timestamp: 86400000,
             pair: "USDT/WNEAR".to_string(),
             order_type: OrderType::Long,
@@ -1705,6 +1700,7 @@ mod tests {
 
         // opened position with take-profit order
         let true_2nd_opened_position = LeveragedPositionView {
+            order_id: U128(2),
             timestamp: 86400001,
             pair: "USDT/WNEAR".to_string(),
             order_type: OrderType::Short,
@@ -1857,6 +1853,7 @@ mod tests {
 
         // opened position with take-profit order in pair "WNEAR/USDT"
         let true_1st_opened_position_by_pair = LeveragedPositionView {
+            order_id: U128(2),
             timestamp: 86400001,
             pair: "WNEAR/USDT".to_string(),
             order_type: OrderType::Short,
@@ -1882,6 +1879,7 @@ mod tests {
 
         // opened position without take-profit order in pair "USDT/WNEAR"
         let true_2nd_opened_position_by_pair = LeveragedPositionView {
+            order_id: U128(3),
             timestamp: 86400002,
             pair: "WNEAR/USDT".to_string(),
             order_type: OrderType::Short,
@@ -2111,25 +2109,17 @@ mod tests {
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
-        let new_price = Price {
-            ticker_id: "near".to_string(),
-            value: U128(305 * 10_u128.pow(22)),
-        };
+        let new_price = U128(305 * 10_u128.pow(22));
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(
-            U128(order_id),
-            new_price.clone(),
-            left_point,
-            right_point,
-        );
+        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
-        assert_eq!(tpo.1.open_or_close_price, BigDecimal::from(new_price.value));
+        assert_eq!(tpo.1.open_or_close_price, BigDecimal::from(new_price));
 
-        let tpo_view = contract.take_profit_order_view(U128(order_id));
-        assert_eq!(tpo_view.unwrap().price, new_price.value);
+        let tpo_view = contract.take_profit_order_view(U128(order_id)).unwrap();
+        assert_eq!(tpo_view.price, new_price);
     }
 
     #[test]

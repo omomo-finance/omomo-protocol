@@ -6,6 +6,7 @@ extern crate core;
     clippy::ptr_offset_with_cast
 )]
 mod big_decimal;
+mod cancel_limit_order;
 mod cancel_order;
 mod common;
 mod config;

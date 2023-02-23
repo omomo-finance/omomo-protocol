@@ -29,6 +29,8 @@ trait RefFinanceInterface {
     fn get_pool(&self, pool_id: PoolId);
 
     fn get_liquidity(&self, lpt_id: LptId);
+
+    fn withdraw_asset(&mut self, token_id: AccountId, amount: U128);
 }
 
 /// Single swap action.
