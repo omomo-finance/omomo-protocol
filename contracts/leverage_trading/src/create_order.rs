@@ -314,16 +314,28 @@ impl Contract {
         );
 
         let current_order = self.get_order_by(order_id.0).unwrap();
+        require!(
+            current_order.order_type == OrderType::Long
+                || current_order.order_type == OrderType::Short,
+            "Invalid parent order type."
+        );
 
         require!(
             current_order.status != OrderStatus::Executed,
             "Parent order was executed, at that moment take profit order not available."
         );
 
-        require!(
-            current_order.open_or_close_price < BigDecimal::from(close_price.0),
-            "Close price must be greater then current buy token price."
-        );
+        if current_order.order_type == OrderType::Long {
+            require!(
+                current_order.open_or_close_price < BigDecimal::from(close_price.0),
+                "Close price must be greater less then current token price."
+            );
+        } else {
+            require!(
+                current_order.open_or_close_price > BigDecimal::from(close_price.0),
+                "Close price must be less then current token price."
+            );
+        }
 
         let sell_token_price = self.view_price(current_order.sell_token.clone());
         require!(
@@ -458,10 +470,17 @@ impl Contract {
             "At current moment price can't be changed."
         );
 
-        require!(
-            parent_order.open_or_close_price < BigDecimal::from(new_price.0),
-            "Close price must be greater then current buy token price."
-        );
+        if parent_order.order_type == OrderType::Long {
+            require!(
+                parent_order.open_or_close_price < BigDecimal::from(new_price.0),
+                "Close price must be greater less then current token price."
+            );
+        } else {
+            require!(
+                parent_order.open_or_close_price > BigDecimal::from(new_price.0),
+                "Close price must be less then current token price."
+            );
+        }
 
         let order = self.take_profit_orders.get(&(order_id.0 as u64));
         require!(order.is_some(), "Take profit order not found");
@@ -825,10 +844,10 @@ mod tests {
             },
         );
 
-        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
-        let new_price = U128(30500000000000000000000000);
+        let new_price = U128(24500000000000000000000000);
         let left_point = -9860;
         let right_point = -9820;
         contract.create_take_profit_order(U128(1), new_price, left_point, right_point);
@@ -898,11 +917,11 @@ mod tests {
             },
         );
 
-        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
-        let new_price = U128(30500000000000000000000000);
+        let new_price = U128(2450000000000000000000000);
         let left_point = -9860;
         let right_point = -9820;
         contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
@@ -911,7 +930,7 @@ mod tests {
         assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
         assert_eq!(WBigDecimal::from(tpo.1.open_or_close_price), new_price);
 
-        let new_price = U128(33500000000000000000000000);
+        let new_price = U128(2350000000000000000000000);
         let left_point = -8040;
         let right_point = -8000;
 
