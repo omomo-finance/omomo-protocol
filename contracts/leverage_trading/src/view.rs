@@ -667,7 +667,7 @@ impl Contract {
                 if order.status == OrderStatus::Pending
                     || order.status == OrderStatus::PendingOrderExecute
                 {
-                    let trade_pair = self.view_pair(&order.buy_token, &order.sell_token);
+                    let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
 
                     let pair =
                         format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
@@ -1675,7 +1675,7 @@ mod tests {
             }
         }
         // take-profit order for order with timestamp "86400001"
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
         contract.take_profit_orders.insert(&2, &((0, 40), order));
@@ -1846,7 +1846,7 @@ mod tests {
             }
         }
         // take-profit order for order with timestamp "86400001"
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
         contract.take_profit_orders.insert(&2, &((0, 40), order));
