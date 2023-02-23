@@ -12,7 +12,7 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn borrow_callback(&mut self) -> PromiseOrValue<WBalance>;
+    fn borrow_callback(&mut self, borrow_amount: U128) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order, amount: U128) -> PromiseOrValue<Balance>;
     fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128);
     fn withdraw_asset_callback(token_id: AccountId, amount: U128);
@@ -234,7 +234,8 @@ impl Contract {
     pub fn borrow(
         &mut self,
         order_type: OrderType,
-        token: AccountId,
+        sell_token: AccountId,
+        buy_token: AccountId,
         amount: U128,
         leverage: U128,
         open_price: U128,
@@ -245,46 +246,52 @@ impl Contract {
         );
 
         require!(
-            self.balance_of(env::signer_account_id(), token.clone()) >= amount,
-            "User doesn't have enough deposit to proceed this action"
+            self.balance_of(env::signer_account_id(), sell_token.clone()) >= amount,
+            "Failed to borrow. User doesn't have enough deposit to proceed this action"
         );
 
-        if BigDecimal::from(leverage) <= BigDecimal::one() {
-            return PromiseOrValue::Value(U128(0));
-        }
+        require!(
+            BigDecimal::from(leverage) > BigDecimal::one(),
+            "Failed to borrow. Incorrect leverage amount. The leverage should be greater than one"
+        );
 
-        let token_market = self.get_market_by(&token);
-
-        let borrow_amount: BigDecimal = match order_type {
+        let (token_market, borrow_amount) = match order_type {
             OrderType::Long => {
-                BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
+                let borrow_amount = U128::from(
+                    BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one()),
+                );
+
+                let token_market = self.get_market_by(&sell_token);
+                (token_market, borrow_amount)
             }
             OrderType::Short => {
-                BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
-                    / BigDecimal::from(open_price)
+                let borrow_amount = U128::from(
+                    BigDecimal::from(amount) * (BigDecimal::from(leverage) - BigDecimal::one())
+                        / BigDecimal::from(open_price),
+                );
+
+                let token_market = self.get_market_by(&buy_token);
+                (token_market, borrow_amount)
             }
-            _ => unreachable!(
-                "Borrow amount calculation only for the 'Long' and 'Short' order types"
-            ),
+            _ => panic!("Borrow amount calculation only for the 'Long' and 'Short' order types"),
         };
 
         ext_market::ext(token_market)
             .with_static_gas(GAS_FOR_BORROW)
-            .borrow(U128::from(borrow_amount))
+            .borrow(borrow_amount)
             .then(
                 ext_self::ext(env::current_account_id())
                     .with_unused_gas_weight(100)
-                    .borrow_callback(),
+                    .borrow_callback(borrow_amount),
             )
             .into()
     }
 
     #[private]
-    pub fn borrow_callback(&mut self) -> PromiseOrValue<WBalance> {
+    pub fn borrow_callback(&mut self, borrow_amount: U128) -> PromiseOrValue<WBalance> {
         require!(is_promise_success(), "Contract failed to borrow assets");
-        PromiseOrValue::Value(U128(0))
+        PromiseOrValue::Value(borrow_amount)
     }
-
     #[private]
     pub fn add_order_from_string(&mut self, account_id: AccountId, order: String) {
         self.order_nonce += 1;
