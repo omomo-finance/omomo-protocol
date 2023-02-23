@@ -307,6 +307,12 @@ impl Contract {
         );
 
         let current_order = self.get_order_by(order_id.0).unwrap();
+
+        require!(
+            current_order.status != OrderStatus::Executed,
+            "Parent order was executed, at that moment take profit order not available."
+        );
+
         require!(
             current_order.open_or_close_price < BigDecimal::from(close_price.0),
             "Close price must be greater then current buy token price."
