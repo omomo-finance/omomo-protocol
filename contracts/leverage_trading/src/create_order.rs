@@ -176,7 +176,7 @@ impl Contract {
                 }
 
                 let mut order = order;
-                order.lpt_id = lpt_id;
+                order.lpt_id = lpt_id.clone();
 
                 self.order_nonce += 1;
                 let order_id = self.order_nonce;
@@ -188,6 +188,7 @@ impl Contract {
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
                     pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                    lpt_id,
                 }
                 .emit();
 
