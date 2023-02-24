@@ -185,10 +185,11 @@ impl Contract {
 
                 Event::CreateOrderEvent {
                     order_id,
+                    order_type: order.order_type,
+                    lpt_id,
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
                     pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-                    lpt_id,
                 }
                 .emit();
 
