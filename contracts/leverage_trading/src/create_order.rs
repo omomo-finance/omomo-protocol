@@ -190,6 +190,7 @@ impl Contract {
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
                     pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                    lpt_id,
                 }
                 .emit();
 
