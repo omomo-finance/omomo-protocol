@@ -135,7 +135,7 @@ impl Contract {
         }
 
         let [amount, min_amount_x, min_amount_y] =
-            self.get_amounts_to_cencal(order.clone(), liquidity_info);
+            self.get_amounts_to_cancel(order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 50_u64)
@@ -348,7 +348,7 @@ impl Contract {
             );
     }
 
-    pub fn get_amounts_to_cencal(
+    pub fn get_amounts_to_cancel(
         &self,
         order: Order,
         liquidity_info: Liquidity,
