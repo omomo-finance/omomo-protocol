@@ -869,7 +869,10 @@ mod tests {
 
         contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
 
-        let amount = U128::from(BigDecimal::from(U128(2 * 10_u128.pow(27))) * (BigDecimal::one() - BigDecimal::from(execute_order::INACCURACY_RATE))); 
+        let amount = U128::from(
+            BigDecimal::from(U128(2 * 10_u128.pow(27)))
+                * (BigDecimal::one() - BigDecimal::from(execute_order::INACCURACY_RATE)),
+        );
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 

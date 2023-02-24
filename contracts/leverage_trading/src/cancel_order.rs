@@ -426,7 +426,7 @@ impl Contract {
             BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
 
         let total_amount = if order.order_type == OrderType::Long {
-            U128::from(BigDecimal::from(return_amount) - borrow_fee_amount)
+            U128::from(return_amount - borrow_fee_amount)
         } else {
             todo!()
         };
@@ -510,10 +510,10 @@ impl Contract {
             .ceil();
 
         let borrow_amount = if order.order_type == OrderType::Long {
-            BigDecimal::from(U128(order.amount)) * (BigDecimal::from(order.leverage) - BigDecimal::one())
+            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
         } else {
-            BigDecimal::from(U128(order.amount)) * (BigDecimal::from(order.leverage) - BigDecimal::one())
-                / BigDecimal::from(order.open_or_close_price)
+            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
+                / order.open_or_close_price
         };
 
         let borrow_fee_amount = borrow_amount * BigDecimal::from(market_data.borrow_rate_ratio)
@@ -635,8 +635,11 @@ mod tests {
             "usdt.fakes.testnet".parse().unwrap(),
             "wrap.testnet".parse().unwrap(),
         );
-        
-        let amount = U128::from(BigDecimal::from(U128(2 * 10_u128.pow(25))) * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))); 
+
+        let amount = U128::from(
+            BigDecimal::from(U128(2 * 10_u128.pow(25)))
+                * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+        );
 
         contract.final_cancel_order(order_id, order, amount, market_data);
 
