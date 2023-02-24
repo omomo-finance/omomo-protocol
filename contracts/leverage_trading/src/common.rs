@@ -40,7 +40,6 @@ pub enum Event {
         sell_token_price: Price,
         buy_token_price: Price,
         pool_id: String,
-        lpt_id: String,
     },
     CreateTakeProfitOrderEvent {
         order_id: U128,
