@@ -653,32 +653,21 @@ impl Contract {
         order_id: U128,
         take_profit_order: (PricePoints, Order),
     ) {
-        let parent_order = self.get_order_by(order_id.0).unwrap();
         let order = take_profit_order.1;
 
-        let (amount_x, amount_y, token_to_add_liquidity) = if parent_order.order_type
-            == OrderType::Long
-        {
-            let total_amount =
-                U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
-
+        let (amount_x, amount_y, token_to_add_liquidity) = if order.order_type == OrderType::Buy {
             let (sell_token_decimals, _) =
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount_x = self.from_protocol_to_token_decimals(total_amount, sell_token_decimals);
-            // (amount, amount_x, amount_y, token_id)
+            let amount_x = self.from_protocol_to_token_decimals(U128(order.amount), sell_token_decimals);
+            // (amount_x, amount_y, token_id)
             (amount_x, U128::from(0), order.sell_token.clone())
         } else {
-            let total_amount = U128::from(
-                BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one())
-                    / order.open_or_close_price,
-            );
-
             let (_, buy_token_decimals) =
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount_y = self.from_protocol_to_token_decimals(total_amount, buy_token_decimals);
-            // (amount, amount_x, amount_y, token_id)
+            let amount_y = self.from_protocol_to_token_decimals(U128(order.amount), buy_token_decimals);
+            // (amount_x, amount_y, token_id)
             (U128::from(0), amount_y, order.buy_token.clone())
         };
 
