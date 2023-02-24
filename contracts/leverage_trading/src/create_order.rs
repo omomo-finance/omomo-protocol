@@ -363,7 +363,7 @@ impl Contract {
                 let expect_amount =
                     self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals);
 
-                (OrderType::Buy, expect_amount)
+                (OrderType::Sell, expect_amount)
             }
             _ => {
                 let expect_amount = U128::from(
@@ -377,7 +377,7 @@ impl Contract {
                 let expect_amount =
                     self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals);
 
-                (OrderType::Sell, expect_amount)
+                (OrderType::Buy, expect_amount)
             }
         };
 
