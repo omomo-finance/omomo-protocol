@@ -1,4 +1,5 @@
 use crate::metadata::Price;
+use crate::OrderType;
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::json;
@@ -34,6 +35,8 @@ impl fmt::Display for Actions {
 pub enum Event {
     CreateOrderEvent {
         order_id: u64,
+        order_type: OrderType,
+        lpt_id: String,
         sell_token_price: Price,
         buy_token_price: Price,
         pool_id: String,
