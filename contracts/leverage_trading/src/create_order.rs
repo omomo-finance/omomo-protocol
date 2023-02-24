@@ -415,7 +415,7 @@ impl Contract {
     pub fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128) {
         require!(is_promise_success(), "Some problems with liquidity adding.");
 
-        match env::promise_result(1) {
+        match env::promise_result(0) {
             PromiseResult::Successful(result) => {
                 let lpt_id = serde_json::from_slice::<String>(&result).unwrap();
                 if let Some(current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
@@ -659,14 +659,16 @@ impl Contract {
             let (sell_token_decimals, _) =
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount_x = self.from_protocol_to_token_decimals(U128(order.amount), sell_token_decimals);
+            let amount_x =
+                self.from_protocol_to_token_decimals(U128(order.amount), sell_token_decimals);
             // (amount_x, amount_y, token_id)
             (amount_x, U128::from(0), order.sell_token.clone())
         } else {
             let (_, buy_token_decimals) =
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount_y = self.from_protocol_to_token_decimals(U128(order.amount), buy_token_decimals);
+            let amount_y =
+                self.from_protocol_to_token_decimals(U128(order.amount), buy_token_decimals);
             // (amount_x, amount_y, token_id)
             (U128::from(0), amount_y, order.buy_token.clone())
         };
