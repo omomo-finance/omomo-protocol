@@ -1,10 +1,10 @@
 use crate::big_decimal::BigDecimal;
 use crate::cancel_order::ext_self;
-use crate::ref_finance::ext_ref_finance;
-use crate::utils::NO_DEPOSIT;
+use crate::ref_finance::{ext_ref_finance, Action, Swap};
+use crate::utils::{ext_token, NO_DEPOSIT};
 use crate::*;
 use near_sdk::env::{block_height, current_account_id};
-use near_sdk::Gas;
+use near_sdk::{is_promise_success, log, Gas};
 
 #[near_bindgen]
 impl Contract {
@@ -56,16 +56,17 @@ impl Contract {
                     ext_self::ext(current_account_id())
                         .with_static_gas(Gas(5))
                         .with_attached_deposit(NO_DEPOSIT)
-                        .remove_liquidity_callback(
-                            order_id,
-                            order,
-                            price_impact,
-                            OrderAction::Liquidate,
-                        ),
+                        .remove_liquidity_callback(order_id, order),
                 );
         } else {
             self.swap(order_id, order, price_impact, OrderAction::Liquidate);
         }
+    }
+
+    #[private]
+    pub fn remove_liquidity_callback(&mut self, order_id: U128, order: Order) {
+        require!(is_promise_success(), "Some problem with remove liquidity");
+        self.final_liquidate(order_id, order, None);
     }
 
     #[private]
@@ -113,6 +114,54 @@ impl Contract {
             order,
             order_id.0 as u64,
         );
+    }
+}
+
+impl Contract {
+    pub fn swap(
+        &self,
+        order_id: U128,
+        order: Order,
+        price_impact: U128,
+        order_action: OrderAction,
+    ) {
+        let buy_amount = BigDecimal::from(U128::from(order.amount))
+            * order.leverage
+            * BigDecimal::from(order.sell_token_price.value)
+            * self.get_price(order.buy_token.clone())
+            / BigDecimal::from(order.buy_token_price.value);
+
+        let (_, buy_token_decimals) =
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+        let buy_amount =
+            self.from_protocol_to_token_decimals(U128::from(buy_amount), buy_token_decimals);
+
+        let action = Action::SwapAction {
+            Swap: Swap {
+                pool_ids: vec![self.view_pair(&order.sell_token, &order.buy_token).pool_id],
+                output_token: order.sell_token.clone(),
+                min_output_amount: WBalance::from(0),
+            },
+        };
+
+        log!(
+            "action {}",
+            near_sdk::serde_json::to_string(&action).unwrap()
+        );
+
+        ext_token::ext(order.buy_token.clone())
+            .with_attached_deposit(1)
+            .ft_transfer_call(
+                self.ref_finance_account.clone(),
+                buy_amount,
+                Some("Swap".to_string()),
+                near_sdk::serde_json::to_string(&action).unwrap(),
+            )
+            .then(
+                ext_self::ext(current_account_id())
+                    .with_attached_deposit(NO_DEPOSIT)
+                    .liquidate_order_swap_callback(order_id, order, price_impact, order_action),
+            );
     }
 }
 
