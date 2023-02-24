@@ -171,6 +171,10 @@ impl Contract {
             .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1))
             .max_leverage
     }
+
+    pub fn get_protocol_fee(&self) -> U128 {
+        U128(self.protocol_fee)
+    }
 }
 
 impl Contract {

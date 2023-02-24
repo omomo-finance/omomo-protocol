@@ -809,7 +809,7 @@ mod tests {
 
     #[test]
     fn test_get_pending_orders() {
-        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
+        let current_day = get_current_day_in_nanoseconds(6); // borrow period 5 days
         let context = get_context(false, current_day);
         testing_env!(context);
 
@@ -841,13 +841,13 @@ mod tests {
 
         let market_data = MarketData {
             underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
-            underlying_token_decimals: 6,
+            underlying_token_decimals: 24,
             total_supplies: U128(60000000000000000000000000000),
             total_borrows: U128(25010000000000000000000000000),
             total_reserves: U128(1000176731435219096024128768),
             exchange_rate_ratio: U128(1000277139994639276176632),
             interest_rate_ratio: U128(261670051778601),
-            borrow_rate_ratio: U128(634273735391536),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(24)),
         };
 
         contract.update_or_insert_price(
@@ -869,7 +869,10 @@ mod tests {
 
         contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
 
-        let price_impact = U128(1);
+        let amount = U128::from(
+            BigDecimal::from(U128(2 * 10_u128.pow(27)))
+                * (BigDecimal::one() - BigDecimal::from(execute_order::INACCURACY_RATE)),
+        );
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -877,11 +880,11 @@ mod tests {
             if count < 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
             } else {
-                contract.final_order_cancel(
+                contract.final_cancel_order(
                     U128(count as u128 - 5),
                     order.clone(),
-                    price_impact,
-                    Some(market_data.clone()),
+                    amount,
+                    market_data.clone(),
                 );
             }
         }

@@ -602,7 +602,9 @@ impl Contract {
         };
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
-        let (amount_x, amount_y, token_to_add_liquidity) = if order.order_type == OrderType::Long {
+        let (deposit_amount, amount_x, amount_y, token_to_add_liquidity) = if order.order_type
+            == OrderType::Long
+        {
             let total_amount =
                 U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage);
 
@@ -610,8 +612,8 @@ impl Contract {
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
             let amount_x = self.from_protocol_to_token_decimals(total_amount, sell_token_decimals);
-            // (amount, amount_x, amount_y, token_id)
-            (amount_x, U128::from(0), order.sell_token.clone())
+            // (deposit_amount, amount_x, amount_y, token_id)
+            (amount_x, amount_x, U128::from(0), order.sell_token.clone())
         } else {
             let total_amount = U128::from(
                 BigDecimal::from(U128::from(order.amount)) * (order.leverage - BigDecimal::one())
@@ -622,14 +624,14 @@ impl Contract {
                 self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
             let amount_y = self.from_protocol_to_token_decimals(total_amount, buy_token_decimals);
-            // (amount, amount_x, amount_y, token_id)
-            (U128::from(0), amount_y, order.buy_token.clone())
+            // (deposit_amount, amount_x, amount_y, token_id)
+            (amount_y, U128::from(0), amount_y, order.buy_token.clone())
         };
 
         self.add_liquidity(
             order,
             token_to_add_liquidity,
-            amount,
+            deposit_amount,
             left_point,
             right_point,
             amount_x,

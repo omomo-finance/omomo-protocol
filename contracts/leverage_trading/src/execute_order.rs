@@ -64,7 +64,7 @@ impl Contract {
         };
 
         let [amount, min_amount_x, min_amount_y] =
-            self.get_amounts_to_remove_liquidity(order.clone(), liquidity_info);
+            self.get_amounts_to_excute(order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_static_gas(Gas::ONE_TERA * 45u64)
@@ -151,7 +151,7 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn get_amounts_to_remove_liquidity(
+    pub fn get_amounts_to_excute(
         &self,
         order: Order,
         liquidity_info: LiquidityInfo,
@@ -366,7 +366,7 @@ mod tests {
                 * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
         );
 
-        let result = contract.get_amounts_to_remove_liquidity(order, liquidity_info);
+        let result = contract.get_amounts_to_excute(order, liquidity_info);
 
         assert_eq!(
             [
@@ -425,7 +425,7 @@ mod tests {
                 * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
         );
 
-        let result = contract.get_amounts_to_remove_liquidity(order, liquidity_info);
+        let result = contract.get_amounts_to_excute(order, liquidity_info);
 
         assert_eq!(
             [
