@@ -322,11 +322,6 @@ impl Contract {
             "Invalid parent order type."
         );
 
-        require!(
-            current_order.status != OrderStatus::Executed,
-            "Parent order was executed, at that moment take profit order not available."
-        );
-
         if current_order.order_type == OrderType::Long {
             require!(
                 current_order.open_or_close_price < BigDecimal::from(close_price.0),
