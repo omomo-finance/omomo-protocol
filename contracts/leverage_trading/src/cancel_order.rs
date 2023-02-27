@@ -254,7 +254,10 @@ impl Contract {
             })
             .clone();
 
-        require!(order.status == OrderStatus::Canceled, "Error. The order must be in the status 'Cancel'");
+        require!(
+            order.status == OrderStatus::Canceled,
+            "Error. The order must be in the status 'Cancel'"
+        );
 
         let (token_borrow, token_market) = if order.order_type == OrderType::Long {
             (
