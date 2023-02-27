@@ -205,7 +205,8 @@ impl Contract {
 
             OrderType::Sell => {
                 let min_amount_x = U128::from(
-                    BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price
+                    BigDecimal::from(U128::from(order.amount))
+                        * order.open_or_close_price
                         * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
                 );
                 let min_amount_y = U128::from(0);
