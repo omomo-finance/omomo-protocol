@@ -64,10 +64,10 @@ impl Contract {
         };
 
         let [amount, min_amount_x, min_amount_y] =
-            self.get_amounts_to_excute(order.clone(), liquidity_info);
+            self.get_amounts_to_execute(order_id, order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_static_gas(Gas::ONE_TERA * 45u64)
+            .with_static_gas(Gas::ONE_TERA * 65u64)
             .remove_liquidity(order.lpt_id.clone(), amount, min_amount_x, min_amount_y)
             .then(
                 ext_self::ext(current_account_id())
@@ -99,15 +99,18 @@ impl Contract {
             OrderType::Sell => {
                 self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
             }
+            OrderType::TakeProfit => {
+                self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
+            }
             _ => (), // To do: implement transfer tokens to user balance for other order types (Long, Short, TP)
         }
 
         let parent_order = self.get_order_by(order_id.0).unwrap();
         if parent_order.status == OrderStatus::Pending {
-            self.mark_order_as_executed(order, order_id);
+            self.mark_order_as_executed(parent_order.clone(), order_id);
 
             if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                self.set_take_profit_order_pending(order_id, tpo);
+                self.set_take_profit_order_pending(order_id, parent_order, tpo);
             }
         } else {
             self.mark_take_profit_order_as_executed(order_id);
@@ -151,8 +154,9 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn get_amounts_to_excute(
+    pub fn get_amounts_to_execute(
         &self,
+        order_id: U128,
         order: Order,
         liquidity_info: LiquidityInfo,
     ) -> [U128; 3_usize] {
@@ -218,7 +222,39 @@ impl Contract {
 
                 [liquidity_info.amount, min_amount_x, min_amount_y]
             }
-            _ => [U128(0); 3_usize], // It is necessary to implement the functionality for order type TP (TakeProfit)
+            OrderType::TakeProfit => {
+                let parent_order = self.get_order_by(order_id.0).unwrap();
+                if parent_order.order_type == OrderType::Long {
+                    let min_amount_x = U128::from(
+                        BigDecimal::from(U128::from(order.amount))
+                            * (order.leverage - BigDecimal::one())
+                            * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                    );
+                    let min_amount_y = U128::from(0);
+
+                    let (sell_token_decimals, _) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                    let min_amount_x =
+                        self.from_protocol_to_token_decimals(min_amount_x, sell_token_decimals);
+
+                    [liquidity_info.amount, min_amount_x, min_amount_y]
+                } else {
+                    let min_amount_x = U128::from(0);
+                    let min_amount_y = U128::from(
+                        BigDecimal::from(U128::from(order.amount))
+                            * order.leverage
+                            * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
+                            / order.open_or_close_price,
+                    );
+
+                    let (_, buy_token_decimals) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                    let min_amount_y =
+                        self.from_protocol_to_token_decimals(min_amount_y, buy_token_decimals);
+
+                    [liquidity_info.amount, min_amount_x, min_amount_y]
+                }
+            }
         }
     }
 
@@ -367,7 +403,8 @@ mod tests {
                 * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
         );
 
-        let result = contract.get_amounts_to_excute(order, liquidity_info);
+        let order_id = U128(1);
+        let result = contract.get_amounts_to_execute(order_id, order, liquidity_info);
 
         assert_eq!(
             [
@@ -426,7 +463,8 @@ mod tests {
                 * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
         );
 
-        let result = contract.get_amounts_to_excute(order, liquidity_info);
+        let order_id = U128(1);
+        let result = contract.get_amounts_to_execute(order_id, order, liquidity_info);
 
         assert_eq!(
             [

@@ -99,7 +99,7 @@ impl Contract {
                 leverage,
                 entry_price,
             ),
-            OrderType::TP => panic!(
+            OrderType::TakeProfit => panic!(
                 "Incorrect type of order 'TP'. Expected one of 'Buy', 'Sell', 'Long', 'Short'"
             ),
         }
@@ -315,97 +315,47 @@ impl Contract {
             "You do not have permission for this action."
         );
 
-        let current_order = self.get_order_by(order_id.0).unwrap();
+        let parent_order = self.get_order_by(order_id.0).unwrap();
         require!(
-            current_order.order_type == OrderType::Long
-                || current_order.order_type == OrderType::Short,
+            parent_order.order_type == OrderType::Long
+                || parent_order.order_type == OrderType::Short,
             "Invalid parent order type."
         );
 
-        if current_order.order_type == OrderType::Long {
-            require!(
-                current_order.open_or_close_price < BigDecimal::from(close_price.0),
-                "Close price must be greater less then current token price."
-            );
-        } else {
-            require!(
-                current_order.open_or_close_price > BigDecimal::from(close_price.0),
-                "Close price must be less then current token price."
-            );
-        }
-
-        let sell_token_price = self.view_price(current_order.sell_token.clone());
+        let sell_token_price = self.view_price(parent_order.sell_token.clone());
         require!(
             BigDecimal::from(sell_token_price.value) != BigDecimal::zero(),
             "Sell token price cannot be zero"
         );
 
-        let buy_token_price = self.view_price(current_order.buy_token.clone());
+        let buy_token_price = self.view_price(parent_order.buy_token.clone());
         require!(
             BigDecimal::from(buy_token_price.value) != BigDecimal::zero(),
             "Buy token price cannot be zero"
         );
 
-        let take_profit_order_info = match current_order.order_type {
-            OrderType::Long => {
-                let expect_amount = U128::from(
-                    BigDecimal::from(U128::from(current_order.amount))
-                        * current_order.leverage
-                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
-                        / current_order.open_or_close_price,
-                );
-
-                let (_, buy_token_decimals) = self
-                    .view_pair_tokens_decimals(&current_order.sell_token, &current_order.buy_token);
-                let expect_amount =
-                    self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals);
-
-                (OrderType::Sell, expect_amount)
-            }
+        let price_points = (left_point, right_point);
+        match parent_order.status {
+            OrderStatus::Pending => self.create_take_profit_order_when_parent_pending(
+                order_id,
+                price_points,
+                parent_order,
+                close_price,
+                sell_token_price,
+                buy_token_price,
+            ),
+            OrderStatus::Executed => self.create_take_profit_order_when_parent_executed(
+                order_id,
+                price_points,
+                parent_order,
+                close_price,
+                sell_token_price,
+                buy_token_price,
+            ),
             _ => {
-                let expect_amount = U128::from(
-                    BigDecimal::from(U128::from(current_order.amount))
-                        * (current_order.leverage - BigDecimal::one())
-                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
-                );
-
-                let (sell_token_decimals, _) = self
-                    .view_pair_tokens_decimals(&current_order.sell_token, &current_order.buy_token);
-                let expect_amount =
-                    self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals);
-
-                (OrderType::Buy, expect_amount)
+                panic!("Take profit order can't be created at the current moment.");
             }
-        };
-
-        let order = Order {
-            status: OrderStatus::PendingOrderExecute,
-            order_type: take_profit_order_info.0,
-            amount: take_profit_order_info.1 .0,
-            sell_token: current_order.sell_token.clone(),
-            buy_token: current_order.buy_token.clone(),
-            leverage: BigDecimal::one(),
-            sell_token_price,
-            buy_token_price,
-            open_or_close_price: BigDecimal::from(close_price),
-            block: block_height(),
-            timestamp_ms: block_timestamp_ms(),
-            lpt_id: "".to_string(),
-        };
-
-        self.take_profit_orders
-            .insert(&(order_id.0 as u64), &((left_point, right_point), order));
-
-        Event::CreateTakeProfitOrderEvent {
-            order_id,
-            close_price: U128(close_price.0),
-            pool_id: self
-                .view_pair(&current_order.sell_token, &current_order.buy_token)
-                .pool_id,
         }
-        .emit();
-
-        PromiseOrValue::Value(true)
     }
 
     #[private]
@@ -445,61 +395,6 @@ impl Contract {
                     );
             }
         };
-    }
-
-    #[payable]
-    pub fn set_take_profit_order_price(
-        &mut self,
-        order_id: U128,
-        new_price: U128,
-        left_point: i32,
-        right_point: i32,
-    ) {
-        require!(
-            Some(signer_account_id()) == self.get_account_by(order_id.0),
-            "You do not have permission for this action."
-        );
-
-        let parent_order = self.get_order_by(order_id.0).unwrap();
-
-        require!(
-            parent_order.status == OrderStatus::Pending,
-            "At current moment price can't be changed."
-        );
-
-        if parent_order.order_type == OrderType::Long {
-            require!(
-                parent_order.open_or_close_price < BigDecimal::from(new_price.0),
-                "Close price must be greater less then current token price."
-            );
-        } else {
-            require!(
-                parent_order.open_or_close_price > BigDecimal::from(new_price.0),
-                "Close price must be less then current token price."
-            );
-        }
-
-        let order = self.take_profit_orders.get(&(order_id.0 as u64));
-        require!(order.is_some(), "Take profit order not found");
-
-        let mut order = order.unwrap().1;
-        require!(
-            order.open_or_close_price != BigDecimal::from(new_price.0),
-            "Price has not been changed."
-        );
-
-        order.open_or_close_price = BigDecimal::from(new_price);
-        self.take_profit_orders.insert(
-            &(order_id.0 as u64),
-            &((left_point, right_point), order.clone()),
-        );
-
-        Event::UpdateTakeProfitOrderEvent {
-            order_id,
-            close_price: new_price,
-            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-        }
-        .emit();
     }
 }
 
@@ -647,30 +542,126 @@ impl Contract {
             .insert(&pair_id, &pair_orders_by_id);
     }
 
+    pub fn create_take_profit_order_when_parent_pending(
+        &mut self,
+        order_id: U128,
+        price_points: PricePoints,
+        parent_order: Order,
+        price: U128,
+        sell_token_price: Price,
+        buy_token_price: Price,
+    ) -> PromiseOrValue<bool> {
+        let take_profit_order_amount = match parent_order.order_type {
+            OrderType::Long => {
+                let expect_amount = U128::from(
+                    BigDecimal::from(U128::from(parent_order.amount))
+                        * parent_order.leverage
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
+                        / parent_order.open_or_close_price,
+                );
+
+                let (_, buy_token_decimals) = self
+                    .view_pair_tokens_decimals(&parent_order.sell_token, &parent_order.buy_token);
+                let expect_amount =
+                    self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals);
+
+                expect_amount
+            }
+            _ => {
+                let expect_amount = U128::from(
+                    BigDecimal::from(U128::from(parent_order.amount))
+                        * (parent_order.leverage - BigDecimal::one())
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                );
+
+                let (sell_token_decimals, _) = self
+                    .view_pair_tokens_decimals(&parent_order.sell_token, &parent_order.buy_token);
+                let expect_amount =
+                    self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals);
+
+                expect_amount
+            }
+        };
+
+        let order = Order {
+            status: OrderStatus::PendingOrderExecute,
+            order_type: OrderType::TakeProfit,
+            amount: take_profit_order_amount.0,
+            sell_token: parent_order.sell_token.clone(),
+            buy_token: parent_order.buy_token.clone(),
+            leverage: BigDecimal::one(),
+            sell_token_price,
+            buy_token_price,
+            open_or_close_price: BigDecimal::from(price),
+            block: block_height(),
+            timestamp_ms: block_timestamp_ms(),
+            lpt_id: "".to_string(),
+        };
+
+        self.take_profit_orders
+            .insert(&(order_id.0 as u64), &(price_points, order));
+
+        Event::CreateTakeProfitOrderEvent {
+            order_id,
+            order_type: OrderType::TakeProfit,
+            lpt_id: "".to_string(),
+            close_price: price,
+            pool_id: self
+                .view_pair(&parent_order.sell_token, &parent_order.buy_token)
+                .pool_id,
+        }
+        .emit();
+
+        PromiseOrValue::Value(true)
+    }
+
+    pub fn create_take_profit_order_when_parent_executed(
+        &mut self,
+        order_id: U128,
+        price_points: PricePoints,
+        parent_order: Order,
+        price: U128,
+        sell_token_price: Price,
+        buy_token_price: Price,
+    ) -> PromiseOrValue<bool> {
+        let pv = self.create_take_profit_order_when_parent_pending(
+            order_id,
+            price_points,
+            parent_order.clone(),
+            price,
+            sell_token_price,
+            buy_token_price,
+        );
+        let tpo_info = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
+        self.set_take_profit_order_pending(order_id, parent_order, tpo_info);
+        pv
+    }
+
     pub fn set_take_profit_order_pending(
         &mut self,
         order_id: U128,
+        parent_order: Order,
         take_profit_order: (PricePoints, Order),
     ) {
         let order = take_profit_order.1;
+        let (amount_x, amount_y, token_to_add_liquidity) =
+            if parent_order.order_type == OrderType::Long {
+                let (_, buy_token_decimals) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-        let (amount_x, amount_y, token_to_add_liquidity) = if order.order_type == OrderType::Buy {
-            let (sell_token_decimals, _) =
-                self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                let amount_y =
+                    self.from_protocol_to_token_decimals(U128(order.amount), buy_token_decimals);
+                // (amount_x, amount_y, token_id)
+                (U128::from(0), amount_y, order.buy_token.clone())
+            } else {
+                let (sell_token_decimals, _) =
+                    self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
-            let amount_x =
-                self.from_protocol_to_token_decimals(U128(order.amount), sell_token_decimals);
-            // (amount_x, amount_y, token_id)
-            (amount_x, U128::from(0), order.sell_token.clone())
-        } else {
-            let (_, buy_token_decimals) =
-                self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-
-            let amount_y =
-                self.from_protocol_to_token_decimals(U128(order.amount), buy_token_decimals);
-            // (amount_x, amount_y, token_id)
-            (U128::from(0), amount_y, order.buy_token.clone())
-        };
+                let amount_x =
+                    self.from_protocol_to_token_decimals(U128(order.amount), sell_token_decimals);
+                // (amount_x, amount_y, token_id)
+                (amount_x, U128::from(0), order.sell_token.clone())
+            };
 
         let min_amount_x = U128::from(0);
         let min_amount_y = U128::from(0);
@@ -867,7 +858,7 @@ mod tests {
     }
 
     #[test]
-    fn test_set_take_profit_order_price() {
+    fn test_update_take_profit_order_price() {
         let context = get_context(false);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
@@ -924,7 +915,7 @@ mod tests {
         let left_point = -8040;
         let right_point = -8000;
 
-        contract.set_take_profit_order_price(U128(order_id), new_price, left_point, right_point);
+        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(WBigDecimal::from(tpo.1.open_or_close_price), new_price);
