@@ -562,10 +562,9 @@ impl Contract {
 
                 let (_, buy_token_decimals) = self
                     .view_pair_tokens_decimals(&parent_order.sell_token, &parent_order.buy_token);
-                let expect_amount =
-                    self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals);
+                
 
-                expect_amount
+                self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals)
             }
             _ => {
                 let expect_amount = U128::from(
@@ -576,10 +575,9 @@ impl Contract {
 
                 let (sell_token_decimals, _) = self
                     .view_pair_tokens_decimals(&parent_order.sell_token, &parent_order.buy_token);
-                let expect_amount =
-                    self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals);
+                
 
-                expect_amount
+                self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals)
             }
         };
 
