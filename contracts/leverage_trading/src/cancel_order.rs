@@ -73,7 +73,7 @@ impl Contract {
             OrderType::Long | OrderType::Short => {
                 self.cancel_or_close_leverage_order(order_id, order, price_impact)
             }
-            OrderType::TakeProfit => self.cancel_take_profit_order(order_id, order),
+            OrderType::TakeProfit => self.cancel_take_profit_order(order_id),
         }
     }
 
