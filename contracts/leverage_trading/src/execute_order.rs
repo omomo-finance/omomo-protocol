@@ -225,9 +225,11 @@ impl Contract {
             OrderType::TakeProfit => {
                 let parent_order = self.get_order_by(order_id.0).unwrap();
                 if parent_order.order_type == OrderType::Long {
-                    let min_amount_x = U128::from(BigDecimal::from(U128::from(order.amount))
-                        * order.open_or_close_price
-                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)));
+                    let min_amount_x = U128::from(
+                        BigDecimal::from(U128::from(order.amount))
+                            * order.open_or_close_price
+                            * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                    );
 
                     let min_amount_y = U128::from(0);
 
@@ -239,9 +241,10 @@ impl Contract {
                     [liquidity_info.amount, min_amount_x, min_amount_y]
                 } else {
                     let min_amount_x = U128::from(0);
-                    let min_amount_y = U128::from(BigDecimal::from(U128::from(order.amount))
-                        / order.open_or_close_price
-                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)));
+                    let min_amount_y = U128::from(
+                        BigDecimal::from(U128::from(order.amount)) / order.open_or_close_price
+                            * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                    );
 
                     let (_, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);

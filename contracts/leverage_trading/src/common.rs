@@ -57,10 +57,6 @@ pub enum Event {
     },
     CancelTakeProfitOrderEvent {
         order_id: U128,
-        order_type: OrderType,
-        lpt_id: String,
-        close_price: U128,
-        pool_id: String,
     },
     CancelLimitOrderEvent {
         order_id: U128,

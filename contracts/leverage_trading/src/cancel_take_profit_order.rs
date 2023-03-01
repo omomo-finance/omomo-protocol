@@ -1,11 +1,10 @@
 use crate::common::Event;
+use crate::execute_order::INACCURACY_RATE;
 use crate::ref_finance::ext_ref_finance;
-use crate::ref_finance::ShortLiquidityInfo;
 use crate::utils::NO_DEPOSIT;
 use crate::*;
-use near_sdk::env::{current_account_id, signer_account_id};
+use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, Gas, PromiseResult};
-use crate::execute_order::INACCURACY_RATE;
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -15,12 +14,7 @@ trait ContractCallbackInterface {
         parent_order: Order,
         take_profit_info: (PricePoints, Order),
     );
-    fn remove_liquidity_from_take_profit_callback(
-        &self,
-        order_id: U128,
-        parent_order: Order,
-        take_profit_info: (PricePoints, Order),
-    );
+    fn remove_liquidity_from_take_profit_callback(&self, order_id: U128);
 }
 
 #[near_bindgen]
@@ -29,23 +23,14 @@ impl Contract {
         let take_profit_order = self.take_profit_orders.get(&(order_id.0 as u64));
         require!(take_profit_order.is_some(), "Take profit order not found.");
 
-        let parent_order = self.get_order_by_id(order_id);
+        let parent_order = self.get_order_by_id(order_id).unwrap().1;
         let take_profit_order_pair = take_profit_order.unwrap();
         let tpo = take_profit_order_pair.1.clone();
         match tpo.status {
             OrderStatus::PendingOrderExecute => {
                 self.take_profit_orders.remove(&(order_id.0 as u64));
 
-                Event::CancelTakeProfitOrderEvent {
-                    order_id,
-                    order_type: OrderType::TakeProfit,
-                    lpt_id: tpo.lpt_id,
-                    close_price: WRatio::from(tpo.open_or_close_price),
-                    pool_id: self
-                        .view_pair(&parent_order.sell_token, &parent_order.buy_token)
-                        .pool_id,
-                }
-                .emit();
+                Event::CancelTakeProfitOrderEvent { order_id }.emit();
             }
             OrderStatus::Pending => {
                 ext_ref_finance::ext(self.ref_finance_account.clone())
@@ -56,7 +41,10 @@ impl Contract {
                         ext_ref_finance::ext(self.ref_finance_account.clone())
                             .with_unused_gas_weight(1_u64)
                             .with_attached_deposit(NO_DEPOSIT)
-                            .get_pool(self.view_pair(&order.sell_token, &order.buy_token).pool_id)
+                            .get_pool(
+                                self.view_pair(&parent_order.sell_token, &parent_order.buy_token)
+                                    .pool_id,
+                            )
                             .then(
                                 ext_self::ext(current_account_id())
                                     .with_unused_gas_weight(98)
@@ -98,11 +86,10 @@ impl Contract {
             "Some problem with pool, please contact with DEX to support"
         );
 
-        let liquidity_info: ShortLiquidityInfo = match env::promise_result(1) {
+        let liquidity_info: Liquidity = match env::promise_result(1) {
             PromiseResult::NotReady => unreachable!(),
             PromiseResult::Successful(val) => {
-                if let Ok(liquidity) = near_sdk::serde_json::from_slice::<ShortLiquidityInfo>(&val)
-                {
+                if let Ok(liquidity) = near_sdk::serde_json::from_slice::<Liquidity>(&val) {
                     liquidity
                 } else {
                     panic!("Some problem with liquidity parsing.")
@@ -111,7 +98,7 @@ impl Contract {
             PromiseResult::Failed => panic!("Ref finance not found liquidity."),
         };
 
-        if order.order_type == OrderType::Long {
+        if parent_order.order_type == OrderType::Long {
             require!(
                 pool_info.current_point > liquidity_info.right_point,
                 "You cannot cancel the opening of a position. Liquidity is already used by DEX"
@@ -124,9 +111,21 @@ impl Contract {
         }
 
         let (min_amount_x, min_amount_y) = if parent_order.order_type == OrderType::Long {
-            (U128::from(0), U128::from(BigDecimal::from(U128(take_profit_info.1.amount)) * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))))
+            (
+                U128::from(0),
+                U128::from(
+                    BigDecimal::from(U128(take_profit_info.1.amount))
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                ),
+            )
         } else {
-            (U128::from(BigDecimal::from(U128(take_profit_info.1.amount)) * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))), U128::from(0))
+            (
+                U128::from(
+                    BigDecimal::from(U128(take_profit_info.1.amount))
+                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                ),
+                U128::from(0),
+            )
         };
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
@@ -141,32 +140,19 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .remove_liquidity_from_take_profit_callback(
-                        order_id
-                    ),
+                    .remove_liquidity_from_take_profit_callback(order_id),
             );
     }
 
     #[private]
-    pub fn remove_liquidity_from_take_profit_callback(
-        &mut self,
-        order_id: U128
-    ) {
+    pub fn remove_liquidity_from_take_profit_callback(&mut self, order_id: U128) {
         require!(
             is_promise_success(),
             "Some problem with removing liquidity."
         );
 
-        self.take_profit_orders
-            .remove(&(order_id.0 as u64));
+        self.take_profit_orders.remove(&(order_id.0 as u64));
 
-        Event::CancelTakeProfitOrderEvent {
-            order_id,
-            order_type: OrderType::TakeProfit,
-            lpt_id: order.lpt_id,
-            close_price: WRatio::from(order.open_or_close_price),
-            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
-        }
-        .emit();
+        Event::CancelTakeProfitOrderEvent { order_id }.emit();
     }
 }
