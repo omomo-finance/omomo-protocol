@@ -132,7 +132,7 @@ impl Contract {
             .with_static_gas(Gas::ONE_TERA * 70)
             .with_attached_deposit(NO_DEPOSIT)
             .remove_liquidity(
-                take_profit_info.1.lpt_id.clone(),
+                take_profit_info.1.lpt_id,
                 liquidity_info.amount,
                 min_amount_x,
                 min_amount_y,
