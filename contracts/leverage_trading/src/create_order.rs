@@ -367,10 +367,24 @@ impl Contract {
                 let lpt_id = serde_json::from_slice::<String>(&result).unwrap();
                 if let Some(current_tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
                     let mut order = current_tpo.1;
-                    order.lpt_id = lpt_id;
+                    order.lpt_id = lpt_id.clone();
                     order.status = OrderStatus::Pending;
                     self.take_profit_orders
-                        .insert(&(order_id.0 as u64), &(current_tpo.0, order));
+                        .insert(&(order_id.0 as u64), &(current_tpo.0, order.clone()));
+
+                    Event::UpdateTakeProfitOrderEvent {
+                        order_id,
+                        order_type: order.order_type,
+                        order_status: order.status,
+                        lpt_id,
+                        close_price: WRatio::from(order.open_or_close_price),
+                        sell_token: order.sell_token.to_string(),
+                        buy_token: order.sell_token.to_string(),
+                        sell_token_price: order.sell_token_price.value,
+                        buy_token_price: order.buy_token_price.value,
+                        pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                    }
+                    .emit();
                 }
             }
             _ => {

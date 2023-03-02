@@ -1,8 +1,10 @@
+use crate::common::Event;
 use crate::ref_finance::{ext_ref_finance, Action, LiquidityInfo, Swap};
 use crate::utils::{ext_token, NO_DEPOSIT};
 use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
+
 /// DEX underutilization ratio of the transferred deposit
 pub const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
@@ -97,9 +99,6 @@ impl Contract {
                 self.increase_balance(&account_id, &order.buy_token, expected_amount.1 .0);
             }
             OrderType::Sell => {
-                self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
-            }
-            OrderType::TakeProfit => {
                 self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
             }
             _ => (), // To do: implement transfer tokens to user balance for other order types (Long, Short, TP)
@@ -269,11 +268,25 @@ impl Contract {
     }
 
     pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
-        let order_id = order_id.0 as u64;
-        let tpo = self.take_profit_orders.get(&order_id).unwrap();
+        let tpo = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
         let mut order = tpo.1;
         order.status = OrderStatus::Executed;
-        self.take_profit_orders.insert(&(order_id), &(tpo.0, order));
+        self.take_profit_orders
+            .insert(&(order_id.0 as u64), &(tpo.0, order.clone()));
+
+        Event::UpdateTakeProfitOrderEvent {
+            order_id,
+            order_type: order.order_type,
+            order_status: order.status,
+            lpt_id: order.lpt_id,
+            close_price: WRatio::from(order.open_or_close_price),
+            sell_token: order.sell_token.to_string(),
+            buy_token: order.sell_token.to_string(),
+            sell_token_price: order.sell_token_price.value,
+            buy_token_price: order.buy_token_price.value,
+            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+        }
+        .emit();
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
