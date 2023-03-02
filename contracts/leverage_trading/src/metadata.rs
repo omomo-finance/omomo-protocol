@@ -129,6 +129,7 @@ pub struct TradePair {
 #[serde(crate = "near_sdk::serde")]
 pub struct TradePairView {
     pub pair_id: PairId,
+    pub pair_tickers_id: String,
     pub sell_ticker_id: String,
     pub sell_token: AccountId,
     pub sell_token_decimals: u8,

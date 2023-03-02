@@ -140,6 +140,10 @@ impl Contract {
             .iter()
             .map(|(pair_id, trade_pair)| TradePairView {
                 pair_id,
+                pair_tickers_id: format!(
+                    "{}-{}",
+                    trade_pair.sell_ticker_id, trade_pair.buy_ticker_id
+                ),
                 sell_ticker_id: trade_pair.sell_ticker_id,
                 sell_token: trade_pair.sell_token,
                 sell_token_decimals: trade_pair.sell_token_decimals,
@@ -978,6 +982,7 @@ mod tests {
                 "usdt.fakes.testnet".parse().unwrap(),
                 "wrap.testnet".parse().unwrap(),
             ),
+            pair_tickers_id: "USDt-near".to_string(),
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
             sell_token_decimals: 24,
@@ -999,6 +1004,7 @@ mod tests {
                 "wrap.testnet".parse().unwrap(),
                 "usdt.fakes.testnet".parse().unwrap(),
             ),
+            pair_tickers_id: "near-USDt".to_string(),
             sell_ticker_id: "near".to_string(),
             sell_token: "wrap.testnet".parse().unwrap(),
             sell_token_decimals: 24,
