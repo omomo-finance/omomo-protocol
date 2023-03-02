@@ -134,12 +134,25 @@ impl Contract {
             .unwrap()
     }
 
-    pub fn view_supported_pairs(&self) -> Vec<TradePair> {
+    pub fn view_supported_pairs(&self) -> Vec<TradePairView> {
         let pairs = self
             .supported_markets
             .iter()
-            .map(|(_, trade_pair)| trade_pair)
-            .collect::<Vec<TradePair>>();
+            .map(|(pair_id, trade_pair)| TradePairView {
+                pair_id,
+                sell_ticker_id: trade_pair.sell_ticker_id,
+                sell_token: trade_pair.sell_token,
+                sell_token_decimals: trade_pair.sell_token_decimals,
+                sell_token_market: trade_pair.sell_token_market,
+                buy_ticker_id: trade_pair.buy_ticker_id,
+                buy_token: trade_pair.buy_token,
+                buy_token_decimals: trade_pair.buy_token_decimals,
+                buy_token_market: trade_pair.buy_token_market,
+                pool_id: trade_pair.pool_id,
+                max_leverage: trade_pair.max_leverage,
+                swap_fee: trade_pair.swap_fee,
+            })
+            .collect::<Vec<TradePairView>>();
 
         pairs
     }
@@ -938,7 +951,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         let pair_data2 = TradePair {
             sell_ticker_id: "near".to_string(),
@@ -960,7 +973,52 @@ mod tests {
 
         contract.add_pair(pair_data2.clone());
 
-        let result = vec![pair_data, pair_data2];
+        let pair_data_view = TradePairView {
+            pair_id: (
+                "usdt.fakes.testnet".parse().unwrap(),
+                "wrap.testnet".parse().unwrap(),
+            ),
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        let pair_data2_view = TradePairView {
+            pair_id: (
+                "wrap.testnet".parse().unwrap(),
+                "usdt.fakes.testnet".parse().unwrap(),
+            ),
+            sell_ticker_id: "near".to_string(),
+            sell_token: "wrap.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "USDt".to_string(),
+            buy_token: "usdt.fakes.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data2);
+
+        let result = vec![pair_data_view, pair_data2_view];
         let pairs = contract.view_supported_pairs();
         assert_eq!(result, pairs);
     }
