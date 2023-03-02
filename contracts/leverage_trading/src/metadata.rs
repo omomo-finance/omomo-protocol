@@ -59,6 +59,7 @@ pub enum OrderStatus {
     Pending,
     Executed,
     Canceled,
+    Closed,
     Liquidated,
     PendingOrderExecute,
 }
@@ -90,6 +91,8 @@ pub struct Order {
     pub block: BlockHeight,
     pub timestamp_ms: Timestamp,
     pub lpt_id: String,
+    /// data after closed position for trade history -> (Fee, PnL)
+    pub data_for_position_history: Option<(U128, PnLView)>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]

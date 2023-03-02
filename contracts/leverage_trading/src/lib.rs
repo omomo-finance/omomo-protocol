@@ -325,6 +325,7 @@ mod tests {
             block: 105210654,
             timestamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
+            data_for_position_history: Default::default(),
         };
 
         let swap_fee = contract.get_swap_fee(&order);

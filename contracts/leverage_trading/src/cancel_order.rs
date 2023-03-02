@@ -1,4 +1,5 @@
 use crate::big_decimal::BigDecimal;
+use crate::common::Event;
 use crate::execute_order::INACCURACY_RATE;
 use crate::ref_finance::ext_ref_finance;
 use crate::ref_finance::{Action, Swap};
@@ -45,7 +46,12 @@ trait ContractCallbackInterface {
     );
     fn get_pool_callback(&self, order_id: U128, order: Order);
     fn get_liquidity_callback(&self, order_id: U128, order: Order, pool_info: PoolInfo);
-    fn repay_callback(&self, repay_amount: U128) -> PromiseOrValue<U128>;
+    fn repay_callback(
+        &self,
+        token_borrow: AccountId,
+        token_market: AccountId,
+        repay_amount: U128,
+    ) -> PromiseOrValue<U128>;
     fn withdraw_callback(&mut self, account_id: AccountId, token: AccountId, amount: U128);
 }
 
@@ -271,14 +277,14 @@ impl Contract {
             )
         };
 
-        let borrow_fee_amount = self.get_borrow_fee_amount(order, market_data);
+        let repay_amount = self.get_amount_to_repay(order, market_data);
 
-        ext_token::ext(token_borrow)
+        ext_token::ext(token_borrow.clone())
             .with_static_gas(GAS_FOR_BORROW)
             .with_attached_deposit(ONE_YOCTO)
             .ft_transfer_call(
-                token_market,
-                borrow_fee_amount,
+                token_market.clone(),
+                repay_amount,
                 None,
                 "\"Repay\"".to_string(),
             )
@@ -286,14 +292,26 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 3_u64)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .repay_callback(borrow_fee_amount),
+                    .repay_callback(token_borrow, token_market, repay_amount),
             );
     }
 
     #[private]
-    pub fn repay_callback(&self, repay_amount: U128) -> PromiseOrValue<U128> {
+    pub fn repay_callback(
+        &self,
+        token_borrow: AccountId,
+        token_market: AccountId,
+        repay_amount: U128,
+    ) -> PromiseOrValue<U128> {
         require!(is_promise_success(), "Failed to repay assets");
-        //TODO: add repay success event
+
+        Event::RepayEvent {
+            token_borrow,
+            token_market,
+            repay_amount,
+        }
+        .emit();
+
         PromiseOrValue::Value(repay_amount)
     }
 }
@@ -321,6 +339,19 @@ impl Contract {
     }
 
     pub fn close_leverage_order(&self, order_id: U128, order: Order, price_impact: U128) {
+        match self.take_profit_orders.get(&(order_id.0 as u64)) {
+            Some(_) => {
+                //TO_DO: self.cancel_take_profit_order(order_id);
+                match self.take_profit_orders.get(&(order_id.0 as u64)) {
+                    Some(_) => panic!("Some problem with cancel take profit order"),
+                    None => self.swap_to_close_order(order_id, order, price_impact),
+                }
+            }
+            None => self.swap_to_close_order(order_id, order, price_impact),
+        };
+    }
+
+    pub fn swap_to_close_order(&self, order_id: U128, order: Order, price_impact: U128) {
         let (amount, input_token, output_token) = self.get_data_to_swap(order.clone());
 
         let action = Action::SwapAction {
@@ -452,7 +483,7 @@ impl Contract {
         price_impact: Option<U128>,
         market_data: MarketData,
     ) {
-        let total_amount = if order.order_type == OrderType::Long {
+        let (total_amount, total_fee_amount, pnl) = if order.order_type == OrderType::Long {
             let open_amount = BigDecimal::from(U128::from(order.amount)) * order.leverage;
 
             let sell_token_prise = self.view_price(order.sell_token.clone()).value;
@@ -465,13 +496,17 @@ impl Contract {
                     - BigDecimal::from(price_impact.unwrap_or_else(|| U128(10_u128.pow(22)))));
 
             let borrow_fee_amount =
-                BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
+                BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data.clone()));
 
             let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
 
             let swap_fee_amount = expect_amount_after_swap * swap_fee;
 
             let mut total_amount = expect_amount_after_swap - borrow_fee_amount - swap_fee_amount;
+
+            let mut total_fee_amount = borrow_fee_amount + swap_fee_amount;
+
+            let pnl = self.calculate_pnl(signer_account_id(), order_id, Some(market_data));
 
             if open_amount < total_amount {
                 let protocol_fee = BigDecimal::from(self.get_protocol_fee());
@@ -488,9 +523,10 @@ impl Contract {
                 );
 
                 total_amount = total_amount - protocol_profit_amount;
+                total_fee_amount = total_fee_amount + protocol_profit_amount;
             }
 
-            U128::from(total_amount)
+            (U128::from(total_amount), U128::from(total_fee_amount), pnl)
         } else {
             todo!()
         };
@@ -498,7 +534,8 @@ impl Contract {
         self.increase_balance(&signer_account_id(), &order.sell_token, total_amount.0);
 
         let order = Order {
-            status: OrderStatus::Canceled,
+            status: OrderStatus::Closed,
+            data_for_position_history: Some((total_fee_amount, pnl)),
             ..order
         };
 
@@ -524,6 +561,19 @@ impl Contract {
             * BigDecimal::from(U128(borrow_period as u128));
 
         U128::from(borrow_fee_amount)
+    }
+
+    fn get_amount_to_repay(&self, order: Order, market_data: MarketData) -> U128 {
+        let borrow_amount = if order.order_type == OrderType::Long {
+            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
+        } else {
+            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
+                / order.open_or_close_price
+        };
+
+        let borrow_fee_amount = BigDecimal::from(self.get_borrow_fee_amount(order, market_data));
+        let repay_amount = borrow_amount + borrow_fee_amount;
+        U128::from(repay_amount)
     }
 }
 
@@ -598,7 +648,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":10000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\"}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":10000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\",\"data_for_position_history\":null}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
@@ -621,6 +671,7 @@ mod tests {
             block: 105210654,
             timestamp_ms: 86400000,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
+            data_for_position_history: Default::default(),
         };
 
         let market_data = MarketData {
