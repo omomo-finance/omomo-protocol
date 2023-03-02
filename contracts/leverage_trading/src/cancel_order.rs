@@ -329,15 +329,12 @@ impl Contract {
     }
 
     pub fn cancel_leverage_order(&mut self, order_id: U128, order: Order) {
-        match self.take_profit_orders.get(&(order_id.0 as u64)) {
-            Some(_) => {
-                self.take_profit_orders.remove(&(order_id.0 as u64));
+        if let Some(_) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            self.take_profit_orders.remove(&(order_id.0 as u64));
 
-                Event::CancelTakeProfitOrderEvent { order_id }.emit();
-            }
-            None => (),
+            Event::CancelTakeProfitOrderEvent { order_id }.emit();
         };
-    
+
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(1_u64)
             .with_attached_deposit(NO_DEPOSIT)
@@ -351,17 +348,15 @@ impl Contract {
     }
 
     pub fn close_leverage_order(&mut self, order_id: U128, order: Order, price_impact: U128) {
-        match self.take_profit_orders.get(&(order_id.0 as u64)) {
-            Some(_) => {
-                self.cancel_take_profit_order(order_id);
+        if let Some(_) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            self.cancel_take_profit_order(order_id);
 
-                match self.take_profit_orders.get(&(order_id.0 as u64)) {
-                    Some(_) => panic!("Some problem with cancel take profit order"),
-                    None => self.swap_to_close_order(order_id, order, price_impact),
-                }
+            if let Some(_) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                panic!("Some problem with cancel take profit order")
             }
-            None => self.swap_to_close_order(order_id, order, price_impact),
-        };
+        }
+
+        self.swap_to_close_order(order_id, order, price_impact);
     }
 
     pub fn swap_to_close_order(&self, order_id: U128, order: Order, price_impact: U128) {
