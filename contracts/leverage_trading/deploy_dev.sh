@@ -69,21 +69,21 @@ near call $CONTRACT_ID add_pair '{
         }
     }' --accountId $CONTRACT_ID &
 
-near call $CONTRACT_ID add_pair '{
-        "pair_data": {
-            "sell_ticker_id": "USDt",
-            "sell_token": "'$USDT_TOKEN'",
-            "sell_token_decimals": '$USDT_TOKEN_DECIMALS',
-            "sell_token_market": "'$USDT_MARKET'",
-            "buy_ticker_id": "nWETH",
-            "buy_token": "'$ETH_TOKEN'",
-            "buy_token_decimals": '$ETH_TOKEN_DECIMALS',
-            "buy_token_market": "'$ETH_MARKET'",
-            "pool_id": "'$USDT_TOKEN'|'$ETH_TOKEN'|2000",
-            "max_leverage": "25000000000000000000000000",
-            "swap_fee": "200000000000000000000"
-        }
-    }' --accountId $CONTRACT_ID &
+#near call $CONTRACT_ID add_pair '{
+#        "pair_data": {
+#            "sell_ticker_id": "USDt",
+#            "sell_token": "'$USDT_TOKEN'",
+#            "sell_token_decimals": '$USDT_TOKEN_DECIMALS',
+#            "sell_token_market": "'$USDT_MARKET'",
+#            "buy_ticker_id": "nWETH",
+#            "buy_token": "'$ETH_TOKEN'",
+#           "buy_token_decimals": '$ETH_TOKEN_DECIMALS',
+#            "buy_token_market": "'$ETH_MARKET'",
+#            "pool_id": "'$USDT_TOKEN'|'$ETH_TOKEN'|2000",
+#            "max_leverage": "25000000000000000000000000",
+#            "swap_fee": "200000000000000000000"
+#        }
+#    }' --accountId $CONTRACT_ID &
 
 wait
 near view $CONTRACT_ID view_supported_pairs '{}'

@@ -1,8 +1,10 @@
+use crate::common::Event;
 use crate::ref_finance::{ext_ref_finance, Action, LiquidityInfo, Swap};
 use crate::utils::{ext_token, NO_DEPOSIT};
 use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
+
 /// DEX underutilization ratio of the transferred deposit
 pub const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
 
@@ -64,10 +66,10 @@ impl Contract {
         };
 
         let [amount, min_amount_x, min_amount_y] =
-            self.get_amounts_to_excute(order.clone(), liquidity_info);
+            self.get_amounts_to_execute(order_id, order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_static_gas(Gas::ONE_TERA * 45u64)
+            .with_static_gas(Gas::ONE_TERA * 65u64)
             .remove_liquidity(order.lpt_id.clone(), amount, min_amount_x, min_amount_y)
             .then(
                 ext_self::ext(current_account_id())
@@ -104,10 +106,10 @@ impl Contract {
 
         let parent_order = self.get_order_by(order_id.0).unwrap();
         if parent_order.status == OrderStatus::Pending {
-            self.mark_order_as_executed(order, order_id);
+            self.mark_order_as_executed(parent_order.clone(), order_id);
 
             if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                self.set_take_profit_order_pending(order_id, tpo);
+                self.set_take_profit_order_pending(order_id, parent_order, tpo);
             }
         } else {
             self.mark_take_profit_order_as_executed(order_id);
@@ -151,8 +153,9 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn get_amounts_to_excute(
+    pub fn get_amounts_to_execute(
         &self,
+        order_id: U128,
         order: Order,
         liquidity_info: LiquidityInfo,
     ) -> [U128; 3_usize] {
@@ -218,7 +221,38 @@ impl Contract {
 
                 [liquidity_info.amount, min_amount_x, min_amount_y]
             }
-            _ => [U128(0); 3_usize], // It is necessary to implement the functionality for order type TP (TakeProfit)
+            OrderType::TakeProfit => {
+                let parent_order = self.get_order_by(order_id.0).unwrap();
+                if parent_order.order_type == OrderType::Long {
+                    let min_amount_x = U128::from(
+                        BigDecimal::from(U128::from(order.amount))
+                            * order.open_or_close_price
+                            * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                    );
+
+                    let min_amount_y = U128::from(0);
+
+                    let (sell_token_decimals, _) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                    let min_amount_x =
+                        self.from_protocol_to_token_decimals(min_amount_x, sell_token_decimals);
+
+                    [liquidity_info.amount, min_amount_x, min_amount_y]
+                } else {
+                    let min_amount_x = U128::from(0);
+                    let min_amount_y = U128::from(
+                        BigDecimal::from(U128::from(order.amount)) / order.open_or_close_price
+                            * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                    );
+
+                    let (_, buy_token_decimals) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+                    let min_amount_y =
+                        self.from_protocol_to_token_decimals(min_amount_y, buy_token_decimals);
+
+                    [liquidity_info.amount, min_amount_x, min_amount_y]
+                }
+            }
         }
     }
 
@@ -234,11 +268,25 @@ impl Contract {
     }
 
     pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
-        let order_id = order_id.0 as u64;
-        let tpo = self.take_profit_orders.get(&order_id).unwrap();
+        let tpo = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
         let mut order = tpo.1;
         order.status = OrderStatus::Executed;
-        self.take_profit_orders.insert(&(order_id), &(tpo.0, order));
+        self.take_profit_orders
+            .insert(&(order_id.0 as u64), &(tpo.0, order.clone()));
+
+        Event::UpdateTakeProfitOrderEvent {
+            order_id,
+            order_type: order.order_type,
+            order_status: order.status,
+            lpt_id: order.lpt_id,
+            close_price: WRatio::from(order.open_or_close_price),
+            sell_token: order.sell_token.to_string(),
+            buy_token: order.sell_token.to_string(),
+            sell_token_price: order.sell_token_price.value,
+            buy_token_price: order.buy_token_price.value,
+            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+        }
+        .emit();
     }
 
     pub fn get_account_by(&self, order_id: u128) -> Option<AccountId> {
@@ -367,7 +415,8 @@ mod tests {
                 * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
         );
 
-        let result = contract.get_amounts_to_excute(order, liquidity_info);
+        let order_id = U128(1);
+        let result = contract.get_amounts_to_execute(order_id, order, liquidity_info);
 
         assert_eq!(
             [
@@ -426,7 +475,8 @@ mod tests {
                 * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
         );
 
-        let result = contract.get_amounts_to_excute(order, liquidity_info);
+        let order_id = U128(1);
+        let result = contract.get_amounts_to_execute(order_id, order, liquidity_info);
 
         assert_eq!(
             [

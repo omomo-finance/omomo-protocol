@@ -79,9 +79,7 @@ impl Contract {
             OrderType::Long | OrderType::Short => {
                 self.cancel_or_close_leverage_order(order_id, order, price_impact)
             }
-            OrderType::TP => panic!(
-                "Incorrect type of order 'TP'. Expected one of 'Buy', 'Sell', 'Long', 'Short'"
-            ),
+            OrderType::TakeProfit => self.cancel_take_profit_order(order_id),
         }
     }
 

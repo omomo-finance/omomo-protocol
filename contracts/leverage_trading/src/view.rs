@@ -134,12 +134,29 @@ impl Contract {
             .unwrap()
     }
 
-    pub fn view_supported_pairs(&self) -> Vec<TradePair> {
+    pub fn view_supported_pairs(&self) -> Vec<TradePairView> {
         let pairs = self
             .supported_markets
             .iter()
-            .map(|(_, trade_pair)| trade_pair)
-            .collect::<Vec<TradePair>>();
+            .map(|(pair_id, trade_pair)| TradePairView {
+                pair_id,
+                pair_tickers_id: format!(
+                    "{}-{}",
+                    trade_pair.sell_ticker_id, trade_pair.buy_ticker_id
+                ),
+                sell_ticker_id: trade_pair.sell_ticker_id,
+                sell_token: trade_pair.sell_token,
+                sell_token_decimals: trade_pair.sell_token_decimals,
+                sell_token_market: trade_pair.sell_token_market,
+                buy_ticker_id: trade_pair.buy_ticker_id,
+                buy_token: trade_pair.buy_token,
+                buy_token_decimals: trade_pair.buy_token_decimals,
+                buy_token_market: trade_pair.buy_token_market,
+                pool_id: trade_pair.pool_id,
+                max_leverage: trade_pair.max_leverage,
+                swap_fee: trade_pair.swap_fee,
+            })
+            .collect::<Vec<TradePairView>>();
 
         pairs
     }
@@ -938,7 +955,7 @@ mod tests {
             max_leverage: U128(25 * 10_u128.pow(23)),
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
-        contract.add_pair(pair_data.clone());
+        contract.add_pair(pair_data);
 
         let pair_data2 = TradePair {
             sell_ticker_id: "near".to_string(),
@@ -960,7 +977,54 @@ mod tests {
 
         contract.add_pair(pair_data2.clone());
 
-        let result = vec![pair_data, pair_data2];
+        let pair_data_view = TradePairView {
+            pair_id: (
+                "usdt.fakes.testnet".parse().unwrap(),
+                "wrap.testnet".parse().unwrap(),
+            ),
+            pair_tickers_id: "USDt-near".to_string(),
+            sell_ticker_id: "USDt".to_string(),
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "near".to_string(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        let pair_data2_view = TradePairView {
+            pair_id: (
+                "wrap.testnet".parse().unwrap(),
+                "usdt.fakes.testnet".parse().unwrap(),
+            ),
+            pair_tickers_id: "near-USDt".to_string(),
+            sell_ticker_id: "near".to_string(),
+            sell_token: "wrap.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            buy_ticker_id: "USDt".to_string(),
+            buy_token: "usdt.fakes.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "usdt_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.fakes.testnet|wrap.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data2);
+
+        let result = vec![pair_data_view, pair_data2_view];
         let pairs = contract.view_supported_pairs();
         assert_eq!(result, pairs);
     }
@@ -1761,7 +1825,7 @@ mod tests {
             }
         }
         // take-profit order for order with timestamp "86400001"
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"data_for_position_history\":null}".to_string();
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TakeProfit\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
         contract.take_profit_orders.insert(&2, &((0, 40), order));
@@ -1802,7 +1866,7 @@ mod tests {
             take_profit_order: Some(TakeProfitOrderView {
                 timestamp: 86400050,
                 pair: "USDT/WNEAR".to_string(),
-                order_type: OrderType::TP,
+                order_type: OrderType::TakeProfit,
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
                 filled: 0,
@@ -1932,7 +1996,7 @@ mod tests {
             }
         }
         // take-profit order for order with timestamp "86400001"
-        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TP\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"data_for_position_history\":null}".to_string();
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TakeProfit\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
         contract.take_profit_orders.insert(&2, &((0, 40), order));
@@ -1955,7 +2019,7 @@ mod tests {
             take_profit_order: Some(TakeProfitOrderView {
                 timestamp: 86400050,
                 pair: "WNEAR/USDT".to_string(),
-                order_type: OrderType::TP,
+                order_type: OrderType::TakeProfit,
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
                 filled: 0,

@@ -1,5 +1,5 @@
 use crate::metadata::Price;
-use crate::OrderType;
+use crate::{OrderStatus, OrderType};
 use near_sdk::json_types::U128;
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::serde_json::json;
@@ -43,13 +43,25 @@ pub enum Event {
     },
     CreateTakeProfitOrderEvent {
         order_id: U128,
+        order_type: OrderType,
+        lpt_id: String,
         close_price: U128,
         pool_id: String,
     },
     UpdateTakeProfitOrderEvent {
         order_id: U128,
+        order_type: OrderType,
+        order_status: OrderStatus,
+        lpt_id: String,
         close_price: U128,
+        sell_token: String,
+        buy_token: String,
+        sell_token_price: U128,
+        buy_token_price: U128,
         pool_id: String,
+    },
+    CancelTakeProfitOrderEvent {
+        order_id: U128,
     },
     CancelLimitOrderEvent {
         order_id: U128,

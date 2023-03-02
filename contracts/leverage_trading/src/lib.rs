@@ -8,6 +8,7 @@ extern crate core;
 mod big_decimal;
 mod cancel_limit_order;
 mod cancel_order;
+mod cancel_take_profit_order;
 mod common;
 mod config;
 #[allow(clippy::too_many_arguments)]
