@@ -70,8 +70,7 @@ pub enum OrderType {
     Sell,
     Long,
     Short,
-    /// Take-Profit
-    TP,
+    TakeProfit,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
