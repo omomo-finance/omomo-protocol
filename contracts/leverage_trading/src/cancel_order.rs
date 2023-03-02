@@ -329,9 +329,8 @@ impl Contract {
     }
 
     pub fn cancel_leverage_order(&mut self, order_id: U128, order: Order) {
-        if let Some(_) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
             self.take_profit_orders.remove(&(order_id.0 as u64));
-
             Event::CancelTakeProfitOrderEvent { order_id }.emit();
         };
 
@@ -348,10 +347,10 @@ impl Contract {
     }
 
     pub fn close_leverage_order(&mut self, order_id: U128, order: Order, price_impact: U128) {
-        if let Some(_) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
             self.cancel_take_profit_order(order_id);
 
-            if let Some(_) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+            if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
                 panic!("Some problem with cancel take profit order")
             }
         }
