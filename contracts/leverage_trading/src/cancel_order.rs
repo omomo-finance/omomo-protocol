@@ -328,7 +328,16 @@ impl Contract {
         }
     }
 
-    pub fn cancel_leverage_order(&self, order_id: U128, order: Order) {
+    pub fn cancel_leverage_order(&mut self, order_id: U128, order: Order) {
+        match self.take_profit_orders.get(&(order_id.0 as u64)) {
+            Some(_) => {
+                self.take_profit_orders.remove(&(order_id.0 as u64));
+
+                Event::CancelTakeProfitOrderEvent { order_id }.emit();
+            }
+            None => (),
+        };
+    
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(1_u64)
             .with_attached_deposit(NO_DEPOSIT)
