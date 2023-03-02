@@ -608,6 +608,7 @@ impl Contract {
             block: block_height(),
             timestamp_ms: block_timestamp_ms(),
             lpt_id: "".to_string(),
+            data_for_position_history: Default::default(),
         };
 
         self.take_profit_orders

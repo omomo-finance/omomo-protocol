@@ -315,7 +315,7 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn cancel_or_close_leverage_order(&self, order_id: U128, order: Order, price_impact: U128) {
+    pub fn cancel_or_close_leverage_order(&mut self, order_id: U128, order: Order, price_impact: U128) {
         match order.status {
             OrderStatus::Pending => self.cancel_leverage_order(order_id, order),
             OrderStatus::Executed => self.close_leverage_order(order_id, order, price_impact),
@@ -336,10 +336,11 @@ impl Contract {
             );
     }
 
-    pub fn close_leverage_order(&self, order_id: U128, order: Order, price_impact: U128) {
+    pub fn close_leverage_order(&mut self, order_id: U128, order: Order, price_impact: U128) {
         match self.take_profit_orders.get(&(order_id.0 as u64)) {
             Some(_) => {
-                //TO_DO: self.cancel_take_profit_order(order_id);
+                self.cancel_take_profit_order(order_id);
+                
                 match self.take_profit_orders.get(&(order_id.0 as u64)) {
                     Some(_) => panic!("Some problem with cancel take profit order"),
                     None => self.swap_to_close_order(order_id, order, price_impact),
