@@ -490,7 +490,7 @@ impl Contract {
         price_impact: Option<U128>,
         market_data: MarketData,
     ) {
-        let (total_amount, total_fee_amount, pnl) = if order.order_type == OrderType::Long {
+        let (total_amount, history_data) = if order.order_type == OrderType::Long {
             let open_amount = BigDecimal::from(U128::from(order.amount)) * order.leverage;
 
             let sell_token_prise = self.view_price(order.sell_token.clone()).value;
@@ -533,7 +533,12 @@ impl Contract {
                 total_fee_amount = total_fee_amount + protocol_profit_amount;
             }
 
-            (U128::from(total_amount), U128::from(total_fee_amount), pnl)
+            let history_data = Some(HistoryData {
+                fee: U128::from(total_fee_amount),
+                pnl,
+            });
+
+            (U128::from(total_amount), history_data)
         } else {
             todo!()
         };
@@ -542,7 +547,7 @@ impl Contract {
 
         let order = Order {
             status: OrderStatus::Closed,
-            data_for_position_history: Some((total_fee_amount, pnl)),
+            history_data,
             ..order
         };
 
@@ -655,7 +660,7 @@ mod tests {
             },
         );
 
-        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":10000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\",\"data_for_position_history\":null}".to_string();
+        let order1 = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":10000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3070000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#543\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order1);
 
         let order_id = U128(1);
@@ -678,7 +683,7 @@ mod tests {
             block: 105210654,
             timestamp_ms: 86400000,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
-            data_for_position_history: Default::default(),
+            history_data: Default::default(),
         };
 
         let market_data = MarketData {

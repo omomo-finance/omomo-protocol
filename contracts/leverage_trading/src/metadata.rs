@@ -91,7 +91,7 @@ pub struct Order {
     pub timestamp_ms: Timestamp,
     pub lpt_id: String,
     /// data after closed position for trade history -> (Fee, PnL)
-    pub data_for_position_history: Option<(U128, PnLView)>,
+    pub history_data: Option<HistoryData>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -316,4 +316,11 @@ pub struct LimitTradeHistory {
     pub data: Vec<LimitOrderTradeHistory>,
     pub page: U128,
     pub total_orders: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct HistoryData {
+    pub fee: U128,
+    pub pnl: PnLView,
 }

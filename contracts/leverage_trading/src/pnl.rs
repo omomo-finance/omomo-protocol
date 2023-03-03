@@ -190,7 +190,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"data_for_position_history\":null}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -229,7 +229,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"data_for_position_history\":null}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -268,7 +268,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"data_for_position_history\":null}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
@@ -307,7 +307,7 @@ mod tests {
         let pair_data = get_pair_data();
         contract.add_pair(pair_data);
 
-        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"data_for_position_history\":null}".to_string();
+        let order_as_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":3000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
