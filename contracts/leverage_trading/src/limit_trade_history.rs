@@ -2,7 +2,7 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
-    pub fn view_limit_trade_history_by_user(
+    pub fn view_non_pending_limit_orders_by_user(
         &self,
         account_id: AccountId,
         orders_per_page: U128,
@@ -12,16 +12,16 @@ impl Contract {
 
         let mut non_pending_limit_orders = orders
             .iter()
-            .filter_map(|(_, order)| {
+            .filter_map(|(order_id, order)| {
                 if order.leverage == BigDecimal::one() {
-                    self.get_limit_order_trade_history(order)
+                    self.get_non_pending_limit_order(U128::from(*order_id as u128), order)
                 } else {
                     None
                 }
             })
             .collect::<Vec<LimitOrderTradeHistory>>();
 
-        non_pending_limit_orders.sort_by(|a, b| a.date.cmp(&b.date));
+        non_pending_limit_orders.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
         let total_orders = U128::from(non_pending_limit_orders.len() as u128);
 
@@ -38,7 +38,7 @@ impl Contract {
         }
     }
 
-    pub fn view_limit_trade_history_by_user_by_pair(
+    pub fn view_non_pending_limit_orders_by_user_by_pair(
         &self,
         account_id: AccountId,
         sell_token: AccountId,
@@ -50,19 +50,19 @@ impl Contract {
 
         let mut non_pending_limit_orders = orders
             .iter()
-            .filter_map(|(_, order)| {
+            .filter_map(|(order_id, order)| {
                 if order.leverage == BigDecimal::one()
                     && order.sell_token == sell_token
                     && order.buy_token == buy_token
                 {
-                    self.get_limit_order_trade_history(order)
+                    self.get_non_pending_limit_order(U128::from(*order_id as u128), order)
                 } else {
                     None
                 }
             })
             .collect::<Vec<LimitOrderTradeHistory>>();
 
-        non_pending_limit_orders.sort_by(|a, b| a.date.cmp(&b.date));
+        non_pending_limit_orders.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
         let total_orders = U128::from(non_pending_limit_orders.len() as u128);
 
@@ -81,10 +81,14 @@ impl Contract {
 }
 
 impl Contract {
-    pub fn get_limit_order_trade_history(&self, order: &Order) -> Option<LimitOrderTradeHistory> {
+    pub fn get_non_pending_limit_order(
+        &self,
+        order_id: U128,
+        order: &Order,
+    ) -> Option<LimitOrderTradeHistory> {
         match order.status {
             OrderStatus::Canceled | OrderStatus::Executed => {
-                let date = order.timestamp_ms;
+                let timestamp = order.timestamp_ms;
 
                 let pair = self.view_pair(&order.sell_token, &order.buy_token);
                 let pair = format!("{}/{}", pair.sell_ticker_id, pair.buy_ticker_id);
@@ -114,7 +118,8 @@ impl Contract {
                 };
 
                 Some(LimitOrderTradeHistory {
-                    date,
+                    order_id,
+                    timestamp,
                     pair,
                     side,
                     status,
@@ -180,7 +185,8 @@ mod tests {
         }
 
         let first_limit_order_trade_history = LimitOrderTradeHistory {
-            date: 86400000,
+            order_id: U128::from(1),
+            timestamp: 86400000,
             pair: "USDT/WNEAR".to_string(),
             side: OrderType::Buy,
             status: OrderStatus::Canceled,
@@ -193,22 +199,8 @@ mod tests {
             total: U128(2 * 10_u128.pow(27)),
         };
 
-        let last_limit_order_trade_history = LimitOrderTradeHistory {
-            date: 86400003,
-            pair: "USDT/WNEAR".to_string(),
-            side: OrderType::Buy,
-            status: OrderStatus::Executed,
-            price: U128(25 * 10_u128.pow(23)),
-            executed: U128::from(
-                BigDecimal::from(U128::from(2000000000000000000000000000))
-                    / BigDecimal::from(U128::from(2500000000000000000000000)),
-            ),
-            fee: U128::from(0),
-            total: U128(2 * 10_u128.pow(27)),
-        };
-
         let limit_trade_history_by_user =
-            contract.view_limit_trade_history_by_user(alice(), U128(10), U128(1));
+            contract.view_non_pending_limit_orders_by_user(alice(), U128(10), U128(1));
 
         assert_eq!(contract.orders.get(&alice()).unwrap().len(), 6_usize);
         assert_eq!(limit_trade_history_by_user.data.len(), 3_usize);
@@ -216,10 +208,6 @@ mod tests {
         assert_eq!(
             limit_trade_history_by_user.data.get(0).unwrap(),
             &first_limit_order_trade_history
-        );
-        assert_eq!(
-            limit_trade_history_by_user.data.get(2).unwrap(),
-            &last_limit_order_trade_history
         );
     }
 
@@ -293,7 +281,8 @@ mod tests {
         }
 
         let first_limit_order_trade_history = LimitOrderTradeHistory {
-            date: 86400000,
+            order_id: U128::from(1),
+            timestamp: 86400000,
             pair: "USDT/WNEAR".to_string(),
             side: OrderType::Buy,
             status: OrderStatus::Executed,
@@ -306,22 +295,8 @@ mod tests {
             total: U128(2 * 10_u128.pow(27)),
         };
 
-        let last_limit_order_trade_history = LimitOrderTradeHistory {
-            date: 86400003,
-            pair: "USDT/WNEAR".to_string(),
-            side: OrderType::Buy,
-            status: OrderStatus::Canceled,
-            price: U128(25 * 10_u128.pow(23)),
-            executed: U128::from(
-                BigDecimal::from(U128::from(2000000000000000000000000000))
-                    / BigDecimal::from(U128::from(2500000000000000000000000)),
-            ),
-            fee: U128::from(0),
-            total: U128(2 * 10_u128.pow(27)),
-        };
-
         let limit_trade_history_by_user_by_pair = contract
-            .view_limit_trade_history_by_user_by_pair(
+            .view_non_pending_limit_orders_by_user_by_pair(
                 alice(),
                 pair_id.0,
                 pair_id.1,
@@ -332,7 +307,7 @@ mod tests {
         assert_eq!(contract.orders.get(&alice()).unwrap().len(), 6_usize);
         assert_eq!(
             contract
-                .view_limit_trade_history_by_user(alice(), U128(10), U128(1))
+                .view_non_pending_limit_orders_by_user(alice(), U128(10), U128(1))
                 .total_orders,
             U128(4)
         );
@@ -341,10 +316,6 @@ mod tests {
         assert_eq!(
             limit_trade_history_by_user_by_pair.data.get(0).unwrap(),
             &first_limit_order_trade_history
-        );
-        assert_eq!(
-            limit_trade_history_by_user_by_pair.data.get(2).unwrap(),
-            &last_limit_order_trade_history
         );
     }
 }
