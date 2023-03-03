@@ -59,6 +59,7 @@ pub enum OrderStatus {
     Pending,
     Executed,
     Canceled,
+    Closed,
     Liquidated,
     PendingOrderExecute,
 }
@@ -89,6 +90,8 @@ pub struct Order {
     pub block: BlockHeight,
     pub timestamp_ms: Timestamp,
     pub lpt_id: String,
+    /// data after closed position for trade history -> (Fee, PnL)
+    pub history_data: Option<HistoryData>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -313,4 +316,11 @@ pub struct LimitTradeHistory {
     pub data: Vec<LimitOrderTradeHistory>,
     pub page: U128,
     pub total_orders: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct HistoryData {
+    pub fee: U128,
+    pub pnl: PnLView,
 }

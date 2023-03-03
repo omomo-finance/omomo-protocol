@@ -66,6 +66,11 @@ pub enum Event {
     CancelLimitOrderEvent {
         order_id: U128,
     },
+    RepayEvent {
+        token_borrow: AccountId,
+        token_market: AccountId,
+        repay_amount: U128,
+    },
 }
 
 impl Event {
