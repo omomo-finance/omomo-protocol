@@ -19,6 +19,7 @@ mod ft;
 mod limit_trade_history;
 mod liquidate_order;
 mod liquidity_slot;
+mod margin_trade_history;
 mod market;
 mod metadata;
 mod oraclehook;

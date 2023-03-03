@@ -325,3 +325,27 @@ pub struct HistoryData {
     pub fee: U128,
     pub pnl: PnLView,
 }
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MarginOrderTradeHistory {
+    pub order_id: U128,
+    pub timestamp: Timestamp,
+    pub pair: String,
+    pub side: OrderType,
+    pub status: OrderStatus,
+    pub leverage: U128,
+    pub price: U128,
+    pub executed: U128,
+    pub fee: U128,
+    pub pnl: PnLView,
+    pub total: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MarginTradeHistory {
+    pub data: Vec<MarginOrderTradeHistory>,
+    pub page: U128,
+    pub total_orders: U128,
+}
