@@ -16,6 +16,7 @@ mod create_order;
 mod deposit;
 mod execute_order;
 mod ft;
+mod limit_trade_history;
 mod liquidate_order;
 mod liquidity_slot;
 mod market;

@@ -96,12 +96,20 @@ impl Contract {
         let account_id = self.get_account_by(order_id.0).unwrap();
         match order.order_type {
             OrderType::Buy => {
-                self.increase_balance(&account_id, &order.buy_token, expected_amount.1 .0);
+                let expected_amount = U128::from(
+                    BigDecimal::from(expected_amount.1)
+                        / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                );
+                self.increase_balance(&account_id, &order.buy_token, expected_amount.0);
             }
             OrderType::Sell => {
-                self.increase_balance(&account_id, &order.sell_token, expected_amount.0 .0);
+                let expected_amount = U128::from(
+                    BigDecimal::from(expected_amount.0)
+                        / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                );
+                self.increase_balance(&account_id, &order.sell_token, expected_amount.0);
             }
-            _ => (), // To do: implement transfer tokens to user balance for other order types (Long, Short, TP)
+            _ => (),
         }
 
         let parent_order = self.get_order_by(order_id.0).unwrap();
