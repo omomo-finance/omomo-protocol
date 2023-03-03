@@ -293,3 +293,24 @@ pub struct TakeProfitOrderView {
     /// (amount * sell_token_price)
     pub total: WBalance,
 }
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LimitOrderTradeHistory {
+    pub date: Timestamp,
+    pub pair: String,
+    pub side: OrderType,
+    pub status: OrderStatus,
+    pub price: U128,
+    pub executed: U128,
+    pub fee: U128,
+    pub total: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct LimitTradeHistory {
+    pub data: Vec<LimitOrderTradeHistory>,
+    pub page: U128,
+    pub total_orders: U128,
+}
