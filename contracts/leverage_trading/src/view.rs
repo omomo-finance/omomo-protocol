@@ -131,9 +131,7 @@ impl Contract {
     pub fn view_pair(&self, sell_token: &AccountId, buy_token: &AccountId) -> TradePair {
         self.supported_markets
             .get(&(sell_token.clone(), buy_token.clone()))
-            .unwrap_or_else(|| {
-                panic!("Pair {sell_token}|{buy_token} not found")
-            })
+            .unwrap_or_else(|| panic!("Pair {sell_token}|{buy_token} not found"))
     }
 
     pub fn view_supported_pairs(&self) -> Vec<TradePairView> {
@@ -265,18 +263,15 @@ impl Contract {
     pub fn get_total_pending_orders_per_pair(&self, pair_id: &PairId) -> U128 {
         self.view_pair(&pair_id.0, &pair_id.1);
 
-        let orders = self
-            .orders_per_pair_view
-            .get(pair_id)
-            .unwrap_or_default();
+        let orders = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
 
         let pending_orders = orders
-        .iter()
-        .filter_map(|(id, order)| match order.status == OrderStatus::Pending {
-            true => Some((*id, order.clone())),
-            false => None,
-        })
-        .collect::<HashMap<u64, Order>>();
+            .iter()
+            .filter_map(|(id, order)| match order.status == OrderStatus::Pending {
+                true => Some((*id, order.clone())),
+                false => None,
+            })
+            .collect::<HashMap<u64, Order>>();
 
         let total = pending_orders.len();
         U128(total as u128)
