@@ -140,7 +140,7 @@ mod tests {
     use near_sdk::test_utils::test_env::alice;
 
     #[test]
-    fn view_limit_trade_history_by_user_test() {
+    fn view_non_pending_limit_orders_by_user_test() {
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
@@ -212,7 +212,7 @@ mod tests {
     }
 
     #[test]
-    fn view_limit_trade_history_by_user_by_pair_test() {
+    fn view_non_pending_limit_orders_by_user_by_pair_test() {
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
