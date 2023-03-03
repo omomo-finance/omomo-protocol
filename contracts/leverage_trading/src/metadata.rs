@@ -300,7 +300,8 @@ pub struct TakeProfitOrderView {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LimitOrderTradeHistory {
-    pub date: Timestamp,
+    pub order_id: U128,
+    pub timestamp: Timestamp,
     pub pair: String,
     pub side: OrderType,
     pub status: OrderStatus,
