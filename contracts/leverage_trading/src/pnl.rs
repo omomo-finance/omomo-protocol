@@ -6,57 +6,54 @@ use crate::Contract;
 use near_sdk::{env, json_types::U128};
 
 impl Contract {
-    pub fn calculate_pnl_long_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
-        let current_timestamp_ms = env::block_timestamp_ms();
+    pub fn calculate_pnl_long_order(&self, order: Order, market_data: Option<MarketData>) -> PnLView {
+        // let current_timestamp_ms = env::block_timestamp_ms();
 
-        let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
-            / MILLISECONDS_PER_DAY as f64)
-            .ceil();
-
-        let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
+        // let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
+        //     / MILLISECONDS_PER_DAY as f64)
+        //     .ceil();
 
         let borrow_amount =
             BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one());
 
-        let buy_amount =
-            order.leverage * BigDecimal::from(U128(order.amount)) / order.open_or_close_price;
+        // let borrow_fee_amount = borrow_amount * BigDecimal::from(market_data.unwrap().borrow_rate_ratio)
+        //     / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
+        //     * BigDecimal::from(U128(borrow_period as u128));
 
-        let mut borrow_fee_amount = BigDecimal::zero();
-        #[allow(clippy::unnecessary_unwrap)]
-        if data.is_some() && (order.leverage > BigDecimal::one()) {
-            borrow_fee_amount = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio)
-                / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
-                * BigDecimal::from(U128(borrow_period as u128));
-        }
+        let open_amount = BigDecimal::from(U128(order.amount)) * order.leverage;
+
+        let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
+
+        let swap_fee_amount = open_amount * swap_fee;
+
+        let borrow_fee_amount = BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data.unwrap()));
 
         let current_buy_token_price = BigDecimal::from(self.view_price(order.buy_token).value);
         let current_sell_token_price = BigDecimal::from(self.view_price(order.sell_token).value);
 
-        let swap_fee_amount =
-            buy_amount * current_buy_token_price / current_sell_token_price * swap_fee;
-
-        let expect_amount = buy_amount * current_buy_token_price / current_sell_token_price
-            - borrow_amount
+        let expect_amount = (open_amount / order.open_or_close_price * current_buy_token_price
+            / current_sell_token_price)
             - borrow_fee_amount
-            - swap_fee_amount;
+            - swap_fee_amount
+            - borrow_amount;
 
-        let pnlv: PnLView = if LowU128::from(expect_amount).0 > order.amount {
-            let lenpnl = LowU128::from(
-                (expect_amount - BigDecimal::from(U128(order.amount))) * current_sell_token_price,
+        let pnlv: PnLView = if expect_amount > (open_amount / order.leverage) {
+            let profit = U128::from(
+                (expect_amount - (open_amount / order.leverage)) * current_sell_token_price,
             );
 
             PnLView {
                 is_profit: true,
-                amount: lenpnl,
+                amount: profit,
             }
         } else {
-            let lenpnl = LowU128::from(
-                (BigDecimal::from(U128(order.amount)) - expect_amount) * current_sell_token_price,
+            let loss = LowU128::from(
+                ((open_amount / order.leverage) - expect_amount) * current_sell_token_price,
             );
 
             PnLView {
                 is_profit: false,
-                amount: lenpnl,
+                amount: loss,
             }
         };
 
@@ -79,13 +76,9 @@ impl Contract {
 
         let buy_amount = borrow_amount * order.open_or_close_price;
 
-        let mut borrow_fee_amount = BigDecimal::zero();
-        #[allow(clippy::unnecessary_unwrap)]
-        if data.is_some() && (order.leverage > BigDecimal::one()) {
-            borrow_fee_amount = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio)
+        let borrow_fee_amount = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio)
                 / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
                 * BigDecimal::from(U128(borrow_period as u128));
-        }
 
         let current_buy_token_price = BigDecimal::from(self.view_price(order.buy_token).value);
         let current_sell_token_price = BigDecimal::from(self.view_price(order.sell_token).value);

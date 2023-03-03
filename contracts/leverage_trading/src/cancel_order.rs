@@ -503,7 +503,7 @@ impl Contract {
         self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
     }
 
-    fn get_borrow_fee_amount(&self, order: Order, market_data: MarketData) -> U128 {
+    pub fn get_borrow_fee_amount(&self, order: Order, market_data: MarketData) -> U128 {
         let current_timestamp_ms = env::block_timestamp_ms();
 
         let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
