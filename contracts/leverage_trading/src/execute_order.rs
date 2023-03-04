@@ -270,9 +270,15 @@ impl Contract {
 
         self.add_or_update_order(
             &self.get_account_by(order_id.0).unwrap(), // assert there is always some user
-            order,
+            order.clone(),
             order_id.0 as u64,
         );
+
+        Event::ExecuteOrderEvent {
+            order_id,
+            order_type: order.order_type,
+        }
+        .emit();
     }
 
     pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
@@ -282,17 +288,9 @@ impl Contract {
         self.take_profit_orders
             .insert(&(order_id.0 as u64), &(tpo.0, order.clone()));
 
-        Event::UpdateTakeProfitOrderEvent {
+        Event::ExecuteOrderEvent {
             order_id,
             order_type: order.order_type,
-            order_status: order.status,
-            lpt_id: order.lpt_id,
-            close_price: WRatio::from(order.open_or_close_price),
-            sell_token: order.sell_token.to_string(),
-            buy_token: order.sell_token.to_string(),
-            sell_token_price: order.sell_token_price.value,
-            buy_token_price: order.buy_token_price.value,
-            pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
         }
         .emit();
     }

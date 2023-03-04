@@ -619,6 +619,7 @@ impl Contract {
             order_type: OrderType::TakeProfit,
             lpt_id: "".to_string(),
             close_price: price,
+            parent_order_type: parent_order.order_type,
             pool_id: self
                 .view_pair(&parent_order.sell_token, &parent_order.buy_token)
                 .pool_id,
