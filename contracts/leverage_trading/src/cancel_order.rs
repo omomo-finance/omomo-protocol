@@ -479,7 +479,12 @@ impl Contract {
             ..order
         };
 
-        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
+        self.add_or_update_order(&signer_account_id(), order.clone(), order_id.0 as u64);
+
+        self.remove_pending_order_data(PendingOrderData {
+            order_id,
+            order_type: order.order_type,
+        });
     }
 
     pub fn final_close_order(
@@ -551,7 +556,12 @@ impl Contract {
             ..order
         };
 
-        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
+        self.add_or_update_order(&signer_account_id(), order.clone(), order_id.0 as u64);
+
+        self.remove_pending_order_data(PendingOrderData {
+            order_id,
+            order_type: order.order_type,
+        });
     }
 
     fn get_borrow_fee_amount(&self, order: Order, market_data: MarketData) -> U128 {
