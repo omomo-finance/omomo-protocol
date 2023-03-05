@@ -319,7 +319,7 @@ mod tests {
 
     use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{serde_json, testing_env, VMContext};
+    use near_sdk::{testing_env, VMContext};
 
     fn get_context(is_view: bool) -> VMContext {
         VMContextBuilder::new()
@@ -334,20 +334,18 @@ mod tests {
 
     #[test]
     fn test_get_account_by() {
-        let order_data = (U128::from(1), OrderType::Buy);
-        println!("{}", serde_json::to_string(&order_data).unwrap());
-        // let mut contract = Contract::new_with_config(
-        //     "owner_id.testnet".parse().unwrap(),
-        //     "oracle_account_id.testnet".parse().unwrap(),
-        // );
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
 
-        // let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4220000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\",\"history_data\":null}".to_string();
-        // contract.add_order_from_string(alice(), order);
+        let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4220000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\",\"history_data\":null}".to_string();
+        contract.add_order_from_string(alice(), order);
 
-        // let account_id = contract.orders.get(&alice()).unwrap().contains_key(&1);
+        let account_id = contract.orders.get(&alice()).unwrap().contains_key(&1);
 
-        // assert!(account_id);
-        // assert_eq!(contract.get_account_by(1), Some(alice()));
+        assert!(account_id);
+        assert_eq!(contract.get_account_by(1), Some(alice()));
     }
 
     #[test]
