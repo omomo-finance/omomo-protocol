@@ -194,7 +194,7 @@ impl Contract {
     pub fn get_oldest_pending_order_data(&self) -> PendingOrderData {
         self.pending_orders_data
             .front()
-            .unwrap_or_else(|| panic!("No pending orders."))
+            .unwrap_or_else(|| panic!("No pending orders to remove liquidity."))
             .clone()
     }
 }

@@ -26,12 +26,14 @@ trait ContractCallbackInterface {
 
 #[near_bindgen]
 impl Contract {
-    pub fn free_up_liquidity_slot(&mut self, oldest_pending_order_data: PendingOrderData) {
+    pub fn free_up_liquidity_slot(&mut self) {
         require!(
             signer_account_id() == self.config.oracle_account_id
                 || signer_account_id() == current_account_id(),
             "You do not have access to call this method."
         );
+
+        let oldest_pending_order_data = self.get_oldest_pending_order_data();
 
         match oldest_pending_order_data.order_type {
             OrderType::Buy | OrderType::Sell | OrderType::Long | OrderType::Short => {
