@@ -42,8 +42,11 @@ impl Contract {
                             .with_unused_gas_weight(1_u64)
                             .with_attached_deposit(NO_DEPOSIT)
                             .get_pool(
-                                self.get_trade_pair(&parent_order.sell_token, &parent_order.buy_token)
-                                    .pool_id,
+                                self.get_trade_pair(
+                                    &parent_order.sell_token,
+                                    &parent_order.buy_token,
+                                )
+                                .pool_id,
                             )
                             .then(
                                 ext_self::ext(current_account_id())

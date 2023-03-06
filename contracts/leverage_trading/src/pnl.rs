@@ -89,9 +89,8 @@ impl Contract {
                 let swap_fee_amount =
                     position_amount / BigDecimal::from(current_buy_token_price) * swap_fee;
 
-                let borrow_fee_amount = BigDecimal::from(
-                    self.get_borrow_fee_amount(order.clone(), market_data.unwrap()),
-                );
+                let borrow_fee_amount =
+                    BigDecimal::from(self.get_borrow_fee_amount(order, market_data.unwrap()));
 
                 let amount_after_close =
                     position_amount / BigDecimal::from(current_buy_token_price);

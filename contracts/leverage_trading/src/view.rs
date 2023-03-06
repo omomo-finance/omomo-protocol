@@ -562,7 +562,7 @@ impl Contract {
 
             let leverage_positions = self
                 .orders_per_pair_view
-                .get(&&PairId {
+                .get(&PairId {
                     sell_token: trade_pair.sell_token,
                     buy_token: trade_pair.buy_token,
                 })
@@ -907,8 +907,8 @@ mod tests {
         let market_data = MarketData {
             underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
             underlying_token_decimals: 24,
-            total_supplies: U128(6* 10_u128.pow(28)),
-            total_borrows: U128(2501* 10_u128.pow(25)),
+            total_supplies: U128(6 * 10_u128.pow(28)),
+            total_borrows: U128(2501 * 10_u128.pow(25)),
             total_reserves: U128(1000176731435219096024128768),
             exchange_rate_ratio: U128(1000277139994639276176632),
             interest_rate_ratio: U128(261670051778601),
@@ -919,14 +919,14 @@ mod tests {
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
                 ticker_id: "USDT".to_string(),
-                value: U128::from(101* 10_u128.pow(22)),
+                value: U128::from(101 * 10_u128.pow(22)),
             },
         );
         contract.update_or_insert_price(
             "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
                 ticker_id: "WNEAR".to_string(),
-                value: U128::from(305* 10_u128.pow(22)),
+                value: U128::from(305 * 10_u128.pow(22)),
             },
         );
 
@@ -941,7 +941,10 @@ mod tests {
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
         // total pending orders before creating orders
-        assert_eq!(contract.get_total_pending_orders_per_pair(&pair_id), U128(0_u128));
+        assert_eq!(
+            contract.get_total_pending_orders_per_pair(&pair_id),
+            U128(0_u128)
+        );
 
         for count in 0..9 {
             if count < 6 {
@@ -956,9 +959,11 @@ mod tests {
             }
         }
         // total pending orders after creating orders
-        assert_eq!(contract.get_total_pending_orders_per_pair(&pair_id), U128(3_u128));
+        assert_eq!(
+            contract.get_total_pending_orders_per_pair(&pair_id),
+            U128(3_u128)
+        );
     }
-
 
     #[test]
     fn test_get_pending_orders() {

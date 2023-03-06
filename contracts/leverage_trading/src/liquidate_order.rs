@@ -138,7 +138,10 @@ impl Contract {
 
         let action = Action::SwapAction {
             Swap: Swap {
-                pool_ids: vec![self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id],
+                pool_ids: vec![
+                    self.get_trade_pair(&order.sell_token, &order.buy_token)
+                        .pool_id,
+                ],
                 output_token: order.sell_token.clone(),
                 min_output_amount: WBalance::from(0),
             },
