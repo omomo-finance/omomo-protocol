@@ -19,6 +19,7 @@ mod ft;
 mod limit_trade_history;
 mod liquidate_order;
 mod liquidity_slot;
+mod margin_trade_history;
 mod market;
 mod metadata;
 mod oraclehook;
@@ -39,7 +40,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
 use near_sdk::{env, near_bindgen, require, AccountId, Balance, PromiseOrValue};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use utils::PROTOCOL_DECIMALS;
 
 #[near_bindgen]
@@ -88,6 +89,9 @@ pub struct Contract {
 
     /// PairId ➝ order id ➝ Order
     orders_per_pair_view: UnorderedMap<PairId, HashMap<u64, Order>>,
+
+    /// Pending orders data - for tracking info about oldest pending order
+    pending_orders_data: VecDeque<PendingOrderData>,
 }
 
 impl Default for Contract {
@@ -128,6 +132,7 @@ impl Contract {
             volatility_rate: BigDecimal::from(U128(95 * 10_u128.pow(22))),
             max_order_amount: 10_u128.pow(30),
             orders_per_pair_view: UnorderedMap::new(StorageKeys::OrdersPerPair),
+            pending_orders_data: VecDeque::new(),
         }
     }
 
@@ -184,6 +189,21 @@ impl Contract {
     pub fn get_protocol_fee(&self) -> U128 {
         U128(self.protocol_fee)
     }
+
+    pub fn get_pending_orders_data(&self) -> VecDeque<PendingOrderData> {
+        self.pending_orders_data.clone()
+    }
+
+    pub fn get_pending_orders_count(&self) -> usize {
+        self.pending_orders_data.len()
+    }
+
+    pub fn get_oldest_pending_order_data(&self) -> PendingOrderData {
+        self.pending_orders_data
+            .front()
+            .unwrap_or_else(|| panic!("No pending orders to remove liquidity."))
+            .clone()
+    }
 }
 
 impl Contract {
@@ -219,6 +239,15 @@ impl Contract {
             BigDecimal::from(token_amount)
                 * BigDecimal::from(U128::from(10u128.pow(token_decimals.into()))),
         )
+    }
+
+    pub fn remove_pending_order_data(&mut self, pending_order_data: PendingOrderData) {
+        self.pending_orders_data.remove(
+            self.pending_orders_data
+                .iter()
+                .position(|order_data| *order_data == pending_order_data)
+                .unwrap_or_default(),
+        );
     }
 }
 
@@ -344,6 +373,7 @@ mod tests {
             block: 105210654,
             timestamp_ms: 1675423354862,
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#238".to_string(),
+            history_data: Default::default(),
         };
 
         let swap_fee = contract.get_swap_fee(&order);

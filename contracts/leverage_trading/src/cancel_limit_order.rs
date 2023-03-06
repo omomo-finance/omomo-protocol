@@ -91,8 +91,13 @@ impl Contract {
         let mut order = order;
         order.status = OrderStatus::Canceled;
 
-        self.add_or_update_order(&signer_account_id(), order, order_id.0 as u64);
+        self.add_or_update_order(&signer_account_id(), order.clone(), order_id.0 as u64);
 
         Event::CancelLimitOrderEvent { order_id }.emit();
+
+        self.remove_pending_order_data(PendingOrderData {
+            order_id,
+            order_type: order.order_type,
+        });
     }
 }

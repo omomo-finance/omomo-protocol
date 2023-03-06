@@ -90,6 +90,8 @@ pub struct Order {
     pub block: BlockHeight,
     pub timestamp_ms: Timestamp,
     pub lpt_id: String,
+    /// data after closed position for trade history -> (Fee, PnL)
+    pub history_data: Option<HistoryData>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug)]
@@ -305,7 +307,8 @@ pub struct TakeProfitOrderView {
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct LimitOrderTradeHistory {
-    pub date: Timestamp,
+    pub order_id: U128,
+    pub timestamp: Timestamp,
     pub pair: String,
     pub side: OrderType,
     pub status: OrderStatus,
@@ -321,4 +324,42 @@ pub struct LimitTradeHistory {
     pub data: Vec<LimitOrderTradeHistory>,
     pub page: U128,
     pub total_orders: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct HistoryData {
+    pub fee: U128,
+    pub pnl: PnLView,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MarginOrderTradeHistory {
+    pub order_id: U128,
+    pub timestamp: Timestamp,
+    pub pair: String,
+    pub side: OrderType,
+    pub status: OrderStatus,
+    pub leverage: U128,
+    pub price: U128,
+    pub executed: U128,
+    pub fee: U128,
+    pub pnl: PnLView,
+    pub total: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
+pub struct MarginTradeHistory {
+    pub data: Vec<MarginOrderTradeHistory>,
+    pub page: U128,
+    pub total_orders: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PendingOrderData {
+    pub order_id: U128,
+    pub order_type: OrderType,
 }

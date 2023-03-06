@@ -43,6 +43,7 @@ pub enum Event {
         order_type: OrderType,
         lpt_id: String,
         close_price: U128,
+        parent_order_type: OrderType,
         pool_id: String,
     },
     UpdateTakeProfitOrderEvent {
@@ -62,6 +63,15 @@ pub enum Event {
     },
     CancelLimitOrderEvent {
         order_id: U128,
+    },
+    ExecuteOrderEvent {
+        order_id: U128,
+        order_type: OrderType,
+    },
+    RepayEvent {
+        token_borrow: AccountId,
+        token_market: AccountId,
+        repay_amount: U128,
     },
 }
 

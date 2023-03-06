@@ -186,7 +186,7 @@ impl Contract {
 
                 Event::CreateOrderEvent {
                     order_id,
-                    order_type: order.order_type,
+                    order_type: order.order_type.clone(),
                     lpt_id,
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
@@ -196,7 +196,14 @@ impl Contract {
                 }
                 .emit();
 
-                PromiseOrValue::Value(U128(order_id as u128))
+                let order_id = U128::from(order_id as u128);
+
+                self.pending_orders_data.push_back(PendingOrderData {
+                    order_id,
+                    order_type: order.order_type,
+                });
+
+                PromiseOrValue::Value(order_id)
             }
             _ => {
                 let token_id =
@@ -377,7 +384,7 @@ impl Contract {
 
                     Event::UpdateTakeProfitOrderEvent {
                         order_id,
-                        order_type: order.order_type,
+                        order_type: order.order_type.clone(),
                         order_status: order.status,
                         lpt_id,
                         close_price: WRatio::from(order.open_or_close_price),
@@ -390,6 +397,11 @@ impl Contract {
                             .pool_id,
                     }
                     .emit();
+
+                    self.pending_orders_data.push_back(PendingOrderData {
+                        order_id,
+                        order_type: order.order_type,
+                    });
                 }
             }
             _ => {
@@ -445,6 +457,7 @@ impl Contract {
             block: env::block_height(),
             timestamp_ms: env::block_timestamp_ms(),
             lpt_id: "".to_string(),
+            history_data: Default::default(),
         };
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
@@ -508,6 +521,7 @@ impl Contract {
             block: env::block_height(),
             timestamp_ms: env::block_timestamp_ms(),
             lpt_id: "".to_string(),
+            history_data: Default::default(),
         };
         // calculating the range for the liquidity to be added into
         // consider the smallest gap is point_delta for given pool
@@ -614,6 +628,7 @@ impl Contract {
             block: block_height(),
             timestamp_ms: block_timestamp_ms(),
             lpt_id: "".to_string(),
+            history_data: Default::default(),
         };
 
         self.take_profit_orders
@@ -624,6 +639,7 @@ impl Contract {
             order_type: OrderType::TakeProfit,
             lpt_id: "".to_string(),
             close_price: price,
+            parent_order_type: parent_order.order_type,
             pool_id: self
                 .get_trade_pair(&parent_order.sell_token, &parent_order.buy_token)
                 .pool_id,
@@ -783,7 +799,7 @@ mod tests {
         );
 
         for _ in 0..5 {
-            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+            let order = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\",\"history_data\":null}".to_string();
             contract.imitation_add_liquidity_callback(
                 near_sdk::serde_json::from_str(order.as_str()).unwrap(),
             );
@@ -844,7 +860,7 @@ mod tests {
             },
         );
 
-        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
         let new_price = U128(24500000000000000000000000);
@@ -917,7 +933,7 @@ mod tests {
             },
         );
 
-        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_string);
 
         let order_id: u128 = 1;
