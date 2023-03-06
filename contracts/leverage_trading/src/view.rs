@@ -133,7 +133,7 @@ impl Contract {
         result
     }
 
-    pub fn get_pair(&self, sell_token: &AccountId, buy_token: &AccountId) -> TradePair {
+    pub fn get_trade_pair(&self, sell_token: &AccountId, buy_token: &AccountId) -> TradePair {
         let pair = PairId {
             sell_token: sell_token.clone(),
             buy_token: buy_token.clone(),
@@ -286,7 +286,7 @@ impl Contract {
     }
 
     pub fn get_total_pending_orders_per_pair(&self, pair_id: &PairId) -> U128 {
-        self.get_pair(&pair_id.sell_token, &pair_id.buy_token);
+        self.get_trade_pair(&pair_id.sell_token, &pair_id.buy_token);
 
         let orders = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
 
@@ -308,7 +308,7 @@ impl Contract {
         orders_per_page: U128,
         page: U128,
     ) -> PendingOrders {
-        self.get_pair(&pair_id.sell_token, &pair_id.buy_token);
+        self.get_trade_pair(&pair_id.sell_token, &pair_id.buy_token);
 
         let orders = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
         let mut pending_orders = orders
@@ -556,7 +556,7 @@ impl Contract {
         );
 
         if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
+            let trade_pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
@@ -738,7 +738,7 @@ impl Contract {
     }
 
     pub fn get_pending_limit_order(&self, order_id: &u64, order: &Order) -> Option<LimitOrderView> {
-        let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
+        let trade_pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
@@ -769,7 +769,7 @@ impl Contract {
         current_buy_token_price: U128,
         market_data: Option<MarketData>,
     ) -> Option<LeveragedPositionView> {
-        let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
+        let trade_pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
@@ -815,7 +815,7 @@ impl Contract {
                 if order.status == OrderStatus::Pending
                     || order.status == OrderStatus::PendingOrderExecute
                 {
-                    let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
+                    let trade_pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
 
                     let pair =
                         format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);

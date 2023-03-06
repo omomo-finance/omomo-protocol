@@ -292,7 +292,7 @@ impl Contract {
             buy_token: order.sell_token.to_string(),
             sell_token_price: order.sell_token_price.value,
             buy_token_price: order.buy_token_price.value,
-            pool_id: self.get_pair(&order.sell_token, &order.buy_token).pool_id,
+            pool_id: self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id,
         }
         .emit();
     }

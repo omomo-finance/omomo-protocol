@@ -309,7 +309,7 @@ impl Contract {
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(1_u64)
             .with_attached_deposit(NO_DEPOSIT)
-            .get_pool(self.get_pair(&order.sell_token, &order.buy_token).pool_id)
+            .get_pool(self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id)
             .then(
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(30_u64)
@@ -323,7 +323,7 @@ impl Contract {
 
         let action = Action::SwapAction {
             Swap: Swap {
-                pool_ids: vec![self.get_pair(&order.sell_token, &order.buy_token).pool_id],
+                pool_ids: vec![self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id],
                 output_token,
                 min_output_amount: WBalance::from(0),
             },

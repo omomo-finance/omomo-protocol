@@ -133,7 +133,7 @@ impl Contract {
                     .with_static_gas(Gas::ONE_TERA * 10u64)
                     .with_attached_deposit(NO_DEPOSIT)
                     .add_liquidity(
-                        self.get_pair(&order.sell_token, &order.buy_token).pool_id,
+                        self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id,
                         left_point,
                         right_point,
                         amount_x,
@@ -189,7 +189,7 @@ impl Contract {
                     lpt_id,
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
-                    pool_id: self.get_pair(&order.sell_token, &order.buy_token).pool_id,
+                    pool_id: self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id,
                 }
                 .emit();
 
@@ -382,7 +382,7 @@ impl Contract {
                         buy_token: order.sell_token.to_string(),
                         sell_token_price: order.sell_token_price.value,
                         buy_token_price: order.buy_token_price.value,
-                        pool_id: self.get_pair(&order.sell_token, &order.buy_token).pool_id,
+                        pool_id: self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id,
                     }
                     .emit();
                 }
@@ -620,7 +620,7 @@ impl Contract {
             lpt_id: "".to_string(),
             close_price: price,
             pool_id: self
-                .get_pair(&parent_order.sell_token, &parent_order.buy_token)
+                .get_trade_pair(&parent_order.sell_token, &parent_order.buy_token)
                 .pool_id,
         }
         .emit();
@@ -693,7 +693,7 @@ impl Contract {
                     .with_static_gas(Gas::ONE_TERA * 10u64)
                     .with_attached_deposit(NO_DEPOSIT)
                     .add_liquidity(
-                        self.get_pair(&order.sell_token, &order.buy_token).pool_id,
+                        self.get_trade_pair(&order.sell_token, &order.buy_token).pool_id,
                         take_profit_order.0 .0,
                         take_profit_order.0 .1,
                         amount_x,

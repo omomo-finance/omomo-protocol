@@ -86,7 +86,7 @@ impl Contract {
             OrderStatus::Canceled | OrderStatus::Executed => {
                 let date = order.timestamp_ms;
 
-                let pair = self.get_pair(&order.sell_token, &order.buy_token);
+                let pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
                 let pair = format!("{}/{}", pair.sell_ticker_id, pair.buy_ticker_id);
 
                 let side = order.order_type.clone();
