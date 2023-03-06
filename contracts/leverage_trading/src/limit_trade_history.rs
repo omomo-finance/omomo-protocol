@@ -90,7 +90,7 @@ impl Contract {
             OrderStatus::Canceled | OrderStatus::Executed => {
                 let timestamp = order.timestamp_ms;
 
-                let pair = self.view_pair(&order.sell_token, &order.buy_token);
+                let pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
                 let pair = format!("{}/{}", pair.sell_ticker_id, pair.buy_ticker_id);
 
                 let side = order.order_type.clone();
@@ -218,10 +218,10 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_id: PairId = (
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         let pair_data1 = TradePair {
             sell_ticker_id: "USDT".to_string(),
@@ -298,8 +298,8 @@ mod tests {
         let limit_trade_history_by_user_by_pair = contract
             .view_non_pending_limit_orders_by_user_by_pair(
                 alice(),
-                pair_id.0,
-                pair_id.1,
+                pair_id.sell_token,
+                pair_id.buy_token,
                 U128(10),
                 U128(1),
             );

@@ -6,7 +6,7 @@ use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
 
 /// DEX underutilization ratio of the transferred deposit
-pub const INACCURACY_RATE: U128 = U128(3_u128); //0.000000000000000000000003% -> 3*10^-24%
+pub const INACCURACY_RATE: U128 = U128(7_u128); //0.000000000000000000000007 -> 0.0000000000000000000007% -> 7*10^-24
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -357,10 +357,10 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_id: PairId = (
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1000000000000000000000000\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4220000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930916,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order_as_string.clone());
