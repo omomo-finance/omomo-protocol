@@ -57,7 +57,8 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
-        data: Option<MarketData>,
+        current_buy_token_price: U128,
+        market_data: Option<MarketData>,
     ) -> PnLView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
             panic!("Orders for account: {account_id} not found");
@@ -71,8 +72,12 @@ impl Contract {
             .clone();
 
         match order.order_type {
-            OrderType::Long => self.calculate_pnl_long_order(order, data),
-            OrderType::Short => self.calculate_pnl_short_order(order, data),
+            OrderType::Long => {
+                self.calculate_pnl_long_order(order, current_buy_token_price, market_data)
+            }
+            OrderType::Short => {
+                self.calculate_pnl_short_order(order, current_buy_token_price, market_data)
+            }
             _ => panic!("PnL calculation only for 'Long' and 'Short' order types"),
         }
     }
@@ -128,10 +133,24 @@ impl Contract {
         result
     }
 
-    pub fn view_pair(&self, sell_token: &AccountId, buy_token: &AccountId) -> TradePair {
+    pub fn get_pair(&self, sell_token: &AccountId, buy_token: &AccountId) -> TradePair {
+        let pair = PairId {
+            sell_token: sell_token.clone(),
+            buy_token: buy_token.clone(),
+        };
         self.supported_markets
-            .get(&(sell_token.clone(), buy_token.clone()))
+            .get(&pair)
             .unwrap_or_else(|| panic!("Pair {sell_token}|{buy_token} not found"))
+    }
+
+    pub fn view_pairs(&self) -> Vec<PairId> {
+        let pairs = self
+            .supported_markets
+            .iter()
+            .map(|(pair_id, _)| pair_id)
+            .collect::<Vec<PairId>>();
+
+        pairs
     }
 
     pub fn view_supported_pairs(&self) -> Vec<TradePairView> {
@@ -182,6 +201,7 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
+        current_buy_token_price: U128,
         market_data: MarketData,
     ) -> CancelOrderView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
@@ -203,7 +223,12 @@ impl Contract {
 
         let close_price = self.get_price(order.buy_token.clone());
 
-        let calc_pnl = self.calculate_pnl(account_id, order_id, Some(market_data));
+        let calc_pnl = self.calculate_pnl(
+            account_id,
+            order_id,
+            current_buy_token_price,
+            Some(market_data),
+        );
 
         CancelOrderView {
             buy_token_amount: WRatio::from(buy_token),
@@ -261,7 +286,7 @@ impl Contract {
     }
 
     pub fn get_total_pending_orders_per_pair(&self, pair_id: &PairId) -> U128 {
-        self.view_pair(&pair_id.0, &pair_id.1);
+        self.get_pair(&pair_id.sell_token, &pair_id.buy_token);
 
         let orders = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
 
@@ -283,7 +308,7 @@ impl Contract {
         orders_per_page: U128,
         page: U128,
     ) -> PendingOrders {
-        self.view_pair(&pair_id.0, &pair_id.1);
+        self.get_pair(&pair_id.sell_token, &pair_id.buy_token);
 
         let orders = self.orders_per_pair_view.get(pair_id).unwrap_or_default();
         let mut pending_orders = orders
@@ -316,13 +341,15 @@ impl Contract {
         sell_token: &AccountId,
         buy_token: &AccountId,
     ) -> (u8, u8) {
-        let pair_id = &(sell_token.clone(), buy_token.clone());
-        let pair = self.supported_markets.get(pair_id).unwrap_or_else(|| {
-            panic!(
-                "Sell and Buy token decimals for pair {} | {} not found",
-                pair_id.0, pair_id.1
-            )
+        let pair_id = PairId {
+            sell_token: sell_token.clone(),
+            buy_token: buy_token.clone(),
+        };
+
+        let pair = self.supported_markets.get(&pair_id).unwrap_or_else(|| {
+            panic!("Sell and Buy token decimals for pair {sell_token}|{buy_token} not found",)
         });
+
         (pair.sell_token_decimals, pair.buy_token_decimals)
     }
 
@@ -330,8 +357,12 @@ impl Contract {
         let pair_id = self
             .supported_markets
             .keys()
-            .find(|pair| pair.0 == token.clone() || pair.1 == token.clone());
-        if let Some((sell_token, buy_token)) = pair_id {
+            .find(|pair| pair.sell_token == token.clone() || pair.buy_token == token.clone());
+        if let Some(PairId {
+            sell_token,
+            buy_token,
+        }) = pair_id
+        {
             let (sell_token_decimals, buy_token_decimals) =
                 self.view_pair_tokens_decimals(&sell_token, &buy_token);
             if token == &sell_token {
@@ -423,6 +454,7 @@ impl Contract {
     pub fn view_opened_leverage_positions_by_user(
         &self,
         account_id: AccountId,
+        current_buy_token_price: U128,
         market_data: Option<MarketData>,
         positions_per_page: U128,
         page: U128,
@@ -439,6 +471,7 @@ impl Contract {
                         account_id.clone(),
                         id,
                         order,
+                        current_buy_token_price,
                         market_data.clone(),
                     ),
                     false => None,
@@ -468,6 +501,7 @@ impl Contract {
         account_id: AccountId,
         sell_token: AccountId,
         buy_token: AccountId,
+        current_buy_token_price: U128,
         market_data: Option<MarketData>,
         positions_per_page: U128,
         page: U128,
@@ -490,6 +524,7 @@ impl Contract {
                         account_id.clone(),
                         id,
                         order,
+                        current_buy_token_price,
                         market_data.clone(),
                     ),
                     false => None,
@@ -521,13 +556,16 @@ impl Contract {
         );
 
         if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
+            let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
             let leverage_positions = self
                 .orders_per_pair_view
-                .get(&(trade_pair.sell_token, trade_pair.buy_token))
+                .get(&&PairId {
+                    sell_token: trade_pair.sell_token,
+                    buy_token: trade_pair.buy_token,
+                })
                 .unwrap();
 
             let leverage_position = leverage_positions.get(&(order_id.0 as u64)).unwrap();
@@ -700,7 +738,7 @@ impl Contract {
     }
 
     pub fn get_pending_limit_order(&self, order_id: &u64, order: &Order) -> Option<LimitOrderView> {
-        let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
+        let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
@@ -728,9 +766,10 @@ impl Contract {
         account_id: AccountId,
         order_id: &u64,
         order: &Order,
+        current_buy_token_price: U128,
         market_data: Option<MarketData>,
     ) -> Option<LeveragedPositionView> {
-        let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
+        let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
 
         let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
 
@@ -742,7 +781,12 @@ impl Contract {
 
         let filled = (order.status != OrderStatus::Pending).into();
 
-        let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
+        let pnl = self.calculate_pnl(
+            account_id,
+            U128(*order_id as u128),
+            current_buy_token_price,
+            market_data,
+        );
 
         let take_profit_order = self.get_take_profit_order(order_id, order);
 
@@ -771,7 +815,7 @@ impl Contract {
                 if order.status == OrderStatus::Pending
                     || order.status == OrderStatus::PendingOrderExecute
                 {
-                    let trade_pair = self.view_pair(&order.sell_token, &order.buy_token);
+                    let trade_pair = self.get_pair(&order.sell_token, &order.buy_token);
 
                     let pair =
                         format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
@@ -829,6 +873,94 @@ mod tests {
     }
 
     #[test]
+    fn test_get_total_pending_orders_per_pair() {
+        let current_day = get_current_day_in_nanoseconds(6); // borrow period 5 days
+        let context = get_context(false, current_day);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
+
+        let pair_data = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        let market_data = MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
+            underlying_token_decimals: 24,
+            total_supplies: U128(6* 10_u128.pow(28)),
+            total_borrows: U128(2501* 10_u128.pow(25)),
+            total_reserves: U128(1000176731435219096024128768),
+            exchange_rate_ratio: U128(1000277139994639276176632),
+            interest_rate_ratio: U128(261670051778601),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(24)),
+        };
+
+        contract.update_or_insert_price(
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDT".to_string(),
+                value: U128::from(101* 10_u128.pow(22)),
+            },
+        );
+        contract.update_or_insert_price(
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "WNEAR".to_string(),
+                value: U128::from(305* 10_u128.pow(22)),
+            },
+        );
+
+        contract.add_pair(pair_data);
+
+        contract.set_balance(&alice(), &pair_id.sell_token, 10_u128.pow(30));
+
+        let amount = U128::from(
+            BigDecimal::from(U128(2 * 10_u128.pow(27)))
+                * (BigDecimal::one() - BigDecimal::from(execute_order::INACCURACY_RATE)),
+        );
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+        // total pending orders before creating orders
+        assert_eq!(contract.get_total_pending_orders_per_pair(&pair_id), U128(0_u128));
+
+        for count in 0..9 {
+            if count < 6 {
+                contract.imitation_add_liquidity_callback(order.clone());
+            } else {
+                contract.final_cancel_order(
+                    U128(count as u128 - 5),
+                    order.clone(),
+                    amount,
+                    market_data.clone(),
+                );
+            }
+        }
+        // total pending orders after creating orders
+        assert_eq!(contract.get_total_pending_orders_per_pair(&pair_id), U128(3_u128));
+    }
+
+
+    #[test]
     fn test_get_pending_orders() {
         let current_day = get_current_day_in_nanoseconds(6); // borrow period 5 days
         let context = get_context(false, current_day);
@@ -839,10 +971,10 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_id: PairId = (
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         let pair_data = TradePair {
             sell_ticker_id: "USDT".to_string(),
@@ -888,7 +1020,7 @@ mod tests {
 
         contract.add_pair(pair_data);
 
-        contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
+        contract.set_balance(&alice(), &pair_id.sell_token, 10_u128.pow(30));
 
         let amount = U128::from(
             BigDecimal::from(U128(2 * 10_u128.pow(27)))
@@ -982,10 +1114,10 @@ mod tests {
         contract.add_pair(pair_data2.clone());
 
         let pair_data_view = TradePairView {
-            pair_id: (
-                "usdt.fakes.testnet".parse().unwrap(),
-                "wrap.testnet".parse().unwrap(),
-            ),
+            pair_id: PairId {
+                sell_token: "usdt.fakes.testnet".parse().unwrap(),
+                buy_token: "wrap.testnet".parse().unwrap(),
+            },
             pair_tickers_id: "USDt-near".to_string(),
             sell_ticker_id: "USDt".to_string(),
             sell_token: "usdt.fakes.testnet".parse().unwrap(),
@@ -1004,10 +1136,10 @@ mod tests {
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
         let pair_data2_view = TradePairView {
-            pair_id: (
-                "wrap.testnet".parse().unwrap(),
-                "usdt.fakes.testnet".parse().unwrap(),
-            ),
+            pair_id: PairId {
+                sell_token: "wrap.testnet".parse().unwrap(),
+                buy_token: "usdt.fakes.testnet".parse().unwrap(),
+            },
             pair_tickers_id: "near-USDt".to_string(),
             sell_ticker_id: "near".to_string(),
             sell_token: "wrap.testnet".parse().unwrap(),
@@ -1066,20 +1198,7 @@ mod tests {
         let order = "{\"status\":\"Executed\",\"order_type\":\"Long\",\"amount\":1500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
         contract.add_order_from_string(alice(), order);
 
-        contract.update_or_insert_price(
-            "usdt.fakes.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDt".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wrap.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "near".to_string(),
-                value: U128::from(3 * 10_u128.pow(24)), // current price token
-            },
-        );
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
 
         let market_data = MarketData {
             underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
@@ -1092,7 +1211,8 @@ mod tests {
             borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
         };
 
-        let pnl = contract.calculate_pnl(alice(), U128(1), Some(market_data));
+        let pnl =
+            contract.calculate_pnl(alice(), U128(1), current_buy_token_price, Some(market_data));
         assert!(pnl.is_profit);
         assert_eq!(pnl.amount, U128(8392 * 10_u128.pow(23)));
     }
@@ -1539,10 +1659,10 @@ mod tests {
         );
 
         // pair id "USDT/WNEAR"
-        let pair_id: PairId = (
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         // pair data for "USDT/WNEAR"
         let pair_data1 = TradePair {
@@ -1618,8 +1738,8 @@ mod tests {
         // view pending limit orders by pair "USDT/WNEAR"
         let limit_orders = contract.view_pending_limit_orders_by_user_by_pair(
             alice(),
-            pair_id.0,
-            pair_id.1,
+            pair_id.sell_token,
+            pair_id.buy_token,
             U128(10),
             U128(1),
         );
@@ -1673,10 +1793,10 @@ mod tests {
         );
 
         // pair id "WNEAR/USDT"
-        let pair_id: PairId = (
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         // pair data for "USDT/WNEAR"
         let pair_data = TradePair {
@@ -1720,8 +1840,8 @@ mod tests {
         // view pending limit orders by pair "WNEAR/USDT"
         let limit_orders = contract.view_pending_limit_orders_by_user_by_pair(
             alice(),
-            pair_id.0,
-            pair_id.1,
+            pair_id.sell_token,
+            pair_id.buy_token,
             U128(10),
             U128(1),
         );
@@ -1794,21 +1914,6 @@ mod tests {
             borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
         });
 
-        contract.update_or_insert_price(
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDT".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "WNEAR".to_string(),
-                value: U128::from(3 * 10_u128.pow(24)), // current price token
-            },
-        );
-
         for count in 0..6 {
             if count < 1 {
                 // order with status of "Pending" on leverage "3.0" and with timestamp "86400000"
@@ -1847,7 +1952,7 @@ mod tests {
             total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: true,
-                amount: U128(114784 * 10_u128.pow(22)),
+                amount: U128(0_u128),
             },
             take_profit_order: None,
         };
@@ -1865,7 +1970,7 @@ mod tests {
             total: U128(4 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
-                amount: U128(12918 * 10_u128.pow(23)),
+                amount: U128(861200000000000000000000001),
             },
             take_profit_order: Some(TakeProfitOrderView {
                 timestamp: 86400050,
@@ -1878,8 +1983,11 @@ mod tests {
             }),
         };
 
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
+
         let opened_positions = contract.view_opened_leverage_positions_by_user(
             alice(),
+            current_buy_token_price,
             market_data,
             U128(10),
             U128(1),
@@ -1910,10 +2018,10 @@ mod tests {
         );
 
         // pair id "WNEAR/USDT"
-        let pair_id: PairId = (
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         // pair data for "USDT/WNEAR"
         let pair_data1 = TradePair {
@@ -1961,21 +2069,6 @@ mod tests {
             borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
         });
 
-        contract.update_or_insert_price(
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDT".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "WNEAR".to_string(),
-                value: U128::from(3 * 10_u128.pow(24)), // current price token
-            },
-        );
-
         for count in 0..6 {
             if count < 1 {
                 // order with status of "Pending" on leverage "3.0" and in pair "USDT/WNEAR" with timestamp "86400000"
@@ -2018,7 +2111,7 @@ mod tests {
             total: U128(2 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
-                amount: U128(2153 * 10_u128.pow(23)),
+                amount: U128(430600000000000000000000002),
             },
             take_profit_order: Some(TakeProfitOrderView {
                 timestamp: 86400050,
@@ -2043,16 +2136,19 @@ mod tests {
             filled: 0,
             total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
-                is_profit: false,
-                amount: U128(6459 * 10_u128.pow(23)),
+                is_profit: true,
+                amount: U128(0_u128),
             },
             take_profit_order: None,
         };
 
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
+
         let opened_positions = contract.view_opened_leverage_positions_by_user_by_pair(
             alice(),
-            pair_id.0,
-            pair_id.1,
+            pair_id.sell_token,
+            pair_id.buy_token,
+            current_buy_token_price,
             market_data.clone(),
             U128(10),
             U128(1),
@@ -2061,7 +2157,13 @@ mod tests {
         assert_eq!(contract.orders.get(&alice()).unwrap().len(), 6_usize);
         assert_eq!(
             contract
-                .view_opened_leverage_positions_by_user(alice(), market_data, U128(10), U128(1))
+                .view_opened_leverage_positions_by_user(
+                    alice(),
+                    current_buy_token_price,
+                    market_data,
+                    U128(10),
+                    U128(1)
+                )
                 .total_positions,
             U128(3)
         );
@@ -2130,8 +2232,11 @@ mod tests {
             }
         }
 
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
+
         let limit_orders = contract.view_opened_leverage_positions_by_user(
             alice(),
+            current_buy_token_price,
             market_data,
             U128(10),
             U128(1),
@@ -2149,10 +2254,10 @@ mod tests {
         );
 
         // pair id "WNEAR/USDT"
-        let pair_id: PairId = (
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         // pair data for "USDT/WNEAR"
         let pair_data = TradePair {
@@ -2204,11 +2309,14 @@ mod tests {
             }
         }
 
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
+
         // view opened leverage positions in pair "WNEAR/USDT"
         let limit_orders = contract.view_opened_leverage_positions_by_user_by_pair(
             alice(),
-            pair_id.0,
-            pair_id.1,
+            pair_id.sell_token,
+            pair_id.buy_token,
+            current_buy_token_price,
             market_data,
             U128(10),
             U128(1),
@@ -2391,5 +2499,67 @@ mod tests {
         let expected_result = U128::from(2029063888888888888888888);
 
         assert_eq!(long_liquidation_price, expected_result);
+    }
+
+    #[test]
+    fn test_view_pairs() {
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+        // if there are no pairs at all
+        let view_pairs = contract.view_pairs();
+        assert_eq!(view_pairs.len(), 0_usize);
+
+        // pair data for "USDT/WNEAR"
+        let pair_data1 = TradePair {
+            sell_ticker_id: "USDT".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 6,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "WNEAR".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 24,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        // pair data for "WNEAR/USDT"
+        let pair_data2 = TradePair {
+            sell_ticker_id: "WNEAR".to_string(),
+            sell_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "wnear_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "USDT".to_string(),
+            buy_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 6,
+            buy_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            pool_id: "wnear.qa.v1.nearlend.testnet|usdt.qa.v1.nearlend.testnet|2001".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+
+        contract.add_pair(pair_data1.clone());
+        contract.add_pair(pair_data2.clone());
+
+        let true_result = vec![
+            PairId {
+                sell_token: pair_data1.sell_token,
+                buy_token: pair_data1.buy_token,
+            },
+            PairId {
+                sell_token: pair_data2.sell_token,
+                buy_token: pair_data2.buy_token,
+            },
+        ];
+
+        let view_pairs = contract.view_pairs();
+
+        assert_eq!(view_pairs.len(), 2_usize);
+        assert_eq!(view_pairs, true_result);
     }
 }

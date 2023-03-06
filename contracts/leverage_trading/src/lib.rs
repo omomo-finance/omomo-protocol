@@ -33,8 +33,8 @@ mod withdraw;
 pub use crate::metadata::*;
 
 use crate::big_decimal::*;
-use crate::common::PairId;
 use crate::config::Config;
+use crate::metadata::PairId;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::json_types::U128;
@@ -158,10 +158,12 @@ impl Contract {
 
     #[private]
     pub fn set_max_leverage(&mut self, pair: &PairId, leverage: U128) {
-        let mut traid_pair = self
-            .supported_markets
-            .get(pair)
-            .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1));
+        let mut traid_pair = self.supported_markets.get(pair).unwrap_or_else(|| {
+            panic!(
+                "Max leverage for pair {}|{} not found",
+                pair.sell_token, pair.buy_token
+            )
+        });
 
         traid_pair.max_leverage = leverage;
         self.supported_markets.insert(pair, &traid_pair);
@@ -170,7 +172,12 @@ impl Contract {
     pub fn get_max_leverage(&self, pair: &PairId) -> U128 {
         self.supported_markets
             .get(pair)
-            .unwrap_or_else(|| panic!("Max leverage for pair {} | {} not found", pair.0, pair.1))
+            .unwrap_or_else(|| {
+                panic!(
+                    "Max leverage for pair {}|{} not found",
+                    pair.sell_token, pair.buy_token
+                )
+            })
             .max_leverage
     }
 
@@ -181,10 +188,18 @@ impl Contract {
 
 impl Contract {
     pub fn get_swap_fee(&self, order: &Order) -> U128 {
-        let pair = (order.sell_token.clone(), order.buy_token.clone());
+        let pair = PairId {
+            sell_token: order.sell_token.clone(),
+            buy_token: order.buy_token.clone(),
+        };
         self.supported_markets
             .get(&pair)
-            .unwrap_or_else(|| panic!("Swap fee for pair {} | {} not found", pair.0, pair.1))
+            .unwrap_or_else(|| {
+                panic!(
+                    "Swap fee for pair {}|{} not found",
+                    pair.sell_token, pair.buy_token
+                )
+            })
             .swap_fee
     }
 
@@ -218,10 +233,11 @@ mod tests {
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
-        let pair = (
-            AccountId::from_str("usdt.fakes.testnet").unwrap(),
-            AccountId::from_str("wrap.testnet").unwrap(),
-        );
+
+        let pair = PairId {
+            sell_token: AccountId::from_str("usdt.fakes.testnet").unwrap(),
+            buy_token: AccountId::from_str("wrap.testnet").unwrap(),
+        };
 
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),
@@ -253,10 +269,11 @@ mod tests {
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
-        let pair = (
-            AccountId::from_str("usdt.fakes.testnet").unwrap(),
-            AccountId::from_str("wrap.testnet").unwrap(),
-        );
+
+        let pair = PairId {
+            sell_token: AccountId::from_str("usdt.fakes.testnet").unwrap(),
+            buy_token: AccountId::from_str("wrap.testnet").unwrap(),
+        };
 
         let pair_data = TradePair {
             sell_ticker_id: "USDt".to_string(),

@@ -253,8 +253,8 @@ impl Contract {
             .clone();
 
         require!(
-            order.status == OrderStatus::Canceled,
-            "Error. The order must be in the status 'Cancel'"
+            order.status == OrderStatus::Canceled || order.status == OrderStatus::Closed,
+            "Error. The order must be in the status 'Canceled' or 'Closed'"
         );
 
         let (token_borrow, token_market) = if order.order_type == OrderType::Long {
@@ -309,7 +309,7 @@ impl Contract {
         ext_ref_finance::ext(self.ref_finance_account.clone())
             .with_unused_gas_weight(1_u64)
             .with_attached_deposit(NO_DEPOSIT)
-            .get_pool(self.view_pair(&order.sell_token, &order.buy_token).pool_id)
+            .get_pool(self.get_pair(&order.sell_token, &order.buy_token).pool_id)
             .then(
                 ext_self::ext(current_account_id())
                     .with_unused_gas_weight(30_u64)
@@ -323,7 +323,7 @@ impl Contract {
 
         let action = Action::SwapAction {
             Swap: Swap {
-                pool_ids: vec![self.view_pair(&order.sell_token, &order.buy_token).pool_id],
+                pool_ids: vec![self.get_pair(&order.sell_token, &order.buy_token).pool_id],
                 output_token,
                 min_output_amount: WBalance::from(0),
             },
@@ -632,10 +632,10 @@ mod tests {
             borrow_rate_ratio: U128(5 * 10_u128.pow(24)),
         };
 
-        let pair_id = (
-            "usdt.fakes.testnet".parse().unwrap(),
-            "wrap.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.fakes.testnet".parse().unwrap(),
+            buy_token: "wrap.testnet".parse().unwrap(),
+        };
 
         let amount = U128::from(
             BigDecimal::from(U128(2 * 10_u128.pow(25)))

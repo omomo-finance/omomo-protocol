@@ -59,6 +59,7 @@ pub enum OrderStatus {
     Pending,
     Executed,
     Canceled,
+    Closed,
     Liquidated,
     PendingOrderExecute,
 }
@@ -140,6 +141,13 @@ pub struct TradePairView {
     pub pool_id: String,
     pub max_leverage: U128,
     pub swap_fee: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PairId {
+    pub sell_token: AccountId,
+    pub buy_token: AccountId,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
