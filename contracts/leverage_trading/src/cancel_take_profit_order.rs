@@ -154,5 +154,10 @@ impl Contract {
         self.take_profit_orders.remove(&(order_id.0 as u64));
 
         Event::CancelTakeProfitOrderEvent { order_id }.emit();
+
+        self.remove_pending_order_data(PendingOrderData {
+            order_id,
+            order_type: OrderType::TakeProfit,
+        });
     }
 }

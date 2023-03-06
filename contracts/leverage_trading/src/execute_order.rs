@@ -123,6 +123,11 @@ impl Contract {
             self.mark_take_profit_order_as_executed(order_id);
         }
 
+        self.remove_pending_order_data(PendingOrderData {
+            order_id,
+            order_type: order.order_type,
+        });
+
         let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
         Promise::new(env::signer_account_id())
             .transfer(executor_reward_in_near)

@@ -185,7 +185,7 @@ impl Contract {
 
                 Event::CreateOrderEvent {
                     order_id,
-                    order_type: order.order_type,
+                    order_type: order.order_type.clone(),
                     lpt_id,
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
@@ -193,7 +193,14 @@ impl Contract {
                 }
                 .emit();
 
-                PromiseOrValue::Value(U128(order_id as u128))
+                let order_id = U128::from(order_id as u128);
+
+                self.pending_orders_data.push_back(PendingOrderData {
+                    order_id,
+                    order_type: order.order_type,
+                });
+
+                PromiseOrValue::Value(order_id)
             }
             _ => {
                 let token_id =
@@ -374,7 +381,7 @@ impl Contract {
 
                     Event::UpdateTakeProfitOrderEvent {
                         order_id,
-                        order_type: order.order_type,
+                        order_type: order.order_type.clone(),
                         order_status: order.status,
                         lpt_id,
                         close_price: WRatio::from(order.open_or_close_price),
@@ -385,6 +392,11 @@ impl Contract {
                         pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
                     }
                     .emit();
+
+                    self.pending_orders_data.push_back(PendingOrderData {
+                        order_id,
+                        order_type: order.order_type,
+                    });
                 }
             }
             _ => {

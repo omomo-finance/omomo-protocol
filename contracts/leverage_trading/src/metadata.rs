@@ -349,3 +349,10 @@ pub struct MarginTradeHistory {
     pub page: U128,
     pub total_orders: U128,
 }
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PendingOrderData {
+    pub order_id: U128,
+    pub order_type: OrderType,
+}
