@@ -28,6 +28,7 @@ trait ContractCallbackInterface {
         order_id: U128,
         order: Order,
         amount: U128,
+        current_buy_token_price: U128,
         price_impact: U128,
     );
     fn liquidate_order_swap_callback(
@@ -42,6 +43,7 @@ trait ContractCallbackInterface {
         order_id: U128,
         order: Order,
         amount: U128,
+        current_buy_token_price: Option<U128>,
         price_impact: Option<U128>,
     );
     fn get_pool_callback(&self, order_id: U128, order: Order);
@@ -57,7 +59,12 @@ trait ContractCallbackInterface {
 
 #[near_bindgen]
 impl Contract {
-    pub fn cancel_order(&mut self, order_id: U128, price_impact: U128) {
+    pub fn cancel_order(
+        &mut self,
+        order_id: U128,
+        current_buy_token_price: U128,
+        price_impact: U128,
+    ) {
         require!(
             prepaid_gas() >= CANCEL_ORDER_GAS,
             "Not enough gas for method: 'Cancel order'"
@@ -76,9 +83,12 @@ impl Contract {
 
         match order.order_type {
             OrderType::Buy | OrderType::Sell => self.cancel_limit_order(order_id, order),
-            OrderType::Long | OrderType::Short => {
-                self.cancel_or_close_leverage_order(order_id, order, price_impact)
-            }
+            OrderType::Long | OrderType::Short => self.cancel_or_close_leverage_order(
+                order_id,
+                order,
+                current_buy_token_price,
+                price_impact,
+            ),
             OrderType::TakeProfit => self.cancel_take_profit_order(order_id),
         }
     }
@@ -179,7 +189,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .market_data_callback(order_id, order, amount, None),
+                    .market_data_callback(order_id, order, amount, None, None),
             );
     }
 
@@ -189,6 +199,7 @@ impl Contract {
         order_id: U128,
         order: Order,
         amount: U128,
+        current_buy_token_price: U128,
         price_impact: U128,
     ) {
         log!(
@@ -210,7 +221,13 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .market_data_callback(order_id, order, amount, Some(price_impact)),
+                    .market_data_callback(
+                        order_id,
+                        order,
+                        amount,
+                        Some(current_buy_token_price),
+                        Some(price_impact),
+                    ),
             );
     }
 
@@ -220,6 +237,7 @@ impl Contract {
         order_id: U128,
         order: Order,
         amount: U128,
+        current_buy_token_price: Option<U128>,
         price_impact: Option<U128>,
     ) {
         log!(
@@ -241,7 +259,14 @@ impl Contract {
         if order.status == OrderStatus::Pending {
             self.final_cancel_order(order_id, order, amount, market_data);
         } else {
-            self.final_close_order(order_id, order, amount, price_impact, market_data)
+            self.final_close_order(
+                order_id,
+                order,
+                amount,
+                current_buy_token_price,
+                price_impact,
+                market_data,
+            )
         }
     }
 
@@ -319,11 +344,14 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
+        current_buy_token_price: U128,
         price_impact: U128,
     ) {
         match order.status {
             OrderStatus::Pending => self.cancel_leverage_order(order_id, order),
-            OrderStatus::Executed => self.close_leverage_order(order_id, order, price_impact),
+            OrderStatus::Executed => {
+                self.close_leverage_order(order_id, order, current_buy_token_price, price_impact)
+            }
             _ => panic!("Error. Order status has to be 'Pending' or 'Executed'"),
         }
     }
@@ -349,7 +377,13 @@ impl Contract {
             );
     }
 
-    pub fn close_leverage_order(&mut self, order_id: U128, order: Order, price_impact: U128) {
+    pub fn close_leverage_order(
+        &mut self,
+        order_id: U128,
+        order: Order,
+        current_buy_token_price: U128,
+        price_impact: U128,
+    ) {
         if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
             self.cancel_take_profit_order(order_id);
 
@@ -358,10 +392,16 @@ impl Contract {
             }
         }
 
-        self.swap_to_close_order(order_id, order, price_impact);
+        self.swap_to_close_order(order_id, order, current_buy_token_price, price_impact);
     }
 
-    pub fn swap_to_close_order(&self, order_id: U128, order: Order, price_impact: U128) {
+    pub fn swap_to_close_order(
+        &self,
+        order_id: U128,
+        order: Order,
+        current_buy_token_price: U128,
+        price_impact: U128,
+    ) {
         let (amount, input_token, output_token) = self.get_data_to_swap(order.clone());
 
         let action = Action::SwapAction {
@@ -391,7 +431,13 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_attached_deposit(NO_DEPOSIT)
-                    .close_order_swap_callback(order_id, order, amount, price_impact),
+                    .close_order_swap_callback(
+                        order_id,
+                        order,
+                        amount,
+                        current_buy_token_price,
+                        price_impact,
+                    ),
             );
     }
 
@@ -498,6 +544,7 @@ impl Contract {
         order_id: U128,
         order: Order,
         amount: U128,
+        current_buy_token_price: Option<U128>,
         price_impact: Option<U128>,
         market_data: MarketData,
     ) {
@@ -524,7 +571,12 @@ impl Contract {
 
             let mut total_fee_amount = borrow_fee_amount + swap_fee_amount;
 
-            let pnl = self.calculate_pnl(signer_account_id(), order_id, Some(market_data));
+            let pnl = self.calculate_pnl(
+                signer_account_id(),
+                order_id,
+                current_buy_token_price.unwrap(),
+                Some(market_data),
+            );
 
             if open_amount < total_amount {
                 let protocol_fee = BigDecimal::from(self.get_protocol_fee());
