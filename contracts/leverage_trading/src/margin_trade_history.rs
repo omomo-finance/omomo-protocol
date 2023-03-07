@@ -101,16 +101,12 @@ impl Contract {
 
                 let price = U128::from(order.open_or_close_price);
 
-                let executed = match order.order_type {
-                    OrderType::Long | OrderType::Short => U128::from(
-                        BigDecimal::from(U128::from(order.amount)) * order.leverage
-                            / order.open_or_close_price,
-                    ),
-                    _ => unreachable!(),
-                };
-
-                let (fee, pnl) = if let Some(history_data) = &order.history_data {
-                    (history_data.fee, history_data.pnl.clone())
+                let (fee, pnl, executed) = if let Some(history_data) = &order.history_data {
+                    (
+                        history_data.fee,
+                        history_data.pnl.clone(),
+                        history_data.executed,
+                    )
                 } else {
                     (
                         U128::from(0),
@@ -118,6 +114,7 @@ impl Contract {
                             is_profit: false,
                             amount: U128::from(0),
                         },
+                        U128::from(0),
                     )
                 };
 
@@ -125,7 +122,7 @@ impl Contract {
                     OrderType::Long | OrderType::Short => {
                         U128::from(BigDecimal::from(U128::from(order.amount)) * order.leverage)
                     }
-                    _ => unreachable!(),
+                    _ => U128::from(0),
                 };
 
                 Some(MarginOrderTradeHistory {
