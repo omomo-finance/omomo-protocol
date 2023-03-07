@@ -541,7 +541,7 @@ impl Contract {
             let history_data = HistoryData {
                 fee: U128::from(total_fee_amount),
                 pnl,
-                executed: U128(0)
+                executed: U128(0),
             };
 
             (U128::from(total_amount), Some(history_data))
