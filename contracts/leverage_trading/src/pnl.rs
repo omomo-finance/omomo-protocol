@@ -1,119 +1,138 @@
-use crate::big_decimal::{BigDecimal, LowU128};
+use crate::big_decimal::BigDecimal;
 use crate::metadata::{MarketData, Order, PnLView};
-use crate::utils::{DAYS_PER_YEAR, MILLISECONDS_PER_DAY};
-use crate::Contract;
+use crate::{Contract, OrderStatus};
 
-use near_sdk::{env, json_types::U128};
+use near_sdk::json_types::U128;
 
 impl Contract {
-    pub fn calculate_pnl_long_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
-        let current_timestamp_ms = env::block_timestamp_ms();
+    pub fn calculate_pnl_long_order(
+        &self,
+        order: Order,
+        current_buy_token_price: U128,
+        market_data: Option<MarketData>,
+    ) -> PnLView {
+        match order.status {
+            OrderStatus::Executed => {
+                let borrow_amount =
+                    BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one());
 
-        let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
-            / MILLISECONDS_PER_DAY as f64)
-            .ceil();
+                let amount_before_open = BigDecimal::from(U128(order.amount)) * order.leverage;
 
-        let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
+                let position_amount = amount_before_open / order.open_or_close_price;
 
-        let borrow_amount =
-            BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one());
+                let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
 
-        let buy_amount =
-            order.leverage * BigDecimal::from(U128(order.amount)) / order.open_or_close_price;
+                let swap_fee_amount =
+                    position_amount * BigDecimal::from(current_buy_token_price) * swap_fee;
 
-        let mut borrow_fee_amount = BigDecimal::zero();
-        #[allow(clippy::unnecessary_unwrap)]
-        if data.is_some() && (order.leverage > BigDecimal::one()) {
-            borrow_fee_amount = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio)
-                / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
-                * BigDecimal::from(U128(borrow_period as u128));
-        }
+                let borrow_fee_amount = BigDecimal::from(
+                    self.get_borrow_fee_amount(order.clone(), market_data.unwrap()),
+                );
 
-        let current_buy_token_price = BigDecimal::from(self.view_price(order.buy_token).value);
-        let current_sell_token_price = BigDecimal::from(self.view_price(order.sell_token).value);
+                let amount_after_close =
+                    position_amount * BigDecimal::from(current_buy_token_price);
 
-        let swap_fee_amount =
-            buy_amount * current_buy_token_price / current_sell_token_price * swap_fee;
+                let borrow_and_fees_amounts = borrow_fee_amount + swap_fee_amount + borrow_amount;
 
-        let expect_amount = buy_amount * current_buy_token_price / current_sell_token_price
-            - borrow_amount
-            - borrow_fee_amount
-            - swap_fee_amount;
+                let expect_amount = if amount_after_close > borrow_and_fees_amounts {
+                    amount_after_close - borrow_and_fees_amounts
+                } else {
+                    return PnLView {
+                        is_profit: Default::default(),
+                        amount: U128(0_u128),
+                    };
+                };
 
-        let pnlv: PnLView = if LowU128::from(expect_amount).0 > order.amount {
-            let lenpnl = LowU128::from(
-                (expect_amount - BigDecimal::from(U128(order.amount))) * current_sell_token_price,
-            );
+                let pnl: PnLView = if expect_amount > BigDecimal::from(U128(order.amount)) {
+                    let profit = U128::from(expect_amount - BigDecimal::from(U128(order.amount)));
 
-            PnLView {
+                    PnLView {
+                        is_profit: true,
+                        amount: profit,
+                    }
+                } else {
+                    let loss = U128::from(BigDecimal::from(U128(order.amount)) - expect_amount);
+
+                    PnLView {
+                        is_profit: false,
+                        amount: loss,
+                    }
+                };
+
+                pnl
+            }
+            _ => PnLView {
                 is_profit: true,
-                amount: lenpnl,
-            }
-        } else {
-            let lenpnl = LowU128::from(
-                (BigDecimal::from(U128(order.amount)) - expect_amount) * current_sell_token_price,
-            );
-
-            PnLView {
-                is_profit: false,
-                amount: lenpnl,
-            }
-        };
-
-        pnlv
+                amount: U128(0_u128),
+            },
+        }
     }
 
-    pub fn calculate_pnl_short_order(&self, order: Order, data: Option<MarketData>) -> PnLView {
-        let current_timestamp_ms = env::block_timestamp_ms();
+    pub fn calculate_pnl_short_order(
+        &self,
+        order: Order,
+        current_buy_token_price: U128,
+        market_data: Option<MarketData>,
+    ) -> PnLView {
+        match order.status {
+            OrderStatus::Executed => {
+                let borrow_amount = BigDecimal::from(U128(order.amount))
+                    * (order.leverage - BigDecimal::one())
+                    / order.open_or_close_price;
 
-        let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
-            / MILLISECONDS_PER_DAY as f64)
-            .ceil();
+                let amount_before_open = borrow_amount;
 
-        let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
+                let position_amount = amount_before_open * order.open_or_close_price;
 
-        let borrow_amount = BigDecimal::from(U128(order.amount))
-            * (order.leverage - BigDecimal::one())
-            * BigDecimal::from(order.sell_token_price.value)
-            / BigDecimal::from(order.buy_token_price.value);
+                let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
 
-        let buy_amount = borrow_amount * order.open_or_close_price;
+                let swap_fee_amount =
+                    position_amount / BigDecimal::from(current_buy_token_price) * swap_fee;
 
-        let mut borrow_fee_amount = BigDecimal::zero();
-        #[allow(clippy::unnecessary_unwrap)]
-        if data.is_some() && (order.leverage > BigDecimal::one()) {
-            borrow_fee_amount = borrow_amount * BigDecimal::from(data.unwrap().borrow_rate_ratio)
-                / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
-                * BigDecimal::from(U128(borrow_period as u128));
-        }
+                let borrow_fee_amount =
+                    BigDecimal::from(self.get_borrow_fee_amount(order, market_data.unwrap()));
 
-        let current_buy_token_price = BigDecimal::from(self.view_price(order.buy_token).value);
-        let current_sell_token_price = BigDecimal::from(self.view_price(order.sell_token).value);
+                let amount_after_close =
+                    position_amount / BigDecimal::from(current_buy_token_price);
 
-        let swap_fee_amount =
-            buy_amount / current_buy_token_price / current_sell_token_price * swap_fee;
+                let fees_amounts = borrow_fee_amount + swap_fee_amount;
 
-        let expect_amount = buy_amount / current_buy_token_price / current_sell_token_price
-            - borrow_fee_amount
-            - swap_fee_amount;
+                let expect_amount = if amount_after_close > fees_amounts {
+                    amount_after_close - fees_amounts
+                } else {
+                    return PnLView {
+                        is_profit: Default::default(),
+                        amount: U128(0_u128),
+                    };
+                };
 
-        let pnlv: PnLView = if expect_amount > borrow_amount {
-            let lenpnl = LowU128::from((expect_amount - borrow_amount) * current_buy_token_price);
+                let pnl: PnLView = if expect_amount > borrow_amount {
+                    let profit = U128::from(
+                        (expect_amount - borrow_amount) * BigDecimal::from(current_buy_token_price),
+                    );
 
-            PnLView {
+                    PnLView {
+                        is_profit: true,
+                        amount: profit,
+                    }
+                } else {
+                    let loss = U128::from(
+                        (borrow_amount - expect_amount) * BigDecimal::from(current_buy_token_price),
+                    );
+
+                    PnLView {
+                        is_profit: false,
+                        amount: loss,
+                    }
+                };
+
+                pnl
+            }
+            _ => PnLView {
                 is_profit: true,
-                amount: lenpnl,
-            }
-        } else {
-            let lenpnl = LowU128::from((borrow_amount - expect_amount) * current_buy_token_price);
-
-            PnLView {
-                is_profit: false,
-                amount: lenpnl,
-            }
-        };
-
-        pnlv
+                amount: U128(0_u128),
+            },
+        }
     }
 }
 
@@ -121,7 +140,8 @@ impl Contract {
 mod tests {
     use super::*;
 
-    use crate::metadata::{Price, TradePair};
+    use crate::metadata::TradePair;
+    use crate::utils::MILLISECONDS_PER_DAY;
 
     use near_sdk::test_utils::test_env::alice;
     use near_sdk::test_utils::VMContextBuilder;
@@ -194,23 +214,11 @@ mod tests {
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.update_or_insert_price(
-            "usdt.fakes.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDt".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wrap.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "near".to_string(),
-                value: U128::from(3 * 10_u128.pow(24)), // current price token
-            },
-        );
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_long_order(order, Some(market_data));
+        let pnl =
+            contract.calculate_pnl_long_order(order, current_buy_token_price, Some(market_data));
         assert!(pnl.is_profit);
         assert_eq!(pnl.amount, U128(7654 * 10_u128.pow(23)));
     }
@@ -233,23 +241,11 @@ mod tests {
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.update_or_insert_price(
-            "usdt.fakes.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDt".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wrap.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "near".to_string(),
-                value: U128::from(2 * 10_u128.pow(24)), // current price token
-            },
-        );
+        let current_buy_token_price = U128::from(2 * 10_u128.pow(24)); // current price token
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_short_order(order, Some(market_data));
+        let pnl =
+            contract.calculate_pnl_short_order(order, current_buy_token_price, Some(market_data));
         assert!(pnl.is_profit);
         assert_eq!(pnl.amount, U128(1128 * 10_u128.pow(24)));
     }
@@ -272,23 +268,11 @@ mod tests {
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.update_or_insert_price(
-            "usdt.fakes.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDt".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wrap.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "near".to_string(),
-                value: U128::from(2 * 10_u128.pow(24)), // current price token
-            },
-        );
+        let current_buy_token_price = U128::from(2 * 10_u128.pow(24)); // current price token
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_long_order(order, Some(market_data));
+        let pnl =
+            contract.calculate_pnl_long_order(order, current_buy_token_price, Some(market_data));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(8314 * 10_u128.pow(23)));
     }
@@ -311,24 +295,66 @@ mod tests {
         contract.add_order_from_string(alice(), order_as_string.clone());
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.update_or_insert_price(
-            "usdt.fakes.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "USDt".to_string(),
-                value: U128::from(10_u128.pow(24)), // current price token
-            },
-        );
-        contract.update_or_insert_price(
-            "wrap.testnet".parse().unwrap(),
-            Price {
-                ticker_id: "near".to_string(),
-                value: U128::from(3 * 10_u128.pow(24)), // current price token
-            },
-        );
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
 
         let market_data = get_market_data();
-        let pnl = contract.calculate_pnl_short_order(order, Some(market_data));
+        let pnl =
+            contract.calculate_pnl_short_order(order, current_buy_token_price, Some(market_data));
         assert!(!pnl.is_profit);
         assert_eq!(pnl.amount, U128(651 * 10_u128.pow(24)));
+    }
+
+    #[test]
+    fn test_calculate_pnl_not_opened_long_position() {
+        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
+        let context = get_context(false, current_day);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = get_pair_data();
+        contract.add_pair(pair_data);
+
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        contract.add_order_from_string(alice(), order_as_string.clone());
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
+
+        let market_data = get_market_data();
+        let pnl =
+            contract.calculate_pnl_long_order(order, current_buy_token_price, Some(market_data));
+        assert!(pnl.is_profit);
+        assert_eq!(pnl.amount, U128(0_u128));
+    }
+
+    #[test]
+    fn test_calculate_pnl_not_opened_short_position() {
+        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
+        let context = get_context(false, current_day);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let pair_data = get_pair_data();
+        contract.add_pair(pair_data);
+
+        let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Short\",\"amount\":2500000000000000000000000000,\"sell_token\":\"usdt.fakes.testnet\",\"buy_token\":\"wrap.testnet\",\"leverage\":\"3.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1000000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"3.5\",\"block\":1, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\"}".to_string();
+        contract.add_order_from_string(alice(), order_as_string.clone());
+        let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
+
+        let current_buy_token_price = U128::from(3 * 10_u128.pow(24)); // current price token
+
+        let market_data = get_market_data();
+        let pnl =
+            contract.calculate_pnl_short_order(order, current_buy_token_price, Some(market_data));
+        assert!(pnl.is_profit);
+        assert_eq!(pnl.amount, U128(0_u128));
     }
 }

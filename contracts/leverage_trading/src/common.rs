@@ -10,9 +10,6 @@ pub const STANDARD: &str = "nep297";
 pub const VERSION: &str = "1.0.0";
 pub const EVENT_JSON_STR: &str = "EVENT_JSON:";
 
-/// (sell token, buy token)
-pub type PairId = (AccountId, AccountId);
-
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 #[derive(Debug)]
@@ -51,6 +48,7 @@ pub enum Event {
     },
     UpdateTakeProfitOrderEvent {
         order_id: U128,
+        parent_order_type: OrderType,
         order_type: OrderType,
         order_status: OrderStatus,
         lpt_id: String,

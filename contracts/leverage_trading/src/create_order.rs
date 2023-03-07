@@ -14,7 +14,7 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 trait ContractCallbackInterface {
     fn borrow_callback(&mut self, borrow_amount: U128) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order, amount: U128) -> PromiseOrValue<Balance>;
-    fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128);
+    fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128, parent_order: Order);
     fn withdraw_asset_callback(token_id: AccountId, amount: U128);
 }
 
@@ -133,7 +133,8 @@ impl Contract {
                     .with_static_gas(Gas::ONE_TERA * 10u64)
                     .with_attached_deposit(NO_DEPOSIT)
                     .add_liquidity(
-                        self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                        self.get_trade_pair(&order.sell_token, &order.buy_token)
+                            .pool_id,
                         left_point,
                         right_point,
                         amount_x,
@@ -189,7 +190,9 @@ impl Contract {
                     lpt_id,
                     sell_token_price: order.sell_token_price,
                     buy_token_price: order.buy_token_price,
-                    pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                    pool_id: self
+                        .get_trade_pair(&order.sell_token, &order.buy_token)
+                        .pool_id,
                 }
                 .emit();
 
@@ -366,7 +369,12 @@ impl Contract {
     }
 
     #[private]
-    pub fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128) {
+    pub fn take_profit_liquidity_callback(
+        &mut self,
+        order_id: U128,
+        amount: U128,
+        parent_order: Order,
+    ) {
         require!(is_promise_success(), "Some problems with liquidity adding.");
 
         match env::promise_result(0) {
@@ -381,6 +389,7 @@ impl Contract {
 
                     Event::UpdateTakeProfitOrderEvent {
                         order_id,
+                        parent_order_type: parent_order.order_type,
                         order_type: order.order_type.clone(),
                         order_status: order.status,
                         lpt_id,
@@ -389,7 +398,9 @@ impl Contract {
                         buy_token: order.sell_token.to_string(),
                         sell_token_price: order.sell_token_price.value,
                         buy_token_price: order.buy_token_price.value,
-                        pool_id: self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                        pool_id: self
+                            .get_trade_pair(&order.sell_token, &order.buy_token)
+                            .pool_id,
                     }
                     .emit();
 
@@ -558,7 +569,10 @@ impl Contract {
     }
 
     pub fn add_or_update_order(&mut self, account_id: &AccountId, order: Order, order_id: u64) {
-        let pair_id = (order.sell_token.clone(), order.buy_token.clone());
+        let pair_id = PairId {
+            sell_token: order.sell_token.clone(),
+            buy_token: order.buy_token.clone(),
+        };
 
         let mut user_orders_by_id = self.orders.get(account_id).unwrap_or_default();
         user_orders_by_id.insert(order_id, order.clone());
@@ -633,7 +647,7 @@ impl Contract {
             close_price: price,
             parent_order_type: parent_order.order_type,
             pool_id: self
-                .view_pair(&parent_order.sell_token, &parent_order.buy_token)
+                .get_trade_pair(&parent_order.sell_token, &parent_order.buy_token)
                 .pool_id,
         }
         .emit();
@@ -706,7 +720,8 @@ impl Contract {
                     .with_static_gas(Gas::ONE_TERA * 10u64)
                     .with_attached_deposit(NO_DEPOSIT)
                     .add_liquidity(
-                        self.view_pair(&order.sell_token, &order.buy_token).pool_id,
+                        self.get_trade_pair(&order.sell_token, &order.buy_token)
+                            .pool_id,
                         take_profit_order.0 .0,
                         take_profit_order.0 .1,
                         amount_x,
@@ -719,7 +734,7 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 2u64)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .take_profit_liquidity_callback(order_id, U128(order.amount)),
+                    .take_profit_liquidity_callback(order_id, U128(order.amount), parent_order),
             );
     }
 }
@@ -769,12 +784,12 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_id: PairId = (
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
-        contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
+        contract.set_balance(&alice(), &pair_id.sell_token, 10_u128.pow(30));
 
         assert_eq!(
             contract.orders.get(&alice()).unwrap_or_default().len(),

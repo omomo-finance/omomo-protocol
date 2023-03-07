@@ -57,7 +57,8 @@ impl Contract {
         &self,
         account_id: AccountId,
         order_id: U128,
-        data: Option<MarketData>,
+        current_buy_token_price: U128,
+        market_data: Option<MarketData>,
     ) -> PnLView {
         let orders = self.orders.get(&account_id).unwrap_or_else(|| {
             panic!("Orders for account: {account_id} not found");
@@ -71,8 +72,12 @@ impl Contract {
             .clone();
 
         match order.order_type {
-            OrderType::Long => self.calculate_pnl_long_order(order, data),
-            OrderType::Short => self.calculate_pnl_short_order(order, data),
+            OrderType::Long => {
+                self.calculate_pnl_long_order(order, current_buy_token_price, market_data)
+            }
+            OrderType::Short => {
+                self.calculate_pnl_short_order(order, current_buy_token_price, market_data)
+            }
             _ => panic!("PnL calculation only for 'Long' and 'Short' order types"),
         }
     }
@@ -535,13 +540,15 @@ impl Contract {
                     * (leverage_position.leverage - BigDecimal::one())
             };
 
+            let filled = (order.status == OrderStatus::Executed).into();
+
             Some(TakeProfitOrderView {
                 timestamp: order.timestamp_ms,
                 pair,
                 order_type: order.order_type.clone(),
                 price: WBigDecimal::from(order.open_or_close_price),
                 amount: U128(order.amount),
-                filled: (order.status == OrderStatus::Executed).into(),
+                filled,
                 total: LowU128::from(total),
             })
         } else {
@@ -712,7 +719,7 @@ impl Contract {
             side: order.order_type.clone(),
             price: WBigDecimal::from(order.open_or_close_price),
             amount: U128(order.amount),
-            filled: (order.status == OrderStatus::Executed).into(),
+            filled: (order.status != OrderStatus::Pending).into(),
             total: LowU128::from(total),
         })
     }
@@ -734,6 +741,8 @@ impl Contract {
             BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
         };
 
+        let filled = (order.status == OrderStatus::Executed).into();
+
         let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
         let take_profit_order = self.get_take_profit_order(order_id, order);
@@ -746,7 +755,7 @@ impl Contract {
             price: WBigDecimal::from(order.open_or_close_price),
             leverage: WBigDecimal::from(order.leverage),
             amount: U128(order.amount),
-            filled: (order.status == OrderStatus::Executed).into(),
+            filled,
             total: LowU128::from(total),
             pnl,
             take_profit_order,
@@ -776,13 +785,15 @@ impl Contract {
                             * (leverage_position.leverage - BigDecimal::one())
                     };
 
+                    let filled = (order.status == OrderStatus::Executed).into();
+
                     Some(TakeProfitOrderView {
                         timestamp: order.timestamp_ms,
                         pair,
                         order_type: order.order_type.clone(),
                         price: WBigDecimal::from(order.open_or_close_price),
                         amount: U128(order.amount),
-                        filled: (order.status == OrderStatus::Executed).into(),
+                        filled,
                         total: LowU128::from(total),
                     })
                 } else {

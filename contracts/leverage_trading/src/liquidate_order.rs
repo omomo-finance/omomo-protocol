@@ -138,7 +138,10 @@ impl Contract {
 
         let action = Action::SwapAction {
             Swap: Swap {
-                pool_ids: vec![self.view_pair(&order.sell_token, &order.buy_token).pool_id],
+                pool_ids: vec![
+                    self.get_trade_pair(&order.sell_token, &order.buy_token)
+                        .pool_id,
+                ],
                 output_token: order.sell_token.clone(),
                 min_output_amount: WBalance::from(0),
             },
@@ -195,10 +198,10 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
-        let pair_id: PairId = (
-            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
-            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
-        );
+        let pair_id = PairId {
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+        };
 
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -215,7 +218,7 @@ mod tests {
             },
         );
 
-        contract.set_balance(&alice(), &pair_id.0, 10_u128.pow(30));
+        contract.set_balance(&alice(), &pair_id.sell_token, 10_u128.pow(30));
 
         let order1 = "{\"status\":\"Pending\",\"order_type\":\"Buy\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"4220000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930900,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#543\",\"history_data\":null}".to_string();
         contract.add_order_from_string(alice(), order1);
