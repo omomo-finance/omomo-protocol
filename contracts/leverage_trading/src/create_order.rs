@@ -382,8 +382,11 @@ impl Contract {
                     self.take_profit_orders
                         .insert(&(order_id.0 as u64), &(current_tpo.0, order.clone()));
 
+                    let parent_order_type = self.get_order_by(order_id.0).unwrap().order_type;
+
                     Event::UpdateTakeProfitOrderEvent {
                         order_id,
+                        parent_order_type,
                         order_type: order.order_type.clone(),
                         order_status: order.status,
                         lpt_id,
