@@ -241,7 +241,7 @@ pub struct LimitOrderView {
     pub price: WBalance,
     pub amount: U128,
     /// (0% if an order is pending, 100% if an order is executed)
-    pub filled: u8,
+    pub filled: U128,
     /// (amount * sell_token_price)
     pub total: WBalance,
 }
@@ -266,7 +266,7 @@ pub struct LeveragedPositionView {
     pub leverage: U128,
     pub amount: U128,
     /// (0% if an order is pending, 100% if an order is executed)
-    pub filled: u8,
+    pub filled: U128,
     /// (amount * sell_token_price)
     pub total: WBalance,
     pub pnl: PnLView,
@@ -292,7 +292,7 @@ pub struct TakeProfitOrderView {
     pub price: WBalance,
     pub amount: U128,
     /// (0% if an order is pending, 100% if an order is executed)
-    pub filled: u8,
+    pub filled: U128,
     /// (amount * sell_token_price)
     pub total: WBalance,
 }
