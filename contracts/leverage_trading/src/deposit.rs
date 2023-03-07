@@ -20,7 +20,7 @@ impl Contract {
         let is_token_supported = self
             .supported_markets
             .keys()
-            .any(|pair| pair.0 == token || pair.1 == token);
+            .any(|pair| pair.sell_token == token || pair.buy_token == token);
 
         require!(
             is_token_supported,

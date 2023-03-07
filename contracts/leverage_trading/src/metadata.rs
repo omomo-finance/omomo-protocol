@@ -145,6 +145,13 @@ pub struct TradePairView {
     pub swap_fee: U128,
 }
 
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct PairId {
+    pub sell_token: AccountId,
+    pub buy_token: AccountId,
+}
+
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct CancelOrderView {
