@@ -53,7 +53,7 @@ impl Contract {
             PromiseResult::Failed => panic!("Ref finance not found liquidity."),
         };
 
-        ///We need return partial execute amounts for pair tokens => min (0, 0)
+        // We need return partial execute amounts for pair tokens => min (0, 0)
         let (min_amount_x, min_amount_y) = (U128::from(0), U128::from(0));
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
@@ -90,15 +90,31 @@ impl Contract {
             _ => panic!("DEX not found liquidity amounts."),
         };
 
-        self.increase_balance(&signer_account_id(), &order.sell_token, return_liquidity_amounts.get(0).unwrap().0);
-        self.increase_balance(&signer_account_id(), &order.buy_token, return_liquidity_amounts.get(1).unwrap().0);
+        self.increase_balance(
+            &signer_account_id(),
+            &order.sell_token,
+            return_liquidity_amounts.get(0).unwrap().0,
+        );
+        self.increase_balance(
+            &signer_account_id(),
+            &order.buy_token,
+            return_liquidity_amounts.get(1).unwrap().0,
+        );
 
         let mut order = order;
         order.status = OrderStatus::Canceled;
-        order.history_data = Some(HistoryData{
+
+        let mut executed = *return_liquidity_amounts.get(0).unwrap();
+        if order.order_type == OrderType::Sell {
+            executed = *return_liquidity_amounts.get(1).unwrap();
+        }
+        order.history_data = Some(HistoryData {
             fee: U128(0),
-            pnl: PnLView {},
-            filled: U128()
+            pnl: PnLView {
+                is_profit: false,
+                amount: U128(0),
+            },
+            executed,
         });
 
         self.add_or_update_order(&signer_account_id(), order.clone(), order_id.0 as u64);

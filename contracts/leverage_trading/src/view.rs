@@ -30,8 +30,6 @@ impl Contract {
                 * BigDecimal::from(U128(env::block_height() as u128 - order.block as u128)),
         );
 
-
-
         OrderView {
             order_id,
             status: order.status,
@@ -51,7 +49,6 @@ impl Contract {
                 borrow_fee,
                 swap_fee,
             ),
-            filled,
             lpt_id: order.lpt_id,
         }
     }
@@ -102,7 +99,6 @@ impl Contract {
                                 )),
                         );
 
-
                         Some(OrderView {
                             order_id: U128(*id as u128),
                             status: order.status.clone(),
@@ -122,7 +118,6 @@ impl Contract {
                                 borrow_fee,
                                 swap_fee,
                             ),
-                            filled: U128(),
                             lpt_id: order.lpt_id.clone(),
                         })
                     }
@@ -540,10 +535,7 @@ impl Contract {
                     * (leverage_position.leverage - BigDecimal::one())
             };
 
-            let mut filled = U128(0);
-            if order.history_data.as_ref().is_some() {
-                filled = order.history_data.as_ref().unwrap().filled;
-            }
+            let filled = (order.status == OrderStatus::Executed).into();
 
             Some(TakeProfitOrderView {
                 timestamp: order.timestamp_ms,
@@ -673,11 +665,6 @@ impl Contract {
             _ => U128::from(0),
         };
 
-        let mut filled = U128(0);
-        if order.history_data.as_ref().is_some() {
-            filled = order.history_data.as_ref().unwrap().filled;
-        }
-
         OrderView {
             order_id,
             status: order.status,
@@ -690,7 +677,6 @@ impl Contract {
             leverage: U128::from(order.leverage),
             borrow_fee,
             liquidation_price,
-            filled,
             lpt_id: order.lpt_id,
         }
     }
@@ -728,7 +714,7 @@ impl Contract {
             side: order.order_type.clone(),
             price: WBigDecimal::from(order.open_or_close_price),
             amount: U128(order.amount),
-            filled: U128(0),
+            filled: (order.status != OrderStatus::Pending).into(),
             total: LowU128::from(total),
         })
     }
@@ -750,10 +736,7 @@ impl Contract {
             BigDecimal::from(U128(order.amount)) * (order.leverage - BigDecimal::one())
         };
 
-        let mut filled = U128(0);
-        if order.history_data.as_ref().is_some() {
-            filled = order.history_data.as_ref().unwrap().filled;
-        }
+        let filled = (order.status == OrderStatus::Executed).into();
 
         let pnl = self.calculate_pnl(account_id, U128(*order_id as u128), market_data);
 
@@ -797,10 +780,7 @@ impl Contract {
                             * (leverage_position.leverage - BigDecimal::one())
                     };
 
-                    let mut filled = U128(0);
-                    if order.history_data.is_some() {
-                        filled = order.history_data.unwrap().filled;
-                    }
+                    let filled = (order.status == OrderStatus::Executed).into();
 
                     Some(TakeProfitOrderView {
                         timestamp: order.timestamp_ms,
@@ -1257,7 +1237,6 @@ mod tests {
             leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
             borrow_fee,
             liquidation_price,
-            filled: U128(0),
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#540".to_string(),
         };
 
@@ -1365,7 +1344,6 @@ mod tests {
                 leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
                 borrow_fee: borrow_fee_order1,
                 liquidation_price: liquidation_price_order1,
-                filled: U128(0),
                 lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#540".to_string(),
             },
             OrderView {
@@ -1380,7 +1358,6 @@ mod tests {
                 leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
                 borrow_fee: borrow_fee_order2,
                 liquidation_price: liquidation_price_order2,
-                filled: U128(0),
                 lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#541".to_string(),
             },
         ];
@@ -1397,7 +1374,6 @@ mod tests {
             leverage: U128(10_u128.pow(24)),              // 1 with 10^24 precision
             borrow_fee: borrow_fee_order3,
             liquidation_price: liquidation_price_order3,
-            filled: U128(0),
             lpt_id: "usdt.fakes.testnet|wrap.testnet|2000#542".to_string(),
         }];
 
@@ -1542,7 +1518,7 @@ mod tests {
             side: OrderType::Buy,
             price: U128(25 * 10_u128.pow(23)),
             amount: U128(2 * 10_u128.pow(27)),
-            filled: U128(0),
+            filled: 0,
             total: U128(2 * 10_u128.pow(27)),
         };
 
@@ -1633,7 +1609,7 @@ mod tests {
             side: OrderType::Sell,
             price: U128(25 * 10_u128.pow(23)),
             amount: U128(2 * 10_u128.pow(27)),
-            filled: U128(0),
+            filled: 0,
             total: U128(5 * 10_u128.pow(27)),
         };
 
@@ -1865,7 +1841,7 @@ mod tests {
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
-            filled: U128(0),
+            filled: 0,
             total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: true,
@@ -1883,7 +1859,7 @@ mod tests {
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(3 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
-            filled: U128(1),
+            filled: 1,
             total: U128(4 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
@@ -1895,7 +1871,7 @@ mod tests {
                 order_type: OrderType::TakeProfit,
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
-                filled: U128(0),
+                filled: 0,
                 total: U128(4 * 10_u128.pow(27)),
             }),
         };
@@ -2036,7 +2012,7 @@ mod tests {
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(2 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
-            filled: U128(1),
+            filled: 1,
             total: U128(2 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,
@@ -2048,7 +2024,7 @@ mod tests {
                 order_type: OrderType::TakeProfit,
                 price: U128(25 * 10_u128.pow(23)),
                 amount: U128(2 * 10_u128.pow(27)),
-                filled: U128(0),
+                filled: 0,
                 total: U128(2 * 10_u128.pow(27)),
             }),
         };
@@ -2062,7 +2038,7 @@ mod tests {
             price: U128(25 * 10_u128.pow(23)),
             leverage: U128(4 * 10_u128.pow(24)),
             amount: U128(2 * 10_u128.pow(27)),
-            filled: U128(0),
+            filled: 0,
             total: U128(6 * 10_u128.pow(27)),
             pnl: PnLView {
                 is_profit: false,

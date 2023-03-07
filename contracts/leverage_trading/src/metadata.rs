@@ -108,7 +108,6 @@ pub struct OrderView {
     pub leverage: WBigDecimal,
     pub borrow_fee: WBalance,
     pub liquidation_price: WBalance,
-    pub filled: U128,
     pub lpt_id: String,
 }
 
@@ -242,7 +241,7 @@ pub struct LimitOrderView {
     pub price: WBalance,
     pub amount: U128,
     /// (0% if an order is pending, 100% if an order is executed)
-    pub filled: U128,
+    pub filled: u8,
     /// (amount * sell_token_price)
     pub total: WBalance,
 }
@@ -267,7 +266,7 @@ pub struct LeveragedPositionView {
     pub leverage: U128,
     pub amount: U128,
     /// (0% if an order is pending, 100% if an order is executed)
-    pub filled: U128,
+    pub filled: u8,
     /// (amount * sell_token_price)
     pub total: WBalance,
     pub pnl: PnLView,
@@ -293,7 +292,7 @@ pub struct TakeProfitOrderView {
     pub price: WBalance,
     pub amount: U128,
     /// (0% if an order is pending, 100% if an order is executed)
-    pub filled: U128,
+    pub filled: u8,
     /// (amount * sell_token_price)
     pub total: WBalance,
 }
@@ -325,7 +324,7 @@ pub struct LimitTradeHistory {
 pub struct HistoryData {
     pub fee: U128,
     pub pnl: PnLView,
-    pub filled: U128
+    pub executed: U128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
