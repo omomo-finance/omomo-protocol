@@ -90,11 +90,16 @@ impl Contract {
             _ => panic!("DEX not found liquidity amounts."),
         };
 
-        self.increase_balance(&signer_account_id(), &order.sell_token, return_liquidity_amounts.get(0).0);
-        self.increase_balance(&signer_account_id(), &order.buy_token, return_liquidity_amounts.get(1).0);
+        self.increase_balance(&signer_account_id(), &order.sell_token, return_liquidity_amounts.get(0).unwrap().0);
+        self.increase_balance(&signer_account_id(), &order.buy_token, return_liquidity_amounts.get(1).unwrap().0);
 
         let mut order = order;
         order.status = OrderStatus::Canceled;
+        order.history_data = Some(HistoryData{
+            fee: U128(0),
+            pnl: PnLView {},
+            filled: U128()
+        });
 
         self.add_or_update_order(&signer_account_id(), order.clone(), order_id.0 as u64);
 
