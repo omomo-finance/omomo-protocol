@@ -14,12 +14,7 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 trait ContractCallbackInterface {
     fn borrow_callback(&mut self, borrow_amount: U128) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order, amount: U128) -> PromiseOrValue<Balance>;
-    fn take_profit_liquidity_callback(
-        &mut self,
-        order_id: U128,
-        amount: U128,
-        parent_order_type: OrderType,
-    );
+    fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128, parent_order: Order);
     fn withdraw_asset_callback(token_id: AccountId, amount: U128);
 }
 
@@ -378,7 +373,7 @@ impl Contract {
         &mut self,
         order_id: U128,
         amount: U128,
-        parent_order_type: OrderType,
+        parent_order: Order,
     ) {
         require!(is_promise_success(), "Some problems with liquidity adding.");
 
@@ -394,7 +389,7 @@ impl Contract {
 
                     Event::UpdateTakeProfitOrderEvent {
                         order_id,
-                        parent_order_type,
+                        parent_order_type: parent_order.order_type,
                         order_type: order.order_type.clone(),
                         order_status: order.status,
                         lpt_id,
@@ -739,11 +734,7 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 2u64)
                     .with_attached_deposit(NO_DEPOSIT)
-                    .take_profit_liquidity_callback(
-                        order_id,
-                        U128(order.amount),
-                        parent_order.order_type,
-                    ),
+                    .take_profit_liquidity_callback(order_id, U128(order.amount), parent_order),
             );
     }
 }
