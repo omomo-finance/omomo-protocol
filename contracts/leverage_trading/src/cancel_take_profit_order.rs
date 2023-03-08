@@ -37,26 +37,14 @@ impl Contract {
                     .with_unused_gas_weight(2)
                     .with_attached_deposit(NO_DEPOSIT)
                     .get_liquidity(take_profit_order_pair.1.lpt_id.clone())
-                    .and(
-                        ext_ref_finance::ext(self.ref_finance_account.clone())
-                            .with_unused_gas_weight(1_u64)
+                    .then(
+                        ext_self::ext(current_account_id())
+                            .with_unused_gas_weight(98)
                             .with_attached_deposit(NO_DEPOSIT)
-                            .get_pool(
-                                self.get_trade_pair(
-                                    &parent_order.sell_token,
-                                    &parent_order.buy_token,
-                                )
-                                .pool_id,
-                            )
-                            .then(
-                                ext_self::ext(current_account_id())
-                                    .with_unused_gas_weight(98)
-                                    .with_attached_deposit(NO_DEPOSIT)
-                                    .get_take_profit_liquidity_info_callback(
-                                        order_id,
-                                        parent_order,
-                                        take_profit_order_pair,
-                                    ),
+                            .get_take_profit_liquidity_info_callback(
+                                order_id,
+                                parent_order,
+                                take_profit_order_pair,
                             ),
                     );
             }
@@ -84,22 +72,6 @@ impl Contract {
             }
             PromiseResult::Failed => panic!("Ref finance not found liquidity."),
         };
-
-        let pool_info = match env::promise_result(1) {
-            PromiseResult::Successful(val) => {
-                if let Ok(pool) = near_sdk::serde_json::from_slice::<PoolInfo>(&val) {
-                    pool
-                } else {
-                    panic!("Some problem with pool parsing")
-                }
-            }
-            _ => panic!("Some problem with pool on DEX"),
-        };
-
-        require!(
-            pool_info.state == PoolState::Running,
-            "Some problem with pool, please contact with DEX to support"
-        );
 
         let (min_amount_x, min_amount_y) = (U128::from(0), U128::from(0));
 
@@ -141,16 +113,19 @@ impl Contract {
             _ => panic!("DEX not found liquidity amounts."),
         };
 
-        self.increase_balance(
-            &signer_account_id(),
-            &parent_order.sell_token,
+        let token_decimals = self.view_token_decimals(&parent_order.sell_token);
+        let amount_x = self.from_token_to_protocol_decimals(
             return_liquidity_amounts.get(0).unwrap().0,
+            token_decimals,
         );
-        self.increase_balance(
-            &signer_account_id(),
-            &parent_order.buy_token,
+        let token_decimals = self.view_token_decimals(&parent_order.buy_token);
+        let amount_y = self.from_token_to_protocol_decimals(
             return_liquidity_amounts.get(1).unwrap().0,
+            token_decimals,
         );
+
+        self.increase_balance(&signer_account_id(), &parent_order.sell_token, amount_x.0);
+        self.increase_balance(&signer_account_id(), &parent_order.buy_token, amount_y.0);
 
         self.take_profit_orders.remove(&(order_id.0 as u64));
 

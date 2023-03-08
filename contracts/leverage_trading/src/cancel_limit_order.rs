@@ -90,16 +90,19 @@ impl Contract {
             _ => panic!("DEX not found liquidity amounts."),
         };
 
-        self.increase_balance(
-            &signer_account_id(),
-            &order.sell_token,
+        let token_decimals = self.view_token_decimals(&order.sell_token);
+        let amount_x = self.from_token_to_protocol_decimals(
             return_liquidity_amounts.get(0).unwrap().0,
+            token_decimals,
         );
-        self.increase_balance(
-            &signer_account_id(),
-            &order.buy_token,
+        let token_decimals = self.view_token_decimals(&order.buy_token);
+        let amount_y = self.from_token_to_protocol_decimals(
             return_liquidity_amounts.get(1).unwrap().0,
+            token_decimals,
         );
+
+        self.increase_balance(&signer_account_id(), &order.sell_token, amount_x.0);
+        self.increase_balance(&signer_account_id(), &order.buy_token, amount_y.0);
 
         let mut order = order;
         order.status = OrderStatus::Canceled;
