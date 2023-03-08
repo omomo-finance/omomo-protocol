@@ -28,6 +28,7 @@ mod price;
 #[allow(clippy::too_many_arguments)]
 mod ref_finance;
 mod utils;
+#[allow(clippy::too_many_arguments)]
 mod view;
 mod withdraw;
 

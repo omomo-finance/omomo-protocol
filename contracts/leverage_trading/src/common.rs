@@ -48,6 +48,7 @@ pub enum Event {
     },
     UpdateTakeProfitOrderEvent {
         order_id: U128,
+        parent_order_type: OrderType,
         order_type: OrderType,
         order_status: OrderStatus,
         lpt_id: String,
