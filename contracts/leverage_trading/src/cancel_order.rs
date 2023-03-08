@@ -785,26 +785,22 @@ impl Contract {
             let amount_x = self.from_protocol_to_token_decimals(amount_x, sell_token_decimals);
 
             let borrow_fee_amount =
-                BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data.clone()));
+                BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
 
-            let require_amount = (borrow_fee_amount * BigDecimal::from(current_buy_token_price)
+            (borrow_fee_amount * BigDecimal::from(current_buy_token_price)
                 + BigDecimal::from(amount_x))
-                * (BigDecimal::one() + BigDecimal::from(slippage_price_impact));
-
-            require_amount
+                * (BigDecimal::one() + BigDecimal::from(slippage_price_impact))
         } else {
             let borrow_amount = BigDecimal::from(U128(order.amount))
                 * (order.leverage - BigDecimal::one())
                 / order.open_or_close_price;
 
             let borrow_fee_amount =
-                BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data.clone()));
+                BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
 
-            let require_amount = (borrow_fee_amount + borrow_amount)
+            (borrow_fee_amount + borrow_amount)
                 * BigDecimal::from(current_buy_token_price)
-                * (BigDecimal::one() + BigDecimal::from(slippage_price_impact));
-
-            require_amount
+                * (BigDecimal::one() + BigDecimal::from(slippage_price_impact))
         };
 
         let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
@@ -862,17 +858,14 @@ impl Contract {
             order_type: order.order_type,
         });
 
-        match protocol_profit_amount {
-            Some(amount) => {
-                let current_profit = self
-                    .protocol_profit
-                    .get(&order.sell_token)
-                    .unwrap_or_default();
+        if let Some(amount) = protocol_profit_amount {
+            let current_profit = self
+                .protocol_profit
+                .get(&order.sell_token)
+                .unwrap_or_default();
 
-                self.protocol_profit
-                    .insert(&order.sell_token, &(current_profit + amount));
-            }
-            None => {}
+            self.protocol_profit
+                .insert(&order.sell_token, &(current_profit + amount));
         }
 
         Event::CloselLeveragePositioEvent { order_id }.emit();
@@ -888,12 +881,10 @@ impl Contract {
         let borrow_period = ((current_timestamp_ms - order.timestamp_ms) as f64
             / MILLISECONDS_PER_DAY as f64)
             .ceil();
-        
-        let borrow_fee = BigDecimal::from(market_data.borrow_rate_ratio)
-            / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
-            * BigDecimal::from(U128(borrow_period as u128));
 
-        borrow_fee
+        BigDecimal::from(market_data.borrow_rate_ratio)
+            / BigDecimal::from(U128(DAYS_PER_YEAR as u128))
+            * BigDecimal::from(U128(borrow_period as u128))
     }
 
     pub fn get_borrow_fee_amount(&self, order: Order, market_data: MarketData) -> U128 {
