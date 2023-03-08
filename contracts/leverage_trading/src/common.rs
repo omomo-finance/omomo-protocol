@@ -64,6 +64,12 @@ pub enum Event {
     CancelLimitOrderEvent {
         order_id: U128,
     },
+    CancelLeverageOrderEvent {
+        order_id: U128,
+    },
+    CloselLeveragePositioEvent {
+        order_id: U128,
+    },
     ExecuteOrderEvent {
         order_id: U128,
         order_type: OrderType,
@@ -72,6 +78,10 @@ pub enum Event {
         token_borrow: AccountId,
         token_market: AccountId,
         repay_amount: U128,
+    },
+    WithdrawEvent {
+        token: AccountId,
+        amount: U128,
     },
 }
 

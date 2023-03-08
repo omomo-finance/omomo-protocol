@@ -1,10 +1,11 @@
 use crate::big_decimal::WBalance;
 use crate::cancel_order::ext_self;
+use crate::common::Event;
 use crate::utils::{ext_token, NO_DEPOSIT};
 use crate::{Contract, ContractExt};
 use near_sdk::json_types::U128;
 use near_sdk::utils::is_promise_success;
-use near_sdk::{env, log, near_bindgen, require, AccountId, Balance, PromiseOrValue, ONE_YOCTO};
+use near_sdk::{env, near_bindgen, require, AccountId, Balance, PromiseOrValue, ONE_YOCTO};
 
 #[near_bindgen]
 impl Contract {
@@ -49,16 +50,11 @@ impl Contract {
         amount: U128,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
-            return PromiseOrValue::Value(amount);
+            return PromiseOrValue::Value(U128(0));
         };
 
         self.decrease_balance(&account_id, &token, amount.0);
-        log!(
-            "Withdraw executed for user {} token {} amount {}",
-            account_id,
-            token,
-            amount.0
-        );
+        Event::WithdrawEvent { token, amount }.emit();
         PromiseOrValue::Value(amount)
     }
 }
