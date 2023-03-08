@@ -165,6 +165,15 @@ impl Contract {
         let (amount_x, amount_y) = match env::promise_result(0) {
             PromiseResult::Successful(amounts) => {
                 if let Ok((amount_x, amount_y)) = serde_json::from_slice::<(U128, U128)>(&amounts) {
+                    let (sall_token_decimals, buy_token_decimals) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+
+                    let amount_x =
+                        self.from_token_to_protocol_decimals(amount_x.0, sall_token_decimals);
+
+                    let amount_y =
+                        self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
+
                     (amount_x, amount_y)
                 } else {
                     panic!("Some problems with the parsing result remove liquidity")
@@ -594,6 +603,16 @@ impl Contract {
             },
         };
 
+        let token_decimals = if input_token == order.sell_token {
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token)
+                .0
+        } else {
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token)
+                .1
+        };
+
+        let swap_amount = self.from_protocol_to_token_decimals(swap_amount, token_decimals);
+
         ext_token::ext(input_token)
             .with_attached_deposit(1_u128)
             .ft_transfer_call(
@@ -683,6 +702,16 @@ impl Contract {
             },
         };
 
+        let token_decimals = if input_token == order.sell_token {
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token)
+                .0
+        } else {
+            self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token)
+                .1
+        };
+
+        let swap_amount = self.from_protocol_to_token_decimals(swap_amount, token_decimals);
+
         ext_token::ext(input_token)
             .with_attached_deposit(1_u128)
             .ft_transfer_call(
@@ -751,10 +780,7 @@ impl Contract {
         );
 
         let swap_amount = if order.status == OrderStatus::Pending {
-            let (_, buy_token_decimals) =
-                self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-
-            self.from_protocol_to_token_decimals(amount_y, buy_token_decimals)
+            amount_y
         } else {
             U128::from(
                 BigDecimal::from(U128::from(order.amount)) * order.leverage
@@ -779,11 +805,6 @@ impl Contract {
         );
 
         let require_amount = if order.status == OrderStatus::Pending {
-            let (sell_token_decimals, _) =
-                self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-
-            let amount_x = self.from_protocol_to_token_decimals(amount_x, sell_token_decimals);
-
             let borrow_fee_amount =
                 BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
 
