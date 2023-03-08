@@ -596,12 +596,13 @@ impl Contract {
                 total_fee_amount = total_fee_amount + protocol_profit_amount;
             }
 
-            let history_data = Some(HistoryData {
+            let history_data = HistoryData {
                 fee: U128::from(total_fee_amount),
                 pnl,
-            });
+                executed: U128(0),
+            };
 
-            (U128::from(total_amount), history_data)
+            (U128::from(total_amount), Some(history_data))
         } else {
             todo!()
         };
