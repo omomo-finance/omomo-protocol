@@ -99,22 +99,28 @@ impl Contract {
 
                 let price = U128::from(order.open_or_close_price);
 
-                let executed = match order.order_type {
-                    OrderType::Buy => U128::from(
-                        BigDecimal::from(U128::from(order.amount)) / order.open_or_close_price,
-                    ),
-                    OrderType::Sell => U128::from(order.amount),
-                    _ => unreachable!(),
+                let (fee, executed) = if let Some(history_data) = &order.history_data {
+                    (history_data.fee, history_data.executed)
+                } else {
+                    (
+                        U128::from(0),
+                        match order.order_type {
+                            OrderType::Buy => U128::from(
+                                BigDecimal::from(U128::from(order.amount))
+                                    / order.open_or_close_price,
+                            ),
+                            OrderType::Sell => U128::from(order.amount),
+                            _ => U128::from(0),
+                        },
+                    )
                 };
-
-                let fee = U128::from(0);
 
                 let total = match order.order_type {
                     OrderType::Buy => U128::from(order.amount),
                     OrderType::Sell => U128::from(
                         BigDecimal::from(U128::from(order.amount)) * order.open_or_close_price,
                     ),
-                    _ => unreachable!(),
+                    _ => U128::from(0),
                 };
 
                 Some(LimitOrderTradeHistory {

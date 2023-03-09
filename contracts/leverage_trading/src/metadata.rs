@@ -331,6 +331,7 @@ pub struct LimitTradeHistory {
 pub struct HistoryData {
     pub fee: U128,
     pub pnl: PnLView,
+    pub executed: U128,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Debug, Clone)]
