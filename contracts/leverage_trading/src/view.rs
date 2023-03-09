@@ -900,17 +900,6 @@ mod tests {
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
 
-        let market_data = MarketData {
-            underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
-            underlying_token_decimals: 24,
-            total_supplies: U128(6 * 10_u128.pow(28)),
-            total_borrows: U128(2501 * 10_u128.pow(25)),
-            total_reserves: U128(1000176731435219096024128768),
-            exchange_rate_ratio: U128(1000277139994639276176632),
-            interest_rate_ratio: U128(261670051778601),
-            borrow_rate_ratio: U128(5 * 10_u128.pow(24)),
-        };
-
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
@@ -946,12 +935,7 @@ mod tests {
             if count < 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
             } else {
-                contract.final_cancel_order(
-                    U128(count as u128 - 5),
-                    order.clone(),
-                    amount,
-                    market_data.clone(),
-                );
+                contract.final_cancel_order(U128(count as u128 - 5), order.clone(), amount, None);
             }
         }
         // total pending orders after creating orders
@@ -993,17 +977,6 @@ mod tests {
             swap_fee: U128(3 * 10_u128.pow(20)),
         };
 
-        let market_data = MarketData {
-            underlying_token: AccountId::new_unchecked("usdt.fakes.testnet".to_string()),
-            underlying_token_decimals: 24,
-            total_supplies: U128(60000000000000000000000000000),
-            total_borrows: U128(25010000000000000000000000000),
-            total_reserves: U128(1000176731435219096024128768),
-            exchange_rate_ratio: U128(1000277139994639276176632),
-            interest_rate_ratio: U128(261670051778601),
-            borrow_rate_ratio: U128(5 * 10_u128.pow(24)),
-        };
-
         contract.update_or_insert_price(
             "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             Price {
@@ -1034,12 +1007,7 @@ mod tests {
             if count < 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
             } else {
-                contract.final_cancel_order(
-                    U128(count as u128 - 5),
-                    order.clone(),
-                    amount,
-                    market_data.clone(),
-                );
+                contract.final_cancel_order(U128(count as u128 - 5), order.clone(), amount, None);
             }
         }
 
@@ -1168,7 +1136,7 @@ mod tests {
 
     #[test]
     fn test_calculate_pnl() {
-        let current_day = get_current_day_in_nanoseconds(121); // borrow period 120 days
+        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
         let context = get_context(false, current_day);
         testing_env!(context);
 
@@ -1215,7 +1183,7 @@ mod tests {
         let pnl =
             contract.calculate_pnl(alice(), U128(1), current_buy_token_price, Some(market_data));
         assert!(pnl.is_profit);
-        assert_eq!(pnl.amount, U128(8392 * 10_u128.pow(23)));
+        assert_eq!(pnl.amount, U128(8517 * 10_u128.pow(23)));
     }
 
     #[test]
