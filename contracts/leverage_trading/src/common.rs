@@ -68,7 +68,7 @@ pub enum Event {
     CancelLeverageOrderEvent {
         order_id: U128,
     },
-    CloseLeveragePositioEvent {
+    CloseLeveragePositionEvent {
         order_id: U128,
     },
     ExecuteOrderEvent {
