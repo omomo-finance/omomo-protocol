@@ -937,7 +937,7 @@ impl Contract {
                 .insert(&order.sell_token, &(current_profit + amount));
         }
 
-        Event::CloseLeveragePositioEvent { order_id }.emit();
+        Event::CloseLeveragePositionEvent { order_id }.emit();
 
         self.increase_balance(&signer_account_id(), &order.sell_token, token_amount.0);
 
