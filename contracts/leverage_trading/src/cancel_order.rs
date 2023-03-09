@@ -259,10 +259,10 @@ impl Contract {
         };
 
         if order.status == OrderStatus::Pending {
-            if order.order_type == OrderType::Long && amount_y.unwrap() == U128(0_u128)
-            {
-                let borrow_fee_amount =
-                    BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data.clone()));
+            if order.order_type == OrderType::Long && amount_y.unwrap() == U128(0_u128) {
+                let borrow_fee_amount = BigDecimal::from(
+                    self.get_borrow_fee_amount(order.clone(), market_data.clone()),
+                );
 
                 let amount_increase_balance = if order.order_type == OrderType::Long {
                     U128::from(BigDecimal::from(U128(order.amount)) - borrow_fee_amount)
@@ -281,7 +281,9 @@ impl Contract {
                         is_profit: false,
                         amount: U128::from(
                             BigDecimal::from(U128(order.amount))
-                                - BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data)),
+                                - BigDecimal::from(
+                                    self.get_borrow_fee_amount(order.clone(), market_data),
+                                ),
                         ),
                     },
                     executed: U128(0_u128),
@@ -703,7 +705,7 @@ impl Contract {
             BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data.clone()));
 
         let amount_increase_balance = if order.order_type == OrderType::Long {
-        // flow for 'Long'
+            // flow for 'Long'
             U128::from(
                 BigDecimal::from(U128(order.amount))
                     - borrow_fee_amount
