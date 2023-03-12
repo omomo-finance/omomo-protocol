@@ -124,8 +124,8 @@ impl Contract {
             order_type: OrderType::TakeProfit,
         });
 
-        if position_action.is_some() {
-            match position_action.unwrap() {
+        if let Some(action) = position_action {
+            match action {
                 OrderAction::Close {
                     order_id,
                     order,
