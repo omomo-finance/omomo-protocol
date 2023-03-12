@@ -1,6 +1,6 @@
 use crate::common::Event;
 use crate::ref_finance::{ext_ref_finance, Action, LiquidityInfo, Swap};
-use crate::utils::{ext_token, NO_DEPOSIT};
+use crate::utils::ext_token;
 use crate::*;
 use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
@@ -41,13 +41,12 @@ impl Contract {
         );
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_static_gas(Gas::ONE_TERA * 5u64)
-            .with_attached_deposit(NO_DEPOSIT)
+            .with_static_gas(Gas::ONE_TERA * 5_u64)
             .get_liquidity(order.lpt_id.clone())
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(99)
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 270_u64)
+                    .with_unused_gas_weight(2_u64)
                     .execute_order_callback(order, order_id),
             )
             .into()
@@ -69,12 +68,12 @@ impl Contract {
             self.get_amounts_to_execute(order_id, order.clone(), liquidity_info);
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_static_gas(Gas::ONE_TERA * 65u64)
+            .with_static_gas(Gas::ONE_TERA * 90_u64)
             .remove_liquidity(order.lpt_id.clone(), amount, min_amount_x, min_amount_y)
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(99)
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 170_u64)
+                    .with_unused_gas_weight(2_u64)
                     .remove_liquidity_for_execute_order_callback(
                         order,
                         order_id,

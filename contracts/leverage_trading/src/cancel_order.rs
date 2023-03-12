@@ -3,7 +3,6 @@ use crate::common::Event;
 use crate::execute_order::INACCURACY_RATE;
 use crate::ref_finance::ext_ref_finance;
 use crate::ref_finance::{Action, Swap};
-use crate::utils::NO_DEPOSIT;
 use crate::utils::{ext_market, ext_token};
 use crate::utils::{DAYS_PER_YEAR, MILLISECONDS_PER_DAY};
 use crate::*;
@@ -75,6 +74,14 @@ trait ContractCallbackInterface {
         repay_amount: U128,
     ) -> PromiseOrValue<U128>;
     fn withdraw_callback(&mut self, account_id: AccountId, token: AccountId, amount: U128);
+    fn cancel_take_profit_order_callbal(
+        &mut self,
+        order_id: U128,
+        order: Order,
+        current_buy_token_price: U128,
+        slippage_price_impact: U128,
+    );
+    fn cancel_take_profit_order(&mut self, order_id: U128);
 }
 
 #[near_bindgen]
@@ -102,15 +109,18 @@ impl Contract {
             .clone();
 
         match order.order_type {
-            OrderType::Buy | OrderType::Sell => self.cancel_limit_order(order_id, order),
-            OrderType::Long | OrderType::Short => self
-                .cancel_leverage_order_or_close_leverage_position(
+            OrderType::Buy | OrderType::Sell => {
+                self.cancel_limit_order(order_id, order);
+            }
+            OrderType::Long | OrderType::Short => {
+                self.cancel_leverage_order_or_close_leverage_position(
                     order_id,
                     order,
                     current_buy_token_price,
                     slippage_price_impact,
-                ),
-            OrderType::TakeProfit => self.cancel_take_profit_order(order_id),
+                );
+            }
+            OrderType::TakeProfit => {}
         }
     }
 
@@ -134,8 +144,7 @@ impl Contract {
         };
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_static_gas(Gas::ONE_TERA * 50_u64)
-            .with_attached_deposit(NO_DEPOSIT)
+            .with_static_gas(Gas::ONE_TERA * 90_u64)
             .remove_liquidity(
                 order.lpt_id.to_string(),
                 liquidity_info.amount,
@@ -144,7 +153,8 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 165_u64)
+                    .with_unused_gas_weight(2_u64)
                     .remove_liquidity_for_cancel_leverage_order_callback(
                         order_id,
                         order,
@@ -189,11 +199,12 @@ impl Contract {
         };
 
         ext_market::ext(token_market)
-            .with_attached_deposit(NO_DEPOSIT)
+            .with_static_gas(Gas::ONE_TERA * 10_u64)
             .view_market_data()
             .then(
                 ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 135_u64)
+                    .with_unused_gas_weight(4_u64)
                     .market_data_callback(
                         order_id,
                         order,
@@ -294,8 +305,8 @@ impl Contract {
                 self.swap_to_cancel_leverage_order(
                     order_id,
                     order,
-                    amount_x.unwrap(),
-                    amount_y.unwrap(),
+                    amount_x,
+                    amount_y,
                     current_buy_token_price,
                     slippage_price_impact,
                     market_data,
@@ -305,8 +316,8 @@ impl Contract {
             self.swap_to_close_leverage_order(
                 order_id,
                 order,
-                amount_x.unwrap(),
-                amount_y.unwrap(),
+                amount_x,
+                amount_y,
                 current_buy_token_price,
                 slippage_price_impact,
                 market_data,
@@ -358,7 +369,6 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 3_u64)
-                    .with_attached_deposit(NO_DEPOSIT)
                     .repay_callback(token_borrow, token_market, repay_amount),
             );
     }
@@ -421,13 +431,12 @@ impl Contract {
         };
 
         ext_ref_finance::ext(self.ref_finance_account.clone())
-            .with_unused_gas_weight(2_u64)
-            .with_attached_deposit(NO_DEPOSIT)
+            .with_static_gas(Gas::ONE_TERA * 5_u64)
             .get_liquidity(order.lpt_id.clone())
             .then(
                 ext_self::ext(current_account_id())
-                    .with_unused_gas_weight(30_u64)
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 275_u64)
+                    .with_unused_gas_weight(2_u64)
                     .get_liquidity_callback(
                         order_id,
                         order,
@@ -445,41 +454,47 @@ impl Contract {
         slippage_price_impact: U128,
     ) {
         if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
-            self.cancel_take_profit_order(order_id);
-
-            if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
-                panic!("Some problem with cancel take profit order")
-            }
-        }
-        let token_market = if order.order_type == OrderType::Long {
-            self.get_market_by(&order.sell_token)
-        } else {
-            self.get_market_by(&order.buy_token)
-        };
-
-        ext_market::ext(token_market)
-            .with_attached_deposit(NO_DEPOSIT)
-            .view_market_data()
-            .then(
-                ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .market_data_callback(
-                        order_id,
-                        order,
-                        None,
-                        None,
-                        current_buy_token_price,
-                        slippage_price_impact,
-                    ),
+            self.cancel_take_profit_order(
+                order_id,
+                Some(OrderAction::Close {
+                    order_id,
+                    order,
+                    current_buy_token_price,
+                    slippage_price_impact,
+                }),
             );
+        } else {
+            let token_market = if order.order_type == OrderType::Long {
+                self.get_market_by(&order.sell_token)
+            } else {
+                self.get_market_by(&order.buy_token)
+            };
+
+            ext_market::ext(token_market)
+                .with_static_gas(Gas::ONE_TERA * 10_u64)
+                .view_market_data()
+                .then(
+                    ext_self::ext(current_account_id())
+                        .with_static_gas(Gas::ONE_TERA * 135_u64)
+                        .with_unused_gas_weight(4_u64)
+                        .market_data_callback(
+                            order_id,
+                            order,
+                            None,
+                            None,
+                            current_buy_token_price,
+                            slippage_price_impact,
+                        ),
+                );
+        }
     }
 
     pub fn swap_to_close_leverage_order(
-        &self,
+        &mut self,
         order_id: U128,
         order: Order,
-        amount_x: U128,
-        amount_y: U128,
+        amount_x: Option<U128>,
+        amount_y: Option<U128>,
         current_buy_token_price: U128,
         slippage_price_impact: U128,
         market_data: MarketData,
@@ -509,19 +524,17 @@ impl Contract {
             let amount_after_swap = BigDecimal::from(swap_amount)
                 * BigDecimal::from(current_buy_token_price)
                 * (BigDecimal::one() - BigDecimal::from(slippage_price_impact));
-            let pnl = self.calculate_pnl_long_order(
-                order.clone(),
-                current_buy_token_price,
-                Some(market_data.clone()),
-            );
-            // close 'Long' position with profit
-            if pnl.is_profit {
-                let protocol_fee = BigDecimal::from(self.get_protocol_fee());
-                let protocol_profit_amount = BigDecimal::from(pnl.amount) * protocol_fee;
 
-                let amount_increase_balance = U128::from(
-                    amount_after_swap - borrow_amount - borrow_fee_amount - protocol_profit_amount,
-                );
+            let close_amount = amount_after_swap - borrow_amount - borrow_fee_amount;
+            let profit = close_amount > BigDecimal::from(U128(order.amount));
+
+            // close 'Long' position with profit
+            if profit {
+                let protocol_fee = BigDecimal::from(self.get_protocol_fee());
+                let protocol_profit_amount =
+                    (close_amount - BigDecimal::from(U128(order.amount))) * protocol_fee;
+
+                let amount_increase_balance = U128::from(close_amount - protocol_profit_amount);
 
                 let history_data = Some(HistoryData {
                     fee: U128::from(
@@ -546,8 +559,7 @@ impl Contract {
                 )
             // close 'Long' position with loss
             } else {
-                let amount_increase_balance =
-                    U128::from(amount_after_swap - borrow_amount - borrow_fee_amount);
+                let amount_increase_balance = U128::from(close_amount);
 
                 let history_data = Some(HistoryData {
                     fee: U128::from(
@@ -574,15 +586,15 @@ impl Contract {
 
             let position_amount = borrow_amount * order.open_or_close_price;
 
-            let pnl = self.calculate_pnl_short_order(
-                order.clone(),
-                current_buy_token_price,
-                Some(market_data.clone()),
-            );
+            let close_amount = (BigDecimal::from(U128(order.amount)) + position_amount)
+                - BigDecimal::from(swap_amount);
+
+            let profit = close_amount > BigDecimal::from(U128(order.amount));
             // close 'Short' position with profit
-            if pnl.is_profit {
+            if profit {
                 let protocol_fee = BigDecimal::from(self.get_protocol_fee());
-                let protocol_profit_amount = BigDecimal::from(pnl.amount) * protocol_fee;
+                let protocol_profit_amount =
+                    (close_amount - BigDecimal::from(U128(order.amount))) * protocol_fee;
 
                 let amount_increase_balance = U128::from(
                     (BigDecimal::from(U128(order.amount)) + position_amount)
@@ -659,7 +671,8 @@ impl Contract {
         let swap_amount = self.from_protocol_to_token_decimals(swap_amount, token_decimals);
 
         ext_token::ext(input_token)
-            .with_attached_deposit(1_u128)
+            .with_static_gas(Gas::ONE_TERA * 90_u64)
+            .with_attached_deposit(ONE_YOCTO)
             .ft_transfer_call(
                 self.ref_finance_account.clone(),
                 swap_amount,
@@ -668,7 +681,8 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 30_u64)
+                    .with_unused_gas_weight(4_u64)
                     .close_order_swap_callback(
                         order_id,
                         order,
@@ -680,11 +694,11 @@ impl Contract {
     }
 
     pub fn swap_to_cancel_leverage_order(
-        &self,
+        &mut self,
         order_id: U128,
         order: Order,
-        amount_x: U128,
-        amount_y: U128,
+        amount_x: Option<U128>,
+        amount_y: Option<U128>,
         current_buy_token_price: U128,
         slippage_price_impact: U128,
         market_data: MarketData,
@@ -720,7 +734,8 @@ impl Contract {
                     - (borrow_fee_amount
                         * BigDecimal::from(current_buy_token_price)
                         * (BigDecimal::one() + BigDecimal::from(slippage_price_impact))
-                        + BigDecimal::from(amount_x) * BigDecimal::from(slippage_price_impact)),
+                        + BigDecimal::from(amount_x.unwrap())
+                            * BigDecimal::from(slippage_price_impact)),
             )
         };
 
@@ -761,7 +776,8 @@ impl Contract {
         let swap_amount = self.from_protocol_to_token_decimals(swap_amount, token_decimals);
 
         ext_token::ext(input_token)
-            .with_attached_deposit(1_u128)
+            .with_static_gas(Gas::ONE_TERA * 90_u64)
+            .with_attached_deposit(ONE_YOCTO)
             .ft_transfer_call(
                 self.ref_finance_account.clone(),
                 swap_amount,
@@ -770,7 +786,8 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 30_u64)
+                    .with_unused_gas_weight(4_u64)
                     .cancel_order_swap_callback(
                         order_id,
                         order,
@@ -820,7 +837,7 @@ impl Contract {
     pub fn get_data_to_swap_for_long(
         &self,
         order: Order,
-        amount_y: U128,
+        amount_y: Option<U128>,
     ) -> (U128, AccountId, AccountId) {
         require!(
             order.order_type == OrderType::Long,
@@ -828,7 +845,7 @@ impl Contract {
         );
 
         let swap_amount = if order.status == OrderStatus::Pending {
-            amount_y
+            amount_y.unwrap()
         } else {
             U128::from(
                 BigDecimal::from(U128::from(order.amount)) * order.leverage
@@ -842,7 +859,7 @@ impl Contract {
     pub fn get_data_to_swap_for_short(
         &self,
         order: Order,
-        amount_x: U128,
+        amount_x: Option<U128>,
         current_buy_token_price: U128,
         slippage_price_impact: U128,
         market_data: MarketData,
@@ -857,7 +874,7 @@ impl Contract {
                 BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
 
             (borrow_fee_amount * BigDecimal::from(current_buy_token_price)
-                + BigDecimal::from(amount_x))
+                + BigDecimal::from(amount_x.unwrap()))
                 * (BigDecimal::one() + BigDecimal::from(slippage_price_impact))
         } else {
             let borrow_amount = BigDecimal::from(U128(order.amount))

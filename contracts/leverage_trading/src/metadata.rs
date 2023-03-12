@@ -168,6 +168,12 @@ pub enum OrderAction {
     Create,
     Cancel,
     Liquidate,
+    Close {
+        order_id: U128,
+        order: Order,
+        current_buy_token_price: U128,
+        slippage_price_impact: U128,
+    },
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq)]

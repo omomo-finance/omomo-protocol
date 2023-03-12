@@ -130,8 +130,7 @@ impl Contract {
             )
             .then(
                 ext_ref_finance::ext(self.ref_finance_account.clone())
-                    .with_static_gas(Gas::ONE_TERA * 10u64)
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 15_u64)
                     .add_liquidity(
                         self.get_trade_pair(&order.sell_token, &order.buy_token)
                             .pool_id,
@@ -717,8 +716,8 @@ impl Contract {
             )
             .then(
                 ext_ref_finance::ext(self.ref_finance_account.clone())
-                    .with_static_gas(Gas::ONE_TERA * 10u64)
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 50_u64)
+                    .with_unused_gas_weight(2_u64)
                     .add_liquidity(
                         self.get_trade_pair(&order.sell_token, &order.buy_token)
                             .pool_id,
@@ -732,8 +731,7 @@ impl Contract {
             )
             .then(
                 ext_self::ext(current_account_id())
-                    .with_static_gas(Gas::ONE_TERA * 2u64)
-                    .with_attached_deposit(NO_DEPOSIT)
+                    .with_static_gas(Gas::ONE_TERA * 50_u64)
                     .take_profit_liquidity_callback(order_id, U128(order.amount), parent_order),
             );
     }
