@@ -170,7 +170,7 @@ pub enum OrderAction {
     Liquidate,
     Close {
         order_id: U128,
-        order: Order,
+        order: Box<Order>,
         current_buy_token_price: U128,
         slippage_price_impact: U128,
     },

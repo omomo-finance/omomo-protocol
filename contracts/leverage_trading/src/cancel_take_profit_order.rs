@@ -147,7 +147,7 @@ impl Contract {
                                 .with_unused_gas_weight(4_u64)
                                 .market_data_callback(
                                     order_id,
-                                    order,
+                                    *order,
                                     None,
                                     None,
                                     current_buy_token_price,

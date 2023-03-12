@@ -458,7 +458,7 @@ impl Contract {
                 order_id,
                 Some(OrderAction::Close {
                     order_id,
-                    order,
+                    order: Box::new(order),
                     current_buy_token_price,
                     slippage_price_impact,
                 }),
