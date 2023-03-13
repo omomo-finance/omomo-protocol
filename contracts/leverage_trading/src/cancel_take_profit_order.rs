@@ -125,40 +125,38 @@ impl Contract {
         });
 
         if let Some(action) = position_action {
-            match action {
-                OrderAction::Close {
-                    order_id,
-                    order,
-                    current_buy_token_price,
-                    slippage_price_impact,
-                } => {
-                    let token_market = if order.order_type == OrderType::Long {
-                        self.get_market_by(&order.sell_token)
-                    } else {
-                        self.get_market_by(&order.buy_token)
-                    };
+            if let OrderAction::Close {
+                order_id,
+                order,
+                current_buy_token_price,
+                slippage_price_impact,
+            } = action
+            {
+                let token_market = if order.order_type == OrderType::Long {
+                    self.get_market_by(&order.sell_token)
+                } else {
+                    self.get_market_by(&order.buy_token)
+                };
 
-                    ext_market::ext(token_market)
-                        .with_static_gas(Gas::ONE_TERA * 10_u64)
-                        .view_market_data()
-                        .then(
-                            ext_self::ext(current_account_id())
-                                .with_static_gas(Gas::ONE_TERA * 135_u64)
-                                .with_unused_gas_weight(4_u64)
-                                .market_data_callback(
-                                    order_id,
-                                    *order,
-                                    None,
-                                    None,
-                                    current_buy_token_price,
-                                    slippage_price_impact,
-                                ),
-                        );
-                }
-                _ => {
-                    panic!("Incorrect action for close position with take profit")
-                }
-            };
-        }
+                ext_market::ext(token_market)
+                    .with_static_gas(Gas::ONE_TERA * 10_u64)
+                    .view_market_data()
+                    .then(
+                        ext_self::ext(current_account_id())
+                            .with_static_gas(Gas::ONE_TERA * 135_u64)
+                            .with_unused_gas_weight(4_u64)
+                            .market_data_callback(
+                                order_id,
+                                *order,
+                                None,
+                                None,
+                                current_buy_token_price,
+                                slippage_price_impact,
+                            ),
+                    );
+            } else {
+                panic!("Incorrect action for close position with take profit")
+            }
+        };
     }
 }

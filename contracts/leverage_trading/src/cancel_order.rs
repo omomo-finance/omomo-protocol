@@ -74,14 +74,6 @@ trait ContractCallbackInterface {
         repay_amount: U128,
     ) -> PromiseOrValue<U128>;
     fn withdraw_callback(&mut self, account_id: AccountId, token: AccountId, amount: U128);
-    fn cancel_take_profit_order_callbal(
-        &mut self,
-        order_id: U128,
-        order: Order,
-        current_buy_token_price: U128,
-        slippage_price_impact: U128,
-    );
-    fn cancel_take_profit_order(&mut self, order_id: U128);
 }
 
 #[near_bindgen]
@@ -175,11 +167,11 @@ impl Contract {
         let (amount_x, amount_y) = match env::promise_result(0) {
             PromiseResult::Successful(amounts) => {
                 if let Ok((amount_x, amount_y)) = serde_json::from_slice::<(U128, U128)>(&amounts) {
-                    let (sall_token_decimals, buy_token_decimals) =
+                    let (sell_token_decimals, buy_token_decimals) =
                         self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
 
                     let amount_x =
-                        self.from_token_to_protocol_decimals(amount_x.0, sall_token_decimals);
+                        self.from_token_to_protocol_decimals(amount_x.0, sell_token_decimals);
 
                     let amount_y =
                         self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
