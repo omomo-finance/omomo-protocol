@@ -448,12 +448,12 @@ impl Contract {
         if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
             self.cancel_take_profit_order(
                 order_id,
-                Some(OrderAction::Close {
+                Some((
                     order_id,
-                    order: Box::new(order),
+                    order,
                     current_buy_token_price,
                     slippage_price_impact,
-                }),
+                )),
             );
         } else {
             let token_market = if order.order_type == OrderType::Long {

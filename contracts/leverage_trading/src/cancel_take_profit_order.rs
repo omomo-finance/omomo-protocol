@@ -12,12 +12,12 @@ trait ContractCallbackInterface {
         &self,
         order_id: U128,
         take_profit_info: (PricePoints, Order),
-        position_action: Option<OrderAction>,
+        data_to_close_position: Option<(U128, Order, U128, U128)>,
     );
     fn remove_liquidity_from_take_profit_callback(
         &self,
         order_id: U128,
-        position_action: Option<OrderAction>,
+        data_to_close_position: Option<(U128, Order, U128, U128)>,
     );
     fn market_data_callback(
         &self,
@@ -35,7 +35,7 @@ impl Contract {
     pub fn cancel_take_profit_order(
         &mut self,
         order_id: U128,
-        position_action: Option<OrderAction>,
+        data_to_close_position: Option<(U128, Order, U128, U128)>,
     ) {
         let take_profit_order = self.take_profit_orders.get(&(order_id.0 as u64));
         require!(take_profit_order.is_some(), "Take profit order not found.");
@@ -58,7 +58,7 @@ impl Contract {
                             .get_take_profit_liquidity_info_callback(
                                 order_id,
                                 take_profit_order_pair,
-                                position_action,
+                                data_to_close_position,
                             ),
                     );
             }
@@ -71,7 +71,7 @@ impl Contract {
         &self,
         order_id: U128,
         take_profit_info: (PricePoints, Order),
-        position_action: Option<OrderAction>,
+        data_to_close_position: Option<(U128, Order, U128, U128)>,
     ) {
         require!(is_promise_success(), "Some problem with getting liquidity.");
 
@@ -100,7 +100,7 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 150_u64)
-                    .remove_liquidity_from_take_profit_callback(order_id, position_action),
+                    .remove_liquidity_from_take_profit_callback(order_id, data_to_close_position),
             );
     }
 
@@ -108,7 +108,7 @@ impl Contract {
     pub fn remove_liquidity_from_take_profit_callback(
         &mut self,
         order_id: U128,
-        position_action: Option<OrderAction>,
+        data_to_close_position: Option<(U128, Order, U128, U128)>,
     ) {
         require!(
             is_promise_success(),
@@ -124,39 +124,31 @@ impl Contract {
             order_type: OrderType::TakeProfit,
         });
 
-        if let Some(action) = position_action {
-            if let OrderAction::Close {
-                order_id,
-                order,
-                current_buy_token_price,
-                slippage_price_impact,
-            } = action
-            {
-                let token_market = if order.order_type == OrderType::Long {
-                    self.get_market_by(&order.sell_token)
-                } else {
-                    self.get_market_by(&order.buy_token)
-                };
-
-                ext_market::ext(token_market)
-                    .with_static_gas(Gas::ONE_TERA * 10_u64)
-                    .view_market_data()
-                    .then(
-                        ext_self::ext(current_account_id())
-                            .with_static_gas(Gas::ONE_TERA * 135_u64)
-                            .with_unused_gas_weight(4_u64)
-                            .market_data_callback(
-                                order_id,
-                                *order,
-                                None,
-                                None,
-                                current_buy_token_price,
-                                slippage_price_impact,
-                            ),
-                    );
+        if let Some((order_id, order, current_buy_token_price, slippage_price_impact)) =
+            data_to_close_position
+        {
+            let token_market = if order.order_type == OrderType::Long {
+                self.get_market_by(&order.sell_token)
             } else {
-                panic!("Incorrect action for close position with take profit")
-            }
-        };
+                self.get_market_by(&order.buy_token)
+            };
+
+            ext_market::ext(token_market)
+                .with_static_gas(Gas::ONE_TERA * 10_u64)
+                .view_market_data()
+                .then(
+                    ext_self::ext(current_account_id())
+                        .with_static_gas(Gas::ONE_TERA * 135_u64)
+                        .with_unused_gas_weight(4_u64)
+                        .market_data_callback(
+                            order_id,
+                            order,
+                            None,
+                            None,
+                            current_buy_token_price,
+                            slippage_price_impact,
+                        ),
+                );
+        }
     }
 }
