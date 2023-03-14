@@ -126,12 +126,10 @@ impl Contract {
                     let amount_y =
                         self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
 
-                    let return_amounts = ReturnAmounts {
+                    ReturnAmounts {
                         amount_buy_token: amount_x,
                         amount_sell_token: amount_y,
-                    };
-
-                    return_amounts
+                    }
                 } else {
                     panic!("Some problems with the parsing result return amount from Dex")
                 }
@@ -193,9 +191,7 @@ impl Contract {
         let mut order = tpo.1;
         order.status = OrderStatus::PartlyExecuted;
 
-        self.take_profit_orders.insert(
-            &(order_id.0 as u64),
-            &(tpo.0, order.clone(), return_amounts),
-        );
+        self.take_profit_orders
+            .insert(&(order_id.0 as u64), &(tpo.0, order, return_amounts));
     }
 }
