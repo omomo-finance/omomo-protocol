@@ -1,7 +1,7 @@
 use crate::big_decimal::WBalance;
 use crate::cancel_order::ext_self;
 use crate::common::Event;
-use crate::utils::{ext_token, NO_DEPOSIT};
+use crate::utils::ext_token;
 use crate::{Contract, ContractExt};
 use near_sdk::json_types::U128;
 use near_sdk::utils::is_promise_success;
@@ -27,19 +27,8 @@ impl Contract {
 
         ext_token::ext(token.clone())
             .with_attached_deposit(ONE_YOCTO)
-            .ft_transfer(
-                user.clone(),
-                token_amount,
-                Some(format!(
-                    "Withdraw with token_amount {}",
-                    Balance::from(token_amount)
-                )),
-            )
-            .then(
-                ext_self::ext(env::current_account_id())
-                    .with_attached_deposit(NO_DEPOSIT)
-                    .withdraw_callback(user, token, amount),
-            )
+            .ft_transfer(user.clone(), token_amount, None)
+            .then(ext_self::ext(env::current_account_id()).withdraw_callback(user, token, amount))
             .into()
     }
 
