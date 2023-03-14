@@ -383,8 +383,16 @@ impl Contract {
                     let mut order = current_tpo.1;
                     order.lpt_id = lpt_id.clone();
                     order.status = OrderStatus::Pending;
-                    self.take_profit_orders
-                        .insert(&(order_id.0 as u64), &(current_tpo.0, order.clone()));
+
+                    let return_amounts = ReturnAmounts {
+                        amount_buy_token: U128(0_u128),
+                        amount_sell_token: U128(0_u128),
+                    };
+
+                    self.take_profit_orders.insert(
+                        &(order_id.0 as u64),
+                        &(current_tpo.0, order.clone(), return_amounts),
+                    );
 
                     Event::UpdateTakeProfitOrderEvent {
                         order_id,
@@ -592,52 +600,71 @@ impl Contract {
         sell_token_price: Price,
         buy_token_price: Price,
     ) -> PromiseOrValue<bool> {
-        let take_profit_order_amount = match parent_order.order_type {
-            OrderType::Long => {
-                let expect_amount = U128::from(
+        let (order, return_amounts) = if let Some((_, order, return_amounts)) =
+            self.take_profit_orders.get(&(order_id.0 as u64))
+        {
+            let take_profit_order_amount = if parent_order.order_type == OrderType::Long {
+                return_amounts.amount_sell_token
+            } else {
+                return_amounts.amount_buy_token
+            };
+
+            let order = Order {
+                amount: take_profit_order_amount.0,
+                sell_token_price,
+                buy_token_price,
+                open_or_close_price: BigDecimal::from(price),
+                block: block_height(),
+                timestamp_ms: block_timestamp_ms(),
+                lpt_id: "".to_string(),
+                ..order
+            };
+
+            (order, return_amounts)
+        } else {
+            let take_profit_order_amount = if parent_order.order_type == OrderType::Long {
+                // expect_amount
+                U128::from(
                     BigDecimal::from(U128::from(parent_order.amount))
                         * parent_order.leverage
                         * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
                         / parent_order.open_or_close_price,
-                );
-
-                let (_, buy_token_decimals) = self
-                    .view_pair_tokens_decimals(&parent_order.sell_token, &parent_order.buy_token);
-
-                self.from_protocol_to_token_decimals(expect_amount, buy_token_decimals)
-            }
-            _ => {
-                let expect_amount = U128::from(
+                )
+            } else {
+                // expect_amount
+                U128::from(
                     BigDecimal::from(U128::from(parent_order.amount))
                         * (parent_order.leverage - BigDecimal::one())
                         * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
-                );
+                )
+            };
 
-                let (sell_token_decimals, _) = self
-                    .view_pair_tokens_decimals(&parent_order.sell_token, &parent_order.buy_token);
+            let order = Order {
+                status: OrderStatus::PendingOrderExecute,
+                order_type: OrderType::TakeProfit,
+                amount: take_profit_order_amount.0,
+                sell_token: parent_order.sell_token.clone(),
+                buy_token: parent_order.buy_token.clone(),
+                leverage: BigDecimal::one(),
+                sell_token_price,
+                buy_token_price,
+                open_or_close_price: BigDecimal::from(price),
+                block: block_height(),
+                timestamp_ms: block_timestamp_ms(),
+                lpt_id: "".to_string(),
+                history_data: Default::default(),
+            };
 
-                self.from_protocol_to_token_decimals(expect_amount, sell_token_decimals)
-            }
-        };
+            let return_amounts = ReturnAmounts {
+                amount_buy_token: U128(0_u128),
+                amount_sell_token: U128(0_u128),
+            };
 
-        let order = Order {
-            status: OrderStatus::PendingOrderExecute,
-            order_type: OrderType::TakeProfit,
-            amount: take_profit_order_amount.0,
-            sell_token: parent_order.sell_token.clone(),
-            buy_token: parent_order.buy_token.clone(),
-            leverage: BigDecimal::one(),
-            sell_token_price,
-            buy_token_price,
-            open_or_close_price: BigDecimal::from(price),
-            block: block_height(),
-            timestamp_ms: block_timestamp_ms(),
-            lpt_id: "".to_string(),
-            history_data: Default::default(),
+            (order, return_amounts)
         };
 
         self.take_profit_orders
-            .insert(&(order_id.0 as u64), &(price_points, order));
+            .insert(&(order_id.0 as u64), &(price_points, order, return_amounts));
 
         Event::CreateTakeProfitOrderEvent {
             order_id,
@@ -650,7 +677,6 @@ impl Contract {
                 .pool_id,
         }
         .emit();
-
         PromiseOrValue::Value(true)
     }
 
@@ -680,7 +706,7 @@ impl Contract {
         &mut self,
         order_id: U128,
         parent_order: Order,
-        take_profit_order: (PricePoints, Order),
+        take_profit_order: (PricePoints, Order, ReturnAmounts),
     ) {
         let order = take_profit_order.1;
         let (amount_x, amount_y, token_to_add_liquidity) =

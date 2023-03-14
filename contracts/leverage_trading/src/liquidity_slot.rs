@@ -167,7 +167,7 @@ impl Contract {
     }
 
     pub fn get_take_profit_order_by_id(&self, order_id: U128) -> Option<Order> {
-        if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if let Some((_, order, _)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             return Some(order);
         }
         None

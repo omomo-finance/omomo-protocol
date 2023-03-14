@@ -178,10 +178,10 @@ impl Contract {
 
                     (amount_x, amount_y)
                 } else {
-                    panic!("Some problems with the parsing result remove liquidity")
+                    panic!("Some problems with the parsing result return amount from Dex")
                 }
             }
-            _ => panic!("Some problem with remove liquidity"),
+            _ => panic!("Some problem with return amount from Dex"),
         };
 
         let token_market = if order.order_type == OrderType::Long {

@@ -555,7 +555,7 @@ impl Contract {
             "You have no access for this order."
         );
 
-        if let Some((_, order)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+        if let Some((_, order, _)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
             let trade_pair = self.get_trade_pair(&order.sell_token, &order.buy_token);
 
             let pair = format!("{}/{}", trade_pair.sell_ticker_id, trade_pair.buy_ticker_id);
@@ -807,7 +807,7 @@ impl Contract {
         leverage_position: &Order,
     ) -> Option<TakeProfitOrderView> {
         match self.take_profit_orders.get(order_id) {
-            Some((_, order)) => {
+            Some((_, order, _)) => {
                 if order.status == OrderStatus::Pending
                     || order.status == OrderStatus::PendingOrderExecute
                 {
@@ -1906,7 +1906,14 @@ mod tests {
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TakeProfit\",\"amount\":2000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"history_data\":null}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.take_profit_orders.insert(&2, &((0, 40), order));
+        let return_amounts = ReturnAmounts {
+            amount_buy_token: U128(0_u128),
+            amount_sell_token: U128(0_u128),
+        };
+
+        contract
+            .take_profit_orders
+            .insert(&2, &((0, 40), order, return_amounts));
 
         // opened position without take-profit order
         let true_1st_opened_position = LeveragedPositionView {
@@ -2065,7 +2072,14 @@ mod tests {
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"TakeProfit\",\"amount\":2000000000000000000000000000,\"sell_token\":\"wnear.qa.v1.nearlend.testnet\",\"buy_token\":\"usdt.qa.v1.nearlend.testnet\",\"leverage\":\"1.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1500000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"2500000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":1, \"timestamp_ms\":86400050,\"lpt_id\":\"usdt.fakes.testnet|wrap.testnet|2000#132\",\"history_data\":null}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        contract.take_profit_orders.insert(&2, &((0, 40), order));
+        let return_amounts = ReturnAmounts {
+            amount_buy_token: U128(0_u128),
+            amount_sell_token: U128(0_u128),
+        };
+
+        contract
+            .take_profit_orders
+            .insert(&2, &((0, 40), order, return_amounts));
 
         // opened position with take-profit order in pair "WNEAR/USDT"
         let true_1st_opened_position_by_pair = LeveragedPositionView {

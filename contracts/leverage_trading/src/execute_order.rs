@@ -119,7 +119,17 @@ impl Contract {
                 self.set_take_profit_order_pending(order_id, parent_order, tpo);
             }
         } else {
-            self.mark_take_profit_order_as_executed(order_id);
+            let return_amounts = ReturnAmounts {
+                amount_sell_token: U128::from(
+                    BigDecimal::from(expected_amount.0)
+                        / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                ),
+                amount_buy_token: U128::from(
+                    BigDecimal::from(expected_amount.1)
+                        / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                ),
+            };
+            self.mark_take_profit_order_as_executed(order_id, return_amounts);
         }
 
         self.remove_pending_order_data(PendingOrderData {
@@ -285,12 +295,18 @@ impl Contract {
         .emit();
     }
 
-    pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
+    pub fn mark_take_profit_order_as_executed(
+        &mut self,
+        order_id: U128,
+        return_amounts: ReturnAmounts,
+    ) {
         let tpo = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
         let mut order = tpo.1;
         order.status = OrderStatus::Executed;
-        self.take_profit_orders
-            .insert(&(order_id.0 as u64), &(tpo.0, order.clone()));
+        self.take_profit_orders.insert(
+            &(order_id.0 as u64),
+            &(tpo.0, order.clone(), return_amounts),
+        );
 
         Event::ExecuteOrderEvent {
             order_id,

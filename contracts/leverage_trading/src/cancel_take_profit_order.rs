@@ -4,14 +4,14 @@ use crate::ref_finance::ext_ref_finance;
 use crate::utils::ext_market;
 use crate::*;
 use near_sdk::env::current_account_id;
-use near_sdk::{ext_contract, is_promise_success, Gas, PromiseResult};
+use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
     fn get_take_profit_liquidity_info_callback(
         &self,
         order_id: U128,
-        take_profit_info: (PricePoints, Order),
+        take_profit_info: (PricePoints, Order, ReturnAmounts),
         data_to_close_position: Option<(U128, Order, U128, U128)>,
     );
     fn remove_liquidity_from_take_profit_callback(
@@ -70,7 +70,7 @@ impl Contract {
     pub fn get_take_profit_liquidity_info_callback(
         &self,
         order_id: U128,
-        take_profit_info: (PricePoints, Order),
+        take_profit_info: (PricePoints, Order, ReturnAmounts),
         data_to_close_position: Option<(U128, Order, U128, U128)>,
     ) {
         require!(is_promise_success(), "Some problem with getting liquidity.");
@@ -110,12 +110,42 @@ impl Contract {
         order_id: U128,
         data_to_close_position: Option<(U128, Order, U128, U128)>,
     ) {
-        require!(
-            is_promise_success(),
-            "Some problem with return amount from Dex"
-        );
+        let parent_order = self.get_order_by(order_id.0).unwrap();
 
-        self.take_profit_orders.remove(&(order_id.0 as u64));
+        let return_amounts = match env::promise_result(0) {
+            PromiseResult::Successful(amounts) => {
+                if let Ok((amount_x, amount_y)) = serde_json::from_slice::<(U128, U128)>(&amounts) {
+                    let (sell_token_decimals, buy_token_decimals) = self.view_pair_tokens_decimals(
+                        &parent_order.sell_token,
+                        &parent_order.buy_token,
+                    );
+
+                    let amount_x =
+                        self.from_token_to_protocol_decimals(amount_x.0, sell_token_decimals);
+
+                    let amount_y =
+                        self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
+
+                    let return_amounts = ReturnAmounts {
+                        amount_buy_token: amount_x,
+                        amount_sell_token: amount_y,
+                    };
+
+                    return_amounts
+                } else {
+                    panic!("Some problems with the parsing result return amount from Dex")
+                }
+            }
+            _ => panic!("Some problem with return amount from Dex"),
+        };
+
+        if parent_order.order_type == OrderType::Long
+            && return_amounts.amount_sell_token != U128(0_u128)
+            || parent_order.order_type == OrderType::Short
+                && return_amounts.amount_buy_token != U128(0_u128)
+        {
+            self.mark_take_profit_order_as_partly_executed(order_id, return_amounts);
+        }
 
         Event::CancelTakeProfitOrderEvent { order_id }.emit();
 
@@ -150,5 +180,22 @@ impl Contract {
                         ),
                 );
         }
+    }
+}
+
+impl Contract {
+    pub fn mark_take_profit_order_as_partly_executed(
+        &mut self,
+        order_id: U128,
+        return_amounts: ReturnAmounts,
+    ) {
+        let tpo = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
+        let mut order = tpo.1;
+        order.status = OrderStatus::PartlyExecuted;
+
+        self.take_profit_orders.insert(
+            &(order_id.0 as u64),
+            &(tpo.0, order.clone(), return_amounts),
+        );
     }
 }
