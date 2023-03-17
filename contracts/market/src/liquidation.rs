@@ -12,6 +12,11 @@ impl Contract {
     ) -> PromiseOrValue<U128> {
         assert_eq!(self.get_contract_address(), borrowing_dtoken);
 
+        require!(
+            liquidation_amount.0 > 0,
+            "Liquidation amount cannot be zero"
+        );
+
         controller::liquidation(
             borrower.clone(),
             borrowing_dtoken.clone(),
