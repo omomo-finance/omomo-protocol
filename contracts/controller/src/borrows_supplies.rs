@@ -244,6 +244,24 @@ impl Contract {
 
         self.calculate_assets_price(&borrows).into()
     }
+
+    pub fn get_total_borrows_by_dtoken(&self, user_id: &AccountId, dtoken: &AccountId) -> USD {
+        let borrows = self
+            .user_profiles
+            .get(user_id)
+            .unwrap_or_default()
+            .account_borrows;
+
+        if let Some(balance) = borrows.get(dtoken) {
+            let price = self.get_price(dtoken).unwrap_or_default();
+            (BigBalance::from(price.value) * BigBalance::from(balance.to_owned())
+                / BigBalance::from(U128(ONE_TOKEN)))
+            .round_u128()
+            .into()
+        } else {
+            0.into()
+        }
+    }
 }
 
 #[cfg(test)]
