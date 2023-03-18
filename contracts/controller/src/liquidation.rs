@@ -1,6 +1,5 @@
 use crate::*;
 use near_sdk::{env::block_height, PromiseOrValue};
-use partial_min_max::min;
 
 #[near_bindgen]
 impl Contract {
@@ -16,6 +15,24 @@ impl Contract {
             self.is_dtoken_caller(),
             "This functionality is allowed to be called by admin, contract or dtoken's contract only"
         );
+
+        let half_of_borrower_total_supplies =
+            Percentage::from(50).apply_to(self.get_total_supplies(&borrower).0);
+
+        require!(
+            liquidation_amount.0 <= half_of_borrower_total_supplies,
+            "Liquidation amount must be less than half of the borrower`s total supplies"
+        );
+
+        let total_borrows_by_dtoken = self
+            .get_total_borrows_by_dtoken(&borrower, &borrowing_dtoken)
+            .0;
+
+        require!(
+            liquidation_amount.0 <= total_borrows_by_dtoken,
+            "Liquidation amount must be less than half of the borrower`s total borrows of dtoken"
+        );
+
         let res = self.calculate_liquidation_revenue(
             borrower,
             borrowing_dtoken,
@@ -92,40 +109,6 @@ impl Contract {
         )
     }
 
-    pub fn maximum_possible_liquidation_amount(
-        &self,
-        borrower: AccountId,
-        borrowing_dtoken: AccountId,
-        collateral_dtoken: AccountId,
-    ) -> WBalance {
-        let unhealth_factor =
-            self.liquidation_health_factor_threshold - self.get_health_factor(borrower.clone());
-
-        let borrow_amount = self.get_entity_by_token(
-            ActionType::Borrow,
-            borrower.clone(),
-            borrowing_dtoken.clone(),
-        );
-
-        let borrow_price = self.prices.get(&borrowing_dtoken).unwrap().value.0;
-
-        let max_unhealth_repay =
-            unhealth_factor * Ratio::from(borrow_amount) * Ratio::from(borrow_price) / Ratio::one();
-
-        let supply_amount =
-            self.get_entity_by_token(ActionType::Supply, borrower, collateral_dtoken.clone());
-        let collateral_price = self.prices.get(&collateral_dtoken).unwrap().value.0;
-
-        let max_possible_liquidation_amount = min(
-            max_unhealth_repay,
-            (Ratio::one() - self.liquidation_incentive)
-                * Ratio::from(supply_amount)
-                * Ratio::from(collateral_price),
-        ) / Ratio::from(borrow_price);
-
-        WBalance::from(max_possible_liquidation_amount.round_u128())
-    }
-
     pub fn calculate_liquidation_revenue(
         &self,
         borrower: AccountId,
@@ -138,20 +121,8 @@ impl Contract {
             return Err(String::from("cannot liquidate themselves"));
         }
 
-        if self.get_health_factor(borrower.clone()) > self.get_liquidation_threshold() {
+        if self.get_health_factor(borrower) > self.get_liquidation_threshold() {
             return Err(String::from("health factor is above liquidation threshold"));
-        }
-
-        let max_possible_liquidation_amount = self.maximum_possible_liquidation_amount(
-            borrower,
-            borrowing_dtoken.clone(),
-            collateral_dtoken.clone(),
-        );
-
-        if liquidation_amount.0 > max_possible_liquidation_amount.0 {
-            return Err(String::from(
-                "liquidation amount exceeds maximum possible liquidation amount",
-            ));
         }
 
         let revenue_amount =
