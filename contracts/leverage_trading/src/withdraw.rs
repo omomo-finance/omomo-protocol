@@ -5,11 +5,18 @@ use crate::utils::ext_token;
 use crate::{Contract, ContractExt};
 use near_sdk::json_types::U128;
 use near_sdk::utils::is_promise_success;
-use near_sdk::{env, near_bindgen, require, AccountId, Balance, PromiseOrValue, ONE_YOCTO};
+use near_sdk::{
+    env, near_bindgen, require, AccountId, Balance, Promise, PromiseOrValue, ONE_YOCTO,
+};
 
 #[near_bindgen]
 impl Contract {
-    pub fn withdraw(&mut self, token: AccountId, amount: U128) -> PromiseOrValue<WBalance> {
+    pub fn withdraw(
+        &mut self,
+        token: AccountId,
+        amount: U128,
+        reward_executor: Option<bool>,
+    ) -> PromiseOrValue<WBalance> {
         let user = env::signer_account_id();
         let user_balance = self.balance_of(user.clone(), token.clone());
 
@@ -28,7 +35,12 @@ impl Contract {
         ext_token::ext(token.clone())
             .with_attached_deposit(ONE_YOCTO)
             .ft_transfer(user.clone(), token_amount, None)
-            .then(ext_self::ext(env::current_account_id()).withdraw_callback(user, token, amount))
+            .then(ext_self::ext(env::current_account_id()).withdraw_callback(
+                user,
+                token,
+                amount,
+                reward_executor,
+            ))
             .into()
     }
 
@@ -37,6 +49,7 @@ impl Contract {
         account_id: AccountId,
         token: AccountId,
         amount: U128,
+        reward_executor: Option<bool>,
     ) -> PromiseOrValue<WBalance> {
         if !is_promise_success() {
             return PromiseOrValue::Value(U128(0));
@@ -44,6 +57,14 @@ impl Contract {
 
         self.decrease_balance(&account_id, &token, amount.0);
         Event::WithdrawEvent { token, amount }.emit();
+
+        if let Some(reward) = reward_executor {
+            if reward {
+                let executor_reward_in_near = env::used_gas().0 as Balance * 2_u128;
+                Promise::new(env::signer_account_id()).transfer(executor_reward_in_near);
+            }
+        }
+
         PromiseOrValue::Value(amount)
     }
 }

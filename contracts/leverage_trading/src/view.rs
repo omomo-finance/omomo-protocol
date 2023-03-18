@@ -935,7 +935,13 @@ mod tests {
             if count < 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
             } else {
-                contract.final_cancel_order(U128(count as u128 - 5), order.clone(), amount, None);
+                contract.final_cancel_order(
+                    U128(count as u128 - 5),
+                    order.clone(),
+                    amount,
+                    None,
+                    None,
+                );
             }
         }
         // total pending orders after creating orders
@@ -1007,7 +1013,13 @@ mod tests {
             if count < 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
             } else {
-                contract.final_cancel_order(U128(count as u128 - 5), order.clone(), amount, None);
+                contract.final_cancel_order(
+                    U128(count as u128 - 5),
+                    order.clone(),
+                    amount,
+                    None,
+                    None,
+                );
             }
         }
 
@@ -2318,6 +2330,17 @@ mod tests {
             "oracle_account_id.testnet".parse().unwrap(),
         );
 
+        let market_data = MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
+            underlying_token_decimals: 6,
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        };
+
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
@@ -2357,7 +2380,13 @@ mod tests {
         let new_price = U128(305 * 10_u128.pow(22));
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price,
+            left_point,
+            right_point,
+            market_data,
+        );
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);

@@ -1,12 +1,11 @@
 use crate::big_decimal::{BigDecimal, WBalance};
 use crate::common::Event;
 use crate::ref_finance::ext_ref_finance;
-use crate::utils::{ext_market, ext_token, NO_DEPOSIT};
+use crate::utils::{ext_market, ext_token, MILLISECONDS_PER_DAY, NO_DEPOSIT};
 use crate::*;
 
-use crate::execute_order::INACCURACY_RATE;
 use near_sdk::env::{block_height, block_timestamp_ms, current_account_id, signer_account_id};
-use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult};
+use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, Promise, PromiseResult};
 
 const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 
@@ -14,7 +13,13 @@ const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
 trait ContractCallbackInterface {
     fn borrow_callback(&mut self, borrow_amount: U128) -> PromiseOrValue<WBalance>;
     fn add_liquidity_callback(&mut self, order: Order, amount: U128) -> PromiseOrValue<Balance>;
-    fn take_profit_liquidity_callback(&mut self, order_id: U128, amount: U128, parent_order: Order);
+    fn take_profit_liquidity_callback(
+        &mut self,
+        order_id: U128,
+        amount: U128,
+        parent_order: Order,
+        reward_executor: bool,
+    );
     fn withdraw_asset_callback(token_id: AccountId, amount: U128);
 }
 
@@ -318,6 +323,7 @@ impl Contract {
         close_price: U128,
         left_point: i32,
         right_point: i32,
+        market_data: MarketData,
     ) -> PromiseOrValue<bool> {
         require!(
             Some(signer_account_id()) == self.get_account_by(order_id.0),
@@ -352,6 +358,7 @@ impl Contract {
                 close_price,
                 sell_token_price,
                 buy_token_price,
+                market_data,
             ),
             OrderStatus::Executed => self.create_take_profit_order_when_parent_executed(
                 order_id,
@@ -360,6 +367,7 @@ impl Contract {
                 close_price,
                 sell_token_price,
                 buy_token_price,
+                market_data,
             ),
             _ => {
                 panic!("Take profit order can't be created at the current moment.");
@@ -373,6 +381,7 @@ impl Contract {
         order_id: U128,
         amount: U128,
         parent_order: Order,
+        reward_executor: bool,
     ) {
         require!(is_promise_success(), "Some problems with liquidity adding.");
 
@@ -415,6 +424,11 @@ impl Contract {
                         order_id,
                         order_type: order.order_type,
                     });
+                }
+
+                if reward_executor {
+                    let executor_reward_in_near = env::used_gas().0 as Balance * 2_u128;
+                    Promise::new(env::signer_account_id()).transfer(executor_reward_in_near);
                 }
             }
             _ => {
@@ -518,7 +532,7 @@ impl Contract {
     ) -> PromiseOrValue<WBalance> {
         require!(
             BigDecimal::from(leverage) > BigDecimal::one(),
-            "Incorrect leverage for order typt 'Long' and 'Short'"
+            "Incorrect leverage for order type 'Long' and 'Short'"
         );
 
         let order = Order {
@@ -599,68 +613,45 @@ impl Contract {
         price: U128,
         sell_token_price: Price,
         buy_token_price: Price,
+        market_data: MarketData,
     ) -> PromiseOrValue<bool> {
-        let (order, return_amounts) = if let Some((_, order, return_amounts)) =
-            self.take_profit_orders.get(&(order_id.0 as u64))
-        {
-            let take_profit_order_amount = if parent_order.order_type == OrderType::Long {
-                return_amounts.amount_sell_token
-            } else {
-                return_amounts.amount_buy_token
-            };
-
-            let order = Order {
-                amount: take_profit_order_amount.0,
-                sell_token_price,
-                buy_token_price,
-                open_or_close_price: BigDecimal::from(price),
-                block: block_height(),
-                timestamp_ms: block_timestamp_ms(),
-                lpt_id: "".to_string(),
-                ..order
-            };
-
-            (order, return_amounts)
+        let take_profit_order_amount = if parent_order.order_type == OrderType::Long {
+            // full amount (buy token) open 'long' position
+            U128::from(
+                BigDecimal::from(U128::from(parent_order.amount)) * parent_order.leverage
+                    / parent_order.open_or_close_price,
+            )
         } else {
-            let take_profit_order_amount = if parent_order.order_type == OrderType::Long {
-                // expect_amount
-                U128::from(
-                    BigDecimal::from(U128::from(parent_order.amount))
-                        * parent_order.leverage
-                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE))
-                        / parent_order.open_or_close_price,
-                )
-            } else {
-                // expect_amount
-                U128::from(
-                    BigDecimal::from(U128::from(parent_order.amount))
-                        * (parent_order.leverage - BigDecimal::one())
-                        * (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
-                )
-            };
+            // part amount (sell token) open "short" position
+            let borrow_amount = BigDecimal::from(U128::from(parent_order.amount))
+                * (parent_order.leverage - BigDecimal::one())
+                / parent_order.open_or_close_price;
 
-            let order = Order {
-                status: OrderStatus::PendingOrderExecute,
-                order_type: OrderType::TakeProfit,
-                amount: take_profit_order_amount.0,
-                sell_token: parent_order.sell_token.clone(),
-                buy_token: parent_order.buy_token.clone(),
-                leverage: BigDecimal::one(),
-                sell_token_price,
-                buy_token_price,
-                open_or_close_price: BigDecimal::from(price),
-                block: block_height(),
-                timestamp_ms: block_timestamp_ms(),
-                lpt_id: "".to_string(),
-                history_data: Default::default(),
-            };
+            let borrow_fee_amount =
+                BigDecimal::from(self.get_borrow_fee_amount(parent_order.clone(), market_data));
 
-            let return_amounts = ReturnAmounts {
-                amount_buy_token: U128(0_u128),
-                amount_sell_token: U128(0_u128),
-            };
+            U128::from((borrow_amount + borrow_fee_amount) * BigDecimal::from(price))
+        };
 
-            (order, return_amounts)
+        let order = Order {
+            status: OrderStatus::PendingOrderExecute,
+            order_type: OrderType::TakeProfit,
+            amount: take_profit_order_amount.0,
+            sell_token: parent_order.sell_token.clone(),
+            buy_token: parent_order.buy_token.clone(),
+            leverage: BigDecimal::one(),
+            sell_token_price,
+            buy_token_price,
+            open_or_close_price: BigDecimal::from(price),
+            block: block_height(),
+            timestamp_ms: block_timestamp_ms(),
+            lpt_id: "".to_string(),
+            history_data: Default::default(),
+        };
+
+        let return_amounts = ReturnAmounts {
+            amount_buy_token: U128(0_u128),
+            amount_sell_token: U128(0_u128),
         };
 
         self.take_profit_orders
@@ -688,18 +679,26 @@ impl Contract {
         price: U128,
         sell_token_price: Price,
         buy_token_price: Price,
+        market_data: MarketData,
     ) -> PromiseOrValue<bool> {
-        let pv = self.create_take_profit_order_when_parent_pending(
-            order_id,
-            price_points,
-            parent_order.clone(),
-            price,
-            sell_token_price,
-            buy_token_price,
-        );
-        let tpo_info = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
-        self.set_take_profit_order_pending(order_id, parent_order, tpo_info);
-        pv
+        if self.take_profit_orders.get(&(order_id.0 as u64)).is_some() {
+            panic!(
+                "The 'Take Profit' order has already been created. You cannot modify an existing 'Take Profit' order if the position is already open"
+            )
+        } else {
+            let pv = self.create_take_profit_order_when_parent_pending(
+                order_id,
+                price_points,
+                parent_order.clone(),
+                price,
+                sell_token_price,
+                buy_token_price,
+                market_data,
+            );
+            let tpo_info = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
+            self.set_take_profit_order_pending(order_id, parent_order, tpo_info, false);
+            pv
+        }
     }
 
     pub fn set_take_profit_order_pending(
@@ -707,8 +706,46 @@ impl Contract {
         order_id: U128,
         parent_order: Order,
         take_profit_order: (PricePoints, Order, ReturnAmounts),
+        reward_executor: bool,
     ) {
-        let order = take_profit_order.1;
+        // if the 'Take Profit' order is created when the parental order has not yet been executed
+        // and if the parent order type is 'Short' we are updating the amount in 'Take Profit' order
+        let order = if reward_executor && parent_order.order_type == OrderType::Short {
+            let current_timestamp_ms = env::block_timestamp_ms();
+
+            let borrow_amount = BigDecimal::from(U128::from(parent_order.amount))
+                * (parent_order.leverage - BigDecimal::one())
+                / parent_order.open_or_close_price;
+
+            let previous_borrow_fee_amount = BigDecimal::from(U128(take_profit_order.1.amount))
+                / take_profit_order.1.open_or_close_price
+                - borrow_amount;
+
+            let previous_borrow_period = ((take_profit_order.1.timestamp_ms
+                - parent_order.timestamp_ms) as f64
+                / MILLISECONDS_PER_DAY as f64)
+                .ceil();
+
+            let current_borrow_period = ((current_timestamp_ms - parent_order.timestamp_ms) as f64
+                / MILLISECONDS_PER_DAY as f64)
+                .ceil();
+
+            let current_borrow_fee_amount = previous_borrow_fee_amount
+                / BigDecimal::from(U128(previous_borrow_period as u128))
+                * BigDecimal::from(U128(current_borrow_period as u128));
+
+            Order {
+                amount: U128::from(
+                    (borrow_amount + current_borrow_fee_amount)
+                        * take_profit_order.1.open_or_close_price,
+                )
+                .0,
+                ..take_profit_order.1
+            }
+        } else {
+            take_profit_order.1
+        };
+
         let (amount_x, amount_y, token_to_add_liquidity) =
             if parent_order.order_type == OrderType::Long {
                 let (_, buy_token_decimals) =
@@ -758,7 +795,12 @@ impl Contract {
             .then(
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 50_u64)
-                    .take_profit_liquidity_callback(order_id, U128(order.amount), parent_order),
+                    .take_profit_liquidity_callback(
+                        order_id,
+                        U128(order.amount),
+                        parent_order,
+                        reward_executor,
+                    ),
             );
     }
 }
@@ -771,11 +813,33 @@ mod tests {
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, VMContext};
 
-    fn get_context(is_view: bool) -> VMContext {
+    fn get_context(is_view: bool, block_timestamp: Option<u64>) -> VMContext {
         VMContextBuilder::new()
+            .current_account_id("margin.nearland.testnet".parse().unwrap())
             .signer_account_id(alice())
+            .predecessor_account_id("usdt_market.qa.nearland.testnet".parse().unwrap())
+            .block_index(103930916)
+            .block_timestamp(block_timestamp.unwrap_or(1))
             .is_view(is_view)
             .build()
+    }
+    // lend land
+    fn get_current_day_in_nanoseconds(day: u64) -> Option<u64> {
+        let nanoseconds_in_one_millisecond = 1_000_000;
+        Some(MILLISECONDS_PER_DAY * day * nanoseconds_in_one_millisecond)
+    }
+
+    fn get_market_data() -> MarketData {
+        MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
+            underlying_token_decimals: 6,
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        }
     }
 
     impl Contract {
@@ -800,7 +864,7 @@ mod tests {
 
     #[test]
     fn test_add_order_in_create_order() {
-        let context = get_context(false);
+        let context = get_context(false, None);
         testing_env!(context);
 
         let mut contract = Contract::new_with_config(
@@ -851,12 +915,14 @@ mod tests {
 
     #[test]
     fn test_create_take_profit_order() {
-        let context = get_context(false);
+        let context = get_context(false, None);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
+
+        let market_data = get_market_data();
 
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
@@ -896,7 +962,7 @@ mod tests {
         let new_price = U128(24500000000000000000000000);
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(U128(1), new_price, left_point, right_point);
+        contract.create_take_profit_order(U128(1), new_price, left_point, right_point, market_data);
 
         let tpo = contract.take_profit_orders.get(&1).unwrap();
         assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
@@ -906,12 +972,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "You do not have permission for this action")]
     fn test_create_take_profit_order_without_order() {
-        let context = get_context(false);
+        let context = get_context(false, None);
         testing_env!(context);
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
+
+        let market_data = get_market_data();
 
         let order_id: u128 = 33;
         assert_eq!(contract.get_order_by(order_id), None);
@@ -919,17 +987,27 @@ mod tests {
         let new_price = U128(30500000000000000000000000);
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price,
+            left_point,
+            right_point,
+            market_data,
+        );
     }
 
     #[test]
-    fn test_update_take_profit_order_price() {
-        let context = get_context(false);
+    fn test_update_take_profit_order_price_when_parent_pending() {
+        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
+        let context = get_context(false, current_day);
         testing_env!(context);
+
         let mut contract = Contract::new_with_config(
             "owner_id.testnet".parse().unwrap(),
             "oracle_account_id.testnet".parse().unwrap(),
         );
+
+        let market_data = get_market_data();
 
         let pair_data = TradePair {
             sell_ticker_id: "usdt".to_string(),
@@ -970,7 +1048,13 @@ mod tests {
         let new_price = U128(2450000000000000000000000);
         let left_point = -9860;
         let right_point = -9820;
-        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price,
+            left_point,
+            right_point,
+            market_data.clone(),
+        );
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(tpo.1.status, OrderStatus::PendingOrderExecute);
@@ -980,11 +1064,108 @@ mod tests {
         let left_point = -8040;
         let right_point = -8000;
 
-        contract.create_take_profit_order(U128(order_id), new_price, left_point, right_point);
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price,
+            left_point,
+            right_point,
+            market_data,
+        );
 
         let tpo = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
         assert_eq!(WBigDecimal::from(tpo.1.open_or_close_price), new_price);
         assert_eq!(tpo.0 .0, left_point);
         assert_eq!(tpo.0 .1, right_point);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "The 'Take Profit' order has already been created. You cannot modify an existing 'Take Profit' order if the position is already open"
+    )]
+    fn test_update_take_profit_order_price_when_parent_executed() {
+        let current_day = get_current_day_in_nanoseconds(91); // borrow period 90 days
+        let context = get_context(false, current_day);
+        testing_env!(context);
+
+        let mut contract = Contract::new_with_config(
+            "owner_id.testnet".parse().unwrap(),
+            "oracle_account_id.testnet".parse().unwrap(),
+        );
+
+        let market_data = get_market_data();
+
+        let pair_data = TradePair {
+            sell_ticker_id: "usdt".to_string(),
+            sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            sell_token_decimals: 24,
+            sell_token_market: "usdt_market.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_ticker_id: "wnear".to_string(),
+            buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            buy_token_decimals: 18,
+            buy_token_market: "wnear_market.develop.v1.omomo-finance.testnet"
+                .parse()
+                .unwrap(),
+            pool_id: "usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000".to_string(),
+            max_leverage: U128(25 * 10_u128.pow(23)),
+            swap_fee: U128(3 * 10_u128.pow(20)),
+        };
+        contract.add_pair(pair_data);
+
+        contract.update_or_insert_price(
+            "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "USDt".to_string(),
+                value: U128(10_u128.pow(24)), // current price token
+            },
+        );
+        contract.update_or_insert_price(
+            "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
+            Price {
+                ticker_id: "near".to_string(),
+                value: U128(3 * 10_u128.pow(24)), // current price token
+            },
+        );
+
+        let order_string = "{\"status\":\"Executed\",\"order_type\":\"Short\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"1\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2500000000000000000000000\",\"block\":103930910, \"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\",\"history_data\":null}".to_string();
+        contract.add_order_from_string(alice(), order_string);
+
+        let order_id: u128 = 1;
+        let new_price = U128(2450000000000000000000000);
+        let left_point = -9860;
+        let right_point = -9820;
+
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price,
+            left_point,
+            right_point,
+            market_data.clone(),
+        );
+
+        let (price_points, mut tp_order, return_amounts) =
+            contract.take_profit_orders.get(&(order_id as u64)).unwrap();
+
+        tp_order.status = OrderStatus::Pending;
+
+        contract.take_profit_orders.insert(
+            &(order_id as u64),
+            &(price_points, tp_order, return_amounts),
+        );
+
+        let (_, tp_order, _) = contract.take_profit_orders.get(&(order_id as u64)).unwrap();
+
+        assert_eq!(tp_order.status, OrderStatus::Pending);
+
+        let new_price = U128(2350000000000000000000000);
+        let left_point = -8040;
+        let right_point = -8000;
+
+        contract.create_take_profit_order(
+            U128(order_id),
+            new_price,
+            left_point,
+            right_point,
+            market_data,
+        );
     }
 }

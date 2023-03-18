@@ -49,18 +49,22 @@ impl Contract {
                 Event::CancelTakeProfitOrderEvent { order_id }.emit();
             }
             OrderStatus::Pending => {
-                ext_ref_finance::ext(self.ref_finance_account.clone())
-                    .with_static_gas(Gas::ONE_TERA * 5_u64)
-                    .get_liquidity(take_profit_order_pair.1.lpt_id.clone())
-                    .then(
-                        ext_self::ext(current_account_id())
-                            .with_static_gas(Gas::ONE_TERA * 245_u64)
-                            .get_take_profit_liquidity_info_callback(
-                                order_id,
-                                take_profit_order_pair,
-                                data_to_close_position,
-                            ),
-                    );
+                if data_to_close_position.is_some() {
+                    ext_ref_finance::ext(self.ref_finance_account.clone())
+                        .with_static_gas(Gas::ONE_TERA * 5_u64)
+                        .get_liquidity(take_profit_order_pair.1.lpt_id.clone())
+                        .then(
+                            ext_self::ext(current_account_id())
+                                .with_static_gas(Gas::ONE_TERA * 245_u64)
+                                .get_take_profit_liquidity_info_callback(
+                                    order_id,
+                                    take_profit_order_pair,
+                                    data_to_close_position,
+                                ),
+                        );
+                } else {
+                    panic!("Canceling a 'Take Profit' order is impossible when a position is already open")
+                }
             }
             _ => {}
         }
@@ -112,30 +116,7 @@ impl Contract {
     ) {
         let parent_order = self.get_order_by(order_id.0).unwrap();
 
-        let return_amounts = match env::promise_result(0) {
-            PromiseResult::Successful(amounts) => {
-                if let Ok((amount_x, amount_y)) = serde_json::from_slice::<(U128, U128)>(&amounts) {
-                    let (sell_token_decimals, buy_token_decimals) = self.view_pair_tokens_decimals(
-                        &parent_order.sell_token,
-                        &parent_order.buy_token,
-                    );
-
-                    let amount_x =
-                        self.from_token_to_protocol_decimals(amount_x.0, sell_token_decimals);
-
-                    let amount_y =
-                        self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
-
-                    ReturnAmounts {
-                        amount_buy_token: amount_x,
-                        amount_sell_token: amount_y,
-                    }
-                } else {
-                    panic!("Some problems with the parsing result return amount from Dex")
-                }
-            }
-            _ => panic!("Some problem with return amount from Dex"),
-        };
+        let return_amounts = self.get_return_amounts_after_remove_liquidity(parent_order.clone());
 
         if parent_order.order_type == OrderType::Long
             && return_amounts.amount_sell_token != U128(0_u128)
@@ -193,5 +174,30 @@ impl Contract {
 
         self.take_profit_orders
             .insert(&(order_id.0 as u64), &(tpo.0, order, return_amounts));
+    }
+    /// this method is used only to process the result of a call 'remove_liquidity'
+    pub fn get_return_amounts_after_remove_liquidity(&self, order: Order) -> ReturnAmounts {
+        match env::promise_result(0) {
+            PromiseResult::Successful(amounts) => {
+                if let Ok((amount_x, amount_y)) = serde_json::from_slice::<(U128, U128)>(&amounts) {
+                    let (sell_token_decimals, buy_token_decimals) =
+                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
+
+                    let amount_x =
+                        self.from_token_to_protocol_decimals(amount_x.0, sell_token_decimals);
+
+                    let amount_y =
+                        self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
+
+                    ReturnAmounts {
+                        amount_sell_token: amount_x,
+                        amount_buy_token: amount_y,
+                    }
+                } else {
+                    panic!("Some problems with the parsing result return amount from Dex")
+                }
+            }
+            _ => panic!("Some problem with return amount from Dex"),
+        }
     }
 }
