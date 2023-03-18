@@ -315,104 +315,97 @@ impl Contract {
                     market_data,
                 );
             };
-        } else {
-            if let Some((_, tp_order, return_amounts)) =
-                self.take_profit_orders.get(&(order_id.0 as u64))
-            {
-                if tp_order.status == OrderStatus::Executed {
-                    let borrow_fee_amount = BigDecimal::from(
-                        self.get_borrow_fee_amount(order.clone(), market_data.clone()),
-                    );
+        } else if let Some((_, tp_order, return_amounts)) =
+            self.take_profit_orders.get(&(order_id.0 as u64))
+        {
+            if tp_order.status == OrderStatus::Executed {
+                let borrow_fee_amount = BigDecimal::from(
+                    self.get_borrow_fee_amount(order.clone(), market_data.clone()),
+                );
 
-                    let protocol_fee = BigDecimal::from(self.get_protocol_fee());
+                let protocol_fee = BigDecimal::from(self.get_protocol_fee());
 
-                    let fee = U128::from(
-                        self.get_borrow_fee(order.clone(), market_data)
-                            + BigDecimal::from(self.get_swap_fee(&order))
-                            + protocol_fee,
-                    );
+                let fee = U128::from(
+                    self.get_borrow_fee(order.clone(), market_data)
+                        + BigDecimal::from(self.get_swap_fee(&order))
+                        + protocol_fee,
+                );
 
-                    let (pnl, protocol_profit_amount) = if order.order_type == OrderType::Long {
-                        // flow for 'Long'
-                        let collateral_amount = BigDecimal::from(U128(order.amount));
-                        let borrow_amount =
-                            collateral_amount * (order.leverage - BigDecimal::one());
-                        let open_amount = collateral_amount + borrow_amount;
+                let (pnl, protocol_profit_amount) = if order.order_type == OrderType::Long {
+                    // flow for 'Long'
+                    let collateral_amount = BigDecimal::from(U128(order.amount));
+                    let borrow_amount = collateral_amount * (order.leverage - BigDecimal::one());
+                    let open_amount = collateral_amount + borrow_amount;
 
-                        let protocol_profit_amount =
-                            (BigDecimal::from(return_amounts.amount_sell_token)
-                                - collateral_amount
-                                - borrow_amount
-                                - borrow_fee_amount)
-                                * protocol_fee;
-
-                        let close_amount = BigDecimal::from(return_amounts.amount_sell_token)
-                            - borrow_fee_amount
-                            - protocol_profit_amount;
-
-                        let pnl = PnLView {
-                            is_profit: true,
-                            amount: U128::from(close_amount - open_amount),
-                        };
-
-                        (pnl, protocol_profit_amount)
-                    // flow for 'Short'
-                    } else {
-                        near_sdk::log!("Step 1/1");
-                        let collateral_amount = BigDecimal::from(U128(order.amount));
-                        near_sdk::log!("Step 1/2");
-                        let borrow_amount = collateral_amount
-                            * (order.leverage - BigDecimal::one())
-                            / order.open_or_close_price;
-                        near_sdk::log!("Step 1/3");
-                        let position_amount = borrow_amount * order.open_or_close_price;
-                        near_sdk::log!("Step 1/4");
-                        let protocol_profit_amount = (position_amount
-                            - BigDecimal::from(U128(tp_order.amount)))
+                    let protocol_profit_amount =
+                        (BigDecimal::from(return_amounts.amount_sell_token)
+                            - collateral_amount
+                            - borrow_amount
+                            - borrow_fee_amount)
                             * protocol_fee;
-                        near_sdk::log!("Step 1/4");
-                        let close_amount = (position_amount
-                            - BigDecimal::from(U128(tp_order.amount)))
-                            - protocol_profit_amount;
-                        near_sdk::log!("Step 1/5");
-                        let pnl = PnLView {
-                            is_profit: true,
-                            amount: U128::from(close_amount),
-                        };
-                        near_sdk::log!("Step 1/6");
-                        (pnl, protocol_profit_amount)
+
+                    let close_amount = BigDecimal::from(return_amounts.amount_sell_token)
+                        - borrow_fee_amount
+                        - protocol_profit_amount;
+
+                    let pnl = PnLView {
+                        is_profit: true,
+                        amount: U128::from(close_amount - open_amount),
                     };
 
-                    let amount_increase_balance = U128::from(
-                        BigDecimal::from(U128(order.amount)) + BigDecimal::from(pnl.amount),
-                    );
-
-                    let history_data = Some(HistoryData {
-                        fee,
-                        pnl,
-                        executed: U128(0_u128),
-                    });
-
-                    self.final_close_order(
-                        order_id,
-                        order,
-                        amount_increase_balance,
-                        Some(protocol_profit_amount),
-                        history_data,
-                        reward_executor,
-                    );
+                    (pnl, protocol_profit_amount)
+                // flow for 'Short'
+                } else {
+                    near_sdk::log!("Step 1/1");
+                    let collateral_amount = BigDecimal::from(U128(order.amount));
+                    near_sdk::log!("Step 1/2");
+                    let borrow_amount = collateral_amount * (order.leverage - BigDecimal::one())
+                        / order.open_or_close_price;
+                    near_sdk::log!("Step 1/3");
+                    let position_amount = borrow_amount * order.open_or_close_price;
+                    near_sdk::log!("Step 1/4");
+                    let protocol_profit_amount =
+                        (position_amount - BigDecimal::from(U128(tp_order.amount))) * protocol_fee;
+                    near_sdk::log!("Step 1/4");
+                    let close_amount = (position_amount - BigDecimal::from(U128(tp_order.amount)))
+                        - protocol_profit_amount;
+                    near_sdk::log!("Step 1/5");
+                    let pnl = PnLView {
+                        is_profit: true,
+                        amount: U128::from(close_amount),
+                    };
+                    near_sdk::log!("Step 1/6");
+                    (pnl, protocol_profit_amount)
                 };
-            } else {
-                self.swap_to_close_leverage_order(
+
+                let amount_increase_balance =
+                    U128::from(BigDecimal::from(U128(order.amount)) + BigDecimal::from(pnl.amount));
+
+                let history_data = Some(HistoryData {
+                    fee,
+                    pnl,
+                    executed: U128(0_u128),
+                });
+
+                self.final_close_order(
                     order_id,
                     order,
-                    amount_x,
-                    amount_y,
-                    current_buy_token_price.unwrap(),
-                    slippage_price_impact.unwrap(),
-                    market_data,
-                )
-            }
+                    amount_increase_balance,
+                    Some(protocol_profit_amount),
+                    history_data,
+                    reward_executor,
+                );
+            };
+        } else {
+            self.swap_to_close_leverage_order(
+                order_id,
+                order,
+                amount_x,
+                amount_y,
+                current_buy_token_price.unwrap(),
+                slippage_price_impact.unwrap(),
+                market_data,
+            )
         }
     }
 
@@ -561,7 +554,7 @@ impl Contract {
                     order_id,
                     Some((
                         order_id,
-                        order.clone(),
+                        order,
                         current_buy_token_price.unwrap(),
                         slippage_price_impact.unwrap(),
                     )),
@@ -577,7 +570,7 @@ impl Contract {
                             .with_unused_gas_weight(4_u64)
                             .market_data_callback(
                                 order_id,
-                                order.clone(),
+                                order,
                                 None,
                                 None,
                                 current_buy_token_price,
@@ -970,16 +963,15 @@ impl Contract {
 
         let swap_amount = if order.status == OrderStatus::Pending {
             amount_y.unwrap()
+        } else if let Some((_, _, return_amounts)) =
+            self.take_profit_orders.get(&(order_id.0 as u64))
+        {
+            return_amounts.amount_buy_token
         } else {
-            if let Some((_, _, return_amounts)) = self.take_profit_orders.get(&(order_id.0 as u64))
-            {
-                return_amounts.amount_buy_token
-            } else {
-                U128::from(
-                    BigDecimal::from(U128::from(order.amount)) * order.leverage
-                        / order.open_or_close_price,
-                )
-            }
+            U128::from(
+                BigDecimal::from(U128::from(order.amount)) * order.leverage
+                    / order.open_or_close_price,
+            )
         };
         // amount, input_token, output_token
         (swap_amount, order.buy_token, order.sell_token)
@@ -1014,8 +1006,7 @@ impl Contract {
             let borrow_fee_amount =
                 BigDecimal::from(self.get_borrow_fee_amount(order.clone(), market_data));
 
-            let require_amount = if let Some((_, _, return_amounts)) =
-                self.take_profit_orders.get(&(order_id.0 as u64))
+            if let Some((_, _, return_amounts)) = self.take_profit_orders.get(&(order_id.0 as u64))
             {
                 (borrow_fee_amount + borrow_amount
                     - BigDecimal::from(return_amounts.amount_buy_token))
@@ -1025,9 +1016,7 @@ impl Contract {
                 (borrow_fee_amount + borrow_amount)
                     * BigDecimal::from(current_buy_token_price)
                     * (BigDecimal::one() + BigDecimal::from(slippage_price_impact))
-            };
-
-            require_amount
+            }
         };
 
         let swap_fee = BigDecimal::from(self.get_swap_fee(&order));
