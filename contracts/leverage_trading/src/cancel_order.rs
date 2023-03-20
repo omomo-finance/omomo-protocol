@@ -356,25 +356,24 @@ impl Contract {
                     (pnl, protocol_profit_amount)
                 // flow for 'Short'
                 } else {
-                    near_sdk::log!("Step 1/1");
                     let collateral_amount = BigDecimal::from(U128(order.amount));
-                    near_sdk::log!("Step 1/2");
+
                     let borrow_amount = collateral_amount * (order.leverage - BigDecimal::one())
                         / order.open_or_close_price;
-                    near_sdk::log!("Step 1/3");
+
                     let position_amount = borrow_amount * order.open_or_close_price;
-                    near_sdk::log!("Step 1/4");
+
                     let protocol_profit_amount =
                         (position_amount - BigDecimal::from(U128(tp_order.amount))) * protocol_fee;
-                    near_sdk::log!("Step 1/4");
+
                     let close_amount = (position_amount - BigDecimal::from(U128(tp_order.amount)))
                         - protocol_profit_amount;
-                    near_sdk::log!("Step 1/5");
+
                     let pnl = PnLView {
                         is_profit: true,
                         amount: U128::from(close_amount),
                     };
-                    near_sdk::log!("Step 1/6");
+
                     (pnl, protocol_profit_amount)
                 };
 
@@ -539,7 +538,6 @@ impl Contract {
         slippage_price_impact: Option<U128>,
         reward_executor: bool,
     ) {
-        near_sdk::log!("Step 3");
         let token_market = if order.order_type == OrderType::Long {
             self.get_market_by(&order.sell_token)
         } else {
@@ -547,9 +545,7 @@ impl Contract {
         };
 
         if let Some((_, tp_order, _)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-            near_sdk::log!("Step 4");
             if tp_order.status == OrderStatus::Pending {
-                near_sdk::log!("Step 5");
                 self.cancel_take_profit_order(
                     order_id,
                     Some((
@@ -560,7 +556,6 @@ impl Contract {
                     )),
                 );
             } else {
-                near_sdk::log!("Step 6");
                 ext_market::ext(token_market)
                     .with_static_gas(Gas::ONE_TERA * 10_u64)
                     .view_market_data()
