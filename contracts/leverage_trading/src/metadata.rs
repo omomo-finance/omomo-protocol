@@ -55,6 +55,15 @@ pub type PricePoints = (i32, i32);
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
+pub struct ReturnAmounts {
+    /// amount_x
+    pub amount_sell_token: U128,
+    /// amount_y
+    pub amount_buy_token: U128,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
+#[serde(crate = "near_sdk::serde")]
 pub enum OrderStatus {
     Pending,
     Executed,
@@ -62,6 +71,7 @@ pub enum OrderStatus {
     Closed,
     Liquidated,
     PendingOrderExecute,
+    PartlyExecuted,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]

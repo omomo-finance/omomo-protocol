@@ -6,7 +6,7 @@ use near_sdk::env::current_account_id;
 use near_sdk::{ext_contract, is_promise_success, log, Gas, Promise, PromiseResult};
 
 /// DEX underutilization ratio of the transferred deposit
-pub const INACCURACY_RATE: U128 = U128(7_u128); //0.000000000000000000000007 -> 0.0000000000000000000007% -> 7*10^-24
+pub const INACCURACY_RATE: U128 = U128(3300000000000000000000_u128); //0.0033 -> 0.33% -> 33*10^-4
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
@@ -30,8 +30,13 @@ impl Contract {
         let mut order = order.unwrap();
 
         if order.status == OrderStatus::Executed {
-            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                order = tpo.1
+            if let Some((_, tp_order, _)) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                order = tp_order
+            } else {
+                panic!(
+                    "Order 'order_id:{}' already executed and has no created 'Take Profit' order",
+                    order_id.0
+                )
             }
         }
 
@@ -89,48 +94,63 @@ impl Contract {
         order: Order,
         order_id: U128,
         expected_amount: (U128, U128),
-    ) -> PromiseOrValue<U128> {
-        require!(is_promise_success(), "Some problem with remove liquidity");
-
+    ) {
+        let return_amounts = self.get_return_amounts_after_remove_liquidity(order.clone());
+        log!("{:?}", return_amounts);
         let account_id = self.get_account_by(order_id.0).unwrap();
         match order.order_type {
-            OrderType::Buy => {
-                let expected_amount = U128::from(
-                    BigDecimal::from(expected_amount.1)
-                        / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
-                );
-                self.increase_balance(&account_id, &order.buy_token, expected_amount.0);
+            OrderType::Buy | OrderType::Sell => {
+                let (token, expected_amount) = if order.order_type == OrderType::Buy {
+                    (
+                        &order.buy_token,
+                        U128::from(
+                            BigDecimal::from(expected_amount.1)
+                                / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                        ),
+                    )
+                } else {
+                    (
+                        &order.sell_token,
+                        U128::from(
+                            BigDecimal::from(expected_amount.0)
+                                / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                        ),
+                    )
+                };
+
+                self.mark_order_as_executed(order.clone(), order_id);
+
+                self.remove_pending_order_data(PendingOrderData {
+                    order_id,
+                    order_type: order.order_type.clone(),
+                });
+
+                self.increase_balance(&account_id, token, expected_amount.0);
+
+                let executor_reward_in_near = env::used_gas().0 as Balance * 2_u128;
+                Promise::new(env::signer_account_id()).transfer(executor_reward_in_near);
             }
-            OrderType::Sell => {
-                let expected_amount = U128::from(
-                    BigDecimal::from(expected_amount.0)
-                        / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
-                );
-                self.increase_balance(&account_id, &order.sell_token, expected_amount.0);
+            OrderType::Long | OrderType::Short => {
+                self.mark_order_as_executed(order.clone(), order_id);
+
+                self.remove_pending_order_data(PendingOrderData {
+                    order_id,
+                    order_type: order.order_type.clone(),
+                });
+
+                if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
+                    self.set_take_profit_order_pending(order_id, order, tpo, true);
+                } else {
+                    let executor_reward_in_near = env::used_gas().0 as Balance * 2_u128;
+                    Promise::new(env::signer_account_id()).transfer(executor_reward_in_near);
+                }
             }
-            _ => (),
+            OrderType::TakeProfit => {
+                let parent_order = self.get_order_by(order_id.0).unwrap();
+                self.mark_take_profit_order_as_executed(order_id, return_amounts);
+                self.close_leverage_position(order_id, parent_order, None, None, true);
+            }
         }
-
-        let parent_order = self.get_order_by(order_id.0).unwrap();
-        if parent_order.status == OrderStatus::Pending {
-            self.mark_order_as_executed(parent_order.clone(), order_id);
-
-            if let Some(tpo) = self.take_profit_orders.get(&(order_id.0 as u64)) {
-                self.set_take_profit_order_pending(order_id, parent_order, tpo);
-            }
-        } else {
-            self.mark_take_profit_order_as_executed(order_id);
-        }
-
-        self.remove_pending_order_data(PendingOrderData {
-            order_id,
-            order_type: order.order_type,
-        });
-
-        let executor_reward_in_near = env::used_gas().0 as Balance * 2u128;
-        Promise::new(env::signer_account_id())
-            .transfer(executor_reward_in_near)
-            .into()
     }
 
     pub fn manual_swap(
@@ -285,12 +305,18 @@ impl Contract {
         .emit();
     }
 
-    pub fn mark_take_profit_order_as_executed(&mut self, order_id: U128) {
+    pub fn mark_take_profit_order_as_executed(
+        &mut self,
+        order_id: U128,
+        return_amounts: ReturnAmounts,
+    ) {
         let tpo = self.take_profit_orders.get(&(order_id.0 as u64)).unwrap();
         let mut order = tpo.1;
         order.status = OrderStatus::Executed;
-        self.take_profit_orders
-            .insert(&(order_id.0 as u64), &(tpo.0, order.clone()));
+        self.take_profit_orders.insert(
+            &(order_id.0 as u64),
+            &(tpo.0, order.clone(), return_amounts),
+        );
 
         Event::ExecuteOrderEvent {
             order_id,
