@@ -297,7 +297,7 @@ impl Contract {
                 false => match self.take_profit_orders.get(id) {
                     Some((_, tp_order, _)) => {
                         if tp_order.status == OrderStatus::Pending {
-                            Some((*id, tp_order.clone()))
+                            Some((*id, tp_order))
                         } else {
                             None
                         }
@@ -327,7 +327,7 @@ impl Contract {
                 false => match self.take_profit_orders.get(id) {
                     Some((_, tp_order, _)) => {
                         if tp_order.status == OrderStatus::Pending {
-                            Some((*id, tp_order.clone()))
+                            Some((*id, tp_order))
                         } else {
                             None
                         }
@@ -974,7 +974,7 @@ mod tests {
                     );
                 }
             } else {
-                let order_id = count as u128 - 6;
+                let order_id = count - 6;
                 contract.mark_order_as_executed(order.clone(), U128(order_id));
 
                 if count < 8 {
@@ -1067,7 +1067,7 @@ mod tests {
                     );
                 }
             } else {
-                let order_id = count as u128 - 6;
+                let order_id = count - 6;
                 contract.mark_order_as_executed(order.clone(), U128(order_id));
 
                 if count < 8 {
