@@ -7,7 +7,7 @@ use crate::utils::{ext_market, ext_token};
 use crate::utils::{DAYS_PER_YEAR, MILLISECONDS_PER_DAY};
 use crate::*;
 use near_sdk::env::{current_account_id, prepaid_gas, signer_account_id};
-use near_sdk::{ext_contract, is_promise_success, serde_json, Gas, PromiseResult, ONE_YOCTO};
+use near_sdk::{ext_contract, is_promise_success, Gas, PromiseResult, ONE_YOCTO};
 
 const CANCEL_ORDER_GAS: Gas = Gas(160_000_000_000_000);
 const GAS_FOR_BORROW: Gas = Gas(200_000_000_000_000);
@@ -172,25 +172,7 @@ impl Contract {
         current_buy_token_price: U128,
         slippage_price_impact: U128,
     ) {
-        let (amount_x, amount_y) = match env::promise_result(0) {
-            PromiseResult::Successful(amounts) => {
-                if let Ok((amount_x, amount_y)) = serde_json::from_slice::<(U128, U128)>(&amounts) {
-                    let (sell_token_decimals, buy_token_decimals) =
-                        self.view_pair_tokens_decimals(&order.sell_token, &order.buy_token);
-
-                    let amount_x =
-                        self.from_token_to_protocol_decimals(amount_x.0, sell_token_decimals);
-
-                    let amount_y =
-                        self.from_token_to_protocol_decimals(amount_y.0, buy_token_decimals);
-
-                    (amount_x, amount_y)
-                } else {
-                    panic!("Some problems with the parsing result return amount from Dex")
-                }
-            }
-            _ => panic!("Some problem with return amount from Dex"),
-        };
+        let return_amounts = self.get_return_amounts_after_remove_liquidity(order.clone());
 
         let token_market = if order.order_type == OrderType::Long {
             self.get_market_by(&order.sell_token)
@@ -208,8 +190,8 @@ impl Contract {
                     .market_data_callback(
                         order_id,
                         order,
-                        Some(amount_x),
-                        Some(amount_y),
+                        Some(return_amounts.amount_sell_token),
+                        Some(return_amounts.amount_buy_token),
                         Some(current_buy_token_price),
                         Some(slippage_price_impact),
                         false,
