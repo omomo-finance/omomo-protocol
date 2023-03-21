@@ -294,7 +294,16 @@ impl Contract {
             .iter()
             .filter_map(|(id, order)| match order.status == OrderStatus::Pending {
                 true => Some((*id, order.clone())),
-                false => None,
+                false => match self.take_profit_orders.get(id) {
+                    Some((_, tp_order, _)) => {
+                        if tp_order.status == OrderStatus::Pending {
+                            Some((*id, tp_order))
+                        } else {
+                            None
+                        }
+                    }
+                    None => None,
+                },
             })
             .collect::<HashMap<u64, Order>>();
 
@@ -315,7 +324,16 @@ impl Contract {
             .iter()
             .filter_map(|(id, order)| match order.status == OrderStatus::Pending {
                 true => Some((*id, order.clone())),
-                false => None,
+                false => match self.take_profit_orders.get(id) {
+                    Some((_, tp_order, _)) => {
+                        if tp_order.status == OrderStatus::Pending {
+                            Some((*id, tp_order))
+                        } else {
+                            None
+                        }
+                    }
+                    None => None,
+                },
             })
             .collect::<Vec<(u64, Order)>>();
 
@@ -868,6 +886,19 @@ mod tests {
         Some(MILLISECONDS_PER_DAY * day * nanoseconds_in_one_millisecond)
     }
 
+    fn get_market_data() -> MarketData {
+        MarketData {
+            underlying_token: AccountId::new_unchecked("usdt.qa.v1.nearlend.testnet".to_string()),
+            underlying_token_decimals: 6,
+            total_supplies: U128(10_u128.pow(24)),
+            total_borrows: U128(10_u128.pow(24)),
+            total_reserves: U128(10_u128.pow(24)),
+            exchange_rate_ratio: U128(10_u128.pow(24)),
+            interest_rate_ratio: U128(10_u128.pow(24)),
+            borrow_rate_ratio: U128(5 * 10_u128.pow(22)),
+        }
+    }
+
     #[test]
     fn test_get_total_pending_orders_per_pair() {
         let current_day = get_current_day_in_nanoseconds(6); // borrow period 5 days
@@ -883,6 +914,8 @@ mod tests {
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
         };
+
+        let market_data = get_market_data();
 
         let pair_data = TradePair {
             sell_ticker_id: "USDT".to_string(),
@@ -919,35 +952,48 @@ mod tests {
 
         contract.set_balance(&alice(), &pair_id.sell_token, 10_u128.pow(30));
 
-        let amount = U128::from(
-            BigDecimal::from(U128(2 * 10_u128.pow(27)))
-                * (BigDecimal::one() - BigDecimal::from(execute_order::INACCURACY_RATE)),
-        );
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\"}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
-        // total pending orders before creating orders
+
         assert_eq!(
             contract.get_total_pending_orders_per_pair(&pair_id),
             U128(0_u128)
         );
 
-        for count in 0..9 {
-            if count < 6 {
+        for count in 1..10 {
+            if count <= 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
+
+                if count < 3 {
+                    contract.create_take_profit_order(
+                        U128(count),
+                        U128(3 * 10_u128.pow(24)),
+                        -9860,
+                        -9820,
+                        market_data.clone(),
+                    );
+                }
             } else {
-                contract.final_cancel_order(
-                    U128(count as u128 - 5),
-                    order.clone(),
-                    amount,
-                    None,
-                    None,
-                );
+                let order_id = count - 6;
+                contract.mark_order_as_executed(order.clone(), U128(order_id));
+
+                if count < 8 {
+                    let (price_points, mut tp_order, return_amounts) =
+                        contract.take_profit_orders.get(&(order_id as u64)).unwrap();
+
+                    tp_order.status = OrderStatus::Pending;
+
+                    contract.take_profit_orders.insert(
+                        &(order_id as u64),
+                        &(price_points, tp_order, return_amounts),
+                    );
+                };
             }
         }
         // total pending orders after creating orders
         assert_eq!(
             contract.get_total_pending_orders_per_pair(&pair_id),
-            U128(3_u128)
+            U128(4_u128)
         );
     }
 
@@ -966,6 +1012,8 @@ mod tests {
             sell_token: "usdt.qa.v1.nearlend.testnet".parse().unwrap(),
             buy_token: "wnear.qa.v1.nearlend.testnet".parse().unwrap(),
         };
+
+        let market_data = get_market_data();
 
         let pair_data = TradePair {
             sell_ticker_id: "USDT".to_string(),
@@ -1002,24 +1050,37 @@ mod tests {
 
         contract.set_balance(&alice(), &pair_id.sell_token, 10_u128.pow(30));
 
-        let amount = U128::from(
-            BigDecimal::from(U128(2 * 10_u128.pow(27)))
-                * (BigDecimal::one() - BigDecimal::from(execute_order::INACCURACY_RATE)),
-        );
         let order_as_string = "{\"status\":\"Pending\",\"order_type\":\"Long\",\"amount\":1000000000000000000000000000,\"sell_token\":\"usdt.qa.v1.nearlend.testnet\",\"buy_token\":\"wnear.qa.v1.nearlend.testnet\",\"leverage\":\"2.0\",\"sell_token_price\":{\"ticker_id\":\"USDT\",\"value\":\"1010000000000000000000000\"},\"buy_token_price\":{\"ticker_id\":\"WNEAR\",\"value\":\"3050000000000000000000000\"},\"open_or_close_price\":\"2.5\",\"block\":103930910,\"timestamp_ms\":86400000,\"lpt_id\":\"usdt.qa.v1.nearlend.testnet|wnear.qa.v1.nearlend.testnet|2000#540\",\"history_data\":null}".to_string();
         let order: Order = near_sdk::serde_json::from_str(order_as_string.as_str()).unwrap();
 
-        for count in 0..9 {
-            if count < 6 {
+        for count in 1..10 {
+            if count <= 6 {
                 contract.imitation_add_liquidity_callback(order.clone());
+
+                if count < 3 {
+                    contract.create_take_profit_order(
+                        U128(count),
+                        U128(3 * 10_u128.pow(24)),
+                        -9860,
+                        -9820,
+                        market_data.clone(),
+                    );
+                }
             } else {
-                contract.final_cancel_order(
-                    U128(count as u128 - 5),
-                    order.clone(),
-                    amount,
-                    None,
-                    None,
-                );
+                let order_id = count - 6;
+                contract.mark_order_as_executed(order.clone(), U128(order_id));
+
+                if count < 8 {
+                    let (price_points, mut tp_order, return_amounts) =
+                        contract.take_profit_orders.get(&(order_id as u64)).unwrap();
+
+                    tp_order.status = OrderStatus::Pending;
+
+                    contract.take_profit_orders.insert(
+                        &(order_id as u64),
+                        &(price_points, tp_order, return_amounts),
+                    );
+                };
             }
         }
 
@@ -1034,13 +1095,31 @@ mod tests {
             contract.orders_per_pair_view.get(&pair_id).unwrap().len(),
             6_usize
         );
-        assert_eq!(pending_orders_par_1st_page.data.len(), 3_usize);
+        assert_eq!(pending_orders_par_1st_page.data.len(), 4_usize);
         assert_eq!(
             pending_orders_par_1st_page.data.get(0).unwrap().1.status,
             OrderStatus::Pending
         );
-        assert_eq!(pending_orders_par_1st_page.total, U128(3));
-        assert_eq!(order_id_with_pending_status, vec![4, 5, 6]);
+        assert_eq!(
+            pending_orders_par_1st_page
+                .data
+                .get(0)
+                .unwrap()
+                .1
+                .order_type,
+            OrderType::TakeProfit
+        );
+        assert_eq!(
+            pending_orders_par_1st_page
+                .data
+                .get(2)
+                .unwrap()
+                .1
+                .order_type,
+            OrderType::Long
+        );
+        assert_eq!(pending_orders_par_1st_page.total, U128(4));
+        assert_eq!(order_id_with_pending_status, vec![1, 4, 5, 6]);
 
         let pending_orders_par_2nd_page = contract.get_pending_orders(&pair_id, U128(10), U128(2));
 
