@@ -10,12 +10,7 @@ pub const INACCURACY_RATE: U128 = U128(3300000000000000000000_u128); //0.0033 ->
 
 #[ext_contract(ext_self)]
 trait ContractCallbackInterface {
-    fn remove_liquidity_for_execute_order_callback(
-        &self,
-        order: Order,
-        order_id: U128,
-        expected_amount: (U128, U128),
-    );
+    fn remove_liquidity_for_execute_order_callback(&self, order: Order, order_id: U128);
     fn execute_order_callback(&self, order: Order, order_id: U128);
 }
 
@@ -79,41 +74,30 @@ impl Contract {
                 ext_self::ext(current_account_id())
                     .with_static_gas(Gas::ONE_TERA * 170_u64)
                     .with_unused_gas_weight(2_u64)
-                    .remove_liquidity_for_execute_order_callback(
-                        order,
-                        order_id,
-                        (min_amount_x, min_amount_y),
-                    ),
+                    .remove_liquidity_for_execute_order_callback(order, order_id),
             )
             .into()
     }
 
     #[private]
-    pub fn remove_liquidity_for_execute_order_callback(
-        &mut self,
-        order: Order,
-        order_id: U128,
-        expected_amount: (U128, U128),
-    ) {
+    pub fn remove_liquidity_for_execute_order_callback(&mut self, order: Order, order_id: U128) {
         let return_amounts = self.get_return_amounts_after_remove_liquidity(order.clone());
-        log!("{:?}", return_amounts);
         let account_id = self.get_account_by(order_id.0).unwrap();
+
         match order.order_type {
             OrderType::Buy | OrderType::Sell => {
-                let (token, expected_amount) = if order.order_type == OrderType::Buy {
+                let (token, amount_increase_balance) = if order.order_type == OrderType::Buy {
                     (
-                        &order.buy_token,
+                        order.buy_token.clone(),
                         U128::from(
-                            BigDecimal::from(expected_amount.1)
-                                / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                            BigDecimal::from(U128(order.amount)) / order.open_or_close_price,
                         ),
                     )
                 } else {
                     (
-                        &order.sell_token,
+                        order.sell_token.clone(),
                         U128::from(
-                            BigDecimal::from(expected_amount.0)
-                                / (BigDecimal::one() - BigDecimal::from(INACCURACY_RATE)),
+                            BigDecimal::from(U128(order.amount)) * order.open_or_close_price,
                         ),
                     )
                 };
@@ -122,13 +106,11 @@ impl Contract {
 
                 self.remove_pending_order_data(PendingOrderData {
                     order_id,
-                    order_type: order.order_type.clone(),
+                    order_type: order.order_type,
                 });
 
-                self.increase_balance(&account_id, token, expected_amount.0);
-
-                let executor_reward_in_near = env::used_gas().0 as Balance * 2_u128;
-                Promise::new(env::signer_account_id()).transfer(executor_reward_in_near);
+                self.increase_balance(&account_id, &token, amount_increase_balance.0);
+                self.withdraw(token, amount_increase_balance, Some(true));
             }
             OrderType::Long | OrderType::Short => {
                 self.mark_order_as_executed(order.clone(), order_id);
