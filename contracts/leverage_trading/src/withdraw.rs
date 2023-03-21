@@ -15,9 +15,15 @@ impl Contract {
         &mut self,
         token: AccountId,
         amount: U128,
+        account_id: Option<AccountId>,
         reward_executor: Option<bool>,
     ) -> PromiseOrValue<WBalance> {
-        let user = env::signer_account_id();
+        let user = if let Some(account) = account_id {
+            account
+        } else {
+            env::signer_account_id()
+        };
+
         let user_balance = self.balance_of(user.clone(), token.clone());
 
         require!(
