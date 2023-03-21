@@ -108,7 +108,13 @@ impl Contract {
             return_amounts.amount_buy_token.0,
         );
 
-        self.withdraw(order.sell_token, return_amounts.amount_sell_token, None);
-        self.withdraw(order.buy_token, return_amounts.amount_buy_token, None);
+        self.withdraw(
+            order.sell_token,
+            return_amounts.amount_sell_token,
+            None,
+            None,
+        );
+
+        self.withdraw(order.buy_token, return_amounts.amount_buy_token, None, None);
     }
 }

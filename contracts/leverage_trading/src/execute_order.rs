@@ -110,7 +110,7 @@ impl Contract {
                 });
 
                 self.increase_balance(&account_id, &token, amount_increase_balance.0);
-                self.withdraw(token, amount_increase_balance, Some(true));
+                self.withdraw(token, amount_increase_balance, Some(account_id), Some(true));
             }
             OrderType::Long | OrderType::Short => {
                 self.mark_order_as_executed(order.clone(), order_id);

@@ -376,13 +376,19 @@ impl Contract {
                     history_data,
                     reward_executor,
                 );
+            } else {
+                self.swap_to_close_leverage_order(
+                    order_id,
+                    order,
+                    current_buy_token_price.unwrap(),
+                    slippage_price_impact.unwrap(),
+                    market_data,
+                )
             };
         } else {
             self.swap_to_close_leverage_order(
                 order_id,
                 order,
-                amount_x,
-                amount_y,
                 current_buy_token_price.unwrap(),
                 slippage_price_impact.unwrap(),
                 market_data,
@@ -581,19 +587,17 @@ impl Contract {
         &mut self,
         order_id: U128,
         order: Order,
-        amount_x: Option<U128>,
-        amount_y: Option<U128>,
         current_buy_token_price: U128,
         slippage_price_impact: U128,
         market_data: MarketData,
     ) {
         let (swap_amount, input_token, output_token) = if order.order_type == OrderType::Long {
-            self.get_data_to_swap_for_long(order_id, order.clone(), amount_y)
+            self.get_data_to_swap_for_long(order_id, order.clone(), None)
         } else {
             self.get_data_to_swap_for_short(
                 order_id,
                 order.clone(),
-                amount_x,
+                None,
                 current_buy_token_price,
                 slippage_price_impact,
                 market_data.clone(),
@@ -605,9 +609,10 @@ impl Contract {
 
         let mut fee = self.get_borrow_fee(order.clone(), market_data)
             + BigDecimal::from(self.get_swap_fee(&order));
+
         let mut protocol_profit_amount: Option<BigDecimal> = None;
 
-        let (fee, pnl, protocol_profit_amount) = if order.order_type == OrderType::Long {
+        let (fee, pnl) = if order.order_type == OrderType::Long {
             // flow for 'Long'
             let open_amount = BigDecimal::from(U128(order.amount)) * order.leverage;
 
@@ -618,12 +623,10 @@ impl Contract {
             let close_amount = if let Some((_, _, return_amounts)) =
                 self.take_profit_orders.get(&(order_id.0 as u64))
             {
-                BigDecimal::from(return_amounts.amount_sell_token)
-                    + amount_after_swap
-                    + BigDecimal::from(amount_x.unwrap())
+                BigDecimal::from(return_amounts.amount_sell_token) + amount_after_swap
                     - borrow_fee_amount
             } else {
-                amount_after_swap + BigDecimal::from(amount_x.unwrap()) - borrow_fee_amount
+                amount_after_swap - borrow_fee_amount
             };
 
             let pnl = if open_amount > close_amount {
@@ -645,7 +648,7 @@ impl Contract {
                 }
             };
 
-            (U128::from(fee), pnl, protocol_profit_amount)
+            (U128::from(fee), pnl)
         // flow for 'Short'
         } else {
             let borrow_amount = BigDecimal::from(U128(order.amount))
@@ -687,7 +690,7 @@ impl Contract {
                 }
             };
 
-            (U128::from(fee), pnl, protocol_profit_amount)
+            (U128::from(fee), pnl)
         };
         let amount_increase_balance = if pnl.is_profit {
             U128::from(BigDecimal::from(U128(order.amount)) + BigDecimal::from(pnl.amount))
@@ -1032,7 +1035,7 @@ impl Contract {
 
         self.increase_balance(&signer_account_id(), &order.sell_token, token_amount.0);
 
-        self.withdraw(order.sell_token, token_amount, None);
+        self.withdraw(order.sell_token, token_amount, None, None);
     }
 
     pub fn final_close_order(
@@ -1067,9 +1070,20 @@ impl Contract {
 
         Event::CloseLeveragePositionEvent { order_id }.emit();
 
-        self.increase_balance(&signer_account_id(), &order.sell_token, token_amount.0);
+        let account_id = if reward_executor {
+            self.get_account_by(order_id.0).unwrap()
+        } else {
+            signer_account_id()
+        };
 
-        self.withdraw(order.sell_token, token_amount, Some(reward_executor));
+        self.increase_balance(&account_id, &order.sell_token, token_amount.0);
+
+        self.withdraw(
+            order.sell_token,
+            token_amount,
+            Some(account_id),
+            Some(reward_executor),
+        );
     }
 
     pub fn get_borrow_fee(&self, order: Order, market_data: MarketData) -> BigDecimal {
