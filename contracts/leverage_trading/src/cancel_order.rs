@@ -383,7 +383,7 @@ impl Contract {
                     current_buy_token_price.unwrap(),
                     slippage_price_impact.unwrap(),
                     market_data,
-                )    
+                )
             };
         } else {
             self.swap_to_close_leverage_order(
@@ -623,8 +623,7 @@ impl Contract {
             let close_amount = if let Some((_, _, return_amounts)) =
                 self.take_profit_orders.get(&(order_id.0 as u64))
             {
-                BigDecimal::from(return_amounts.amount_sell_token)
-                    + amount_after_swap
+                BigDecimal::from(return_amounts.amount_sell_token) + amount_after_swap
                     - borrow_fee_amount
             } else {
                 amount_after_swap - borrow_fee_amount
